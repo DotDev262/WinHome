@@ -1,4 +1,5 @@
-using System.Text.Json; // Used to save the state file
+using System.Text.Json;
+using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Services;
 
@@ -6,47 +7,69 @@ namespace WinHome
 {
     public class Engine
     {
-        private readonly WingetService _winget;
+        // We store our tools in a Dictionary for fast lookup
+        private readonly Dictionary<string, IPackageManager> _managers;
         private const string StateFileName = "winhome.state.json";
 
         public Engine()
         {
-            _winget = new WingetService();
+            // Register available managers
+            _managers = new Dictionary<string, IPackageManager>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "winget", new WingetService() },
+                { "choco", new ChocolateyService() }
+            };
         }
 
         public void Run(Configuration config)
         {
             Console.WriteLine($"--- WinHome v{config.Version} ---");
 
-            // 1. Load the "Memory" (Previous State)
-            HashSet<string> previousApps = LoadState();
-            
-            // 2. Get the "Goal" (Current Config)
-            HashSet<string> currentApps = config.Apps.Select(a => a.Id).ToHashSet();
+            // 1. Load State
+            var previousApps = LoadState();
+            var currentApps = config.Apps.Select(a => $"{a.Manager}:{a.Id}").ToHashSet();
 
-            // 3. Calculate "Removals" (In Memory but NOT in Goal)
+            // 2. Cleanup (Uninstall removed apps)
             var appsToRemove = previousApps.Except(currentApps).ToList();
-            
             if (appsToRemove.Any())
             {
                 Console.WriteLine("\n--- Cleaning Up ---");
-                foreach (var appId in appsToRemove)
+                foreach (var uniqueId in appsToRemove)
                 {
-                    _winget.Uninstall(appId);
+                    // uniqueId format is "manager:appId"
+                    var parts = uniqueId.Split(':', 2);
+                    if (parts.Length == 2 && _managers.TryGetValue(parts[0], out var mgr))
+                    {
+                        mgr.Uninstall(parts[1]);
+                    }
                 }
             }
 
-            // 4. Calculate "Installs" (In Goal)
+            // 3. Install/Reconcile
             if (config.Apps.Any())
             {
                 Console.WriteLine("\n--- Reconciling Apps ---");
                 foreach (var app in config.Apps)
                 {
-                    _winget.EnsureInstalled(app);
+                    if (_managers.TryGetValue(app.Manager, out var mgr))
+                    {
+                        // Optional: Check if the manager (e.g. Choco) is actually installed on the PC first
+                        if (!mgr.IsAvailable())
+                        {
+                            Console.WriteLine($"[Error] Package manager '{app.Manager}' is not installed on this system.");
+                            continue;
+                        }
+                        
+                        mgr.Install(app);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[Error] Unknown package manager: {app.Manager}");
+                    }
                 }
             }
 
-            // 5. Save the new State
+            // 4. Save State
             SaveState(currentApps);
             Console.WriteLine("\n[State Saved] Configuration synced.");
         }

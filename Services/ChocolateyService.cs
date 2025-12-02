@@ -4,32 +4,25 @@ using WinHome.Models;
 
 namespace WinHome.Services
 {
-    // Now implements the shared interface
-    public class WingetService : IPackageManager
+    public class ChocolateyService : IPackageManager
     {
         public bool IsAvailable()
         {
-            // Simple check to see if winget exists in PATH
-            return RunCommand("--help"); // 'winget --help' returns 0 if valid
+            return RunCommand("-v"); // 'choco -v'
         }
 
-        // Rename 'EnsureInstalled' to 'Install' to match interface
         public void Install(AppConfig app)
         {
             if (IsInstalled(app.Id))
             {
-                Console.WriteLine($"[Winget] {app.Id} is already installed.");
+                Console.WriteLine($"[Choco] {app.Id} is already installed.");
                 return;
             }
 
-            Console.WriteLine($"[Winget] Installing {app.Id}...");
-
-            string args = $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements";
-            if (!string.IsNullOrEmpty(app.Source))
-            {
-                args += $" --source {app.Source}";
-            }
-
+            Console.WriteLine($"[Choco] Installing {app.Id}...");
+            // -y checks "yes" to all prompts
+            string args = $"install {app.Id} -y";
+            
             if (RunCommand(args))
                 Console.WriteLine($"[Success] Installed {app.Id}");
             else
@@ -38,8 +31,8 @@ namespace WinHome.Services
 
         public void Uninstall(string appId)
         {
-            Console.WriteLine($"[Winget] Uninstalling {appId}...");
-            string args = $"uninstall --id {appId} -e --silent --accept-source-agreements";
+            Console.WriteLine($"[Choco] Uninstalling {appId}...");
+            string args = $"uninstall {appId} -y";
             
             if (RunCommand(args))
                 Console.WriteLine($"[Success] Uninstalled {appId}");
@@ -49,7 +42,9 @@ namespace WinHome.Services
 
         public bool IsInstalled(string appId)
         {
-            var output = RunCommandWithOutput($"list -q {appId}");
+            // 'choco list -l -r' returns local packages in a pipe-delimited format
+            // output: 7zip|19.00
+            string output = RunCommandWithOutput($"list -l -r {appId}");
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -57,7 +52,7 @@ namespace WinHome.Services
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "winget",
+                FileName = "choco",
                 Arguments = args,
                 UseShellExecute = false,
                 CreateNoWindow = true
@@ -75,7 +70,7 @@ namespace WinHome.Services
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "winget",
+                FileName = "choco",
                 Arguments = args,
                 RedirectStandardOutput = true,
                 UseShellExecute = false,

@@ -24,6 +24,9 @@ namespace WinHome.Models
 
         [YamlMember(Alias = "source")]
         public string? Source { get; set; }
+
+        [YamlMember(Alias = "manager")]
+        public string Manager { get; set; } = "winget";
     }
 
     public class RegistryTweak
