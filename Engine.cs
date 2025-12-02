@@ -23,7 +23,7 @@ namespace WinHome
                 foreach (var app in config.Apps)
                 {
                     // This calls the code you wrote in Step 2!
-                    _winget.EnsureInstalled(app.Id);
+                    _winget.EnsureInstalled(app);
                 }
             }
             else 

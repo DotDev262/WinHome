@@ -21,6 +21,9 @@ namespace WinHome.Models
     {
         [YamlMember(Alias = "id")]
         public string Id { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "source")]
+        public string? Source { get; set; }
     }
 
     public class RegistryTweak
