@@ -17,7 +17,8 @@ namespace WinHome
             _managers = new Dictionary<string, IPackageManager>(StringComparer.OrdinalIgnoreCase)
             {
                 { "winget", new WingetService() },
-                { "choco", new ChocolateyService() }
+                { "choco", new ChocolateyService() },
+                {"scoop",new ScoopService() }
             };
         }
 
@@ -59,7 +60,7 @@ namespace WinHome
                             Console.WriteLine($"[Error] Package manager '{app.Manager}' is not installed on this system.");
                             continue;
                         }
-                        
+
                         mgr.Install(app);
                     }
                     else
@@ -76,12 +77,12 @@ namespace WinHome
 
         private void SaveState(HashSet<string> apps)
         {
-            try 
+            try
             {
                 string json = JsonSerializer.Serialize(apps, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(StateFileName, json);
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 Console.WriteLine($"[Warning] Could not save state: {ex.Message}");
             }
@@ -94,12 +95,12 @@ namespace WinHome
                 return new HashSet<string>();
             }
 
-            try 
+            try
             {
                 string json = File.ReadAllText(StateFileName);
                 return JsonSerializer.Deserialize<HashSet<string>>(json) ?? new HashSet<string>();
             }
-            catch 
+            catch
             {
                 return new HashSet<string>();
             }
