@@ -3,3 +3,7 @@ obj/
 *.user
 *.suo
 appsettings.Development.json
+
+# WinHome Specific
+winhome.state.json
+config.yaml

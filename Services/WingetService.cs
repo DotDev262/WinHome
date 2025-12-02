@@ -33,6 +33,20 @@ namespace WinHome.Services
                 Console.WriteLine($"[Error] Failed to install {app.Id}");
         }
 
+        public void Uninstall(string appId)
+        {
+            Console.WriteLine($"[Uninstalling] {appId}...");
+
+            string args = $"uninstall --id {appId} -e --silent --accept-source-agreements";
+
+            bool success = RunCommand(args);
+
+            if (success)
+                Console.WriteLine($"[Success] Uninstalled {appId}");
+            else
+                Console.WriteLine($"[Error] Failed to uninstall {appId}");
+        }
+
         private bool IsInstalled(string appId)
         {
             var output = RunCommandWithOutput($"list -q {appId}");
