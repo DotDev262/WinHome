@@ -18,7 +18,8 @@ namespace WinHome
             {
                 { "winget", new WingetService() },
                 { "choco", new ChocolateyService() },
-                {"scoop",new ScoopService() }
+                {"scoop",new ScoopService() },
+                {"mise", new MiseService()}
             };
         }
 
