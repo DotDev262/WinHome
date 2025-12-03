@@ -27,6 +27,9 @@ namespace WinHome.Models
 
         [YamlMember(Alias = "profiles")]
         public Dictionary<string, ProfileConfig> Profiles { get; set; } = new();
+
+        [YamlMember(Alias = "envVars")]
+        public List<EnvVarConfig> EnvVars { get; set; } = new();
     }
 
     public class AppConfig
@@ -118,4 +121,17 @@ namespace WinHome.Models
         
         // You can add 'Apps' or 'SystemSettings' here later if you want profile-specific apps
     }
+
+    public class EnvVarConfig
+    {
+        [YamlMember(Alias = "variable")]
+        public string Variable { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "value")]
+        public string Value { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "action")]
+        public string Action { get; set; } = "set"; 
+    }
+
 }
