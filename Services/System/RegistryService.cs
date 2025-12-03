@@ -7,15 +7,16 @@ namespace WinHome.Services.System
     [SupportedOSPlatform("windows")]
     public class RegistryService
     {
-        public void Apply(RegistryTweak tweak)
+        public void Apply(RegistryTweak tweak, bool dryRun)
         {
             try
             {
                 RegistryKey root = GetRootKey(tweak.Path, out string subKeyPath);
 
-                using (RegistryKey key = root.CreateSubKey(subKeyPath, writable: true))
+                
+                using (RegistryKey? key = root.OpenSubKey(subKeyPath, writable: false))
                 {
-                    object? currentValue = key.GetValue(tweak.Name);
+                    object? currentValue = key?.GetValue(tweak.Name);
                     
                     if (currentValue != null && currentValue.ToString() == tweak.Value.ToString())
                     {
@@ -23,7 +24,19 @@ namespace WinHome.Services.System
                         return;
                     }
 
-                    RegistryValueKind kind = tweak.Type.ToLower() switch
+                    if (dryRun)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine($"[DryRun] Would set Registry: {tweak.Path}\\{tweak.Name} = {tweak.Value}");
+                        Console.ResetColor();
+                        return;
+                    }
+                }
+
+                
+                using (RegistryKey key = root.CreateSubKey(subKeyPath, writable: true))
+                {
+                     RegistryValueKind kind = tweak.Type.ToLower() switch
                     {
                         "dword" => RegistryValueKind.DWord,
                         "qword" => RegistryValueKind.QWord,
@@ -45,22 +58,27 @@ namespace WinHome.Services.System
             }
         }
 
-        // NEW: Revert method to delete the value (Restore Default)
-        public void Revert(string path, string name)
+        public void Revert(string path, string name, bool dryRun)
         {
-            try
+             try
             {
                 RegistryKey root = GetRootKey(path, out string subKeyPath);
-                
-                // Open existing key (don't create if missing)
-                using (RegistryKey? key = root.OpenSubKey(subKeyPath, writable: true))
+                using (RegistryKey? key = root.OpenSubKey(subKeyPath, writable: !dryRun))
                 {
-                    if (key == null) return; // Key doesn't exist, nothing to revert
+                    if (key == null) return;
 
                     if (key.GetValue(name) != null)
                     {
+                        if (dryRun)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.WriteLine($"[DryRun] Would delete Registry value: {path}\\{name}");
+                            Console.ResetColor();
+                            return;
+                        }
+
                         key.DeleteValue(name);
-                        Console.WriteLine($"[Registry] Reverted {name} (Deleted value)");
+                        Console.WriteLine($"[Registry] Reverted {name}");
                     }
                 }
             }

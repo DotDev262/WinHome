@@ -4,11 +4,10 @@ namespace WinHome.Services.System
 {
     public class DotfileService
     {
-        public void Apply(DotfileConfig dotfile)
+        public void Apply(DotfileConfig dotfile, bool dryRun)
         {
             try
             {
-                // 1. Resolve Paths (Handle ~, %LOCALAPPDATA%)
                 string sourcePath = Path.GetFullPath(dotfile.Src);
                 string targetPath = ResolvePath(dotfile.Target);
 
@@ -24,16 +23,21 @@ namespace WinHome.Services.System
                     return;
                 }
 
-                Console.WriteLine($"[Dotfile] Linking {Path.GetFileName(targetPath)}...");
+                if (dryRun)
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"[DryRun] Would link {sourcePath} -> {targetPath}");
+                    Console.ResetColor();
+                    return;
+                }
 
-                // 2. Backup existing file
+                
                 if (File.Exists(targetPath))
                 {
                     File.Move(targetPath, targetPath + ".bak", true);
-                    Console.WriteLine($"[Dotfile] Backup created at {targetPath}.bak");
+                    Console.WriteLine($"[Dotfile] Backup created.");
                 }
 
-                // 3. Create Link
                 string? parentDir = Path.GetDirectoryName(targetPath);
                 if (!string.IsNullOrEmpty(parentDir)) Directory.CreateDirectory(parentDir);
 

@@ -9,34 +9,38 @@ class Program
 {
     static async Task<int> Main(string[] args)
     {
-        // 1. Define the Option
-        // we use the Object Initializer syntax { ... } as shown in the docs
+        
         var configOption = new Option<FileInfo>("--config")
         {
             Description = "Path to the YAML configuration file",
-            // FIX: It is a Property now, not a function call
             DefaultValueFactory = _ => new FileInfo("config.yaml") 
         };
 
-        // 2. Define the Root Command
-        var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
         
-        // 3. Add the option to the command
-        rootCommand.Options.Add(configOption);
+        var dryRunOption = new Option<bool>("--dry-run")
+        {
+            Description = "Preview changes without applying them",
+            DefaultValueFactory = _ => false
+        };
+        
+        dryRunOption.Aliases.Add("-d");
 
-        // 4. Define the Action
+        var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
+        rootCommand.Options.Add(configOption);
+        rootCommand.Options.Add(dryRunOption);
+
         rootCommand.SetAction((ParseResult result) => 
         {
-            // Extract the value using the specific Option object
             FileInfo file = result.GetValue(configOption)!;
-            Execute(file);
+            bool dryRun = result.GetValue(dryRunOption);
+            
+            Execute(file, dryRun);
         });
 
-        // 5. Run it
         return await rootCommand.Parse(args).InvokeAsync();
     }
 
-    static void Execute(FileInfo file)
+    static void Execute(FileInfo file, bool dryRun)
     {
         if (!file.Exists)
         {
@@ -48,6 +52,13 @@ class Program
 
         try 
         {
+            if (dryRun)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("--- DRY RUN MODE: No changes will be made ---");
+                Console.ResetColor();
+            }
+
             Console.WriteLine($"Reading config from: {file.Name}");
 
             var yamlText = File.ReadAllText(file.FullName);
@@ -59,7 +70,7 @@ class Program
             var config = deserializer.Deserialize<Configuration>(yamlText);
             
             var engine = new Engine();
-            engine.Run(config);
+            engine.Run(config, dryRun);
         }
         catch (Exception ex)
         {

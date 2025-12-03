@@ -8,10 +8,10 @@ namespace WinHome.Services.Managers
     {
         public bool IsAvailable()
         {
-            return RunCommand("-v"); // 'choco -v'
+            return RunCommand("-v", false); 
         }
 
-        public void Install(AppConfig app)
+        public void Install(AppConfig app, bool dryRun)
         {
             if (IsInstalled(app.Id))
             {
@@ -19,22 +19,38 @@ namespace WinHome.Services.Managers
                 return;
             }
 
+            if (dryRun)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[DryRun] Would install '{app.Id}' via Chocolatey");
+                Console.ResetColor();
+                return;
+            }
+
             Console.WriteLine($"[Choco] Installing {app.Id}...");
-            // -y checks "yes" to all prompts
+            
             string args = $"install {app.Id} -y";
             
-            if (RunCommand(args))
+            if (RunCommand(args, false))
                 Console.WriteLine($"[Success] Installed {app.Id}");
             else
                 Console.WriteLine($"[Error] Failed to install {app.Id}");
         }
 
-        public void Uninstall(string appId)
+        public void Uninstall(string appId, bool dryRun)
         {
+            if (dryRun)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[DryRun] Would uninstall '{appId}' via Chocolatey");
+                Console.ResetColor();
+                return;
+            }
+
             Console.WriteLine($"[Choco] Uninstalling {appId}...");
             string args = $"uninstall {appId} -y";
             
-            if (RunCommand(args))
+            if (RunCommand(args, false))
                 Console.WriteLine($"[Success] Uninstalled {appId}");
             else
                 Console.WriteLine($"[Error] Failed to uninstall {appId}");
@@ -42,14 +58,15 @@ namespace WinHome.Services.Managers
 
         public bool IsInstalled(string appId)
         {
-            // 'choco list -l -r' returns local packages in a pipe-delimited format
-            // output: 7zip|19.00
+            
             string output = RunCommandWithOutput($"list -l -r {appId}");
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
 
-        private bool RunCommand(string args)
+        private bool RunCommand(string args, bool dryRun)
         {
+            if (dryRun) return true;
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = "choco",

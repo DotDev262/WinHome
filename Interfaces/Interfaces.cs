@@ -4,10 +4,10 @@ namespace WinHome.Interfaces
 {
     public interface IPackageManager
     {
-        // Every manager must provide these three capabilities
-        bool IsAvailable(); // Is Chocolatey/Winget actually installed on this PC?
-        void Install(AppConfig app);
-        void Uninstall(string appId);
+        
+        bool IsAvailable(); 
+        void Install(AppConfig app, bool dryRun);
+        void Uninstall(string appId, bool dryRun);
         bool IsInstalled(string appId);
     }
 }

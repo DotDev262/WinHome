@@ -4,44 +4,51 @@ using WinHome.Models;
 
 namespace WinHome.Services.Managers
 {
-    // Now implements the shared interface
     public class WingetService : IPackageManager
     {
-        public bool IsAvailable()
-        {
-            // Simple check to see if winget exists in PATH
-            return RunCommand("--help"); // 'winget --help' returns 0 if valid
-        }
+        public bool IsAvailable() => RunCommand("--help", false); 
 
-        // Rename 'EnsureInstalled' to 'Install' to match interface
-        public void Install(AppConfig app)
+        public void Install(AppConfig app, bool dryRun)
         {
             if (IsInstalled(app.Id))
             {
+                
                 Console.WriteLine($"[Winget] {app.Id} is already installed.");
                 return;
             }
 
-            Console.WriteLine($"[Winget] Installing {app.Id}...");
-
-            string args = $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements";
-            if (!string.IsNullOrEmpty(app.Source))
+            if (dryRun)
             {
-                args += $" --source {app.Source}";
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[DryRun] Would install '{app.Id}' via Winget");
+                Console.ResetColor();
+                return;
             }
 
-            if (RunCommand(args))
+            Console.WriteLine($"[Winget] Installing {app.Id}...");
+            string args = $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements";
+            if (!string.IsNullOrEmpty(app.Source)) args += $" --source {app.Source}";
+
+            if (RunCommand(args, false))
                 Console.WriteLine($"[Success] Installed {app.Id}");
             else
                 Console.WriteLine($"[Error] Failed to install {app.Id}");
         }
 
-        public void Uninstall(string appId)
+        public void Uninstall(string appId, bool dryRun)
         {
+            if (dryRun)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[DryRun] Would uninstall '{appId}' via Winget");
+                Console.ResetColor();
+                return;
+            }
+
             Console.WriteLine($"[Winget] Uninstalling {appId}...");
             string args = $"uninstall --id {appId} -e --silent --accept-source-agreements";
             
-            if (RunCommand(args))
+            if (RunCommand(args, false))
                 Console.WriteLine($"[Success] Uninstalled {appId}");
             else
                 Console.WriteLine($"[Error] Failed to uninstall {appId}");
@@ -53,8 +60,11 @@ namespace WinHome.Services.Managers
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
 
-        private bool RunCommand(string args)
+        
+        private bool RunCommand(string args, bool dryRun)
         {
+            if (dryRun) return true; 
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = "winget",
@@ -73,6 +83,7 @@ namespace WinHome.Services.Managers
 
         private string RunCommandWithOutput(string args)
         {
+            
             var startInfo = new ProcessStartInfo
             {
                 FileName = "winget",

@@ -44,7 +44,7 @@ namespace WinHome.Models
         public object Value { get; set; } = new();
 
         [YamlMember(Alias = "type")]
-        public string Type { get; set; } = "string"; // We default to "string"
+        public string Type { get; set; } = "string"; 
     }
 
     public class DotfileConfig
