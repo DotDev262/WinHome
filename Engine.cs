@@ -12,6 +12,7 @@ namespace WinHome
         private readonly DotfileService _dotfiles;
         private readonly RegistryService _registry;
         private readonly SystemSettingsService _systemSettings;
+        private readonly WslService _wsl;
         private const string StateFileName = "winhome.state.json";
 
         public Engine()
@@ -19,6 +20,7 @@ namespace WinHome
             _dotfiles = new DotfileService();
             _registry = new RegistryService();
             _systemSettings = new SystemSettingsService();
+            _wsl = new WslService();
 
             _managers = new Dictionary<string, IPackageManager>(StringComparer.OrdinalIgnoreCase)
             {
@@ -29,24 +31,23 @@ namespace WinHome
             };
         }
 
-
         public void Run(Configuration config, bool dryRun)
         {
             Console.WriteLine($"--- WinHome v{config.Version} ---");
 
             var presetTweaks = _systemSettings.GetTweaks(config.SystemSettings);
             var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
-
+            
             var previousState = LoadState();
             var currentState = new HashSet<string>();
-
-            foreach (var app in config.Apps)
+            
+            foreach(var app in config.Apps) 
                 currentState.Add($"{app.Manager}:{app.Id}");
-
-            foreach (var reg in allTweaks)
+                
+            foreach(var reg in allTweaks)
                 currentState.Add($"reg:{reg.Path}|{reg.Name}");
 
-
+            // 1. Cleanup
             var itemsToRemove = previousState.Except(currentState).ToList();
             if (itemsToRemove.Any())
             {
@@ -59,7 +60,7 @@ namespace WinHome
                         var parts = payload.Split('|', 2);
                         if (parts.Length == 2) _registry.Revert(parts[0], parts[1], dryRun);
                     }
-                    else
+                    else 
                     {
                         var parts = uniqueId.Split(':', 2);
                         if (parts.Length == 2 && _managers.TryGetValue(parts[0], out var mgr))
@@ -70,7 +71,7 @@ namespace WinHome
                 }
             }
 
-
+            // 2. Install Apps
             if (config.Apps.Any())
             {
                 Console.WriteLine("\n--- Reconciling Apps ---");
@@ -92,7 +93,14 @@ namespace WinHome
                 }
             }
 
+            // 3. Configure WSL (This was missing!)
+            if (config.Wsl != null)
+            {
+                Console.WriteLine("\n--- Configuring WSL ---");
+                _wsl.Configure(config.Wsl, dryRun);
+            }
 
+            // 4. Registry Tweaks
             if (allTweaks.Any())
             {
                 if (OperatingSystem.IsWindows())
@@ -105,7 +113,7 @@ namespace WinHome
                 }
             }
 
-
+            // 5. Dotfiles
             if (config.Dotfiles.Any())
             {
                 Console.WriteLine("\n--- Linking Dotfiles ---");
@@ -128,12 +136,12 @@ namespace WinHome
 
         private void SaveState(HashSet<string> state)
         {
-            try
+            try 
             {
                 string json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(StateFileName, json);
             }
-            catch (Exception ex)
+            catch (Exception ex) 
             {
                 Console.WriteLine($"[Warning] Could not save state: {ex.Message}");
             }
@@ -142,7 +150,7 @@ namespace WinHome
         private HashSet<string> LoadState()
         {
             if (!File.Exists(StateFileName)) return new HashSet<string>();
-            try
+            try 
             {
                 string json = File.ReadAllText(StateFileName);
                 return JsonSerializer.Deserialize<HashSet<string>>(json) ?? new HashSet<string>();

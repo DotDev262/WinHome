@@ -3,26 +3,22 @@ using System.CommandLine.Parsing;
 using WinHome;
 using WinHome.Models;
 using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 class Program
 {
     static async Task<int> Main(string[] args)
     {
-        
         var configOption = new Option<FileInfo>("--config")
         {
             Description = "Path to the YAML configuration file",
             DefaultValueFactory = _ => new FileInfo("config.yaml") 
         };
 
-        
         var dryRunOption = new Option<bool>("--dry-run")
         {
             Description = "Preview changes without applying them",
             DefaultValueFactory = _ => false
         };
-        
         dryRunOption.Aliases.Add("-d");
 
         var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
@@ -34,13 +30,13 @@ class Program
             FileInfo file = result.GetValue(configOption)!;
             bool dryRun = result.GetValue(dryRunOption);
             
-            Execute(file, dryRun);
+            RunApp(file, dryRun);
         });
 
         return await rootCommand.Parse(args).InvokeAsync();
     }
 
-    static void Execute(FileInfo file, bool dryRun)
+    static void RunApp(FileInfo file, bool dryRun)
     {
         if (!file.Exists)
         {
@@ -64,7 +60,7 @@ class Program
             var yamlText = File.ReadAllText(file.FullName);
             
             var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .IgnoreUnmatchedProperties()
                 .Build();
 
             var config = deserializer.Deserialize<Configuration>(yamlText);
