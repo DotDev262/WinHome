@@ -54,43 +54,59 @@ The `config.yaml` file has the following sections:
 ### Example `config.yaml`
 
 ```yaml
-version: 1.0
+version: "1.0"
+
 apps:
-  - manager: winget
-    id: Microsoft.PowerToys
-  - manager: choco
-    id: 7zip
-  - manager: scoop
-    id: neovim
-  - manager: mise
-    id: python@3.10
+  - id: "Microsoft.PowerToys"
+    manager: "winget"
+  - id: "7zip.7zip"
+    manager: "winget"
+  - id: "neovim"
+    manager: "scoop"
+  - id: "python@3.10"
+    manager: "mise"
 
+# Dotfiles link your local repo files to the system location
 dotfiles:
-  - source: C:\Users\user\dotfiles\.gitconfig
-    target: C:\Users\user\.gitconfig
+  - src: "./files/.gitconfig"
+    target: "~/.gitconfig"
 
+# Environment Variables (User Level)
 envVars:
-  - name: MY_VAR
-    value: my_value
+  - variable: "MY_VAR"
+    value: "my_value"
+    action: "set"
+  - variable: "Path"
+    value: "%USERPROFILE%\\bin"
+    action: "append"
 
+# Registry Tweaks (Manual)
 registryTweaks:
-  - path: HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    name: HideFileExt
+  - path: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced"
+    name: "HideFileExt"
     value: 0
-    type: dword
+    type: "dword"
 
+# System Settings (Friendly presets)
 systemSettings:
-  - ShowFileExtensions
+  showFileExtensions: true
+  darkMode: true
+  taskbarAlignment: "left"
 
+# Git Identity
 git:
   userName: "John Doe"
   userEmail: "john.doe@example.com"
 
+# WSL Configuration
 wsl:
   update: true
+  defaultVersion: 2
   distros:
-    - Ubuntu-20.04
+    - name: "Ubuntu-20.04"
+      setupScript: "./files/setup_ubuntu.sh"
 
+# Profiles (Overrides)
 profiles:
   work:
     git:
