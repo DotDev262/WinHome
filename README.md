@@ -1,57 +1,159 @@
-# WinHome
+<div align="center">
+  
+# 🪟 WinHome
 
-WinHome is a declarative, portable, and idempotent Windows environment setup tool. It is inspired by tools like Ansible and Puppet, but with a focus on simplicity and ease of use for a single user's machine.
+<img src="./.github/banner.png" alt="WinHome Banner" width="80%">
 
-## How it works
+A declarative, portable, idempotent **Infrastructure-as-Code tool for Windows**  
+powered by modern, dependency-free, single-file .NET.
 
-WinHome reads a `config.yaml` file that defines the desired state of your system. It then uses a set of services to make your system match that state. It keeps track of the changes it makes in a `winhome.state.json` file, so it can undo them later if you remove them from your config.
+---
 
-## Features
+### 🔰 Project Badges
 
--   **Declarative:** Define your desired state in a single YAML file.
--   **Idempotent:** Running WinHome multiple times with the same config will not cause any changes after the first run.
--   **Package Management:** Install and manage packages from:
-    -   Winget
-    -   Chocolatey
-    -   Scoop
-    -   Mise
--   **Dotfile Management:** Symlink your dotfiles from a central repository.
--   **System Configuration:**
-    -   Apply registry tweaks.
-    -   Set environment variables.
-    -   Configure Git.
-    -   Manage WSL distributions.
--   **Dry Run Mode:** Preview the changes WinHome will make without actually making them.
--   **Profiles:** Define different profiles for different contexts (e.g., work, personal).
+![Release](https://img.shields.io/github/v/release/DotDev262/WinHome?label=latest)
+![Downloads](https://img.shields.io/github/downloads/DotDev262/WinHome/total?color=blue)
+![Stars](https://img.shields.io/github/stars/DotDev262/WinHome?style=social)
+![License](https://img.shields.io/github/license/DotDev262/WinHome)
+![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
+![.NET](https://img.shields.io/badge/.NET-10.0-purple)
+![Build](https://img.shields.io/github/actions/workflow/status/DotDev262/WinHome/release.yaml?label=build)
 
-## Usage
+</div>
 
-```bash
-WinHome.exe [options]
+---
+
+## ⭐ Why WinHome?
+
+I built WinHome to create a **lightweight, dependency-free configuration tool** that runs **natively on Windows** as a **single-file EXE** — no Python, Ruby, or agent installations required.
+
+WinHome focuses on the real needs of **Windows developers**, including:
+
+- First-class **Winget** support  
+- Deep **WSL** provisioning  
+- Native **Registry tweaks** and system settings  
+
+The goal is to make Windows environment automation as simple, fast, and reliable as possible.
+
+---
+
+## 🚀 Installation
+
+WinHome ships as a **self-contained single EXE** (no .NET runtime needed), compatible with all Windows x64 systems.
+
+1. Visit the **Releases Page**
+2. Download **WinHome.exe**
+3. Run it from PowerShell or CMD
+
+### Quick Install (PowerShell)
+
+```powershell
+Invoke-WebRequest -Uri "https://github.com/DotDev262/WinHome/releases/latest/download/WinHome.exe" -OutFile "WinHome.exe"
+````
+
+---
+
+## 🔧 How It Works
+
+WinHome reads a declarative `config.yaml` that defines your desired system state.
+A built-in **Reconciliation Engine** compares it to the live system and ensures everything matches.
+
+* Tracks system state in `winhome.state.json`
+* Detects and corrects configuration drift
+* Fully idempotent — run it once or 100 times: *the result is identical*
+
+---
+
+## ✨ Features
+
+### 📦 Universal Package Management
+
+* Winget
+* Scoop
+* Chocolatey
+* Mise
+
+### 🐧 WSL Management
+
+* Auto-install and configure distros
+* Run post-provision scripts
+* Kernel settings and version management
+
+### 🔗 Dotfiles Sync
+
+### ⚙️ System Configuration
+
+### 🛡️ Safe Dry-Run Mode
+
+### 🔄 Deterministic Idempotency
+
+---
+
+## 🗺️ Roadmap / Planned Features
+
+This roadmap helps collaborators, contributors, and recruiters understand the project’s trajectory.
+
+### 🚧 **v1.1 — Enhanced Windows Integration**
+
+* [ ] Windows Services management
+* [ ] Scheduled Tasks provisioning
+* [ ] Add Chocolatey uninstall support
+
+### 💡 **v1.2 — Developer Workflow Improvements**
+
+* [ ] Automatic VSCode settings & extension sync
+* [ ] Profile-based PATH overrides
+* [ ] GPU acceleration toggle (for WSL)
+
+### 🌀 **v1.3 — Advanced IaC Features**
+
+* [ ] Local & remote module support
+* [ ] State diff viewer (`--diff`)
+* [ ] Resource dependencies (`dependsOn:`)
+
+### 🧪 **Testing & CI**
+
+* [ ] Add code coverage (Coverlet or dotnet-coverage)
+* [ ] Integration tests for WSL installs
+* [ ] Mocked tests for registry operations
+
+### 🌐 **Future Ideas**
+
+* [ ] Windows container support
+* [ ] Hyper-V VM provisioning
+* [ ] GUI mode for non-technical users
+
+**To be continued...** The roadmap is constantly evolving based on user feedback and new Windows capabilities!
+
+---
+
+## 🏗️ Technical Architecture
+
+Built with modern .NET engineering patterns:
+
+* **Dependency Injection** (`Microsoft.Extensions.Hosting`)
+* **Strategy Pattern** across package managers
+* **Testable Core** via abstractions (Registry, FS, Processes)
+* **CI/CD** via GitHub Actions (SingleFile & Native builds)
+
+---
+
+## 📘 Usage
+
+```
+.\WinHome.exe [options]
 ```
 
 ### Options
 
--   `--config <path>`: Path to the YAML configuration file. Defaults to `config.yaml`.
--   `--dry-run, -d`: Preview changes without applying them.
--   `--profile <name>, -p <name>`: Activate a specific profile.
--   `--debug`: Enable verbose logging and configuration validation.
+* `--config <path>`
+* `--dry-run`, `-d`
+* `--profile <name>`
+* `--debug`
 
-## Configuration
+---
 
-The `config.yaml` file has the following sections:
-
--   `version`: The version of the config file format.
--   `apps`: A list of applications to install.
--   `dotfiles`: A list of dotfiles to symlink.
--   `envVars`: A list of environment variables to set.
---  `registryTweaks`: A list of registry tweaks to apply.
--   `systemSettings`: A list of pre-defined system settings to apply.
--   `git`: Your Git user name and email.
--   `wsl`: WSL configuration.
--   `profiles`: A list of profiles that can be activated with the `--profile` option.
-
-### Example `config.yaml`
+## 🧩 Configuration Example (`config.yaml`)
 
 ```yaml
 version: "1.0"
@@ -59,54 +161,49 @@ version: "1.0"
 apps:
   - id: "Microsoft.PowerToys"
     manager: "winget"
-  - id: "7zip.7zip"
-    manager: "winget"
   - id: "neovim"
     manager: "scoop"
   - id: "python@3.10"
     manager: "mise"
 
-# Dotfiles link your local repo files to the system location
 dotfiles:
   - src: "./files/.gitconfig"
     target: "~/.gitconfig"
 
-# Environment Variables (User Level)
 envVars:
-  - variable: "MY_VAR"
-    value: "my_value"
+  - variable: "EDITOR"
+    value: "nvim"
     action: "set"
   - variable: "Path"
     value: "%USERPROFILE%\\bin"
     action: "append"
 
-# Registry Tweaks (Manual)
 registryTweaks:
   - path: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced"
     name: "HideFileExt"
     value: 0
     type: "dword"
 
-# System Settings (Friendly presets)
 systemSettings:
   showFileExtensions: true
   darkMode: true
   taskbarAlignment: "left"
 
-# Git Identity
 git:
   userName: "John Doe"
   userEmail: "john.doe@example.com"
+  settings:
+    "core.editor": "code --wait"
+    "init.defaultBranch": "main"
 
-# WSL Configuration
 wsl:
   update: true
+  defaultDistro: "Debian"
   defaultVersion: 2
   distros:
     - name: "Ubuntu-20.04"
-      setupScript: "./files/setup_ubuntu.sh"
+    - name: "Debian"
 
-# Profiles (Overrides)
 profiles:
   work:
     git:
@@ -114,6 +211,31 @@ profiles:
       userEmail: "john.doe@work.com"
 ```
 
-## State File
+---
 
-WinHome creates a `winhome.state.json` file in the same directory as the executable. This file is used to keep track of the changes WinHome has made to your system. If you remove an application or a registry tweak from your `config.yaml`, WinHome will use the state file to undo the change.
+## 🤝 Contributing
+
+Contributions, discussions, and feature ideas are welcome!
+Please open an Issue or Pull Request on GitHub.
+
+---
+
+## 🙏 This Is Possible Thanks To
+
+WinHome stands on the shoulders of incredible open-source technologies:
+
+* **Microsoft .NET**
+* **Winget / Scoop / Chocolatey / Mise**
+* **YAML**
+* **GitHub Actions**
+* **PowerShell**
+
+And most importantly, the open-source community. ❤️
+
+---
+
+## 📄 License
+
+Released under the **MIT License**.
+
+---
