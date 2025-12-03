@@ -4,17 +4,20 @@ namespace WinHome.Models
 {
     public class Configuration
     {
-        [YamlMember(Alias ="version")]
-        public string Version{get;set;} = "1.0";
+        [YamlMember(Alias = "version")]
+        public string Version { get; set; } = "1.0";
 
-        [YamlMember(Alias ="apps")]
+        [YamlMember(Alias = "apps")]
 
-        public List<AppConfig> Apps {get;set;} = new();
-        [YamlMember(Alias ="registry_tweaks")]
-        public List<RegistryTweak> RegistryTweaks {get;set;} = new();
+        public List<AppConfig> Apps { get; set; } = new();
+        [YamlMember(Alias = "registryTweaks")]
+        public List<RegistryTweak> RegistryTweaks { get; set; } = new();
 
-        [YamlMember(Alias ="dotfiles")]
-        public List<DotfileConfig> Dotfiles {get;set;} = new();
+        [YamlMember(Alias = "dotfiles")]
+        public List<DotfileConfig> Dotfiles { get; set; } = new();
+
+        [YamlMember(Alias = "systemSettings")]
+        public Dictionary<string, object> SystemSettings { get; set; } = new();
     }
 
     public class AppConfig

@@ -2,26 +2,32 @@ using System.Diagnostics;
 using WinHome.Interfaces;
 using WinHome.Models;
 
-namespace WinHome.Services
+namespace WinHome.Services.Managers
 {
-    public class ChocolateyService : IPackageManager
+    public class ScoopService : IPackageManager
     {
+        // CONSTANT: We explicitly target the .cmd shim because UseShellExecute=false
+        // requires the full filename for batch scripts.
+        private const string ScoopExecutable = "scoop.cmd";
+
         public bool IsAvailable()
         {
-            return RunCommand("-v"); // 'choco -v'
+            // Scoop is usually a PowerShell function, but 'scoop.cmd' (shim) usually exists in path
+            return RunCommand("--version"); 
         }
 
         public void Install(AppConfig app)
         {
             if (IsInstalled(app.Id))
             {
-                Console.WriteLine($"[Choco] {app.Id} is already installed.");
+                Console.WriteLine($"[Scoop] {app.Id} is already installed.");
                 return;
             }
 
-            Console.WriteLine($"[Choco] Installing {app.Id}...");
-            // -y checks "yes" to all prompts
-            string args = $"install {app.Id} -y";
+            Console.WriteLine($"[Scoop] Installing {app.Id}...");
+
+            // Scoop doesn't need many flags, it's very quiet by default
+            string args = $"install {app.Id}";
             
             if (RunCommand(args))
                 Console.WriteLine($"[Success] Installed {app.Id}");
@@ -31,8 +37,9 @@ namespace WinHome.Services
 
         public void Uninstall(string appId)
         {
-            Console.WriteLine($"[Choco] Uninstalling {appId}...");
-            string args = $"uninstall {appId} -y";
+            Console.WriteLine($"[Scoop] Uninstalling {appId}...");
+            
+            string args = $"uninstall {appId}";
             
             if (RunCommand(args))
                 Console.WriteLine($"[Success] Uninstalled {appId}");
@@ -42,9 +49,10 @@ namespace WinHome.Services
 
         public bool IsInstalled(string appId)
         {
-            // 'choco list -l -r' returns local packages in a pipe-delimited format
-            // output: 7zip|19.00
-            string output = RunCommandWithOutput($"list -l -r {appId}");
+            // 'scoop list' returns a nice table. 
+            string output = RunCommandWithOutput("list");
+            // We check if the line starts with the ID to avoid partial matches
+            // (e.g. installing 'go' shouldn't match 'google-chrome')
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -52,7 +60,7 @@ namespace WinHome.Services
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "choco",
+                FileName = ScoopExecutable, // FIXED: Changed "scoop" to "scoop.cmd"
                 Arguments = args,
                 UseShellExecute = false,
                 CreateNoWindow = true
@@ -70,7 +78,7 @@ namespace WinHome.Services
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "choco",
+                FileName = ScoopExecutable, // FIXED: Changed "scoop" to "scoop.cmd"
                 Arguments = args,
                 RedirectStandardOutput = true,
                 UseShellExecute = false,

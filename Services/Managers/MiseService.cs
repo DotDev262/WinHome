@@ -2,33 +2,31 @@ using System.Diagnostics;
 using WinHome.Interfaces;
 using WinHome.Models;
 
-namespace WinHome.Services
+namespace WinHome.Services.Managers
 {
-    public class ScoopService : IPackageManager
+    public class MiseService : IPackageManager
     {
-        // CONSTANT: We explicitly target the .cmd shim because UseShellExecute=false
-        // requires the full filename for batch scripts.
-        private const string ScoopExecutable = "scoop.cmd";
+        // On Windows, mise is typically a single binary 'mise.exe'
+        private const string MiseExecutable = "mise";
 
         public bool IsAvailable()
         {
-            // Scoop is usually a PowerShell function, but 'scoop.cmd' (shim) usually exists in path
-            return RunCommand("--version"); 
+            return RunCommand("version");
         }
 
         public void Install(AppConfig app)
         {
             if (IsInstalled(app.Id))
             {
-                Console.WriteLine($"[Scoop] {app.Id} is already installed.");
+                Console.WriteLine($"[Mise] {app.Id} is already set globally.");
                 return;
             }
 
-            Console.WriteLine($"[Scoop] Installing {app.Id}...");
+            Console.WriteLine($"[Mise] Setting global {app.Id}...");
 
-            // Scoop doesn't need many flags, it's very quiet by default
-            string args = $"install {app.Id}";
-            
+            // 'mise use --global' adds it to the global config and installs it if missing
+            string args = $"use --global {app.Id}";
+
             if (RunCommand(args))
                 Console.WriteLine($"[Success] Installed {app.Id}");
             else
@@ -37,22 +35,22 @@ namespace WinHome.Services
 
         public void Uninstall(string appId)
         {
-            Console.WriteLine($"[Scoop] Uninstalling {appId}...");
-            
+            Console.WriteLine($"[Mise] Removing global {appId}...");
+
+            // 'unuse' removes it from the global config
             string args = $"uninstall {appId}";
-            
+
             if (RunCommand(args))
-                Console.WriteLine($"[Success] Uninstalled {appId}");
+                Console.WriteLine($"[Success] Removed {appId}");
             else
-                Console.WriteLine($"[Error] Failed to uninstall {appId}");
+                Console.WriteLine($"[Error] Failed to remove {appId}");
         }
 
         public bool IsInstalled(string appId)
         {
-            // 'scoop list' returns a nice table. 
-            string output = RunCommandWithOutput("list");
-            // We check if the line starts with the ID to avoid partial matches
-            // (e.g. installing 'go' shouldn't match 'google-chrome')
+            // 'mise ls --global --current' lists tools currently active in the global scope
+            // We check if the tool ID appears in the output
+            string output = RunCommandWithOutput("ls --global --current");
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -60,12 +58,12 @@ namespace WinHome.Services
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = ScoopExecutable, // FIXED: Changed "scoop" to "scoop.cmd"
+                FileName = MiseExecutable,
                 Arguments = args,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            try 
+            try
             {
                 using var process = Process.Start(startInfo);
                 process?.WaitForExit();
@@ -78,7 +76,7 @@ namespace WinHome.Services
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = ScoopExecutable, // FIXED: Changed "scoop" to "scoop.cmd"
+                FileName = MiseExecutable,
                 Arguments = args,
                 RedirectStandardOutput = true,
                 UseShellExecute = false,

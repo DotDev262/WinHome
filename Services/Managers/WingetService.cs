@@ -2,30 +2,33 @@ using System.Diagnostics;
 using WinHome.Interfaces;
 using WinHome.Models;
 
-namespace WinHome.Services
+namespace WinHome.Services.Managers
 {
-    public class MiseService : IPackageManager
+    // Now implements the shared interface
+    public class WingetService : IPackageManager
     {
-        // On Windows, mise is typically a single binary 'mise.exe'
-        private const string MiseExecutable = "mise";
-
         public bool IsAvailable()
         {
-            return RunCommand("version");
+            // Simple check to see if winget exists in PATH
+            return RunCommand("--help"); // 'winget --help' returns 0 if valid
         }
 
+        // Rename 'EnsureInstalled' to 'Install' to match interface
         public void Install(AppConfig app)
         {
             if (IsInstalled(app.Id))
             {
-                Console.WriteLine($"[Mise] {app.Id} is already set globally.");
+                Console.WriteLine($"[Winget] {app.Id} is already installed.");
                 return;
             }
 
-            Console.WriteLine($"[Mise] Setting global {app.Id}...");
+            Console.WriteLine($"[Winget] Installing {app.Id}...");
 
-            // 'mise use --global' adds it to the global config and installs it if missing
-            string args = $"use --global {app.Id}";
+            string args = $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements";
+            if (!string.IsNullOrEmpty(app.Source))
+            {
+                args += $" --source {app.Source}";
+            }
 
             if (RunCommand(args))
                 Console.WriteLine($"[Success] Installed {app.Id}");
@@ -35,22 +38,18 @@ namespace WinHome.Services
 
         public void Uninstall(string appId)
         {
-            Console.WriteLine($"[Mise] Removing global {appId}...");
-
-            // 'unuse' removes it from the global config
-            string args = $"uninstall {appId}";
-
+            Console.WriteLine($"[Winget] Uninstalling {appId}...");
+            string args = $"uninstall --id {appId} -e --silent --accept-source-agreements";
+            
             if (RunCommand(args))
-                Console.WriteLine($"[Success] Removed {appId}");
+                Console.WriteLine($"[Success] Uninstalled {appId}");
             else
-                Console.WriteLine($"[Error] Failed to remove {appId}");
+                Console.WriteLine($"[Error] Failed to uninstall {appId}");
         }
 
         public bool IsInstalled(string appId)
         {
-            // 'mise ls --global --current' lists tools currently active in the global scope
-            // We check if the tool ID appears in the output
-            string output = RunCommandWithOutput("ls --global --current");
+            var output = RunCommandWithOutput($"list -q {appId}");
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -58,12 +57,12 @@ namespace WinHome.Services
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = MiseExecutable,
+                FileName = "winget",
                 Arguments = args,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            try
+            try 
             {
                 using var process = Process.Start(startInfo);
                 process?.WaitForExit();
@@ -76,7 +75,7 @@ namespace WinHome.Services
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = MiseExecutable,
+                FileName = "winget",
                 Arguments = args,
                 RedirectStandardOutput = true,
                 UseShellExecute = false,

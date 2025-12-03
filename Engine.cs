@@ -1,26 +1,31 @@
 using System.Text.Json;
 using WinHome.Interfaces;
 using WinHome.Models;
-using WinHome.Services;
+using WinHome.Services.Managers;
+using WinHome.Services.System;
 
 namespace WinHome
 {
     public class Engine
     {
-        // We store our tools in a Dictionary for fast lookup
         private readonly Dictionary<string, IPackageManager> _managers;
-        private const string StateFileName = "winhome.state.json";
         private readonly DotfileService _dotfiles;
+        private readonly RegistryService _registry;
+        private readonly SystemSettingsService _systemSettings; // <--- New Service
+        private const string StateFileName = "winhome.state.json";
+
         public Engine()
         {
-            // Register available managers
             _dotfiles = new DotfileService();
+            _registry = new RegistryService();
+            _systemSettings = new SystemSettingsService(); // <--- Initialize
+
             _managers = new Dictionary<string, IPackageManager>(StringComparer.OrdinalIgnoreCase)
             {
                 { "winget", new WingetService() },
                 { "choco", new ChocolateyService() },
-                {"scoop",new ScoopService() },
-                {"mise", new MiseService()}
+                { "scoop", new ScoopService() },
+                { "mise", new MiseService() }
             };
         }
 
@@ -28,27 +33,49 @@ namespace WinHome
         {
             Console.WriteLine($"--- WinHome v{config.Version} ---");
 
-            // 1. Load State
-            var previousApps = LoadState();
-            var currentApps = config.Apps.Select(a => $"{a.Manager}:{a.Id}").ToHashSet();
+            // 1. Expand Presets into real Registry Tweaks using the Service
+            var presetTweaks = _systemSettings.GetTweaks(config.SystemSettings);
+            
+            // Merge manual tweaks + preset tweaks
+            var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
 
-            // 2. Cleanup (Uninstall removed apps)
-            var appsToRemove = previousApps.Except(currentApps).ToList();
-            if (appsToRemove.Any())
+            // 2. Load Previous State
+            var previousState = LoadState();
+            
+            // 3. Build Current State (Apps + Registry)
+            var currentState = new HashSet<string>();
+            
+            foreach(var app in config.Apps) 
+                currentState.Add($"{app.Manager}:{app.Id}");
+                
+            foreach(var reg in allTweaks)
+                currentState.Add($"reg:{reg.Path}|{reg.Name}");
+
+            // 4. Cleanup (Diffing)
+            var itemsToRemove = previousState.Except(currentState).ToList();
+            if (itemsToRemove.Any())
             {
                 Console.WriteLine("\n--- Cleaning Up ---");
-                foreach (var uniqueId in appsToRemove)
+                foreach (var uniqueId in itemsToRemove)
                 {
-                    // uniqueId format is "manager:appId"
-                    var parts = uniqueId.Split(':', 2);
-                    if (parts.Length == 2 && _managers.TryGetValue(parts[0], out var mgr))
+                    if (uniqueId.StartsWith("reg:"))
                     {
-                        mgr.Uninstall(parts[1]);
+                        var payload = uniqueId.Substring(4);
+                        var parts = payload.Split('|', 2);
+                        if (parts.Length == 2) _registry.Revert(parts[0], parts[1]);
+                    }
+                    else 
+                    {
+                        var parts = uniqueId.Split(':', 2);
+                        if (parts.Length == 2 && _managers.TryGetValue(parts[0], out var mgr))
+                        {
+                            mgr.Uninstall(parts[1]);
+                        }
                     }
                 }
             }
 
-            // 3. Install/Reconcile
+            // 5. Install Apps
             if (config.Apps.Any())
             {
                 Console.WriteLine("\n--- Reconciling Apps ---");
@@ -56,22 +83,34 @@ namespace WinHome
                 {
                     if (_managers.TryGetValue(app.Manager, out var mgr))
                     {
-                        // Optional: Check if the manager (e.g. Choco) is actually installed on the PC first
                         if (!mgr.IsAvailable())
                         {
-                            Console.WriteLine($"[Error] Package manager '{app.Manager}' is not installed on this system.");
+                            Console.WriteLine($"[Error] Manager '{app.Manager}' not found.");
                             continue;
                         }
-
                         mgr.Install(app);
                     }
                     else
                     {
-                        Console.WriteLine($"[Error] Unknown package manager: {app.Manager}");
+                        Console.WriteLine($"[Error] Unknown manager: {app.Manager}");
                     }
                 }
             }
 
+            // 6. Apply Registry Tweaks
+            if (allTweaks.Any())
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    Console.WriteLine("\n--- Applying Registry Tweaks ---");
+                    foreach (var tweak in allTweaks)
+                    {
+                        _registry.Apply(tweak);
+                    }
+                }
+            }
+
+            // 7. Dotfiles
             if (config.Dotfiles.Any())
             {
                 Console.WriteLine("\n--- Linking Dotfiles ---");
@@ -81,19 +120,18 @@ namespace WinHome
                 }
             }
 
-            // 4. Save State
-            SaveState(currentApps);
+            SaveState(currentState);
             Console.WriteLine("\n[State Saved] Configuration synced.");
         }
 
-        private void SaveState(HashSet<string> apps)
+        private void SaveState(HashSet<string> state)
         {
-            try
+            try 
             {
-                string json = JsonSerializer.Serialize(apps, new JsonSerializerOptions { WriteIndented = true });
+                string json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(StateFileName, json);
             }
-            catch (Exception ex)
+            catch (Exception ex) 
             {
                 Console.WriteLine($"[Warning] Could not save state: {ex.Message}");
             }
@@ -101,20 +139,13 @@ namespace WinHome
 
         private HashSet<string> LoadState()
         {
-            if (!File.Exists(StateFileName))
-            {
-                return new HashSet<string>();
-            }
-
-            try
+            if (!File.Exists(StateFileName)) return new HashSet<string>();
+            try 
             {
                 string json = File.ReadAllText(StateFileName);
                 return JsonSerializer.Deserialize<HashSet<string>>(json) ?? new HashSet<string>();
             }
-            catch
-            {
-                return new HashSet<string>();
-            }
+            catch { return new HashSet<string>(); }
         }
     }
 }

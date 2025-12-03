@@ -1,6 +1,6 @@
 using WinHome.Models;
 
-namespace WinHome.Services
+namespace WinHome.Services.System
 {
     public class DotfileService
     {
