@@ -1,8 +1,9 @@
+using WinHome.Interfaces;
 using WinHome.Models;
 
 namespace WinHome.Services.System
 {
-    public class DotfileService
+    public class DotfileService: IDotfileService
     {
         public void Apply(DotfileConfig dotfile, bool dryRun)
         {

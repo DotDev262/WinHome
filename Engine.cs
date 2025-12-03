@@ -1,30 +1,29 @@
 using System.Text.Json;
 using WinHome.Interfaces;
 using WinHome.Models;
-using WinHome.Services.Managers;
-using WinHome.Services.System;
 
 namespace WinHome
 {
     public class Engine
     {
+        // Dependencies are now Interfaces (Mockable)
         private readonly Dictionary<string, IPackageManager> _managers;
-        private readonly DotfileService _dotfiles;
-        private readonly RegistryService _registry;
-        private readonly SystemSettingsService _systemSettings;
-        private readonly WslService _wsl;
-        private readonly GitService _git;
-        private readonly EnvironmentService _env;
+        private readonly IDotfileService _dotfiles;
+        private readonly IRegistryService _registry;
+        private readonly ISystemSettingsService _systemSettings;
+        private readonly IWslService _wsl;
+        private readonly IGitService _git;
+        private readonly IEnvironmentService _env;
         private const string StateFileName = "winhome.state.json";
 
         public Engine(
             Dictionary<string, IPackageManager> managers,
-            DotfileService dotfiles,
-            RegistryService registry,
-            SystemSettingsService systemSettings,
-            WslService wsl,
-            GitService git,
-            EnvironmentService env)
+            IDotfileService dotfiles,
+            IRegistryService registry,
+            ISystemSettingsService systemSettings,
+            IWslService wsl,
+            IGitService git,
+            IEnvironmentService env)
         {
             _managers = managers;
             _dotfiles = dotfiles;
@@ -35,7 +34,6 @@ namespace WinHome
             _env = env;
         }
 
-        
         public void Run(Configuration config, bool dryRun, string? profileName = null, bool debug = false)
         {
             Console.WriteLine($"--- WinHome v{config.Version} ---");
@@ -56,6 +54,7 @@ namespace WinHome
                 }
             }
 
+            // Interface Calls (Mockable)
             var presetTweaks = _systemSettings.GetTweaks(config.SystemSettings);
             var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
             
@@ -65,6 +64,7 @@ namespace WinHome
             foreach(var app in config.Apps) currentState.Add($"{app.Manager}:{app.Id}");
             foreach(var reg in allTweaks) currentState.Add($"reg:{reg.Path}|{reg.Name}");
 
+            // Cleanup
             var itemsToRemove = previousState.Except(currentState).ToList();
             if (itemsToRemove.Any())
             {
@@ -87,6 +87,7 @@ namespace WinHome
                 }
             }
 
+            // Install Apps
             if (config.Apps.Any())
             {
                 Console.WriteLine("\n--- Reconciling Apps ---");
@@ -109,11 +110,13 @@ namespace WinHome
             }
 
             if (config.Git != null) _git.Configure(config.Git, dryRun);
+            
             if (config.Wsl != null) 
             {
                 Console.WriteLine("\n--- Configuring WSL ---");
                 _wsl.Configure(config.Wsl, dryRun);
             }
+            
             if (config.EnvVars.Any())
             {
                 Console.WriteLine("\n--- Configuring Environment Variables ---");

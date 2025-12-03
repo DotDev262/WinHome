@@ -1,10 +1,11 @@
 using System.Runtime.Versioning;
+using WinHome.Interfaces;
 using WinHome.Models;
 
 namespace WinHome.Services.System
 {
     [SupportedOSPlatform("windows")]
-    public class EnvironmentService
+    public class EnvironmentService : IEnvironmentService
     {
         // We strictly target the USER scope. No Admin needed.
         private const EnvironmentVariableTarget Target = EnvironmentVariableTarget.User;

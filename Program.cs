@@ -27,6 +27,12 @@ class Program
                 services.AddSingleton<ChocolateyService>();
                 services.AddSingleton<ScoopService>();
                 services.AddSingleton<MiseService>();
+                services.AddSingleton<IDotfileService, DotfileService>();
+                services.AddSingleton<IRegistryService, RegistryService>();
+                services.AddSingleton<ISystemSettingsService, SystemSettingsService>();
+                services.AddSingleton<IWslService, WslService>();
+                services.AddSingleton<IGitService, GitService>();
+                services.AddSingleton<IEnvironmentService, EnvironmentService>();
 
                 services.AddSingleton<Dictionary<string, IPackageManager>>(sp => new()
                 {

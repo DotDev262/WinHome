@@ -1,9 +1,10 @@
 using System.Diagnostics;
+using WinHome.Interfaces;
 using WinHome.Models;
 
 namespace WinHome.Services.System
 {
-    public class GitService
+    public class GitService : IGitService
     {
         public void Configure(GitConfig config, bool dryRun)
         {

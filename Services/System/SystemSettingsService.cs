@@ -1,8 +1,9 @@
+using WinHome.Interfaces;
 using WinHome.Models;
 
 namespace WinHome.Services.System
 {
-    public class SystemSettingsService
+    public class SystemSettingsService : ISystemSettingsService
     {
         private record SettingDefinition(
             string SettingKey,

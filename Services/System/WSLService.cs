@@ -1,9 +1,10 @@
 using System.Diagnostics;
+using WinHome.Interfaces;
 using WinHome.Models;
 
 namespace WinHome.Services.System
 {
-    public class WslService
+    public class WslService:IWslService
     {
         public void Configure(WslConfig config, bool dryRun)
         {

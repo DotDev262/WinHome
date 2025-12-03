@@ -1,11 +1,12 @@
 using Microsoft.Win32;
 using System.Runtime.Versioning;
+using WinHome.Interfaces;
 using WinHome.Models;
 
 namespace WinHome.Services.System
 {
     [SupportedOSPlatform("windows")]
-    public class RegistryService
+    public class RegistryService: IRegistryService
     {
         public void Apply(RegistryTweak tweak, bool dryRun)
         {
