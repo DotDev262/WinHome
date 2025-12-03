@@ -1,0 +1,39 @@
+name: Build and Release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x # Uses the version matching your csproj
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Run Tests
+      # We run tests before building the release to ensure quality
+      run: dotnet test --no-restore --verbosity normal
+
+    - name: Publish WinHome (Single File)
+      # This compiles the standalone .exe
+      run: dotnet publish WinHome.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true -o ./publish
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./publish/WinHome.exe
+        draft: false
+        prerelease: false
+        generate_release_notes: true
