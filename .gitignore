@@ -7,3 +7,4 @@ appsettings.Development.json
 # WinHome Specific
 winhome.state.json
 config.yaml
+files/

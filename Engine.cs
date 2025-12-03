@@ -10,10 +10,11 @@ namespace WinHome
         // We store our tools in a Dictionary for fast lookup
         private readonly Dictionary<string, IPackageManager> _managers;
         private const string StateFileName = "winhome.state.json";
-
+        private readonly DotfileService _dotfiles;
         public Engine()
         {
             // Register available managers
+            _dotfiles = new DotfileService();
             _managers = new Dictionary<string, IPackageManager>(StringComparer.OrdinalIgnoreCase)
             {
                 { "winget", new WingetService() },
@@ -68,6 +69,15 @@ namespace WinHome
                     {
                         Console.WriteLine($"[Error] Unknown package manager: {app.Manager}");
                     }
+                }
+            }
+
+            if (config.Dotfiles.Any())
+            {
+                Console.WriteLine("\n--- Linking Dotfiles ---");
+                foreach (var dotfile in config.Dotfiles)
+                {
+                    _dotfiles.Apply(dotfile);
                 }
             }
 
