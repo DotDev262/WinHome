@@ -21,6 +21,12 @@ namespace WinHome.Models
 
         [YamlMember(Alias = "wsl")]
         public WslConfig? Wsl { get; set; }
+
+        [YamlMember(Alias = "git")]
+        public GitConfig? Git { get; set; }
+
+        [YamlMember(Alias = "profiles")]
+        public Dictionary<string, ProfileConfig> Profiles { get; set; } = new();
     }
 
     public class AppConfig
@@ -82,5 +88,34 @@ namespace WinHome.Models
 
         [YamlMember(Alias = "setupScript")]
         public string? SetupScript { get; set; }
+    }
+
+     public class GitConfig
+    {
+        // Convenience properties (Common stuff)
+        [YamlMember(Alias = "userName")]
+        public string? UserName { get; set; }
+
+        [YamlMember(Alias = "userEmail")]
+        public string? UserEmail { get; set; }
+
+        [YamlMember(Alias = "signingKey")]
+        public string? SigningKey { get; set; }
+
+        [YamlMember(Alias = "commitGpgSign")]
+        public bool? CommitGpgSign { get; set; }
+
+        // NEW: Generic Dictionary for EVERYTHING else
+        // Maps "core.editor" -> "code --wait"
+        [YamlMember(Alias = "settings")]
+        public Dictionary<string, string> Settings { get; set; } = new();
+    }
+
+     public class ProfileConfig
+    {
+        [YamlMember(Alias = "git")]
+        public GitConfig? Git { get; set; }
+        
+        // You can add 'Apps' or 'SystemSettings' here later if you want profile-specific apps
     }
 }

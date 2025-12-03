@@ -13,6 +13,7 @@ namespace WinHome
         private readonly RegistryService _registry;
         private readonly SystemSettingsService _systemSettings;
         private readonly WslService _wsl;
+        private readonly GitService _git; // 1. Define Service
         private const string StateFileName = "winhome.state.json";
 
         public Engine()
@@ -21,6 +22,7 @@ namespace WinHome
             _registry = new RegistryService();
             _systemSettings = new SystemSettingsService();
             _wsl = new WslService();
+            _git = new GitService(); // 2. Initialize Service
 
             _managers = new Dictionary<string, IPackageManager>(StringComparer.OrdinalIgnoreCase)
             {
@@ -31,9 +33,33 @@ namespace WinHome
             };
         }
 
-        public void Run(Configuration config, bool dryRun)
+        // UPDATED: Accept profileName (nullable)
+        public void Run(Configuration config, bool dryRun, string? profileName = null)
         {
             Console.WriteLine($"--- WinHome v{config.Version} ---");
+
+            // 1. Profile Application (The --work thing)
+            if (!string.IsNullOrEmpty(profileName))
+            {
+                if (config.Profiles != null && config.Profiles.TryGetValue(profileName, out var profile))
+                {
+                    Console.WriteLine($"\n[Profile] Activating '{profileName}'...");
+                    
+                    // Override Git Config if present in profile
+                    if (profile.Git != null)
+                    {
+                        Console.WriteLine($"[Profile] Overriding Git configuration with '{profileName}' settings.");
+                        config.Git = profile.Git;
+                    }
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"[Error] Profile '{profileName}' not found in configuration.");
+                    Console.ResetColor();
+                    if (!dryRun) return; // Stop if profile is missing (unless dry run)
+                }
+            }
 
             var presetTweaks = _systemSettings.GetTweaks(config.SystemSettings);
             var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
@@ -47,7 +73,7 @@ namespace WinHome
             foreach(var reg in allTweaks)
                 currentState.Add($"reg:{reg.Path}|{reg.Name}");
 
-            // 1. Cleanup
+            // 2. Cleanup
             var itemsToRemove = previousState.Except(currentState).ToList();
             if (itemsToRemove.Any())
             {
@@ -71,7 +97,7 @@ namespace WinHome
                 }
             }
 
-            // 2. Install Apps
+            // 3. Install Apps
             if (config.Apps.Any())
             {
                 Console.WriteLine("\n--- Reconciling Apps ---");
@@ -93,14 +119,21 @@ namespace WinHome
                 }
             }
 
-            // 3. Configure WSL (This was missing!)
+            // 4. Configure Git
+            if (config.Git != null)
+            {
+                Console.WriteLine("\n--- Configuring Git ---");
+                _git.Configure(config.Git, dryRun);
+            }
+
+            // 5. Configure WSL
             if (config.Wsl != null)
             {
                 Console.WriteLine("\n--- Configuring WSL ---");
                 _wsl.Configure(config.Wsl, dryRun);
             }
 
-            // 4. Registry Tweaks
+            // 6. Registry Tweaks
             if (allTweaks.Any())
             {
                 if (OperatingSystem.IsWindows())
@@ -113,7 +146,7 @@ namespace WinHome
                 }
             }
 
-            // 5. Dotfiles
+            // 7. Dotfiles
             if (config.Dotfiles.Any())
             {
                 Console.WriteLine("\n--- Linking Dotfiles ---");

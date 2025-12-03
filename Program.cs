@@ -8,12 +8,14 @@ class Program
 {
     static async Task<int> Main(string[] args)
     {
+        // 1. Config File Option
         var configOption = new Option<FileInfo>("--config")
         {
             Description = "Path to the YAML configuration file",
             DefaultValueFactory = _ => new FileInfo("config.yaml") 
         };
 
+        // 2. Dry Run Option
         var dryRunOption = new Option<bool>("--dry-run")
         {
             Description = "Preview changes without applying them",
@@ -21,22 +23,33 @@ class Program
         };
         dryRunOption.Aliases.Add("-d");
 
+        // 3. Profile Option (e.g. --profile work)
+        var profileOption = new Option<string?>("--profile")
+        {
+            Description = "Activate a specific profile (e.g. work, personal)",
+            DefaultValueFactory = _ => null
+        };
+        profileOption.Aliases.Add("-p");
+
+        // Setup Root Command
         var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
         rootCommand.Options.Add(configOption);
         rootCommand.Options.Add(dryRunOption);
+        rootCommand.Options.Add(profileOption);
 
         rootCommand.SetAction((ParseResult result) => 
         {
             FileInfo file = result.GetValue(configOption)!;
             bool dryRun = result.GetValue(dryRunOption);
+            string? profile = result.GetValue(profileOption);
             
-            RunApp(file, dryRun);
+            RunApp(file, dryRun, profile);
         });
 
         return await rootCommand.Parse(args).InvokeAsync();
     }
 
-    static void RunApp(FileInfo file, bool dryRun)
+    static void RunApp(FileInfo file, bool dryRun, string? profile)
     {
         if (!file.Exists)
         {
@@ -60,13 +73,14 @@ class Program
             var yamlText = File.ReadAllText(file.FullName);
             
             var deserializer = new DeserializerBuilder()
-                .IgnoreUnmatchedProperties()
+                .IgnoreUnmatchedProperties() // Makes it robust against minor schema mismatches
                 .Build();
 
             var config = deserializer.Deserialize<Configuration>(yamlText);
             
+            // Initialize and Run Engine
             var engine = new Engine();
-            engine.Run(config, dryRun);
+            engine.Run(config, dryRun, profile);
         }
         catch (Exception ex)
         {
