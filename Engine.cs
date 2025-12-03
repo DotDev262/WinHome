@@ -14,32 +14,38 @@ namespace WinHome
         private readonly SystemSettingsService _systemSettings;
         private readonly WslService _wsl;
         private readonly GitService _git;
-        private readonly EnvironmentService _env; // Service Definition
+        private readonly EnvironmentService _env;
         private const string StateFileName = "winhome.state.json";
 
-        public Engine()
+        
+        
+        public Engine(
+            Dictionary<string, IPackageManager> managers,
+            DotfileService dotfiles,
+            RegistryService registry,
+            SystemSettingsService systemSettings,
+            WslService wsl,
+            GitService git,
+            EnvironmentService env)
         {
-            _dotfiles = new DotfileService();
-            _registry = new RegistryService();
-            _systemSettings = new SystemSettingsService();
-            _wsl = new WslService();
-            _git = new GitService();
-            _env = new EnvironmentService(); // Initialization
-
-            _managers = new Dictionary<string, IPackageManager>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "winget", new WingetService() },
-                { "choco", new ChocolateyService() },
-                { "scoop", new ScoopService() },
-                { "mise", new MiseService() }
-            };
+            _managers = managers;
+            _dotfiles = dotfiles;
+            _registry = registry;
+            _systemSettings = systemSettings;
+            _wsl = wsl;
+            _git = git;
+            _env = env;
         }
 
         public void Run(Configuration config, bool dryRun, string? profileName = null)
         {
             Console.WriteLine($"--- WinHome v{config.Version} ---");
 
-            // 1. Profile Overrides
+            
+            
+            
+            
+            
             if (!string.IsNullOrEmpty(profileName))
             {
                 if (config.Profiles != null && config.Profiles.TryGetValue(profileName, out var profile))
@@ -56,18 +62,16 @@ namespace WinHome
                 }
             }
 
-            // 2. Prepare Registry Tweaks (Manual + System Settings)
             var presetTweaks = _systemSettings.GetTweaks(config.SystemSettings);
             var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
             
-            // 3. State Management Setup
             var previousState = LoadState();
             var currentState = new HashSet<string>();
             
             foreach(var app in config.Apps) currentState.Add($"{app.Manager}:{app.Id}");
             foreach(var reg in allTweaks) currentState.Add($"reg:{reg.Path}|{reg.Name}");
 
-            // 4. Cleanup Phase (Uninstall/Revert)
+            
             var itemsToRemove = previousState.Except(currentState).ToList();
             if (itemsToRemove.Any())
             {
@@ -76,8 +80,7 @@ namespace WinHome
                 {
                     if (uniqueId.StartsWith("reg:"))
                     {
-                        var payload = uniqueId.Substring(4);
-                        var parts = payload.Split('|', 2);
+                        var parts = uniqueId.Substring(4).Split('|', 2);
                         if (parts.Length == 2) _registry.Revert(parts[0], parts[1], dryRun);
                     }
                     else 
@@ -91,7 +94,7 @@ namespace WinHome
                 }
             }
 
-            // 5. Install Apps
+            
             if (config.Apps.Any())
             {
                 Console.WriteLine("\n--- Reconciling Apps ---");
@@ -113,54 +116,33 @@ namespace WinHome
                 }
             }
 
-            // 6. Configure Git
-            if (config.Git != null)
-            {
-                // Ensure this block appears only ONCE
-                _git.Configure(config.Git, dryRun);
-            }
-
-            // 7. Configure WSL
-            if (config.Wsl != null)
+            
+            if (config.Git != null) _git.Configure(config.Git, dryRun);
+            if (config.Wsl != null) 
             {
                 Console.WriteLine("\n--- Configuring WSL ---");
                 _wsl.Configure(config.Wsl, dryRun);
             }
-
-            // 8. Configure Environment Variables (This was missing in output)
             if (config.EnvVars.Any())
             {
                 Console.WriteLine("\n--- Configuring Environment Variables ---");
-                foreach (var env in config.EnvVars)
-                {
-                    _env.Apply(env, dryRun);
-                }
+                foreach (var env in config.EnvVars) _env.Apply(env, dryRun);
             }
 
-            // 9. Registry Tweaks
-            if (allTweaks.Any())
+            
+            if (allTweaks.Any() && OperatingSystem.IsWindows())
             {
-                if (OperatingSystem.IsWindows())
-                {
-                    Console.WriteLine("\n--- Applying Registry Tweaks ---");
-                    foreach (var tweak in allTweaks)
-                    {
-                        _registry.Apply(tweak, dryRun);
-                    }
-                }
+                Console.WriteLine("\n--- Applying Registry Tweaks ---");
+                foreach (var tweak in allTweaks) _registry.Apply(tweak, dryRun);
             }
 
-            // 10. Dotfiles
+            
             if (config.Dotfiles.Any())
             {
                 Console.WriteLine("\n--- Linking Dotfiles ---");
-                foreach (var dotfile in config.Dotfiles)
-                {
-                    _dotfiles.Apply(dotfile, dryRun);
-                }
+                foreach (var dotfile in config.Dotfiles) _dotfiles.Apply(dotfile, dryRun);
             }
 
-            // Final: Save State
             if (!dryRun)
             {
                 SaveState(currentState);

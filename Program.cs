@@ -1,21 +1,58 @@
-﻿using System.CommandLine;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System.CommandLine;
 using System.CommandLine.Parsing;
 using WinHome;
+using WinHome.Interfaces;
 using WinHome.Models;
+using WinHome.Services.Managers;
+using WinHome.Services.System;
 using YamlDotNet.Serialization;
 
 class Program
 {
     static async Task<int> Main(string[] args)
     {
-        // 1. Config File Option
+        
+        using IHost host = Host.CreateDefaultBuilder(args)
+            .ConfigureServices((_, services) =>
+            {
+                
+                services.AddSingleton<Engine>();
+
+                
+                services.AddSingleton<DotfileService>();
+                services.AddSingleton<RegistryService>();
+                services.AddSingleton<SystemSettingsService>();
+                services.AddSingleton<WslService>();
+                services.AddSingleton<GitService>();
+                services.AddSingleton<EnvironmentService>();
+
+                
+                services.AddSingleton<WingetService>();
+                services.AddSingleton<ChocolateyService>();
+                services.AddSingleton<ScoopService>();
+                services.AddSingleton<MiseService>();
+
+                
+                
+                services.AddSingleton<Dictionary<string, IPackageManager>>(sp => new()
+                {
+                    { "winget", sp.GetRequiredService<WingetService>() },
+                    { "choco", sp.GetRequiredService<ChocolateyService>() },
+                    { "scoop", sp.GetRequiredService<ScoopService>() },
+                    { "mise", sp.GetRequiredService<MiseService>() }
+                });
+            })
+            .Build();
+
+        
         var configOption = new Option<FileInfo>("--config")
         {
             Description = "Path to the YAML configuration file",
             DefaultValueFactory = _ => new FileInfo("config.yaml") 
         };
 
-        // 2. Dry Run Option
         var dryRunOption = new Option<bool>("--dry-run")
         {
             Description = "Preview changes without applying them",
@@ -23,7 +60,6 @@ class Program
         };
         dryRunOption.Aliases.Add("-d");
 
-        // 3. Profile Option (e.g. --profile work)
         var profileOption = new Option<string?>("--profile")
         {
             Description = "Activate a specific profile (e.g. work, personal)",
@@ -31,7 +67,6 @@ class Program
         };
         profileOption.Aliases.Add("-p");
 
-        // Setup Root Command
         var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
         rootCommand.Options.Add(configOption);
         rootCommand.Options.Add(dryRunOption);
@@ -43,13 +78,16 @@ class Program
             bool dryRun = result.GetValue(dryRunOption);
             string? profile = result.GetValue(profileOption);
             
-            RunApp(file, dryRun, profile);
+            
+            var engine = host.Services.GetRequiredService<Engine>();
+            
+            RunApp(engine, file, dryRun, profile);
         });
 
         return await rootCommand.Parse(args).InvokeAsync();
     }
 
-    static void RunApp(FileInfo file, bool dryRun, string? profile)
+    static void RunApp(Engine engine, FileInfo file, bool dryRun, string? profile)
     {
         if (!file.Exists)
         {
@@ -73,13 +111,12 @@ class Program
             var yamlText = File.ReadAllText(file.FullName);
             
             var deserializer = new DeserializerBuilder()
-                .IgnoreUnmatchedProperties() // Makes it robust against minor schema mismatches
+                .IgnoreUnmatchedProperties()
                 .Build();
 
             var config = deserializer.Deserialize<Configuration>(yamlText);
             
-            // Initialize and Run Engine
-            var engine = new Engine();
+            
             engine.Run(config, dryRun, profile);
         }
         catch (Exception ex)
