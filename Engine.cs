@@ -17,8 +17,6 @@ namespace WinHome
         private readonly EnvironmentService _env;
         private const string StateFileName = "winhome.state.json";
 
-        
-        
         public Engine(
             Dictionary<string, IPackageManager> managers,
             DotfileService dotfiles,
@@ -37,15 +35,11 @@ namespace WinHome
             _env = env;
         }
 
-        public void Run(Configuration config, bool dryRun, string? profileName = null)
+        
+        public void Run(Configuration config, bool dryRun, string? profileName = null, bool debug = false)
         {
             Console.WriteLine($"--- WinHome v{config.Version} ---");
 
-            
-            
-            
-            
-            
             if (!string.IsNullOrEmpty(profileName))
             {
                 if (config.Profiles != null && config.Profiles.TryGetValue(profileName, out var profile))
@@ -71,7 +65,6 @@ namespace WinHome
             foreach(var app in config.Apps) currentState.Add($"{app.Manager}:{app.Id}");
             foreach(var reg in allTweaks) currentState.Add($"reg:{reg.Path}|{reg.Name}");
 
-            
             var itemsToRemove = previousState.Except(currentState).ToList();
             if (itemsToRemove.Any())
             {
@@ -94,7 +87,6 @@ namespace WinHome
                 }
             }
 
-            
             if (config.Apps.Any())
             {
                 Console.WriteLine("\n--- Reconciling Apps ---");
@@ -116,7 +108,6 @@ namespace WinHome
                 }
             }
 
-            
             if (config.Git != null) _git.Configure(config.Git, dryRun);
             if (config.Wsl != null) 
             {
@@ -129,14 +120,12 @@ namespace WinHome
                 foreach (var env in config.EnvVars) _env.Apply(env, dryRun);
             }
 
-            
             if (allTweaks.Any() && OperatingSystem.IsWindows())
             {
                 Console.WriteLine("\n--- Applying Registry Tweaks ---");
                 foreach (var tweak in allTweaks) _registry.Apply(tweak, dryRun);
             }
 
-            
             if (config.Dotfiles.Any())
             {
                 Console.WriteLine("\n--- Linking Dotfiles ---");
