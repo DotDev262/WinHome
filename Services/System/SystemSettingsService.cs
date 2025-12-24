@@ -58,37 +58,40 @@ namespace WinHome.Services.System
             
         };
 
-        public IEnumerable<RegistryTweak> GetTweaks(Dictionary<string, object> settings)
+        public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object> settings)
         {
-            var tweaks = new List<RegistryTweak>();
-            if (settings == null) return tweaks;
-
-            foreach (var userSetting in settings)
+            return await Task.Run(() =>
             {
-                string key = userSetting.Key.ToLower();
-                string val = userSetting.Value.ToString()?.ToLower() ?? "";
+                var tweaks = new List<RegistryTweak>();
+                if (settings == null) return tweaks;
 
-                var matches = _catalog.Where(d => d.SettingKey == key);
-
-                foreach (var def in matches)
+                foreach (var userSetting in settings)
                 {
-                    if (def.ValueMap.TryGetValue(val, out object? regValue))
+                    string key = userSetting.Key.ToLower();
+                    string val = userSetting.Value.ToString()?.ToLower() ?? "";
+
+                    var matches = _catalog.Where(d => d.SettingKey == key);
+
+                    foreach (var def in matches)
                     {
-                        tweaks.Add(new RegistryTweak 
-                        { 
-                            Path = def.RegistryPath, 
-                            Name = def.RegistryName, 
-                            Value = regValue, 
-                            Type = def.RegistryType 
-                        });
-                    }
-                    else
-                    {
-                        Console.WriteLine($"[Warning] Invalid value '{val}' for setting '{key}'. Allowed: {string.Join(", ", def.ValueMap.Keys)}");
+                        if (def.ValueMap.TryGetValue(val, out object? regValue))
+                        {
+                            tweaks.Add(new RegistryTweak
+                            {
+                                Path = def.RegistryPath,
+                                Name = def.RegistryName,
+                                Value = regValue,
+                                Type = def.RegistryType
+                            });
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[Warning] Invalid value '{val}' for setting '{key}'. Allowed: {string.Join(", ", def.ValueMap.Keys)}");
+                        }
                     }
                 }
-            }
-            return tweaks;
+                return tweaks;
+            });
         }
     }
 }

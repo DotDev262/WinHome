@@ -29,8 +29,8 @@ namespace WinHome.Tests
 
             // Setup basic behavior
             _mockWinget.Setup(x => x.IsAvailable()).Returns(true);
-            _mockSystemSettings.Setup(x => x.GetTweaks(It.IsAny<Dictionary<string, object>>()))
-                               .Returns(new List<RegistryTweak>());
+            _mockSystemSettings.Setup(x => x.GetTweaksAsync(It.IsAny<Dictionary<string, object>>()))
+                               .Returns(Task.FromResult<IEnumerable<RegistryTweak>>(new List<RegistryTweak>()));
 
             // 2. Setup Manager Dictionary
             _managers = new Dictionary<string, IPackageManager>
@@ -40,7 +40,7 @@ namespace WinHome.Tests
         }
 
         [Fact]
-        public void Run_ShouldInstallApps_WhenConfigured()
+        public async Task RunAsync_ShouldInstallApps_WhenConfigured()
         {
             // Arrange
             var config = new Configuration();
@@ -58,7 +58,7 @@ namespace WinHome.Tests
 
             // Act
             // dryRun = false
-            engine.Run(config, false);
+            await engine.RunAsync(config, false);
 
             // Assert
             // Verify that Install was called exactly once for "TestApp"
@@ -69,7 +69,7 @@ namespace WinHome.Tests
         }
 
         [Fact]
-        public void Run_DryRun_ShouldPassFlagToService()
+        public async Task RunAsync_DryRun_ShouldPassFlagToService()
         {
             // Arrange
             var config = new Configuration();
@@ -87,7 +87,7 @@ namespace WinHome.Tests
 
             // Act
             // dryRun = TRUE
-            engine.Run(config, true);
+            await engine.RunAsync(config, true);
 
             // Assert
             // Verify that Install was called with dryRun = true

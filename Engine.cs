@@ -15,6 +15,7 @@ namespace WinHome
         private readonly IGitService _git;
         private readonly IEnvironmentService _env;
         private const string StateFileName = "winhome.state.json";
+        private readonly object _consoleLock = new();
 
         public Engine(
             Dictionary<string, IPackageManager> managers,
@@ -34,7 +35,7 @@ namespace WinHome
             _env = env;
         }
 
-        public void Run(Configuration config, bool dryRun, string? profileName = null, bool debug = false)
+        public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false)
         {
             Console.WriteLine($"--- WinHome v{config.Version} ---");
 
@@ -55,7 +56,7 @@ namespace WinHome
             }
 
             // Interface Calls (Mockable)
-            var presetTweaks = _systemSettings.GetTweaks(config.SystemSettings);
+            var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
             var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
             
             var previousState = LoadState();
@@ -69,7 +70,7 @@ namespace WinHome
             if (itemsToRemove.Any())
             {
                 Console.WriteLine("\n--- Cleaning Up ---");
-                foreach (var uniqueId in itemsToRemove)
+                await Task.Run(() => Parallel.ForEach(itemsToRemove, uniqueId =>
                 {
                     if (uniqueId.StartsWith("reg:"))
                     {
@@ -84,29 +85,35 @@ namespace WinHome
                             mgr.Uninstall(parts[1], dryRun);
                         }
                     }
-                }
+                }));
             }
 
             // Install Apps
             if (config.Apps.Any())
             {
                 Console.WriteLine("\n--- Reconciling Apps ---");
-                foreach (var app in config.Apps)
+                await Task.Run(() => Parallel.ForEach(config.Apps, app =>
                 {
                     if (_managers.TryGetValue(app.Manager, out var mgr))
                     {
                         if (!mgr.IsAvailable())
                         {
-                            Console.WriteLine($"[Error] Manager '{app.Manager}' not found.");
-                            continue;
+                            lock(_consoleLock)
+                            {
+                                Console.WriteLine($"[Error] Manager '{app.Manager}' not found.");
+                            }
+                            return;
                         }
                         mgr.Install(app, dryRun);
                     }
                     else
                     {
-                        Console.WriteLine($"[Error] Unknown manager: {app.Manager}");
+                        lock(_consoleLock)
+                        {
+                            Console.WriteLine($"[Error] Unknown manager: {app.Manager}");
+                        }
                     }
-                }
+                }));
             }
 
             if (config.Git != null) _git.Configure(config.Git, dryRun);
@@ -120,19 +127,19 @@ namespace WinHome
             if (config.EnvVars.Any())
             {
                 Console.WriteLine("\n--- Configuring Environment Variables ---");
-                foreach (var env in config.EnvVars) _env.Apply(env, dryRun);
+                await Task.Run(() => Parallel.ForEach(config.EnvVars, env => _env.Apply(env, dryRun)));
             }
 
             if (allTweaks.Any() && OperatingSystem.IsWindows())
             {
                 Console.WriteLine("\n--- Applying Registry Tweaks ---");
-                foreach (var tweak in allTweaks) _registry.Apply(tweak, dryRun);
+                await Task.Run(() => Parallel.ForEach(allTweaks, tweak => _registry.Apply(tweak, dryRun)));
             }
 
             if (config.Dotfiles.Any())
             {
                 Console.WriteLine("\n--- Linking Dotfiles ---");
-                foreach (var dotfile in config.Dotfiles) _dotfiles.Apply(dotfile, dryRun);
+                await Task.Run(() => Parallel.ForEach(config.Dotfiles, dotfile => _dotfiles.Apply(dotfile, dryRun)));
             }
 
             if (!dryRun)
