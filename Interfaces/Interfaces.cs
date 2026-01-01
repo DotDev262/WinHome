@@ -42,4 +42,10 @@ namespace WinHome.Interfaces
     {
         void Apply(EnvVarConfig env, bool dryRun);
     }
+
+    public interface IProcessRunner
+    {
+        bool RunCommand(string fileName, string args, bool dryRun);
+        string RunCommandWithOutput(string fileName, string args);
+    }
 }

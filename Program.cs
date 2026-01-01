@@ -1,43 +1,71 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System.CommandLine;
-using System.CommandLine.Parsing;
-using WinHome;
-using WinHome.Interfaces;
-using WinHome.Models;
-using WinHome.Services.Managers;
-using WinHome.Services.System;
-using YamlDotNet.Serialization;
+﻿using Microsoft.Extensions.Hosting;
+﻿using System.CommandLine;
+﻿using System.CommandLine.Parsing;
+﻿using WinHome;
+﻿using WinHome.Interfaces;
+﻿using WinHome.Models;
+﻿using WinHome.Services.Managers;
+﻿using WinHome.Services.System;
+﻿using YamlDotNet.Serialization;
 ﻿
 ﻿class Program
+﻿
 ﻿{
+﻿
 ﻿    static async Task<int> Main(string[] args)
+﻿
 ﻿    {
+﻿
 ﻿        using IHost host = Host.CreateDefaultBuilder(args)
+﻿
 ﻿            .ConfigureServices((_, services) =>
+﻿
 ﻿            {
+﻿
 ﻿                services.AddSingleton<Engine>();
+﻿
 ﻿                services.AddSingleton<DotfileService>();
+﻿
 ﻿                services.AddSingleton<RegistryService>();
+﻿
 ﻿                services.AddSingleton<SystemSettingsService>();
+﻿
 ﻿                services.AddSingleton<WslService>();
-﻿                services.AddSingleton<GitService>();
-﻿                services.AddSingleton<EnvironmentService>();
-﻿                services.AddSingleton<WingetService>();
-﻿                services.AddSingleton<ChocolateyService>();
-﻿                services.AddSingleton<ScoopService>();
-﻿                services.AddSingleton<MiseService>();
-﻿                services.AddSingleton<IDotfileService, DotfileService>();
-﻿                services.AddSingleton<IRegistryService, RegistryService>();
-﻿                services.AddSingleton<ISystemSettingsService, SystemSettingsService>();
-﻿                services.AddSingleton<IWslService, WslService>();
-﻿                services.AddSingleton<IGitService, GitService>();
-﻿                services.AddSingleton<IEnvironmentService, EnvironmentService>();
+﻿
+﻿                                services.AddSingleton<GitService>();
+﻿
+﻿                ﻿                services.AddSingleton<EnvironmentService>();
+﻿
+﻿                ﻿                services.AddSingleton<WingetService>(sp => new WingetService(sp.GetRequiredService<IProcessRunner>()));
+﻿
+﻿                ﻿                services.AddSingleton<ChocolateyService>(sp => new ChocolateyService(sp.GetRequiredService<IProcessRunner>()));
+﻿
+﻿                ﻿                services.AddSingleton<ScoopService>(sp => new ScoopService(sp.GetRequiredService<IProcessRunner>()));
+﻿
+﻿                ﻿                services.AddSingleton<MiseService>(sp => new MiseService(sp.GetRequiredService<IProcessRunner>()));
+﻿
+﻿                ﻿                services.AddSingleton<IDotfileService, DotfileService>();
+﻿
+﻿                ﻿                services.AddSingleton<IRegistryService, RegistryService>();
+﻿
+﻿                ﻿                services.AddSingleton<ISystemSettingsService, SystemSettingsService>();
+﻿
+﻿                ﻿                services.AddSingleton<IWslService, WslService>();
+﻿
+﻿                ﻿                services.AddSingleton<IGitService, GitService>();
+﻿
+﻿                ﻿                services.AddSingleton<IEnvironmentService, EnvironmentService>();
+﻿
+﻿                                services.AddSingleton<IProcessRunner, DefaultProcessRunner>();
+﻿
+﻿
 ﻿
 ﻿                services.AddSingleton<Dictionary<string, IPackageManager>>(sp => new()
+﻿
 ﻿                {
-﻿                    { "winget", sp.GetRequiredService<WingetService>() },
-﻿                    { "choco", sp.GetRequiredService<ChocolateyService>() },
+﻿
+﻿                    { "winget", sp.GetRequiredService<WingetService>() },﻿                    { "choco", sp.GetRequiredService<ChocolateyService>() },
 ﻿                    { "scoop", sp.GetRequiredService<ScoopService>() },
 ﻿                    { "mise", sp.GetRequiredService<MiseService>() }
 ﻿                });

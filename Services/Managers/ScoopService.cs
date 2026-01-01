@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using WinHome.Interfaces;
 using WinHome.Models;
 
@@ -6,12 +5,17 @@ namespace WinHome.Services.Managers
 {
     public class ScoopService : IPackageManager
     {
-        
         private const string ScoopExecutable = "scoop.cmd";
+        private readonly IProcessRunner _processRunner;
+
+        public ScoopService(IProcessRunner processRunner)
+        {
+            _processRunner = processRunner;
+        }
 
         public bool IsAvailable()
         {
-            return RunCommand("--version", false);
+            return _processRunner.RunCommand(ScoopExecutable, "--version", false);
         }
 
         public void Install(AppConfig app, bool dryRun)
@@ -32,11 +36,12 @@ namespace WinHome.Services.Managers
 
             Console.WriteLine($"[Scoop] Installing {app.Id}...");
             string args = $"install {app.Id}";
-            
-            if (RunCommand(args, false))
-                Console.WriteLine($"[Success] Installed {app.Id}");
-            else
-                Console.WriteLine($"[Error] Failed to install {app.Id}");
+
+            if (!_processRunner.RunCommand(ScoopExecutable, args, false))
+            {
+                throw new Exception($"Failed to install {app.Id} using Scoop.");
+            }
+            Console.WriteLine($"[Success] Installed {app.Id}");
         }
 
         public void Uninstall(string appId, bool dryRun)
@@ -51,57 +56,18 @@ namespace WinHome.Services.Managers
 
             Console.WriteLine($"[Scoop] Uninstalling {appId}...");
             string args = $"uninstall {appId}";
-            
-            if (RunCommand(args, false))
-                Console.WriteLine($"[Success] Uninstalled {appId}");
-            else
-                Console.WriteLine($"[Error] Failed to uninstall {appId}");
+
+            if (!_processRunner.RunCommand(ScoopExecutable, args, false))
+            {
+                throw new Exception($"Failed to uninstall {appId} using Scoop.");
+            }
+            Console.WriteLine($"[Success] Uninstalled {appId}");
         }
 
         public bool IsInstalled(string appId)
         {
-            string output = RunCommandWithOutput("list");
+            string output = _processRunner.RunCommandWithOutput(ScoopExecutable, "list");
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private bool RunCommand(string args, bool dryRun)
-        {
-            if (dryRun) return true;
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = ScoopExecutable,
-                Arguments = args,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            try 
-            {
-                using var process = Process.Start(startInfo);
-                process?.WaitForExit();
-                return process?.ExitCode == 0;
-            }
-            catch { return false; }
-        }
-
-        private string RunCommandWithOutput(string args)
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = ScoopExecutable,
-                Arguments = args,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            try
-            {
-                using var process = Process.Start(startInfo);
-                string output = process?.StandardOutput.ReadToEnd() ?? string.Empty;
-                process?.WaitForExit();
-                return output;
-            }
-            catch { return string.Empty; }
         }
     }
 }
