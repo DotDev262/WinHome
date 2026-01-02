@@ -14,6 +14,7 @@ namespace WinHome
         private readonly IWslService _wsl;
         private readonly IGitService _git;
         private readonly IEnvironmentService _env;
+        private readonly IWindowsServiceManager _serviceManager;
         private const string StateFileName = "winhome.state.json";
         private readonly object _consoleLock = new();
 
@@ -24,7 +25,8 @@ namespace WinHome
             ISystemSettingsService systemSettings,
             IWslService wsl,
             IGitService git,
-            IEnvironmentService env)
+            IEnvironmentService env,
+            IWindowsServiceManager serviceManager)
         {
             _managers = managers;
             _dotfiles = dotfiles;
@@ -33,6 +35,7 @@ namespace WinHome
             _wsl = wsl;
             _git = git;
             _env = env;
+            _serviceManager = serviceManager;
         }
 
         public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false)
@@ -140,6 +143,12 @@ namespace WinHome
             {
                 Console.WriteLine("\n--- Linking Dotfiles ---");
                 await Task.Run(() => Parallel.ForEach(config.Dotfiles, dotfile => _dotfiles.Apply(dotfile, dryRun)));
+            }
+
+            if (config.Services.Any())
+            {
+                Console.WriteLine("\n--- Managing Windows Services ---");
+                await Task.Run(() => Parallel.ForEach(config.Services, service => _serviceManager.Apply(service, dryRun)));
             }
 
             if (!dryRun)

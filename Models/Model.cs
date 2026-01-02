@@ -30,6 +30,21 @@ namespace WinHome.Models
 
         [YamlMember(Alias = "envVars")]
         public List<EnvVarConfig> EnvVars { get; set; } = new();
+
+        [YamlMember(Alias = "services")]
+        public List<WindowsServiceConfig> Services { get; set; } = new();
+    }
+
+    public class WindowsServiceConfig
+    {
+        [YamlMember(Alias = "name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "state")]
+        public string State { get; set; } = "running"; // running, stopped
+
+        [YamlMember(Alias = "startup")]
+        public string? StartupType { get; set; } // automatic, manual, disabled
     }
 
     public class AppConfig

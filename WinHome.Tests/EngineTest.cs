@@ -14,6 +14,7 @@ namespace WinHome.Tests
         private readonly Mock<IWslService> _mockWsl;
         private readonly Mock<IGitService> _mockGit;
         private readonly Mock<IEnvironmentService> _mockEnv;
+        private readonly Mock<IWindowsServiceManager> _mockServiceManager;
         private readonly Dictionary<string, IPackageManager> _managers;
 
         public EngineTests()
@@ -26,6 +27,7 @@ namespace WinHome.Tests
             _mockWsl = new Mock<IWslService>();
             _mockGit = new Mock<IGitService>();
             _mockEnv = new Mock<IEnvironmentService>();
+            _mockServiceManager = new Mock<IWindowsServiceManager>();
 
             // Setup basic behavior
             _mockWinget.Setup(x => x.IsAvailable()).Returns(true);
@@ -53,7 +55,8 @@ namespace WinHome.Tests
                 _mockSystemSettings.Object, 
                 _mockWsl.Object, 
                 _mockGit.Object, 
-                _mockEnv.Object
+                _mockEnv.Object,
+                _mockServiceManager.Object
             );
 
             // Act
@@ -82,7 +85,8 @@ namespace WinHome.Tests
                 _mockSystemSettings.Object, 
                 _mockWsl.Object, 
                 _mockGit.Object, 
-                _mockEnv.Object
+                _mockEnv.Object,
+                _mockServiceManager.Object
             );
 
             // Act

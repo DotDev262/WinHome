@@ -1,6 +1,7 @@
 using WinHome.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.ServiceProcess;
 
 namespace WinHome.Interfaces
 {
@@ -43,9 +44,22 @@ namespace WinHome.Interfaces
         void Apply(EnvVarConfig env, bool dryRun);
     }
 
+    public interface IWindowsServiceManager
+    {
+        void Apply(WindowsServiceConfig service, bool dryRun);
+    }
+
     public interface IProcessRunner
     {
         bool RunCommand(string fileName, string args, bool dryRun);
         string RunCommandWithOutput(string fileName, string args);
+    }
+
+    public interface IServiceControllerWrapper
+    {
+        bool ServiceExists(string serviceName);
+        ServiceControllerStatus GetServiceStatus(string serviceName);
+        void StartService(string serviceName);
+        void StopService(string serviceName);
     }
 }

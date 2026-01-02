@@ -55,11 +55,14 @@
 ﻿
 ﻿                ﻿                services.AddSingleton<IGitService, GitService>();
 ﻿
-﻿                ﻿                services.AddSingleton<IEnvironmentService, EnvironmentService>();
-﻿
-﻿                                services.AddSingleton<IProcessRunner, DefaultProcessRunner>();
-﻿
-﻿
+﻿                ﻿                                ﻿                services.AddSingleton<IEnvironmentService, EnvironmentService>();
+﻿                ﻿                                
+﻿                ﻿                                                                ﻿                                                services.AddSingleton<IWindowsServiceManager, WindowsServiceManager>();
+﻿                ﻿                                
+﻿                ﻿                                                                ﻿                services.AddSingleton<IServiceControllerWrapper, ServiceControllerWrapper>();
+﻿                ﻿                                
+﻿                ﻿                                                                ﻿                                                services.AddSingleton<IProcessRunner, DefaultProcessRunner>();
+﻿                ﻿                ﻿
 ﻿
 ﻿                services.AddSingleton<Dictionary<string, IPackageManager>>(sp => new()
 ﻿
