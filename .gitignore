@@ -8,3 +8,5 @@ appsettings.Development.json
 winhome.state.json
 config.yaml
 files/
+coverage/
+TestResults/

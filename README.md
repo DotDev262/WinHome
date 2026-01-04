@@ -113,7 +113,7 @@ This roadmap helps collaborators, contributors, and recruiters understand the pr
 
 ### 🧪 **Testing & CI**
 
-* [ ] Add code coverage (Coverlet or dotnet-coverage)
+* [x] ~~Add code coverage (Coverlet or dotnet-coverage)~~
 * [ ] Integration tests for WSL installs
 * [ ] Mocked tests for registry operations
 

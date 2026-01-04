@@ -25,7 +25,7 @@ jobs:
 
     - name: Run Tests
       
-      run: dotnet test WinHome.Tests/WinHome.Tests.csproj --no-restore --verbosity normal
+      run: dotnet test WinHome.sln --no-restore --verbosity normal --collect "XPlat Code Coverage"
 
     - name: Publish WinHome (Single File)
       
