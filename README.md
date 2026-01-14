@@ -110,6 +110,7 @@ This roadmap helps collaborators, contributors, and recruiters understand the pr
 * [ ] Local & remote module support
 * [ ] State diff viewer (`--diff`)
 * [ ] Resource dependencies (`dependsOn:`)
+* [ ] Generate function to generate the config file from a live system
 
 ### 🧪 **Testing & CI**
 
@@ -122,6 +123,7 @@ This roadmap helps collaborators, contributors, and recruiters understand the pr
 * [ ] Windows container support
 * [ ] Hyper-V VM provisioning
 * [ ] GUI mode for non-technical users
+* [ ] Domain Specific Language(DSL) similar to nix
 
 **To be continued...** The roadmap is constantly evolving based on user feedback and new Windows capabilities!
 
