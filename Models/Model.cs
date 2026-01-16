@@ -33,7 +33,86 @@ namespace WinHome.Models
 
         [YamlMember(Alias = "services")]
         public List<WindowsServiceConfig> Services { get; set; } = new();
+
+        [YamlMember(Alias = "scheduledTasks")]
+        public List<ScheduledTaskConfig> ScheduledTasks { get; set; } = new();
     }
+
+    public class ScheduledTaskConfig
+    {
+        [YamlMember(Alias = "name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "path")]
+        public string Path { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "description")]
+        public string? Description { get; set; }
+
+        [YamlMember(Alias = "author")]
+        public string? Author { get; set; }
+
+        [YamlMember(Alias = "triggers")]
+        public List<TriggerConfig> Triggers { get; set; } = new();
+
+        [YamlMember(Alias = "actions")]
+        public List<ActionConfig> Actions { get; set; } = new();
+    }
+
+    public class TriggerConfig
+    {
+        [YamlMember(Alias = "type")]
+        public string Type { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "enabled")]
+        public bool Enabled { get; set; } = true;
+
+        [YamlMember(Alias = "startBoundary")]
+        public DateTime? StartBoundary { get; set; }
+
+        [YamlMember(Alias = "endBoundary")]
+        public DateTime? EndBoundary { get; set; }
+
+        [YamlMember(Alias = "executionTimeLimit")]
+        public TimeSpan? ExecutionTimeLimit { get; set; }
+
+        [YamlMember(Alias = "id")]
+        public string? Id { get; set; }
+
+        [YamlMember(Alias = "repetition")]
+        public RepetitionPatternConfig? Repetition { get; set; }
+
+        [YamlMember(Alias = "delay")]
+        public TimeSpan? Delay { get; set; }
+    }
+
+    public class RepetitionPatternConfig
+    {
+        [YamlMember(Alias = "interval")]
+        public TimeSpan Interval { get; set; }
+
+        [YamlMember(Alias = "duration")]
+        public TimeSpan Duration { get; set; }
+
+        [YamlMember(Alias = "stopAtDurationEnd")]
+        public bool StopAtDurationEnd { get; set; }
+    }
+
+    public class ActionConfig
+    {
+        [YamlMember(Alias = "type")]
+        public string Type { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "path")]
+        public string Path { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "arguments")]
+        public string? Arguments { get; set; }
+
+        [YamlMember(Alias = "workingDirectory")]
+        public string? WorkingDirectory { get; set; }
+    }
+
 
     public class WindowsServiceConfig
     {

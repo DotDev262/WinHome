@@ -96,7 +96,7 @@ This roadmap helps collaborators, contributors, and recruiters understand the pr
 ### 🚧 **v1.1 — Enhanced Windows Integration**
 
 * [x] ~~Windows Services management~~
-* [ ] Scheduled Tasks provisioning
+* [x] ~~Scheduled Tasks provisioning~~
 * [x] ~~Add Chocolatey uninstall support~~
 
 ### 💡 **v1.2 — Developer Workflow Improvements**

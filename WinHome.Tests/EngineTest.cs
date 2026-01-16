@@ -15,6 +15,7 @@ namespace WinHome.Tests
         private readonly Mock<IGitService> _mockGit;
         private readonly Mock<IEnvironmentService> _mockEnv;
         private readonly Mock<IWindowsServiceManager> _mockServiceManager;
+        private readonly Mock<IScheduledTaskService> _mockScheduledTaskService;
         private readonly Dictionary<string, IPackageManager> _managers;
 
         public EngineTests()
@@ -28,6 +29,7 @@ namespace WinHome.Tests
             _mockGit = new Mock<IGitService>();
             _mockEnv = new Mock<IEnvironmentService>();
             _mockServiceManager = new Mock<IWindowsServiceManager>();
+            _mockScheduledTaskService = new Mock<IScheduledTaskService>();
 
             // Setup basic behavior
             _mockWinget.Setup(x => x.IsAvailable()).Returns(true);
@@ -49,14 +51,15 @@ namespace WinHome.Tests
             config.Apps.Add(new AppConfig { Id = "TestApp", Manager = "winget" });
 
             var engine = new Engine(
-                _managers, 
-                _mockDotfiles.Object, 
-                _mockRegistry.Object, 
-                _mockSystemSettings.Object, 
-                _mockWsl.Object, 
-                _mockGit.Object, 
+                _managers,
+                _mockDotfiles.Object,
+                _mockRegistry.Object,
+                _mockSystemSettings.Object,
+                _mockWsl.Object,
+                _mockGit.Object,
                 _mockEnv.Object,
-                _mockServiceManager.Object
+                _mockServiceManager.Object,
+                _mockScheduledTaskService.Object
             );
 
             // Act
@@ -66,8 +69,8 @@ namespace WinHome.Tests
             // Assert
             // Verify that Install was called exactly once for "TestApp"
             _mockWinget.Verify(x => x.Install(
-                It.Is<AppConfig>(a => a.Id == "TestApp"), 
-                false), 
+                It.Is<AppConfig>(a => a.Id == "TestApp"),
+                false),
                 Times.Once);
         }
 
@@ -79,14 +82,15 @@ namespace WinHome.Tests
             config.Apps.Add(new AppConfig { Id = "DryRunApp", Manager = "winget" });
 
             var engine = new Engine(
-                _managers, 
-                _mockDotfiles.Object, 
-                _mockRegistry.Object, 
-                _mockSystemSettings.Object, 
-                _mockWsl.Object, 
-                _mockGit.Object, 
+                _managers,
+                _mockDotfiles.Object,
+                _mockRegistry.Object,
+                _mockSystemSettings.Object,
+                _mockWsl.Object,
+                _mockGit.Object,
                 _mockEnv.Object,
-                _mockServiceManager.Object
+                _mockServiceManager.Object,
+                _mockScheduledTaskService.Object
             );
 
             // Act
@@ -96,8 +100,8 @@ namespace WinHome.Tests
             // Assert
             // Verify that Install was called with dryRun = true
             _mockWinget.Verify(x => x.Install(
-                It.Is<AppConfig>(a => a.Id == "DryRunApp"), 
-                true), 
+                It.Is<AppConfig>(a => a.Id == "DryRunApp"),
+                true),
                 Times.Once);
         }
     }

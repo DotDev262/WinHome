@@ -62,4 +62,9 @@ namespace WinHome.Interfaces
         void StartService(string serviceName);
         void StopService(string serviceName);
     }
+
+    public interface IScheduledTaskService
+    {
+        void Apply(ScheduledTaskConfig task, bool dryRun);
+    }
 }

@@ -15,6 +15,7 @@ namespace WinHome
         private readonly IGitService _git;
         private readonly IEnvironmentService _env;
         private readonly IWindowsServiceManager _serviceManager;
+        private readonly IScheduledTaskService _scheduledTaskService;
         private const string StateFileName = "winhome.state.json";
         private readonly object _consoleLock = new();
 
@@ -26,7 +27,8 @@ namespace WinHome
             IWslService wsl,
             IGitService git,
             IEnvironmentService env,
-            IWindowsServiceManager serviceManager)
+            IWindowsServiceManager serviceManager,
+            IScheduledTaskService scheduledTaskService)
         {
             _managers = managers;
             _dotfiles = dotfiles;
@@ -36,6 +38,7 @@ namespace WinHome
             _git = git;
             _env = env;
             _serviceManager = serviceManager;
+            _scheduledTaskService = scheduledTaskService;
         }
 
         public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false)
@@ -149,6 +152,12 @@ namespace WinHome
             {
                 Console.WriteLine("\n--- Managing Windows Services ---");
                 await Task.Run(() => Parallel.ForEach(config.Services, service => _serviceManager.Apply(service, dryRun)));
+            }
+
+            if (config.ScheduledTasks.Any())
+            {
+                Console.WriteLine("\n--- Scheduling Tasks ---");
+                await Task.Run(() => Parallel.ForEach(config.ScheduledTasks, task => _scheduledTaskService.Apply(task, dryRun)));
             }
 
             if (!dryRun)
