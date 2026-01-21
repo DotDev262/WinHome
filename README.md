@@ -25,7 +25,7 @@ powered by modern, dependency-free, single-file .NET.
 
 ## ⭐ Why WinHome?
 
-I built WinHome to create a **lightweight, dependency-free configuration tool** that runs **natively on Windows** as a **single-file EXE** — no Python, Ruby, or agent installations required.
+I built WinHome to create a **lightweight, dependency-free configuration tool** that runs **natively on Windows** as a **single-file EXE** — no Python, Ruby, or agent installations required. This project was heavily inspired by NixOS's `home-manager` but tailored specifically for the Windows ecosystem.
 
 WinHome focuses on the real needs of **Windows developers**, including:
 
@@ -93,37 +93,27 @@ A built-in **Reconciliation Engine** compares it to the live system and ensures 
 
 This roadmap helps collaborators, contributors, and recruiters understand the project’s trajectory.
 
-### 🚧 **v1.1 — Enhanced Windows Integration**
+### Core Features & System Integration
+- [x] ~~Windows Services management~~
+- [x] ~~Scheduled Tasks provisioning~~
+- [x] ~~Add Chocolatey uninstall support~~
+- [ ] Windows container support
+- [ ] Hyper-V VM provisioning
+- [ ] GPU acceleration toggle (for WSL)
 
-* [x] ~~Windows Services management~~
-* [x] ~~Scheduled Tasks provisioning~~
-* [x] ~~Add Chocolatey uninstall support~~
+### Developer Experience (DevEx)
+- [ ] Automatic VSCode settings & extension sync
+- [ ] Profile-based PATH overrides
+- [ ] GUI mode for non-technical users
+- [ ] State diff viewer (`--diff`)
 
-### 💡 **v1.2 — Developer Workflow Improvements**
-
-* [ ] Automatic VSCode settings & extension sync
-* [ ] Profile-based PATH overrides
-* [ ] GPU acceleration toggle (for WSL)
-
-### 🌀 **v1.3 — Advanced IaC Features**
-
-* [ ] Local & remote module support
-* [ ] State diff viewer (`--diff`)
-* [ ] Resource dependencies (`dependsOn:`)
-* [ ] Generate function to generate the config file from a live system
-
-### 🧪 **Testing & CI**
-
-* [x] ~~Add code coverage (Coverlet or dotnet-coverage)~~
-* [ ] Integration tests for WSL installs
-* [ ] Mocked tests for registry operations
-
-### 🌐 **Future Ideas**
-
-* [ ] Windows container support
-* [ ] Hyper-V VM provisioning
-* [ ] GUI mode for non-technical users
-* [ ] Domain Specific Language(DSL) similar to nix
+### Advanced IaC & Tooling
+- [ ] Local & remote module support
+- [ ] Resource dependencies (`dependsOn:`)
+- [ ] Generate function to generate the config file from a live system
+- [ ] Domain Specific Language(DSL) similar to nix
+- [ ] Integration tests for WSL installs
+- [ ] Mocked tests for registry operations
 
 **To be continued...** The roadmap is constantly evolving based on user feedback and new Windows capabilities!
 
