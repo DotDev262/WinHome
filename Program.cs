@@ -76,11 +76,18 @@ class Program
             DefaultValueFactory = _ => false
         };
 
+        var diffOption = new Option<bool>("--diff")
+        {
+            Description = "Show a diff of the changes that will be made",
+            DefaultValueFactory = _ => false
+        };
+
         var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
         rootCommand.Options.Add(configOption);
         rootCommand.Options.Add(dryRunOption);
         rootCommand.Options.Add(profileOption);
         rootCommand.Options.Add(debugOption);
+        rootCommand.Options.Add(diffOption);
 
         rootCommand.SetAction(async (ParseResult result) => 
         {
@@ -88,15 +95,16 @@ class Program
             bool dryRun = result.GetValue(dryRunOption);
             string? profile = result.GetValue(profileOption);
             bool debug = result.GetValue(debugOption);
+            bool diff = result.GetValue(diffOption);
             
             var engine = host.Services.GetRequiredService<Engine>();
-            await RunAppAsync(engine, file, dryRun, profile, debug);
+            await RunAppAsync(engine, file, dryRun, profile, debug, diff);
         });
 
         return await rootCommand.Parse(args).InvokeAsync();
     }
 
-    static async Task RunAppAsync(Engine engine, FileInfo file, bool dryRun, string? profile, bool debug)
+    static async Task RunAppAsync(Engine engine, FileInfo file, bool dryRun, string? profile, bool debug, bool diff)
     {
         if (!file.Exists)
         {
@@ -155,7 +163,7 @@ class Program
                 Console.ResetColor();
             }
 
-            await engine.RunAsync(config, dryRun, profile);
+            await engine.RunAsync(config, dryRun, profile, debug, diff);
         }
         catch (Exception ex)
         {

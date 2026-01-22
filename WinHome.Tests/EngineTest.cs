@@ -104,5 +104,47 @@ namespace WinHome.Tests
                 true),
                 Times.Once);
         }
+        [Fact]
+        public async Task PrintDiffAsync_ShouldPrintCorrectDiff()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.Apps.Add(new AppConfig { Id = "UnchangedApp", Manager = "winget" });
+            config.Apps.Add(new AppConfig { Id = "NewApp", Manager = "winget" });
+
+            var engine = new Engine(
+                _managers,
+                _mockDotfiles.Object,
+                _mockRegistry.Object,
+                _mockSystemSettings.Object,
+                _mockWsl.Object,
+                _mockGit.Object,
+                _mockEnv.Object,
+                _mockServiceManager.Object,
+                _mockScheduledTaskService.Object
+            );
+            
+            var previousState = new HashSet<string> { "winget:UnchangedApp", "winget:OldApp" };
+            File.WriteAllText("winhome.state.json", System.Text.Json.JsonSerializer.Serialize(previousState));
+
+            var output = new StringWriter();
+            Console.SetOut(output);
+
+            // Act
+            await engine.PrintDiffAsync(config);
+
+            // Assert
+            var outputString = output.ToString();
+            Assert.Contains("[-] Items to Remove:", outputString);
+            Assert.Contains("- winget:OldApp", outputString);
+            Assert.Contains("[+] Items to Add:", outputString);
+            Assert.Contains("+ winget:NewApp", outputString);
+            Assert.Contains("[=] Unchanged Items:", outputString);
+            Assert.Contains("= winget:UnchangedApp", outputString);
+
+            // Cleanup
+            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()));
+            File.Delete("winhome.state.json");
+        }
     }
 }

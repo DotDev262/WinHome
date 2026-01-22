@@ -105,7 +105,7 @@ This roadmap helps collaborators, contributors, and recruiters understand the pr
 - [ ] Automatic VSCode settings & extension sync
 - [ ] Profile-based PATH overrides
 - [ ] GUI mode for non-technical users
-- [ ] State diff viewer (`--diff`)
+- [x] ~~State diff viewer (`--diff`)~~
 
 ### Advanced IaC & Tooling
 - [ ] Local & remote module support
@@ -142,6 +142,7 @@ Built with modern .NET engineering patterns:
 * `--dry-run`, `-d`
 * `--profile <name>`
 * `--debug`
+* `--diff`
 
 ---
 

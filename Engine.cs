@@ -41,7 +41,7 @@ namespace WinHome
             _scheduledTaskService = scheduledTaskService;
         }
 
-        public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false)
+        public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false)
         {
             Console.WriteLine($"--- WinHome v{config.Version} ---");
 
@@ -61,16 +61,16 @@ namespace WinHome
                 }
             }
 
+            if(diff) {
+                await PrintDiffAsync(config);
+                return;
+            }
+
             // Interface Calls (Mockable)
-            var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
-            var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
+            var currentState = await BuildStateFromConfig(config);
             
             var previousState = LoadState();
-            var currentState = new HashSet<string>();
             
-            foreach(var app in config.Apps) currentState.Add($"{app.Manager}:{app.Id}");
-            foreach(var reg in allTweaks) currentState.Add($"reg:{reg.Path}|{reg.Name}");
-
             // Cleanup
             var itemsToRemove = previousState.Except(currentState).ToList();
             if (itemsToRemove.Any())
@@ -135,6 +135,9 @@ namespace WinHome
                 Console.WriteLine("\n--- Configuring Environment Variables ---");
                 await Task.Run(() => Parallel.ForEach(config.EnvVars, env => _env.Apply(env, dryRun)));
             }
+            
+            var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
+            var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
 
             if (allTweaks.Any() && OperatingSystem.IsWindows())
             {
@@ -169,6 +172,79 @@ namespace WinHome
             {
                 Console.WriteLine("\n[Dry Run] State was NOT saved.");
             }
+        }
+
+        public async Task PrintDiffAsync(Configuration config) {
+            Console.WriteLine("\n--- State Diff ---");
+            
+            var previousState = LoadState();
+            var currentState = await BuildStateFromConfig(config);
+
+            var itemsToRemove = previousState.Except(currentState).ToList();
+            var itemsToAdd = currentState.Except(previousState).ToList();
+            var unchangedItems = previousState.Intersect(currentState).ToList();
+
+            if (!itemsToRemove.Any() && !itemsToAdd.Any())
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("No changes detected. System is up to date.");
+                Console.ResetColor();
+                return;
+            }
+
+            if (itemsToRemove.Any())
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("\n[-] Items to Remove:");
+                foreach (var item in itemsToRemove)
+                {
+                    Console.WriteLine($"  - {item}");
+                }
+                Console.ResetColor();
+            }
+
+            if (itemsToAdd.Any())
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("\n[+] Items to Add:");
+                foreach (var item in itemsToAdd)
+                {
+                    Console.WriteLine($"  + {item}");
+                }
+                Console.ResetColor();
+            }
+
+            if (unchangedItems.Any())
+            {
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.WriteLine("\n[=] Unchanged Items:");
+                foreach (var item in unchangedItems)
+                {
+                    Console.WriteLine($"  = {item}");
+                }
+                Console.ResetColor();
+            }
+        }
+
+        private async Task<HashSet<string>> BuildStateFromConfig(Configuration config)
+        {
+            var state = new HashSet<string>();
+
+            // App managers
+            foreach(var app in config.Apps)
+            {
+                state.Add($"{app.Manager}:{app.Id}");
+            }
+
+            // Registry tweaks
+            var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
+            var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
+            foreach(var reg in allTweaks)
+            {
+                state.Add($"reg:{reg.Path}|{reg.Name}");
+            }
+
+            return state;
         }
 
         private void SaveState(HashSet<string> state)
