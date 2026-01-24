@@ -30,8 +30,32 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\WinHome.csproj" />
-  </ItemGroup>
+  
 
-</Project>
+    
+
+  
+
+      <ItemGroup>
+
+  
+
+        <ProjectReference Include="..\WinHome.csproj" />
+
+  
+
+      </ItemGroup>
+
+  
+
+    
+
+  
+
+    </Project>
+
+  
+
+    
+
+  

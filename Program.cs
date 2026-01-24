@@ -17,7 +17,7 @@ class Program
             .ConfigureServices((_, services) =>
             {
                 services.AddSingleton<DotfileService>();
-                services.AddSingleton<RegistryService>();
+                services.AddSingleton<RegistryService>(sp => new RegistryService(sp.GetRequiredService<IRegistryWrapper>()));
                 services.AddSingleton<SystemSettingsService>();
                 services.AddSingleton<WslService>();
                 services.AddSingleton<GitService>();
@@ -30,6 +30,7 @@ class Program
                 services.AddSingleton<MiseService>(sp => new MiseService(sp.GetRequiredService<IProcessRunner>()));
                 services.AddSingleton<IDotfileService, DotfileService>();
                 services.AddSingleton<IRegistryService, RegistryService>();
+                services.AddSingleton<IRegistryWrapper, RegistryWrapper>();
                 services.AddSingleton<ISystemSettingsService, SystemSettingsService>();
                 services.AddSingleton<IWslService, WslService>();
                 services.AddSingleton<IGitService, GitService>();

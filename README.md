@@ -113,7 +113,7 @@ This roadmap helps collaborators, contributors, and recruiters understand the pr
 - [ ] Generate function to generate the config file from a live system
 - [ ] Domain Specific Language(DSL) similar to nix
 - [ ] Integration tests for WSL installs
-- [ ] Mocked tests for registry operations
+- [x] ~~Mocked tests for registry operations~~
 
 **To be continued...** The roadmap is constantly evolving based on user feedback and new Windows capabilities!
 
