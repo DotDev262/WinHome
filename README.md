@@ -53,7 +53,7 @@ Invoke-WebRequest -Uri "https://github.com/DotDev262/WinHome/releases/latest/dow
 
 ---
 
-## 🔧 How It Works
+## 🔧 How It Works & Configuration Wiki
 
 WinHome reads a declarative `config.yaml` that defines your desired system state.
 A built-in **Reconciliation Engine** compares it to the live system and ensures everything matches.
@@ -61,6 +61,9 @@ A built-in **Reconciliation Engine** compares it to the live system and ensures 
 * Tracks system state in `winhome.state.json`
 * Detects and corrects configuration drift
 * Fully idempotent — run it once or 100 times: *the result is identical*
+
+For a detailed breakdown of all configuration options, refer to the [Configuration Wiki](./docs/config.md).
+
 
 ---
 
