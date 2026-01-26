@@ -145,6 +145,12 @@ namespace WinHome
                 await Task.Run(() => Parallel.ForEach(allTweaks, tweak => _registry.Apply(tweak, dryRun)));
             }
 
+            if (config.SystemSettings.Any() && OperatingSystem.IsWindows())
+            {
+                Console.WriteLine("\n--- Applying System Settings ---");
+                await _systemSettings.ApplyNonRegistrySettingsAsync(config.SystemSettings, dryRun);
+            }
+
             if (config.Dotfiles.Any())
             {
                 Console.WriteLine("\n--- Linking Dotfiles ---");

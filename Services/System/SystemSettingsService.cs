@@ -5,6 +5,14 @@ namespace WinHome.Services.System
 {
     public class SystemSettingsService : ISystemSettingsService
     {
+        private readonly IProcessRunner _processRunner;
+        private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification" };
+
+        public SystemSettingsService(IProcessRunner processRunner)
+        {
+            _processRunner = processRunner;
+        }
+
         private record SettingDefinition(
             string SettingKey,
             string RegistryPath,
@@ -65,7 +73,7 @@ namespace WinHome.Services.System
                 var tweaks = new List<RegistryTweak>();
                 if (settings == null) return tweaks;
 
-                foreach (var userSetting in settings)
+                foreach (var userSetting in settings.Where(s => !_nonRegistryKeys.Contains(s.Key.ToLower())))
                 {
                     string key = userSetting.Key.ToLower();
                     string val = userSetting.Value.ToString()?.ToLower() ?? "";
@@ -92,6 +100,44 @@ namespace WinHome.Services.System
                 }
                 return tweaks;
             });
+        }
+
+        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object> settings, bool dryRun)
+        {
+            if (settings == null) return Task.CompletedTask;
+
+            foreach (var userSetting in settings.Where(s => _nonRegistryKeys.Contains(s.Key.ToLower())))
+            {
+                string key = userSetting.Key.ToLower();
+                switch (key)
+                {
+                    case "brightness":
+                        if (int.TryParse(userSetting.Value.ToString(), out int brightness))
+                        {
+                            string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
+                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                        }
+                        break;
+                    case "volume":
+                        if (int.TryParse(userSetting.Value.ToString(), out int volume))
+                        {
+                            string command = $"Set-AudioDevice -PlaybackVolume {volume}";
+                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                        }
+                        break;
+                    case "notification":
+                        if (userSetting.Value is Dictionary<object, object> notificationConfig)
+                        {
+                            var title = notificationConfig.GetValueOrDefault((object)"title")?.ToString() ?? "";
+                            var message = notificationConfig.GetValueOrDefault((object)"message")?.ToString() ?? "";
+                            string command = $"New-BurntToastNotification -Text '{title}', '{message}'";
+                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                        }
+                        break;
+                }
+            }
+
+            return Task.CompletedTask;
         }
     }
 }

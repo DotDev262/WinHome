@@ -1,0 +1,60 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Moq;
+using WinHome.Interfaces;
+using WinHome.Services.System;
+using Xunit;
+
+namespace WinHome.Tests
+{
+    public class SystemSettingsServiceTests
+    {
+        private readonly Mock<IProcessRunner> _mockProcessRunner;
+        private readonly SystemSettingsService _service;
+
+        public SystemSettingsServiceTests()
+        {
+            _mockProcessRunner = new Mock<IProcessRunner>();
+            _service = new SystemSettingsService(_mockProcessRunner.Object);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_Should_Set_Brightness()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "brightness", 80 }
+            };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("WmiSetBrightness(1, 80)")), false), Times.Once);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_Should_Set_Volume()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "volume", 50 }
+            };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("Set-AudioDevice -PlaybackVolume 50")), false), Times.Once);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_Should_Send_Notification()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "notification", new Dictionary<object, object> { { "title", "Test Title" }, { "message", "Test Message" } } }
+            };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("New-BurntToastNotification -Text 'Test Title', 'Test Message'")), false), Times.Once);
+        }
+    }
+}

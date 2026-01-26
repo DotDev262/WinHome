@@ -18,7 +18,7 @@ class Program
             {
                 services.AddSingleton<DotfileService>();
                 services.AddSingleton<RegistryService>(sp => new RegistryService(sp.GetRequiredService<IRegistryWrapper>()));
-                services.AddSingleton<SystemSettingsService>();
+                services.AddSingleton<SystemSettingsService>(sp => new SystemSettingsService(sp.GetRequiredService<IProcessRunner>()));
                 services.AddSingleton<WslService>();
                 services.AddSingleton<GitService>();
                 services.AddSingleton<EnvironmentService>();
