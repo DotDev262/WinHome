@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinHome", "WinHome.csproj", "{482D5F64-0510-418C-1ED8-0B91EC4725B4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinHome", "src\WinHome.csproj", "{482D5F64-0510-418C-1ED8-0B91EC4725B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinHome.Tests", "WinHome.Tests\WinHome.Tests.csproj", "{27C541F4-7BBF-45A6-ABE4-590A5656D143}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinHome.Tests", "tests\WinHome.Tests\WinHome.Tests.csproj", "{27C541F4-7BBF-45A6-ABE4-590A5656D143}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

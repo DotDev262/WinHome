@@ -40,7 +40,7 @@
 
   
 
-        <ProjectReference Include="..\WinHome.csproj" />
+        <ProjectReference Include="..\..\src\WinHome.csproj" />
 
   
 
