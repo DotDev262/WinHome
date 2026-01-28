@@ -94,31 +94,63 @@ For a detailed breakdown of all configuration options, refer to the [Configurati
 
 ## 🗺️ Roadmap / Planned Features
 
-This roadmap helps collaborators, contributors, and recruiters understand the project’s trajectory.
+This roadmap is a living document that outlines the project's future direction. It will be updated with new features and ideas as the project evolves.
 
 ### Core Features & System Integration
 - [x] ~~Windows Services management~~
 - [x] ~~Scheduled Tasks provisioning~~
 - [x] ~~Add Chocolatey uninstall support~~
-- [ ] Windows container support
-- [ ] Hyper-V VM provisioning
-- [ ] GPU acceleration toggle (for WSL)
+- [ ] **VSCode Integration**: Automatically sync settings and extensions.
+- [ ] **Resource Dependencies**: Introduce a `dependsOn:` attribute to control execution order.
+- [ ] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
+- [ ] **Transactional Rollbacks**: Implement logic to automatically undo changes on a failed run.
+- [ ] **Windows Container Support**: Add features for provisioning and managing Windows containers.
+- [ ] **Hyper-V VM Provisioning**: Introduce capabilities for managing local Hyper-V virtual machines.
 
-### Developer Experience (DevEx)
-- [ ] Automatic VSCode settings & extension sync
-- [ ] Profile-based PATH overrides
-- [ ] GUI mode for non-technical users
+### Developer Experience (DevEx) & Tooling
 - [x] ~~State diff viewer (`--diff`)~~
+- [ ] **Configuration Schema Validation**: Validate `config.yaml` against a formal schema to provide better error messages.
+- [ ] **Advanced State Management**: Add CLI commands to view, backup, and restore system state.
+- [ ] **Structured Output**: Add a `--json` flag for machine-readable output of run results.
+- [ ] **GUI Mode**: Develop a simple graphical user interface for non-technical users.
+- [ ] **Profile-based PATH Overrides**: Allow different profiles to have unique PATH environment variables.
+- [ ] **"Generate" Function**: Add a command to generate a `config.yaml` file from the current state of a live system.
+- [ ] **DSL**: Evolve the configuration into a more powerful Domain-Specific Language (similar to Nix).
 
-### Advanced IaC & Tooling
-- [ ] Local & remote module support
-- [ ] Resource dependencies (`dependsOn:`)
-- [ ] Generate function to generate the config file from a live system
-- [ ] Domain Specific Language(DSL) similar to nix
-- [ ] Integration tests for WSL installs
+### Code Quality & Automation
 - [x] ~~Mocked tests for registry operations~~
+- [ ] **Containerized Acceptance Tests**: Build a full acceptance test suite that runs inside a clean Windows container.
+- [ ] **Complete Unit Test Coverage**: Ensure all services and managers have comprehensive unit tests.
+- [ ] **Publish Docs to GitHub Pages**: Automate the publishing of the `/docs` directory to a professional documentation website.
+- [ ] **Automate Release Notes**: Use tools like `release-drafter` to auto-generate changelogs for new releases.
+- [ ] **Formalize Contribution Process**: Create a `CONTRIBUTING.md` file and GitHub templates for issues and PRs.
+- [ ] **Refactor Core Logic**: Decouple `Program.cs` and simplify the Dependency Injection setup.
 
-**To be continued...** The roadmap is constantly evolving based on user feedback and new Windows capabilities!
+## 📅 Version Roadmap
+
+Here is a tentative plan for upcoming releases.
+
+### v1.1 — The Quality & DX Release
+*Focus: Internal refactoring, test coverage, and developer experience.*
+- [ ] Complete Unit Test Coverage
+- [ ] Formalize Contribution Process (`CONTRIBUTING.md`, templates)
+- [ ] Refactor Core Logic (DI, `Program.cs`)
+- [ ] Add Configuration Schema Validation
+- [ ] Build Containerized Acceptance Test Suite
+
+### v1.2 — The Core Features Release
+*Focus: Adding highly-requested features for end-users.*
+- [ ] VSCode Integration (Settings & Extension Sync)
+- [ ] Advanced State Management (`state list`, `state backup`)
+- [ ] Structured JSON Output (`--json`)
+- [ ] Publish Docs to GitHub Pages
+
+### v2.0 — The Architecture Release
+*Focus: Major architectural changes to support long-term extensibility and power.*
+- [ ] Introduce a full Plugin Architecture
+- [ ] Implement Resource Dependencies (`dependsOn:`)
+- [ ] Implement Transactional Rollbacks on failure
+- [ ] Evolve configuration towards a true DSL
 
 ---
 
