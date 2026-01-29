@@ -1,8 +1,26 @@
-bin/
-obj/
-*.user
+# Common Visual Studio and .NET files
+[Bb]in/
+[Oo]bj/
+.vs/
+*.vspscc
+*.vssscc
 *.suo
-appsettings.Development.json
+*.user
+*.build-amd64.props
+*.build-amd64.targets
+*.build-x86.props
+*.build-x86.targets
+*.cache
+*.csproj.user
+*.log
+*.tlog
+*.trx
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snk
+*.DS_Store
 
 # WinHome Specific
 winhome.state.json
@@ -10,3 +28,4 @@ config.yaml
 files/
 coverage/
 TestResults/
+appsettings.Development.json

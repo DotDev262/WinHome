@@ -154,6 +154,16 @@ Here is a tentative plan for upcoming releases.
 
 ---
 
+## 📅 Changelog
+
+### Day 1: Basic Code Cleanup
+- [x] **Split `Interfaces.cs`**: Moved each interface into its own file in `src/Interfaces/`.
+- [x] **Split `Model.cs`**: Moved each model class into its own file in `src/Models/`.
+- [x] **Remove Unused Files**: Deleted `tests/WinHome.Tests/UnitTest1.cs`.
+- [x] **Review `.gitignore`**: Audited and improved the `.gitignore` file.
+
+---
+
 ## 🏗️ Technical Architecture
 
 Built with modern .NET engineering patterns:
