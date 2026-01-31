@@ -1,0 +1,11 @@
+version: "1.0"
+apps:
+  - id: 7zip.7zip
+    manager: winget
+envVars:
+  - variable: "WINHOME_TEST"
+    value: "true"
+    action: "set"
+dotfiles:
+  - src: "README.md"
+    target: "test-dotfile.md"

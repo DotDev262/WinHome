@@ -156,6 +156,9 @@ Here is a tentative plan for upcoming releases.
 
 ## 📅 Changelog
 
+### Day 5: Containerization & Advanced Features (Part 1)
+- [x] **Create a Test `Dockerfile`**: Developed a `Dockerfile` for Windows containers.
+
 ### Day 1: Basic Code Cleanup
 - [x] **Split `Interfaces.cs`**: Moved each interface into its own file in `src/Interfaces/`.
 - [x] **Split `Model.cs`**: Moved each model class into its own file in `src/Models/`.
