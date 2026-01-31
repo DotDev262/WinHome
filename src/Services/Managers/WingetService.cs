@@ -7,13 +7,15 @@ namespace WinHome.Services.Managers
     {
         private const string WingetExecutable = "winget";
         private readonly IProcessRunner _processRunner;
+        public IPackageManagerBootstrapper Bootstrapper { get; }
 
-        public WingetService(IProcessRunner processRunner)
+        public WingetService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper)
         {
             _processRunner = processRunner;
+            Bootstrapper = bootstrapper;
         }
 
-        public bool IsAvailable() => _processRunner.RunCommand(WingetExecutable, "--help", false);
+        public bool IsAvailable() => Bootstrapper.IsInstalled();
 
         public void Install(AppConfig app, bool dryRun)
         {

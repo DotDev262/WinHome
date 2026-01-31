@@ -104,17 +104,21 @@ namespace WinHome
                     {
                         if (!mgr.IsAvailable())
                         {
-                            lock(_consoleLock)
+                            mgr.Bootstrapper.Install(dryRun);
+                            if (!mgr.IsAvailable())
                             {
-                                Console.WriteLine($"[Error] Manager '{app.Manager}' not found.");
+                                lock (_consoleLock)
+                                {
+                                    Console.WriteLine($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
+                                }
+                                return;
                             }
-                            return;
                         }
                         mgr.Install(app, dryRun);
                     }
                     else
                     {
-                        lock(_consoleLock)
+                        lock (_consoleLock)
                         {
                             Console.WriteLine($"[Error] Unknown manager: {app.Manager}");
                         }

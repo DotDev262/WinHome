@@ -5,6 +5,7 @@ using System.CommandLine.Parsing;
 using WinHome;
 using WinHome.Interfaces;
 using WinHome.Models;
+using WinHome.Services.Bootstrappers;
 using WinHome.Services.Managers;
 using WinHome.Services.System;
 using YamlDotNet.Serialization;
@@ -24,10 +25,19 @@ class Program
                 services.AddSingleton<EnvironmentService>();
                 services.AddSingleton<WindowsServiceManager>();
                 services.AddSingleton<ScheduledTaskService>();
-                services.AddSingleton<WingetService>(sp => new WingetService(sp.GetRequiredService<IProcessRunner>()));
-                services.AddSingleton<ChocolateyService>(sp => new ChocolateyService(sp.GetRequiredService<IProcessRunner>()));
-                services.AddSingleton<ScoopService>(sp => new ScoopService(sp.GetRequiredService<IProcessRunner>()));
-                services.AddSingleton<MiseService>(sp => new MiseService(sp.GetRequiredService<IProcessRunner>()));
+
+                // Bootstrappers
+                services.AddSingleton<ChocolateyBootstrapper>();
+                services.AddSingleton<ScoopBootstrapper>();
+                services.AddSingleton<MiseBootstrapper>();
+                services.AddSingleton<WingetBootstrapper>();
+
+                // Package Managers
+                services.AddSingleton<WingetService>(sp => new WingetService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<WingetBootstrapper>()));
+                services.AddSingleton<ChocolateyService>(sp => new ChocolateyService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<ChocolateyBootstrapper>()));
+                services.AddSingleton<ScoopService>(sp => new ScoopService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<ScoopBootstrapper>()));
+                services.AddSingleton<MiseService>(sp => new MiseService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<MiseBootstrapper>()));
+
                 services.AddSingleton<IDotfileService, DotfileService>();
                 services.AddSingleton<IRegistryService, RegistryService>();
                 services.AddSingleton<IRegistryWrapper, RegistryWrapper>();

@@ -8,22 +8,31 @@ namespace WinHome.Tests
 {
     public class WingetServiceTests
     {
+        private readonly Mock<IProcessRunner> _mockProcessRunner;
+        private readonly Mock<IPackageManagerBootstrapper> _mockBootstrapper;
+        private readonly WingetService _wingetService;
+
+        public WingetServiceTests()
+        {
+            _mockProcessRunner = new Mock<IProcessRunner>();
+            _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
+            _wingetService = new WingetService(_mockProcessRunner.Object, _mockBootstrapper.Object);
+        }
+
         [Fact]
         public void Install_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var wingetService = new WingetService(mockProcessRunner.Object);
             var app = new AppConfig { Id = "testapp" };
             bool dryRun = false;
 
-            mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(""); // Not installed
-            mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements", dryRun))
                              .Returns(false); // Fails
 
             // Act & Assert
-            var ex = Assert.Throws<Exception>(() => wingetService.Install(app, dryRun));
+            var ex = Assert.Throws<Exception>(() => _wingetService.Install(app, dryRun));
             Assert.Equal($"Failed to install {app.Id} using Winget.", ex.Message);
         }
 
@@ -31,16 +40,14 @@ namespace WinHome.Tests
         public void Uninstall_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var wingetService = new WingetService(mockProcessRunner.Object);
             string appId = "testapp";
             bool dryRun = false;
 
-            mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"uninstall --id {appId} -e --silent --accept-source-agreements", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"uninstall --id {appId} -e --silent --accept-source-agreements", dryRun))
                              .Returns(false); // Fails
 
             // Act & Assert
-            var ex = Assert.Throws<Exception>(() => wingetService.Uninstall(appId, dryRun));
+            var ex = Assert.Throws<Exception>(() => _wingetService.Uninstall(appId, dryRun));
             Assert.Equal($"Failed to uninstall {appId} using Winget.", ex.Message);
         }
     }

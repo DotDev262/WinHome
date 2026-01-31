@@ -8,22 +8,31 @@ namespace WinHome.Tests
 {
     public class ScoopServiceTests
     {
+        private readonly Mock<IProcessRunner> _mockProcessRunner;
+        private readonly Mock<IPackageManagerBootstrapper> _mockBootstrapper;
+        private readonly ScoopService _scoopService;
+
+        public ScoopServiceTests()
+        {
+            _mockProcessRunner = new Mock<IProcessRunner>();
+            _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
+            _scoopService = new ScoopService(_mockProcessRunner.Object, _mockBootstrapper.Object);
+        }
+
         [Fact]
         public void Install_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var scoopService = new ScoopService(mockProcessRunner.Object);
             var app = new AppConfig { Id = "testapp" };
             bool dryRun = false;
 
-            mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(""); // Not installed
-            mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", $"install {app.Id}", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", $"install {app.Id}", dryRun))
                              .Returns(false); // Fails
 
             // Act & Assert
-            var ex = Assert.Throws<Exception>(() => scoopService.Install(app, dryRun));
+            var ex = Assert.Throws<Exception>(() => _scoopService.Install(app, dryRun));
             Assert.Equal($"Failed to install {app.Id} using Scoop.", ex.Message);
         }
 
@@ -31,16 +40,14 @@ namespace WinHome.Tests
         public void Uninstall_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var scoopService = new ScoopService(mockProcessRunner.Object);
             string appId = "testapp";
             bool dryRun = false;
 
-            mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", $"uninstall {appId}", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", $"uninstall {appId}", dryRun))
                              .Returns(false); // Fails
 
             // Act & Assert
-            var ex = Assert.Throws<Exception>(() => scoopService.Uninstall(appId, dryRun));
+            var ex = Assert.Throws<Exception>(() => _scoopService.Uninstall(appId, dryRun));
             Assert.Equal($"Failed to uninstall {appId} using Scoop.", ex.Message);
         }
     }

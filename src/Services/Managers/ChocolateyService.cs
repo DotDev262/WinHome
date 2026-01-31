@@ -7,15 +7,17 @@ namespace WinHome.Services.Managers
     {
         private const string ChocoExecutable = "choco";
         private readonly IProcessRunner _processRunner;
+        public IPackageManagerBootstrapper Bootstrapper { get; }
 
-        public ChocolateyService(IProcessRunner processRunner)
+        public ChocolateyService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper)
         {
             _processRunner = processRunner;
+            Bootstrapper = bootstrapper;
         }
 
         public bool IsAvailable()
         {
-            return _processRunner.RunCommand(ChocoExecutable, "-v", false);
+            return Bootstrapper.IsInstalled();
         }
 
         public void Install(AppConfig app, bool dryRun)

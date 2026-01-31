@@ -8,22 +8,31 @@ namespace WinHome.Tests
 {
     public class MiseServiceTests
     {
+        private readonly Mock<IProcessRunner> _mockProcessRunner;
+        private readonly Mock<IPackageManagerBootstrapper> _mockBootstrapper;
+        private readonly MiseService _miseService;
+
+        public MiseServiceTests()
+        {
+            _mockProcessRunner = new Mock<IProcessRunner>();
+            _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
+            _miseService = new MiseService(_mockProcessRunner.Object, _mockBootstrapper.Object);
+        }
+
         [Fact]
         public void Install_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var miseService = new MiseService(mockProcessRunner.Object);
             var app = new AppConfig { Id = "testapp" };
             bool dryRun = false;
 
-            mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(""); // Not installed
-            mockProcessRunner.Setup(pr => pr.RunCommand("mise", $"use --global {app.Id} -y", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("mise", $"use --global {app.Id} -y", dryRun))
                              .Returns(false); // Fails
 
             // Act & Assert
-            var ex = Assert.Throws<Exception>(() => miseService.Install(app, dryRun));
+            var ex = Assert.Throws<Exception>(() => _miseService.Install(app, dryRun));
             Assert.Equal($"Failed to install {app.Id} using Mise.", ex.Message);
         }
 
@@ -31,16 +40,14 @@ namespace WinHome.Tests
         public void Uninstall_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var miseService = new MiseService(mockProcessRunner.Object);
             string appId = "testapp";
             bool dryRun = false;
 
-            mockProcessRunner.Setup(pr => pr.RunCommand("mise", $"unuse --global {appId}", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("mise", $"unuse --global {appId}", dryRun))
                              .Returns(false); // Fails
 
             // Act & Assert
-            var ex = Assert.Throws<Exception>(() => miseService.Uninstall(appId, dryRun));
+            var ex = Assert.Throws<Exception>(() => _miseService.Uninstall(appId, dryRun));
             Assert.Equal($"Failed to remove {appId} using Mise.", ex.Message);
         }
     }

@@ -7,15 +7,17 @@ namespace WinHome.Services.Managers
     {
         private const string MiseExecutable = "mise";
         private readonly IProcessRunner _processRunner;
+        public IPackageManagerBootstrapper Bootstrapper { get; }
 
-        public MiseService(IProcessRunner processRunner)
+        public MiseService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper)
         {
             _processRunner = processRunner;
+            Bootstrapper = bootstrapper;
         }
 
         public bool IsAvailable()
         {
-            return _processRunner.RunCommand(MiseExecutable, "version", false);
+            return Bootstrapper.IsInstalled();
         }
 
         public void Install(AppConfig app, bool dryRun)

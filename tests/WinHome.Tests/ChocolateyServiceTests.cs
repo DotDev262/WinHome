@@ -8,57 +8,60 @@ namespace WinHome.Tests
 {
     public class ChocolateyServiceTests
     {
+        private readonly Mock<IProcessRunner> _mockProcessRunner;
+        private readonly Mock<IPackageManagerBootstrapper> _mockBootstrapper;
+        private readonly ChocolateyService _chocolateyService;
+
+        public ChocolateyServiceTests()
+        {
+            _mockProcessRunner = new Mock<IProcessRunner>();
+            _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
+            _chocolateyService = new ChocolateyService(_mockProcessRunner.Object, _mockBootstrapper.Object);
+        }
+
         [Fact]
         public void Uninstall_CallsProcessRunnerWithCorrectArguments()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var chocolateyService = new ChocolateyService(mockProcessRunner.Object);
             string appId = "testapp";
             bool dryRun = false;
 
-            // Mock the behavior of RunCommand to return true (successful execution)
-            mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun))
                              .Returns(true);
 
             // Act
-            chocolateyService.Uninstall(appId, dryRun);
+            _chocolateyService.Uninstall(appId, dryRun);
 
             // Assert
-            mockProcessRunner.Verify(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun), Times.Once);
+            _mockProcessRunner.Verify(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun), Times.Once);
         }
 
         [Fact]
         public void Uninstall_DryRun_DoesNotCallProcessRunner()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var chocolateyService = new ChocolateyService(mockProcessRunner.Object);
             string appId = "testapp";
             bool dryRun = true;
 
             // Act
-            chocolateyService.Uninstall(appId, dryRun);
+            _chocolateyService.Uninstall(appId, dryRun);
 
             // Assert
-            mockProcessRunner.Verify(pr => pr.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+            _mockProcessRunner.Verify(pr => pr.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
         }
 
         [Fact]
         public void Uninstall_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var chocolateyService = new ChocolateyService(mockProcessRunner.Object);
             string appId = "testapp";
             bool dryRun = false;
 
-            // Mock the behavior of RunCommand to return false (failed execution)
-            mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun))
                              .Returns(false);
 
             // Act & Assert
-            var ex = Assert.Throws<Exception>(() => chocolateyService.Uninstall(appId, dryRun));
+            var ex = Assert.Throws<Exception>(() => _chocolateyService.Uninstall(appId, dryRun));
             Assert.Equal($"Failed to uninstall {appId} using Chocolatey.", ex.Message);
         }
 
@@ -66,18 +69,16 @@ namespace WinHome.Tests
         public void Install_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange
-            var mockProcessRunner = new Mock<IProcessRunner>();
-            var chocolateyService = new ChocolateyService(mockProcessRunner.Object);
             var app = new AppConfig { Id = "testapp" };
             bool dryRun = false;
 
-            mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(""); // Not installed
-            mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"install {app.Id} -y", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"install {app.Id} -y", dryRun))
                              .Returns(false); // Fails
 
             // Act & Assert
-            var ex = Assert.Throws<Exception>(() => chocolateyService.Install(app, dryRun));
+            var ex = Assert.Throws<Exception>(() => _chocolateyService.Install(app, dryRun));
             Assert.Equal($"Failed to install {app.Id} using Chocolatey.", ex.Message);
         }
     }
