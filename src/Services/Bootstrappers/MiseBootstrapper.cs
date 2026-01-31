@@ -14,7 +14,10 @@ namespace WinHome.Services.Bootstrappers
 
         public bool IsInstalled()
         {
-            return _processRunner.RunCommand("mise", "--version", true);
+            if (_processRunner.RunCommand("mise", "--version", false)) return true;
+
+            string scoopMise = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "mise.exe");
+            return File.Exists(scoopMise);
         }
 
         public void Install(bool dryRun)
@@ -29,7 +32,14 @@ namespace WinHome.Services.Bootstrappers
 
             Console.WriteLine($"[Bootstrapper] Installing {Name} via Scoop...");
 
-            if (!_processRunner.RunCommand("scoop", "install mise", false))
+            string scoopExec = "scoop";
+            if (!_processRunner.RunCommand("scoop", "--version", false))
+            {
+                string fallback = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd");
+                if (File.Exists(fallback)) scoopExec = fallback;
+            }
+
+            if (!_processRunner.RunCommand(scoopExec, "install mise", false))
             {
                 throw new Exception($"Failed to install {Name} using Scoop.");
             }

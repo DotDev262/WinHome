@@ -46,8 +46,17 @@ namespace WinHome.Services.System
                 string? parentDir = Path.GetDirectoryName(targetPath);
                 if (!string.IsNullOrEmpty(parentDir)) Directory.CreateDirectory(parentDir);
 
-                File.CreateSymbolicLink(targetPath, sourcePath);
-                _logger.LogSuccess($"[Success] Link created -> {sourcePath}");
+                try
+                {
+                    File.CreateSymbolicLink(targetPath, sourcePath);
+                    _logger.LogSuccess($"[Success] Link created -> {targetPath}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"[Dotfile] Symlink failed: {ex.Message}. Falling back to copy.");
+                    File.Copy(sourcePath, targetPath, true);
+                    _logger.LogSuccess($"[Success] File copied -> {targetPath}");
+                }
             }
             catch (Exception ex)
             {

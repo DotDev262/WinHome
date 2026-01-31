@@ -24,7 +24,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new GitConfig();
-            _processRunnerMock.Setup(p => p.RunCommand("git", "--version", true)).Returns(false);
+            _processRunnerMock.Setup(p => p.RunCommand("git", "--version", false)).Returns(false);
 
             // Act
             _gitService.Configure(config, false);
@@ -38,7 +38,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new GitConfig { UserName = "Test User", UserEmail = "test@example.com" };
-            _processRunnerMock.Setup(p => p.RunCommand("git", "--version", true)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("git", "--version", false)).Returns(true);
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", "config --global --get user.name")).Returns("");
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", "config --global --get user.email")).Returns("");
 
@@ -55,7 +55,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new GitConfig { UserName = "Test User" };
-            _processRunnerMock.Setup(p => p.RunCommand("git", "--version", true)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("git", "--version", false)).Returns(true);
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", "config --global --get user.name")).Returns("");
 
             // Act
@@ -71,7 +71,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new GitConfig { UserName = "Test User" };
-            _processRunnerMock.Setup(p => p.RunCommand("git", "--version", true)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("git", "--version", false)).Returns(true);
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", "config --global --get user.name")).Returns("Test User");
 
             // Act

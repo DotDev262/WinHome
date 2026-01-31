@@ -1,4 +1,4 @@
-# verify.ps1
+# verify-container.ps1
 
 $ErrorActionPreference = "Stop"
 $exitCode = 0
@@ -42,24 +42,6 @@ try {
     $chocoList = & $chocoExec list -l -r wget
     Assert-True ($chocoList -like "*wget*"), "Wget should be installed (Choco)"
 
-    # Check for Mise app
-    $miseExec = "mise"
-    if (-not (Get-Command $miseExec -ErrorAction SilentlyContinue)) {
-        $paths = @(
-            "$env:USERPROFILE\scoop\shims\mise.exe",
-            "$env:ProgramData\scoop\shims\mise.exe"
-        )
-        foreach ($p in $paths) {
-            if (Test-Path $p) {
-                $miseExec = $p
-                break
-            }
-        }
-    }
-    Write-Host "Using Mise executable: $miseExec"
-    $miseList = & $miseExec ls --global --current
-    Assert-True ($miseList -like "*usage*"), "Usage plugin/tool should be installed (Mise)"
-
     # Check for Winget app
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         $wingetList = winget list --id Git.Git -e
@@ -81,7 +63,6 @@ if ($null -eq $envVar) {
 Assert-True ($envVar -eq "true"), "WINHOME_TEST environment variable should be set to 'true'"
 
 # 3. Check for dotfile
-# Assuming README.md is in the current directory (copied by Dockerfile)
 $dotfileContent = Get-Content -Path "test-dotfile.md" -Raw
 $readmeContent = Get-Content -Path "README.md" -Raw
 Assert-True ($dotfileContent -eq $readmeContent), "Dotfile content should match README.md content"

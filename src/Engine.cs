@@ -99,17 +99,24 @@ namespace WinHome
             if (config.Apps.Any())
             {
                 _logger.LogInfo("\n--- Reconciling Apps ---");
+                var bootstrapLock = new object();
                 await Task.Run(() => Parallel.ForEach(config.Apps, app =>
                 {
                     if (_managers.TryGetValue(app.Manager, out var mgr))
                     {
                         if (!mgr.IsAvailable())
                         {
-                            mgr.Bootstrapper.Install(dryRun);
-                            if (!mgr.IsAvailable())
+                            lock (bootstrapLock)
                             {
-                                _logger.LogError($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
-                                return;
+                                if (!mgr.IsAvailable())
+                                {
+                                    mgr.Bootstrapper.Install(dryRun);
+                                    if (!mgr.IsAvailable())
+                                    {
+                                        _logger.LogError($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
+                                        return;
+                                    }
+                                }
                             }
                         }
                         mgr.Install(app, dryRun);

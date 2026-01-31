@@ -15,7 +15,11 @@ namespace WinHome.Services.Bootstrappers
 
         public bool IsInstalled()
         {
-            return _processRunner.RunCommand("scoop", "--version", true);
+            if (_processRunner.RunCommand("scoop", "--version", false)) return true;
+            
+            // Fallback for fresh installs where PATH isn't updated yet
+            string defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd");
+            return File.Exists(defaultPath);
         }
 
         public void Install(bool dryRun)
@@ -33,7 +37,7 @@ namespace WinHome.Services.Bootstrappers
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = "-NoProfile -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy RemoteSigned -Scope CurrentUser; irm get.scoop.sh | iex\"",
+                Arguments = "-NoProfile -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy RemoteSigned -Scope CurrentUser; irm get.scoop.sh -outfile install.ps1; .\\install.ps1 -RunAsAdmin\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,

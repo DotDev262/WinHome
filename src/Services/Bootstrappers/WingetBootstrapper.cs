@@ -14,7 +14,7 @@ namespace WinHome.Services.Bootstrappers
 
         public bool IsInstalled()
         {
-            return _processRunner.RunCommand("winget", "--version", true);
+            return _processRunner.RunCommand("winget", "--version", false);
         }
 
         public void Install(bool dryRun)

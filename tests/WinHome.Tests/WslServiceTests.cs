@@ -24,7 +24,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new WslConfig();
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", true)).Returns(false);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(false);
 
             // Act
             _wslService.Configure(config, false);
@@ -38,7 +38,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new WslConfig();
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", true)).Returns(false);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(false);
 
             // Act
             _wslService.Configure(config, true);
@@ -52,7 +52,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new WslConfig { Update = true };
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", true)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
 
             // Act
             _wslService.Configure(config, false);
@@ -66,7 +66,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new WslConfig { DefaultVersion = 2 };
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", true)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
 
             // Act
             _wslService.Configure(config, false);
@@ -81,7 +81,7 @@ namespace WinHome.Tests
             // Arrange
             var config = new WslConfig();
             config.Distros.Add(new WslDistroConfig { Name = "Ubuntu" });
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", true)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("wsl", "--list --verbose")).Returns("");
 
             // Act
@@ -97,7 +97,7 @@ namespace WinHome.Tests
             // Arrange
             var config = new WslConfig { DefaultDistro = "Ubuntu" };
             config.Distros.Add(new WslDistroConfig { Name = "Ubuntu" });
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", true)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("wsl", "--list --verbose")).Returns("Ubuntu");
 
             // Act
@@ -115,7 +115,7 @@ namespace WinHome.Tests
             File.WriteAllText(scriptPath, "echo 'hello'");
             var config = new WslConfig();
             config.Distros.Add(new WslDistroConfig { Name = "Ubuntu", SetupScript = scriptPath });
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", true)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("wsl", "--list --verbose")).Returns("Ubuntu");
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("wsl", $"-d Ubuntu -- bash -s", "echo 'hello'\n")).Returns("hello");
 

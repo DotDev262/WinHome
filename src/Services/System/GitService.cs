@@ -14,40 +14,64 @@ namespace WinHome.Services.System
             _logger = logger;
         }
 
+        private string GetGitExecutable()
+        {
+            if (_processRunner.RunCommand("git", "--version", false)) return "git";
+
+            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string programData = Environment.GetEnvironmentVariable("ProgramData") ?? @"C:\ProgramData";
+            
+            // Fallback for fresh Scoop installs (various possible locations)
+            string[] fallbacks = {
+                Path.Combine(userProfile, "scoop", "shims", "git.exe"),
+                Path.Combine(programData, "scoop", "shims", "git.exe"),
+                Path.Combine(userProfile, "scoop", "apps", "git", "current", "cmd", "git.exe"),
+                Path.Combine(programData, "scoop", "apps", "git", "current", "cmd", "git.exe")
+            };
+
+            foreach (var path in fallbacks)
+            {
+                if (File.Exists(path)) return path;
+            }
+
+            return "git";
+        }
+
         public void Configure(GitConfig config, bool dryRun)
         {
-            if (!IsGitInstalled())
+            if (!IsInstalled())
             {
                 _logger.LogError("[Git] Error: Git is not installed/found in PATH.");
                 return;
             }
 
             _logger.LogInfo("\n--- Configuring Git ---");
+            string gitExec = GetGitExecutable();
 
             if (!string.IsNullOrEmpty(config.UserName))
-                SetGlobalConfig("user.name", config.UserName, dryRun);
+                SetGlobalConfig(gitExec, "user.name", config.UserName, dryRun);
 
             if (!string.IsNullOrEmpty(config.UserEmail))
-                SetGlobalConfig("user.email", config.UserEmail, dryRun);
+                SetGlobalConfig(gitExec, "user.email", config.UserEmail, dryRun);
 
             if (!string.IsNullOrEmpty(config.SigningKey))
-                SetGlobalConfig("user.signingkey", config.SigningKey, dryRun);
+                SetGlobalConfig(gitExec, "user.signingkey", config.SigningKey, dryRun);
 
             if (config.CommitGpgSign.HasValue)
-                SetGlobalConfig("commit.gpgsign", config.CommitGpgSign.Value.ToString().ToLower(), dryRun);
+                SetGlobalConfig(gitExec, "commit.gpgsign", config.CommitGpgSign.Value.ToString().ToLower(), dryRun);
 
             if (config.Settings != null)
             {
                 foreach (var setting in config.Settings)
                 {
-                    SetGlobalConfig(setting.Key, setting.Value, dryRun);
+                    SetGlobalConfig(gitExec, setting.Key, setting.Value, dryRun);
                 }
             }
         }
 
-        private void SetGlobalConfig(string key, string value, bool dryRun)
+        private void SetGlobalConfig(string gitExec, string key, string value, bool dryRun)
         {
-            string currentValue = GetGlobalConfig(key);
+            string currentValue = GetGlobalConfig(gitExec, key);
 
             if (string.Equals(currentValue, value, StringComparison.OrdinalIgnoreCase))
             {
@@ -61,18 +85,26 @@ namespace WinHome.Services.System
             }
 
             _logger.LogInfo($"[Git] Setting {key} = {value}...");
-            _processRunner.RunCommand("git", $"config --global {key} \"{value}\"", false);
+            _processRunner.RunCommand(gitExec, $"config --global {key} \"{value}\"", false);
         }
 
-        private string GetGlobalConfig(string key)
+        private string GetGlobalConfig(string gitExec, string key)
         {
-            string output = _processRunner.RunCommandWithOutput("git", $"config --global --get {key}");
+            string output = _processRunner.RunCommandWithOutput(gitExec, $"config --global --get {key}");
             return output.Trim();
         }
 
-        private bool IsGitInstalled()
+        public bool IsInstalled()
         {
-            return _processRunner.RunCommand("git", "--version", true);
+            if (_processRunner.RunCommand("git", "--version", false)) return true;
+
+            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string programData = Environment.GetEnvironmentVariable("ProgramData") ?? @"C:\ProgramData";
+
+            return File.Exists(Path.Combine(userProfile, "scoop", "shims", "git.exe")) ||
+                   File.Exists(Path.Combine(programData, "scoop", "shims", "git.exe")) ||
+                   File.Exists(Path.Combine(userProfile, "scoop", "apps", "git", "current", "cmd", "git.exe")) ||
+                   File.Exists(Path.Combine(programData, "scoop", "apps", "git", "current", "cmd", "git.exe"));
         }
     }
 }

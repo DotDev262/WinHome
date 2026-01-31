@@ -5,7 +5,6 @@ namespace WinHome.Services.Managers
 {
     public class ChocolateyService : IPackageManager
     {
-        private const string ChocoExecutable = "choco";
         private readonly IProcessRunner _processRunner;
         private readonly ILogger _logger;
         public IPackageManagerBootstrapper Bootstrapper { get; }
@@ -17,6 +16,16 @@ namespace WinHome.Services.Managers
             _logger = logger;
         }
 
+        private string GetChocoExecutable()
+        {
+            if (_processRunner.RunCommand("choco", "--version", false)) return "choco";
+
+            string chocoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "chocolatey", "bin", "choco.exe");
+            if (File.Exists(chocoPath)) return chocoPath;
+
+            return "choco";
+        }
+
         public bool IsAvailable()
         {
             return Bootstrapper.IsInstalled();
@@ -24,6 +33,7 @@ namespace WinHome.Services.Managers
 
         public void Install(AppConfig app, bool dryRun)
         {
+            string executable = GetChocoExecutable();
             if (IsInstalled(app.Id))
             {
                 _logger.LogInfo($"[Choco] {app.Id} is already installed.");
@@ -40,7 +50,7 @@ namespace WinHome.Services.Managers
 
             string args = $"install {app.Id} -y";
 
-            if (!_processRunner.RunCommand(ChocoExecutable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false))
             {
                 throw new Exception($"Failed to install {app.Id} using Chocolatey.");
             }
@@ -50,6 +60,7 @@ namespace WinHome.Services.Managers
 
         public void Uninstall(string appId, bool dryRun)
         {
+            string executable = GetChocoExecutable();
             if (dryRun)
             {
                 _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Chocolatey");
@@ -59,7 +70,7 @@ namespace WinHome.Services.Managers
             _logger.LogInfo($"[Choco] Uninstalling {appId}...");
             string args = $"uninstall {appId} -y";
 
-            if (!_processRunner.RunCommand(ChocoExecutable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false))
             {
                 throw new Exception($"Failed to uninstall {appId} using Chocolatey.");
             }
@@ -69,8 +80,8 @@ namespace WinHome.Services.Managers
 
         public bool IsInstalled(string appId)
         {
-
-            string output = _processRunner.RunCommandWithOutput(ChocoExecutable, $"list -l -r {appId}");
+            string executable = GetChocoExecutable();
+            string output = _processRunner.RunCommandWithOutput(executable, $"list -l -r {appId}");
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
     }

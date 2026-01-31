@@ -5,7 +5,6 @@ namespace WinHome.Services.Managers
 {
     public class ScoopService : IPackageManager
     {
-        private const string ScoopExecutable = "scoop.cmd";
         private readonly IProcessRunner _processRunner;
         private readonly ILogger _logger;
         public IPackageManagerBootstrapper Bootstrapper { get; }
@@ -17,6 +16,23 @@ namespace WinHome.Services.Managers
             _logger = logger;
         }
 
+        private string GetScoopExecutable()
+        {
+            if (_processRunner.RunCommand("scoop", "--version", false)) return "scoop.cmd";
+            
+            string[] paths = {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd"),
+                Path.Combine(Environment.GetEnvironmentVariable("ProgramData") ?? @"C:\ProgramData", "scoop", "shims", "scoop.cmd")
+            };
+
+            foreach (var path in paths)
+            {
+                if (File.Exists(path)) return path;
+            }
+
+            return "scoop.cmd"; // Fallback to original behavior
+        }
+
         public bool IsAvailable()
         {
             return Bootstrapper.IsInstalled();
@@ -24,6 +40,7 @@ namespace WinHome.Services.Managers
 
         public void Install(AppConfig app, bool dryRun)
         {
+            string executable = GetScoopExecutable();
             if (IsInstalled(app.Id))
             {
                 _logger.LogInfo($"[Scoop] {app.Id} is already installed.");
@@ -39,7 +56,7 @@ namespace WinHome.Services.Managers
             _logger.LogInfo($"[Scoop] Installing {app.Id}...");
             string args = $"install {app.Id}";
 
-            if (!_processRunner.RunCommand(ScoopExecutable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false))
             {
                 throw new Exception($"Failed to install {app.Id} using Scoop.");
             }
@@ -48,6 +65,7 @@ namespace WinHome.Services.Managers
 
         public void Uninstall(string appId, bool dryRun)
         {
+            string executable = GetScoopExecutable();
             if (dryRun)
             {
                 _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Scoop");
@@ -57,7 +75,7 @@ namespace WinHome.Services.Managers
             _logger.LogInfo($"[Scoop] Uninstalling {appId}...");
             string args = $"uninstall {appId}";
 
-            if (!_processRunner.RunCommand(ScoopExecutable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false))
             {
                 throw new Exception($"Failed to uninstall {appId} using Scoop.");
             }
@@ -66,7 +84,8 @@ namespace WinHome.Services.Managers
 
         public bool IsInstalled(string appId)
         {
-            string output = _processRunner.RunCommandWithOutput(ScoopExecutable, "list");
+            string executable = GetScoopExecutable();
+            string output = _processRunner.RunCommandWithOutput(executable, "list");
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
     }

@@ -9,10 +9,13 @@ COPY . .
 # Restore and publish the application as a self-contained executable
 RUN dotnet publish -c Release -o /app/publish --runtime win-x64 --self-contained true
 
-# Final image
-FROM mcr.microsoft.com/dotnet/runtime:10.0-windowsservercore-ltsc2022 AS final
+# Final image - using a fuller Windows image for better compatibility with package managers
+FROM mcr.microsoft.com/windows/server:ltsc2022 AS final
 
 WORKDIR /app
+
+# Set execution policy for the container
+RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope LocalMachine -Force"
 
 # Copy the built application
 COPY --from=build /app/publish .
@@ -20,5 +23,9 @@ COPY --from=build /app/publish .
 COPY test-data/ .
 # Copy the source for the dotfile
 COPY src/ .
+# Copy README.md for the dotfile test
+COPY README.md .
 
-ENTRYPOINT ["powershell", "-File", "run-test.ps1"]
+USER ContainerAdministrator
+
+ENTRYPOINT ["powershell", "-File", "run-test-container.ps1"]

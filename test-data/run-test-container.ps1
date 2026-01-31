@@ -1,7 +1,7 @@
-# run-test.ps1
+# run-test-container.ps1
 
 # Run WinHome
-./WinHome.exe --config test-config.yaml --debug
+./WinHome.exe --config test-config-container.yaml --debug
 $winhomeExitCode = $LASTEXITCODE
 
 if ($winhomeExitCode -ne 0) {
@@ -10,7 +10,7 @@ if ($winhomeExitCode -ne 0) {
 }
 
 # Run verification script
-./verify.ps1
+./verify-container.ps1
 $verifyExitCode = $LASTEXITCODE
 
 exit $verifyExitCode

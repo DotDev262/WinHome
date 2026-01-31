@@ -1,4 +1,4 @@
-# verify.ps1
+# verify-full.ps1
 
 $ErrorActionPreference = "Stop"
 $exitCode = 0
@@ -81,7 +81,6 @@ if ($null -eq $envVar) {
 Assert-True ($envVar -eq "true"), "WINHOME_TEST environment variable should be set to 'true'"
 
 # 3. Check for dotfile
-# Assuming README.md is in the current directory (copied by Dockerfile)
 $dotfileContent = Get-Content -Path "test-dotfile.md" -Raw
 $readmeContent = Get-Content -Path "README.md" -Raw
 Assert-True ($dotfileContent -eq $readmeContent), "Dotfile content should match README.md content"

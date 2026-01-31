@@ -132,18 +132,31 @@ Here is a tentative plan for upcoming releases.
 
 ### v1.1 — The Quality & DX Release
 *Focus: Internal refactoring, test coverage, and developer experience.*
-- [ ] Complete Unit Test Coverage
-- [ ] Formalize Contribution Process (`CONTRIBUTING.md`, templates)
-- [ ] Refactor Core Logic (DI, `Program.cs`)
-- [ ] Add Configuration Schema Validation
-- [ ] Build Containerized Acceptance Test Suite
+- [ ] **Complete Unit Test Coverage**:
+  - [x] `DotfileService`
+  - [x] `WslService`
+  - [x] `GitService`
+  - [x] `EnvironmentService`
+- [ ] **Refactor Core Logic**:
+  - [ ] Simplify Dependency Injection in `Program.cs`.
+  - [ ] Decouple `Program.cs` by moving logic into dedicated `CliBuilder` and `AppHost` classes.
+- [ ] **Logging & Testability**:
+  - [x] Introduce a proper `ILogger` service (Console/JSON).
+  - [x] Support `WINHOME_CONFIG_PATH` environment variable.
+  - [x] Implement distinct exit codes for automation.
+- [ ] **Validation & Automation**:
+  - [ ] Add Configuration Schema Validation (JSON Schema).
+  - [x] Finalize Containerized Acceptance Test Suite.
+- [x] **Formalize Contribution Process** (`CONTRIBUTING.md`, templates).
 
 ### v1.2 — The Core Features Release
 *Focus: Adding highly-requested features for end-users.*
-- [ ] VSCode Integration (Settings & Extension Sync)
-- [ ] Advanced State Management (`state list`, `state backup`)
-- [ ] Structured JSON Output (`--json`)
-- [ ] Publish Docs to GitHub Pages
+- [ ] **VSCode Integration** (Settings & Extension Sync).
+- [ ] **Advanced State Management** (`state list`, `state backup`, `state restore`).
+- [ ] **Automation**:
+  - [ ] Publish Docs to GitHub Pages (DocFx).
+  - [ ] Automate Release Notes (`release-drafter`).
+- [ ] **Structured Output**: Finalize `--json` integration for all modules.
 
 ### v2.0 — The Architecture Release
 *Focus: Major architectural changes to support long-term extensibility and power.*

@@ -138,7 +138,7 @@ namespace WinHome.Services.System
 
         private bool IsWslInstalled()
         {
-            return _processRunner.RunCommand("wsl", "--status", true);
+            return _processRunner.RunCommand("wsl", "--status", false);
         }
     }
 }

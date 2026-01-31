@@ -2,8 +2,8 @@ version: "1.0"
 apps:
   - id: 7zip
     manager: scoop
-  - id: git
-    manager: scoop
+  - id: Git.Git
+    manager: winget
   - id: wget
     manager: choco
   - id: usage

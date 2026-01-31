@@ -15,7 +15,10 @@ namespace WinHome.Services.Bootstrappers
 
         public bool IsInstalled()
         {
-            return _processRunner.RunCommand("choco", "--version", true);
+            if (_processRunner.RunCommand("choco", "--version", false)) return true;
+
+            string chocoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "chocolatey", "bin", "choco.exe");
+            return File.Exists(chocoPath);
         }
 
         public void Install(bool dryRun)
