@@ -27,19 +27,33 @@ namespace WinHome.Services.System
 
         public string RunCommandWithOutput(string fileName, string args)
         {
+            return RunCommandWithOutput(fileName, args, null);
+        }
+
+        public string RunCommandWithOutput(string fileName, string args, string? standardInput)
+        {
             var startInfo = new ProcessStartInfo
             {
                 FileName = fileName,
                 Arguments = args,
                 RedirectStandardOutput = true,
+                RedirectStandardInput = standardInput != null,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
             try
             {
                 using var process = Process.Start(startInfo);
-                string output = process?.StandardOutput.ReadToEnd() ?? string.Empty;
-                process?.WaitForExit();
+                if (process == null) return string.Empty;
+
+                if (standardInput != null)
+                {
+                    using var writer = process.StandardInput;
+                    writer.Write(standardInput);
+                }
+
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
                 return output;
             }
             catch { return string.Empty; }

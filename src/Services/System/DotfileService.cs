@@ -3,8 +3,14 @@ using WinHome.Models;
 
 namespace WinHome.Services.System
 {
-    public class DotfileService: IDotfileService
+    public class DotfileService : IDotfileService
     {
+        private readonly ILogger _logger;
+
+        public DotfileService(ILogger logger)
+        {
+            _logger = logger;
+        }
         public void Apply(DotfileConfig dotfile, bool dryRun)
         {
             try
@@ -14,40 +20,38 @@ namespace WinHome.Services.System
 
                 if (!File.Exists(sourcePath))
                 {
-                    Console.WriteLine($"[Dotfile] Error: Source file not found: {sourcePath}");
+                    _logger.LogError($"[Dotfile] Error: Source file not found: {sourcePath}");
                     return;
                 }
 
                 if (IsAlreadyLinked(sourcePath, targetPath))
                 {
-                    Console.WriteLine($"[Dotfile] Already linked: {Path.GetFileName(targetPath)}");
+                    _logger.LogInfo($"[Dotfile] Already linked: {Path.GetFileName(targetPath)}");
                     return;
                 }
 
                 if (dryRun)
                 {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"[DryRun] Would link {sourcePath} -> {targetPath}");
-                    Console.ResetColor();
+                    _logger.LogWarning($"[DryRun] Would link {sourcePath} -> {targetPath}");
                     return;
                 }
 
-                
+
                 if (File.Exists(targetPath))
                 {
                     File.Move(targetPath, targetPath + ".bak", true);
-                    Console.WriteLine($"[Dotfile] Backup created.");
+                    _logger.LogInfo($"[Dotfile] Backup created.");
                 }
 
                 string? parentDir = Path.GetDirectoryName(targetPath);
                 if (!string.IsNullOrEmpty(parentDir)) Directory.CreateDirectory(parentDir);
 
                 File.CreateSymbolicLink(targetPath, sourcePath);
-                Console.WriteLine($"[Success] Link created -> {sourcePath}");
+                _logger.LogSuccess($"[Success] Link created -> {sourcePath}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Error] Dotfile failed: {ex.Message}");
+                _logger.LogError($"[Error] Dotfile failed: {ex.Message}");
             }
         }
 

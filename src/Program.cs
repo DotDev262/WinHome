@@ -36,12 +36,12 @@ class Program
                     services.AddSingleton<ILogger, ConsoleLogger>();
                 }
 
-                services.AddSingleton<DotfileService>();
+                services.AddSingleton<DotfileService>(sp => new DotfileService(sp.GetRequiredService<ILogger>()));
                 services.AddSingleton<RegistryService>(sp => new RegistryService(sp.GetRequiredService<IRegistryWrapper>()));
                 services.AddSingleton<SystemSettingsService>(sp => new SystemSettingsService(sp.GetRequiredService<IProcessRunner>()));
-                services.AddSingleton<WslService>();
-                services.AddSingleton<GitService>();
-                services.AddSingleton<EnvironmentService>();
+                services.AddSingleton<WslService>(sp => new WslService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<ILogger>()));
+                services.AddSingleton<GitService>(sp => new GitService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<ILogger>()));
+                services.AddSingleton<EnvironmentService>(sp => new EnvironmentService(sp.GetRequiredService<ILogger>()));
                 services.AddSingleton<WindowsServiceManager>();
                 services.AddSingleton<ScheduledTaskService>();
 
