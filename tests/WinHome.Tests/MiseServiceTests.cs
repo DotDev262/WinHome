@@ -16,7 +16,8 @@ namespace WinHome.Tests
         {
             _mockProcessRunner = new Mock<IProcessRunner>();
             _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
-            _miseService = new MiseService(_mockProcessRunner.Object, _mockBootstrapper.Object);
+            var mockLogger = new Mock<ILogger>();
+            _miseService = new MiseService(_mockProcessRunner.Object, _mockBootstrapper.Object, mockLogger.Object);
         }
 
         [Fact]

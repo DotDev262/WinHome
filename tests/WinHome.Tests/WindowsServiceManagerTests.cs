@@ -54,7 +54,7 @@ namespace WinHome.Tests
             _processRunnerMock.Verify(p => p.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
             _loggerMock.Verify(
                 x => x.Log(
-                    LogLevel.Warning,
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Service '{serviceConfig.Name}' not found. Skipping.")),
                     It.IsAny<Exception>(),
@@ -136,7 +136,7 @@ namespace WinHome.Tests
             _serviceControllerWrapperMock.Verify(s => s.StartService(serviceConfig.Name), Times.Once);
             _loggerMock.Verify(
                 x => x.Log(
-                    LogLevel.Error,
+                    Microsoft.Extensions.Logging.LogLevel.Error,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Failed to start service '{serviceConfig.Name}': Failed to start")),
                     It.IsAny<Exception>(),

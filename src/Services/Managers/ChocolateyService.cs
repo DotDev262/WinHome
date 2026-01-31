@@ -7,12 +7,14 @@ namespace WinHome.Services.Managers
     {
         private const string ChocoExecutable = "choco";
         private readonly IProcessRunner _processRunner;
+        private readonly ILogger _logger;
         public IPackageManagerBootstrapper Bootstrapper { get; }
 
-        public ChocolateyService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper)
+        public ChocolateyService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger)
         {
             _processRunner = processRunner;
             Bootstrapper = bootstrapper;
+            _logger = logger;
         }
 
         public bool IsAvailable()
@@ -24,19 +26,17 @@ namespace WinHome.Services.Managers
         {
             if (IsInstalled(app.Id))
             {
-                Console.WriteLine($"[Choco] {app.Id} is already installed.");
+                _logger.LogInfo($"[Choco] {app.Id} is already installed.");
                 return;
             }
 
             if (dryRun)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"[DryRun] Would install '{app.Id}' via Chocolatey");
-                Console.ResetColor();
+                _logger.LogWarning($"[DryRun] Would install '{app.Id}' via Chocolatey");
                 return;
             }
 
-            Console.WriteLine($"[Choco] Installing {app.Id}...");
+            _logger.LogInfo($"[Choco] Installing {app.Id}...");
 
             string args = $"install {app.Id} -y";
 
@@ -45,20 +45,18 @@ namespace WinHome.Services.Managers
                 throw new Exception($"Failed to install {app.Id} using Chocolatey.");
             }
 
-            Console.WriteLine($"[Success] Installed {app.Id}");
+            _logger.LogSuccess($"[Success] Installed {app.Id}");
         }
 
         public void Uninstall(string appId, bool dryRun)
         {
             if (dryRun)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"[DryRun] Would uninstall '{appId}' via Chocolatey");
-                Console.ResetColor();
+                _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Chocolatey");
                 return;
             }
 
-            Console.WriteLine($"[Choco] Uninstalling {appId}...");
+            _logger.LogInfo($"[Choco] Uninstalling {appId}...");
             string args = $"uninstall {appId} -y";
 
             if (!_processRunner.RunCommand(ChocoExecutable, args, false))
@@ -66,7 +64,7 @@ namespace WinHome.Services.Managers
                 throw new Exception($"Failed to uninstall {appId} using Chocolatey.");
             }
 
-            Console.WriteLine($"[Success] Uninstalled {appId}");
+            _logger.LogSuccess($"[Success] Uninstalled {appId}");
         }
 
         public bool IsInstalled(string appId)

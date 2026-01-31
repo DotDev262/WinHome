@@ -16,7 +16,8 @@ namespace WinHome.Tests
         {
             _mockProcessRunner = new Mock<IProcessRunner>();
             _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
-            _wingetService = new WingetService(_mockProcessRunner.Object, _mockBootstrapper.Object);
+            var mockLogger = new Mock<ILogger>();
+            _wingetService = new WingetService(_mockProcessRunner.Object, _mockBootstrapper.Object, mockLogger.Object);
         }
 
         [Fact]

@@ -7,12 +7,14 @@ namespace WinHome.Services.Managers
     {
         private const string WingetExecutable = "winget";
         private readonly IProcessRunner _processRunner;
+        private readonly ILogger _logger;
         public IPackageManagerBootstrapper Bootstrapper { get; }
 
-        public WingetService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper)
+        public WingetService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger)
         {
             _processRunner = processRunner;
             Bootstrapper = bootstrapper;
+            _logger = logger;
         }
 
         public bool IsAvailable() => Bootstrapper.IsInstalled();
@@ -21,19 +23,17 @@ namespace WinHome.Services.Managers
         {
             if (IsInstalled(app.Id))
             {
-                Console.WriteLine($"[Winget] {app.Id} is already installed.");
+                _logger.LogInfo($"[Winget] {app.Id} is already installed.");
                 return;
             }
 
             if (dryRun)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"[DryRun] Would install '{app.Id}' via Winget");
-                Console.ResetColor();
+                _logger.LogWarning($"[DryRun] Would install '{app.Id}' via Winget");
                 return;
             }
 
-            Console.WriteLine($"[Winget] Installing {app.Id}...");
+            _logger.LogInfo($"[Winget] Installing {app.Id}...");
             string args = $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements";
             if (!string.IsNullOrEmpty(app.Source)) args += $" --source {app.Source}";
 
@@ -41,27 +41,25 @@ namespace WinHome.Services.Managers
             {
                 throw new Exception($"Failed to install {app.Id} using Winget.");
             }
-            Console.WriteLine($"[Success] Installed {app.Id}");
+            _logger.LogSuccess($"[Success] Installed {app.Id}");
         }
 
         public void Uninstall(string appId, bool dryRun)
         {
             if (dryRun)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"[DryRun] Would uninstall '{appId}' via Winget");
-                Console.ResetColor();
+                _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Winget");
                 return;
             }
 
-            Console.WriteLine($"[Winget] Uninstalling {appId}...");
+            _logger.LogInfo($"[Winget] Uninstalling {appId}...");
             string args = $"uninstall --id {appId} -e --silent --accept-source-agreements";
 
             if (!_processRunner.RunCommand(WingetExecutable, args, false))
             {
                 throw new Exception($"Failed to uninstall {appId} using Winget.");
             }
-            Console.WriteLine($"[Success] Uninstalled {appId}");
+            _logger.LogSuccess($"[Success] Uninstalled {appId}");
         }
 
         public bool IsInstalled(string appId)

@@ -30,6 +30,7 @@ namespace WinHome.Tests
             _mockEnv = new Mock<IEnvironmentService>();
             _mockServiceManager = new Mock<IWindowsServiceManager>();
             _mockScheduledTaskService = new Mock<IScheduledTaskService>();
+            var mockLogger = new Mock<ILogger>();
 
             // Setup basic behavior
             _mockWinget.Setup(x => x.IsAvailable()).Returns(true);
@@ -49,6 +50,7 @@ namespace WinHome.Tests
             // Arrange
             var config = new Configuration();
             config.Apps.Add(new AppConfig { Id = "TestApp", Manager = "winget" });
+            var mockLogger = new Mock<ILogger>();
 
             var engine = new Engine(
                 _managers,
@@ -59,7 +61,8 @@ namespace WinHome.Tests
                 _mockGit.Object,
                 _mockEnv.Object,
                 _mockServiceManager.Object,
-                _mockScheduledTaskService.Object
+                _mockScheduledTaskService.Object,
+                mockLogger.Object
             );
 
             // Act
@@ -80,6 +83,7 @@ namespace WinHome.Tests
             // Arrange
             var config = new Configuration();
             config.Apps.Add(new AppConfig { Id = "DryRunApp", Manager = "winget" });
+            var mockLogger = new Mock<ILogger>();
 
             var engine = new Engine(
                 _managers,
@@ -90,7 +94,8 @@ namespace WinHome.Tests
                 _mockGit.Object,
                 _mockEnv.Object,
                 _mockServiceManager.Object,
-                _mockScheduledTaskService.Object
+                _mockScheduledTaskService.Object,
+                mockLogger.Object
             );
 
             // Act
@@ -111,6 +116,7 @@ namespace WinHome.Tests
             var config = new Configuration();
             config.Apps.Add(new AppConfig { Id = "UnchangedApp", Manager = "winget" });
             config.Apps.Add(new AppConfig { Id = "NewApp", Manager = "winget" });
+            var mockLogger = new Mock<ILogger>();
 
             var engine = new Engine(
                 _managers,
@@ -121,7 +127,8 @@ namespace WinHome.Tests
                 _mockGit.Object,
                 _mockEnv.Object,
                 _mockServiceManager.Object,
-                _mockScheduledTaskService.Object
+                _mockScheduledTaskService.Object,
+                mockLogger.Object
             );
             
             var previousState = new HashSet<string> { "winget:UnchangedApp", "winget:OldApp" };

@@ -7,12 +7,14 @@ namespace WinHome.Services.Managers
     {
         private const string ScoopExecutable = "scoop.cmd";
         private readonly IProcessRunner _processRunner;
+        private readonly ILogger _logger;
         public IPackageManagerBootstrapper Bootstrapper { get; }
 
-        public ScoopService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper)
+        public ScoopService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger)
         {
             _processRunner = processRunner;
             Bootstrapper = bootstrapper;
+            _logger = logger;
         }
 
         public bool IsAvailable()
@@ -24,46 +26,42 @@ namespace WinHome.Services.Managers
         {
             if (IsInstalled(app.Id))
             {
-                Console.WriteLine($"[Scoop] {app.Id} is already installed.");
+                _logger.LogInfo($"[Scoop] {app.Id} is already installed.");
                 return;
             }
 
             if (dryRun)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"[DryRun] Would install '{app.Id}' via Scoop");
-                Console.ResetColor();
+                _logger.LogWarning($"[DryRun] Would install '{app.Id}' via Scoop");
                 return;
             }
 
-            Console.WriteLine($"[Scoop] Installing {app.Id}...");
+            _logger.LogInfo($"[Scoop] Installing {app.Id}...");
             string args = $"install {app.Id}";
 
             if (!_processRunner.RunCommand(ScoopExecutable, args, false))
             {
                 throw new Exception($"Failed to install {app.Id} using Scoop.");
             }
-            Console.WriteLine($"[Success] Installed {app.Id}");
+            _logger.LogSuccess($"[Success] Installed {app.Id}");
         }
 
         public void Uninstall(string appId, bool dryRun)
         {
             if (dryRun)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"[DryRun] Would uninstall '{appId}' via Scoop");
-                Console.ResetColor();
+                _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Scoop");
                 return;
             }
 
-            Console.WriteLine($"[Scoop] Uninstalling {appId}...");
+            _logger.LogInfo($"[Scoop] Uninstalling {appId}...");
             string args = $"uninstall {appId}";
 
             if (!_processRunner.RunCommand(ScoopExecutable, args, false))
             {
                 throw new Exception($"Failed to uninstall {appId} using Scoop.");
             }
-            Console.WriteLine($"[Success] Uninstalled {appId}");
+            _logger.LogSuccess($"[Success] Uninstalled {appId}");
         }
 
         public bool IsInstalled(string appId)

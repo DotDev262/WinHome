@@ -16,8 +16,8 @@ namespace WinHome
         private readonly IEnvironmentService _env;
         private readonly IWindowsServiceManager _serviceManager;
         private readonly IScheduledTaskService _scheduledTaskService;
+        private readonly ILogger _logger;
         private const string StateFileName = "winhome.state.json";
-        private readonly object _consoleLock = new();
 
         public Engine(
             Dictionary<string, IPackageManager> managers,
@@ -28,7 +28,8 @@ namespace WinHome
             IGitService git,
             IEnvironmentService env,
             IWindowsServiceManager serviceManager,
-            IScheduledTaskService scheduledTaskService)
+            IScheduledTaskService scheduledTaskService,
+            ILogger logger)
         {
             _managers = managers;
             _dotfiles = dotfiles;
@@ -39,43 +40,43 @@ namespace WinHome
             _env = env;
             _serviceManager = serviceManager;
             _scheduledTaskService = scheduledTaskService;
+            _logger = logger;
         }
 
         public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false)
         {
-            Console.WriteLine($"--- WinHome v{config.Version} ---");
+            _logger.LogInfo($"--- WinHome v{config.Version} ---");
 
             if (!string.IsNullOrEmpty(profileName))
             {
                 if (config.Profiles != null && config.Profiles.TryGetValue(profileName, out var profile))
                 {
-                    Console.WriteLine($"\n[Profile] Activating '{profileName}'...");
+                    _logger.LogInfo($"\n[Profile] Activating '{profileName}'...");
                     if (profile.Git != null) config.Git = profile.Git;
                 }
                 else
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"[Error] Profile '{profileName}' not found.");
-                    Console.ResetColor();
+                    _logger.LogError($"[Error] Profile '{profileName}' not found.");
                     if (!dryRun) return;
                 }
             }
 
-            if(diff) {
+            if (diff)
+            {
                 await PrintDiffAsync(config);
                 return;
             }
 
             // Interface Calls (Mockable)
             var currentState = await BuildStateFromConfig(config);
-            
+
             var previousState = LoadState();
-            
+
             // Cleanup
             var itemsToRemove = previousState.Except(currentState).ToList();
             if (itemsToRemove.Any())
             {
-                Console.WriteLine("\n--- Cleaning Up ---");
+                _logger.LogInfo("\n--- Cleaning Up ---");
                 await Task.Run(() => Parallel.ForEach(itemsToRemove, uniqueId =>
                 {
                     if (uniqueId.StartsWith("reg:"))
@@ -83,7 +84,7 @@ namespace WinHome
                         var parts = uniqueId.Substring(4).Split('|', 2);
                         if (parts.Length == 2) _registry.Revert(parts[0], parts[1], dryRun);
                     }
-                    else 
+                    else
                     {
                         var parts = uniqueId.Split(':', 2);
                         if (parts.Length == 2 && _managers.TryGetValue(parts[0], out var mgr))
@@ -97,7 +98,7 @@ namespace WinHome
             // Install Apps
             if (config.Apps.Any())
             {
-                Console.WriteLine("\n--- Reconciling Apps ---");
+                _logger.LogInfo("\n--- Reconciling Apps ---");
                 await Task.Run(() => Parallel.ForEach(config.Apps, app =>
                 {
                     if (_managers.TryGetValue(app.Manager, out var mgr))
@@ -107,10 +108,7 @@ namespace WinHome
                             mgr.Bootstrapper.Install(dryRun);
                             if (!mgr.IsAvailable())
                             {
-                                lock (_consoleLock)
-                                {
-                                    Console.WriteLine($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
-                                }
+                                _logger.LogError($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
                                 return;
                             }
                         }
@@ -118,75 +116,73 @@ namespace WinHome
                     }
                     else
                     {
-                        lock (_consoleLock)
-                        {
-                            Console.WriteLine($"[Error] Unknown manager: {app.Manager}");
-                        }
+                        _logger.LogError($"[Error] Unknown manager: {app.Manager}");
                     }
                 }));
             }
 
             if (config.Git != null) _git.Configure(config.Git, dryRun);
-            
-            if (config.Wsl != null) 
+
+            if (config.Wsl != null)
             {
-                Console.WriteLine("\n--- Configuring WSL ---");
+                _logger.LogInfo("\n--- Configuring WSL ---");
                 _wsl.Configure(config.Wsl, dryRun);
             }
-            
+
             if (config.EnvVars.Any())
             {
-                Console.WriteLine("\n--- Configuring Environment Variables ---");
+                _logger.LogInfo("\n--- Configuring Environment Variables ---");
                 await Task.Run(() => Parallel.ForEach(config.EnvVars, env => _env.Apply(env, dryRun)));
             }
-            
+
             var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
             var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
 
             if (allTweaks.Any() && OperatingSystem.IsWindows())
             {
-                Console.WriteLine("\n--- Applying Registry Tweaks ---");
+                _logger.LogInfo("\n--- Applying Registry Tweaks ---");
                 await Task.Run(() => Parallel.ForEach(allTweaks, tweak => _registry.Apply(tweak, dryRun)));
             }
 
             if (config.SystemSettings.Any() && OperatingSystem.IsWindows())
             {
-                Console.WriteLine("\n--- Applying System Settings ---");
+                _logger.LogInfo("\n--- Applying System Settings ---");
                 await _systemSettings.ApplyNonRegistrySettingsAsync(config.SystemSettings, dryRun);
             }
 
             if (config.Dotfiles.Any())
             {
-                Console.WriteLine("\n--- Linking Dotfiles ---");
+                _logger.LogInfo("\n--- Linking Dotfiles ---");
                 await Task.Run(() => Parallel.ForEach(config.Dotfiles, dotfile => _dotfiles.Apply(dotfile, dryRun)));
             }
 
             if (config.Services.Any())
             {
-                Console.WriteLine("\n--- Managing Windows Services ---");
+                _logger.LogInfo("\n--- Managing Windows Services ---");
                 await Task.Run(() => Parallel.ForEach(config.Services, service => _serviceManager.Apply(service, dryRun)));
             }
 
             if (config.ScheduledTasks.Any())
             {
-                Console.WriteLine("\n--- Scheduling Tasks ---");
+                _logger.LogInfo("\n--- Scheduling Tasks ---");
                 await Task.Run(() => Parallel.ForEach(config.ScheduledTasks, task => _scheduledTaskService.Apply(task, dryRun)));
             }
 
             if (!dryRun)
             {
                 SaveState(currentState);
-                Console.WriteLine("\n[State Saved] Configuration synced.");
+                _logger.LogSuccess("\n[State Saved] Configuration synced.");
             }
             else
             {
-                Console.WriteLine("\n[Dry Run] State was NOT saved.");
+                _logger.LogWarning("\n[Dry Run] State was NOT saved.");
             }
         }
 
-        public async Task PrintDiffAsync(Configuration config) {
-            Console.WriteLine("\n--- State Diff ---");
-            
+        public async Task PrintDiffAsync(Configuration config)
+        {
+            _logger.LogInfo("\n--- State Diff ---");
+
             var previousState = LoadState();
             var currentState = await BuildStateFromConfig(config);
 
@@ -196,43 +192,35 @@ namespace WinHome
 
             if (!itemsToRemove.Any() && !itemsToAdd.Any())
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("No changes detected. System is up to date.");
-                Console.ResetColor();
+                _logger.LogSuccess("No changes detected. System is up to date.");
                 return;
             }
 
             if (itemsToRemove.Any())
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("\n[-] Items to Remove:");
+                _logger.LogError("\n[-] Items to Remove:");
                 foreach (var item in itemsToRemove)
                 {
-                    Console.WriteLine($"  - {item}");
+                    _logger.LogError($"  - {item}");
                 }
-                Console.ResetColor();
             }
 
             if (itemsToAdd.Any())
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("\n[+] Items to Add:");
+                _logger.LogSuccess("\n[+] Items to Add:");
                 foreach (var item in itemsToAdd)
                 {
-                    Console.WriteLine($"  + {item}");
+                    _logger.LogSuccess($"  + {item}");
                 }
-                Console.ResetColor();
             }
 
             if (unchangedItems.Any())
             {
-                Console.ForegroundColor = ConsoleColor.Gray;
-                Console.WriteLine("\n[=] Unchanged Items:");
+                _logger.LogInfo("\n[=] Unchanged Items:");
                 foreach (var item in unchangedItems)
                 {
-                    Console.WriteLine($"  = {item}");
+                    _logger.LogInfo($"  = {item}");
                 }
-                Console.ResetColor();
             }
         }
 
@@ -241,7 +229,7 @@ namespace WinHome
             var state = new HashSet<string>();
 
             // App managers
-            foreach(var app in config.Apps)
+            foreach (var app in config.Apps)
             {
                 state.Add($"{app.Manager}:{app.Id}");
             }
@@ -249,7 +237,7 @@ namespace WinHome
             // Registry tweaks
             var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
             var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
-            foreach(var reg in allTweaks)
+            foreach (var reg in allTweaks)
             {
                 state.Add($"reg:{reg.Path}|{reg.Name}");
             }
@@ -259,21 +247,21 @@ namespace WinHome
 
         private void SaveState(HashSet<string> state)
         {
-            try 
+            try
             {
                 string json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(StateFileName, json);
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                Console.WriteLine($"[Warning] Could not save state: {ex.Message}");
+                _logger.LogWarning($"[Warning] Could not save state: {ex.Message}");
             }
         }
 
         private HashSet<string> LoadState()
         {
             if (!File.Exists(StateFileName)) return new HashSet<string>();
-            try 
+            try
             {
                 string json = File.ReadAllText(StateFileName);
                 return JsonSerializer.Deserialize<HashSet<string>>(json) ?? new HashSet<string>();
