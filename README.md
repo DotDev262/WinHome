@@ -273,7 +273,7 @@ Please open an Issue or Pull Request on GitHub.
 WinHome stands on the shoulders of incredible open-source technologies:
 
 * **Microsoft .NET**
-* **Winget / Scoop / Chocolatey / Mise**
+* **Winget / Scoop / Chocolatey**
 * **YAML**
 * **GitHub Actions**
 * **PowerShell**
