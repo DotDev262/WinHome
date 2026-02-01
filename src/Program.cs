@@ -48,14 +48,12 @@ class Program
                 // Bootstrappers
                 services.AddSingleton<ChocolateyBootstrapper>();
                 services.AddSingleton<ScoopBootstrapper>();
-                services.AddSingleton<MiseBootstrapper>();
                 services.AddSingleton<WingetBootstrapper>();
 
                 // Package Managers
                 services.AddSingleton<WingetService>(sp => new WingetService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<WingetBootstrapper>(), sp.GetRequiredService<ILogger>()));
                 services.AddSingleton<ChocolateyService>(sp => new ChocolateyService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<ChocolateyBootstrapper>(), sp.GetRequiredService<ILogger>()));
                 services.AddSingleton<ScoopService>(sp => new ScoopService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<ScoopBootstrapper>(), sp.GetRequiredService<ILogger>()));
-                services.AddSingleton<MiseService>(sp => new MiseService(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<MiseBootstrapper>(), sp.GetRequiredService<ILogger>()));
 
                 services.AddSingleton<IDotfileService, DotfileService>();
                 services.AddSingleton<IRegistryService, RegistryService>();
@@ -72,8 +70,7 @@ class Program
                 {
                     { "winget", sp.GetRequiredService<WingetService>() },
                     { "choco", sp.GetRequiredService<ChocolateyService>() },
-                    { "scoop", sp.GetRequiredService<ScoopService>() },
-                    { "mise", sp.GetRequiredService<MiseService>() }
+                    { "scoop", sp.GetRequiredService<ScoopService>() }
                 });
                 services.AddSingleton<Engine>(sp => new Engine(
                     sp.GetRequiredService<Dictionary<string, IPackageManager>>(),

@@ -27,9 +27,10 @@ namespace WinHome.Tests
             var app = new AppConfig { Id = "testapp" };
             bool dryRun = false;
 
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>())).Returns(true); // IsInstalled check
             _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(""); // Not installed
-            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", $"install {app.Id}", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", $"install {app.Id}", dryRun, It.IsAny<Action<string>>()))
                              .Returns(false); // Fails
 
             // Act & Assert
@@ -44,7 +45,8 @@ namespace WinHome.Tests
             string appId = "testapp";
             bool dryRun = false;
 
-            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", $"uninstall {appId}", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>())).Returns(true); // IsInstalled check
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", $"uninstall {appId}", dryRun, It.IsAny<Action<string>>()))
                              .Returns(false); // Fails
 
             // Act & Assert

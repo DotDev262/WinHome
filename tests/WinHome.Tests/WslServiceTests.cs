@@ -24,7 +24,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new WslConfig();
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(false);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false, It.IsAny<Action<string>>())).Returns(false);
 
             // Act
             _wslService.Configure(config, false);
@@ -38,7 +38,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new WslConfig();
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(false);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false, It.IsAny<Action<string>>())).Returns(false);
 
             // Act
             _wslService.Configure(config, true);
@@ -52,13 +52,13 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new WslConfig { Update = true };
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false, It.IsAny<Action<string>>())).Returns(true);
 
             // Act
             _wslService.Configure(config, false);
 
             // Assert
-            _processRunnerMock.Verify(p => p.RunCommand("wsl", "--update", false), Times.Once);
+            _processRunnerMock.Verify(p => p.RunCommand("wsl", "--update", false, It.IsAny<Action<string>>()), Times.Once);
         }
 
         [Fact]
@@ -66,13 +66,13 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new WslConfig { DefaultVersion = 2 };
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false, It.IsAny<Action<string>>())).Returns(true);
 
             // Act
             _wslService.Configure(config, false);
 
             // Assert
-            _processRunnerMock.Verify(p => p.RunCommand("wsl", "--set-default-version 2", false), Times.Once);
+            _processRunnerMock.Verify(p => p.RunCommand("wsl", "--set-default-version 2", false, It.IsAny<Action<string>>()), Times.Once);
         }
 
         [Fact]
@@ -81,14 +81,14 @@ namespace WinHome.Tests
             // Arrange
             var config = new WslConfig();
             config.Distros.Add(new WslDistroConfig { Name = "Ubuntu" });
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false, It.IsAny<Action<string>>())).Returns(true);
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("wsl", "--list --verbose")).Returns("");
 
             // Act
             _wslService.Configure(config, false);
 
             // Assert
-            _processRunnerMock.Verify(p => p.RunCommand("wsl", "--install -d Ubuntu", false), Times.Once);
+            _processRunnerMock.Verify(p => p.RunCommand("wsl", "--install -d Ubuntu", false, It.IsAny<Action<string>>()), Times.Once);
         }
 
         [Fact]
@@ -97,14 +97,14 @@ namespace WinHome.Tests
             // Arrange
             var config = new WslConfig { DefaultDistro = "Ubuntu" };
             config.Distros.Add(new WslDistroConfig { Name = "Ubuntu" });
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false, It.IsAny<Action<string>>())).Returns(true);
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("wsl", "--list --verbose")).Returns("Ubuntu");
 
             // Act
             _wslService.Configure(config, false);
 
             // Assert
-            _processRunnerMock.Verify(p => p.RunCommand("wsl", "--set-default Ubuntu", false), Times.Once);
+            _processRunnerMock.Verify(p => p.RunCommand("wsl", "--set-default Ubuntu", false, It.IsAny<Action<string>>()), Times.Once);
         }
 
         [Fact]
@@ -115,15 +115,15 @@ namespace WinHome.Tests
             File.WriteAllText(scriptPath, "echo 'hello'");
             var config = new WslConfig();
             config.Distros.Add(new WslDistroConfig { Name = "Ubuntu", SetupScript = scriptPath });
-            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false)).Returns(true);
+            _processRunnerMock.Setup(p => p.RunCommand("wsl", "--status", false, It.IsAny<Action<string>>())).Returns(true);
             _processRunnerMock.Setup(p => p.RunCommandWithOutput("wsl", "--list --verbose")).Returns("Ubuntu");
-            _processRunnerMock.Setup(p => p.RunCommandWithOutput("wsl", $"-d Ubuntu -- bash -s", "echo 'hello'\n")).Returns("hello");
+            _processRunnerMock.Setup(p => p.RunCommandWithOutput("wsl", $"-d Ubuntu -- bash -s", "echo 'hello'")).Returns("hello");
 
             // Act
             _wslService.Configure(config, false);
 
             // Assert
-            _processRunnerMock.Verify(p => p.RunCommandWithOutput("wsl", $"-d Ubuntu -- bash -s", "echo 'hello'\n"), Times.Once);
+            _processRunnerMock.Verify(p => p.RunCommandWithOutput("wsl", $"-d Ubuntu -- bash -s", "echo 'hello'"), Times.Once);
             _loggerMock.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("hello"))), Times.Once);
 
             // Cleanup

@@ -27,14 +27,14 @@ namespace WinHome.Tests
             string appId = "testapp";
             bool dryRun = false;
 
-            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun, It.IsAny<Action<string>>()))
                              .Returns(true);
 
             // Act
             _chocolateyService.Uninstall(appId, dryRun);
 
             // Assert
-            _mockProcessRunner.Verify(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun), Times.Once);
+            _mockProcessRunner.Verify(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun, It.IsAny<Action<string>>()), Times.Once);
         }
 
         [Fact]
@@ -44,11 +44,14 @@ namespace WinHome.Tests
             string appId = "testapp";
             bool dryRun = true;
 
+            // Allow version checks
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+
             // Act
             _chocolateyService.Uninstall(appId, dryRun);
 
             // Assert
-            _mockProcessRunner.Verify(pr => pr.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+            _mockProcessRunner.Verify(pr => pr.RunCommand("choco", $"uninstall {appId} -y", It.IsAny<bool>(), It.IsAny<Action<string>>()), Times.Never);
         }
 
         [Fact]
@@ -58,7 +61,7 @@ namespace WinHome.Tests
             string appId = "testapp";
             bool dryRun = false;
 
-            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun, It.IsAny<Action<string>>()))
                              .Returns(false);
 
             // Act & Assert
@@ -75,7 +78,7 @@ namespace WinHome.Tests
 
             _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(""); // Not installed
-            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"install {app.Id} -y", dryRun))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"install {app.Id} -y", dryRun, It.IsAny<Action<string>>()))
                              .Returns(false); // Fails
 
             // Act & Assert

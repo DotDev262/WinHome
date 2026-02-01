@@ -29,7 +29,12 @@ namespace WinHome.Tests
 
             _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(""); // Not installed
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements", dryRun))
+            
+            // Allow for --version check
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "source update", false, It.IsAny<Action<string>>())).Returns(true);
+
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --no-upgrade", dryRun, It.IsAny<Action<string>>()))
                              .Returns(false); // Fails
 
             // Act & Assert
@@ -44,7 +49,10 @@ namespace WinHome.Tests
             string appId = "testapp";
             bool dryRun = false;
 
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"uninstall --id {appId} -e --silent --accept-source-agreements", dryRun))
+            // Allow for --version check
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"uninstall --id {appId} -e --silent --accept-source-agreements --disable-interactivity", dryRun, It.IsAny<Action<string>>()))
                              .Returns(false); // Fails
 
             // Act & Assert

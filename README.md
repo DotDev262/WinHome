@@ -71,10 +71,9 @@ For a detailed breakdown of all configuration options, refer to the [Configurati
 
 ### 📦 Universal Package Management
 
-* Winget
+* Winget (with auto-install support)
 * Scoop
 * Chocolatey
-* Mise
 
 ### 🐧 WSL Management
 
@@ -100,6 +99,7 @@ This roadmap is a living document that outlines the project's future direction. 
 - [x] ~~Windows Services management~~
 - [x] ~~Scheduled Tasks provisioning~~
 - [x] ~~Add Chocolatey uninstall support~~
+- [x] **Winget Auto-Install**: Automatically installs Winget if missing.
 - [ ] **VSCode Integration**: Automatically sync settings and extensions.
 - [ ] **Resource Dependencies**: Introduce a `dependsOn:` attribute to control execution order.
 - [ ] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
@@ -109,6 +109,7 @@ This roadmap is a living document that outlines the project's future direction. 
 
 ### Developer Experience (DevEx) & Tooling
 - [x] ~~State diff viewer (`--diff`)~~
+- [x] **Enhanced Logging**: Filtered, real-time output for package managers.
 - [ ] **Configuration Schema Validation**: Validate `config.yaml` against a formal schema to provide better error messages.
 - [ ] **Advanced State Management**: Add CLI commands to view, backup, and restore system state.
 - [ ] **Structured Output**: Add a `--json` flag for machine-readable output of run results.
@@ -119,7 +120,8 @@ This roadmap is a living document that outlines the project's future direction. 
 
 ### Code Quality & Automation
 - [x] ~~Mocked tests for registry operations~~
-- [ ] **Containerized Acceptance Tests**: Build a full acceptance test suite that runs inside a clean Windows container.
+- [x] **Containerized Acceptance Tests**: Build a full acceptance test suite that runs inside a clean Windows container.
+- [x] **Native GitHub Actions Testing**: End-to-end testing on real Windows VMs.
 - [ ] **Complete Unit Test Coverage**: Ensure all services and managers have comprehensive unit tests.
 - [ ] **Publish Docs to GitHub Pages**: Automate the publishing of the `/docs` directory to a professional documentation website.
 - [ ] **Automate Release Notes**: Use tools like `release-drafter` to auto-generate changelogs for new releases.
@@ -169,6 +171,13 @@ Here is a tentative plan for upcoming releases.
 
 ## 📅 Changelog
 
+### Day 6: Reliability & CI/CD
+- [x] **Winget Auto-Install**: WinHome now automatically installs Winget if it's missing (downloading from GitHub Releases).
+- [x] **Robust Logging**: Implemented filtered, real-time logging for all package managers, suppressing progress bar clutter.
+- [x] **Process Resilience**: Added timeouts and process tree killing to prevent shell command hangs.
+- [x] **Native GHA Testing**: Added a native Windows test job to GitHub Actions to properly test Winget integration.
+- [x] **Removed Mise**: Deprecated and removed Mise support to focus on core stability.
+
 ### Day 5: Containerization & Advanced Features (Part 1)
 - [x] **Create a Test `Dockerfile`**: Developed a `Dockerfile` for Windows containers.
 
@@ -217,8 +226,6 @@ apps:
     manager: "winget"
   - id: "neovim"
     manager: "scoop"
-  - id: "python@3.10"
-    manager: "mise"
 
 dotfiles:
   - src: "./files/.gitconfig"
