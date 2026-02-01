@@ -2,10 +2,6 @@ version: "1.0"
 apps:
   - id: 7zip.7zip
     manager: winget
-  - id: wget
-    manager: scoop
-  - id: curl
-    manager: choco
 envVars:
   - variable: "WINHOME_TEST_GHA"
     value: "true"

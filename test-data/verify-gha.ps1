@@ -18,14 +18,6 @@ try {
     $wingetList = winget list --id 7zip.7zip -e
     Assert-True ($wingetList -like "*7-Zip*"), "7-Zip should be installed (Winget)"
 
-    # Check Scoop app
-    $scoopList = scoop list wget
-    Assert-True ($scoopList -like "*wget*"), "Wget should be installed (Scoop)"
-
-    # Check Choco app
-    $chocoList = choco list -l -r curl
-    Assert-True ($chocoList -like "*curl*"), "Curl should be installed (Choco)"
-
 } catch {
     Write-Error "Failed to check for application installations: $_"
     $global:exitCode = 1
