@@ -41,7 +41,13 @@ namespace WinHome.Services.Bootstrappers
 
             if (!_processRunner.RunCommand(scoopExec, "install mise", false))
             {
-                throw new Exception($"Failed to install {Name} using Scoop.");
+                // Simple retry for Scoop transient issues
+                Console.WriteLine($"[Bootstrapper] Failed to install {Name} via Scoop. Retrying in 5 seconds...");
+                Thread.Sleep(5000);
+                if (!_processRunner.RunCommand(scoopExec, "install mise", false))
+                {
+                    throw new Exception($"Failed to install {Name} using Scoop.");
+                }
             }
 
             Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");

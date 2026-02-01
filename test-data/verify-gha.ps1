@@ -22,9 +22,9 @@ try {
     $scoopList = scoop list wget
     Assert-True ($scoopList -like "*wget*"), "Wget should be installed (Scoop)"
 
-    # Check Mise app
-    $miseList = mise ls --global --current
-    Assert-True ($miseList -like "*usage*"), "Usage plugin/tool should be installed (Mise)"
+    # Check Choco app
+    $chocoList = choco list -l -r curl
+    Assert-True ($chocoList -like "*curl*"), "Curl should be installed (Choco)"
 
 } catch {
     Write-Error "Failed to check for application installations: $_"

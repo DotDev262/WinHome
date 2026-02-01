@@ -59,7 +59,7 @@ namespace WinHome.Services.Managers
             _logger.LogInfo($"[Mise] Setting global {app.Id}...");
             string args = $"use --global {app.Id} -y";
 
-            if (!_processRunner.RunCommand(executable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false, _logger.LogInfo))
             {
                 throw new Exception($"Failed to install {app.Id} using Mise.");
             }
@@ -78,7 +78,7 @@ namespace WinHome.Services.Managers
             _logger.LogInfo($"[Mise] Removing global {appId}...");
             string args = $"unuse --global {appId}";
 
-            if (!_processRunner.RunCommand(executable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false, _logger.LogInfo))
             {
                 throw new Exception($"Failed to remove {appId} using Mise.");
             }

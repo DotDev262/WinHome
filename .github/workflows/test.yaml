@@ -1,4 +1,4 @@
-name: Docker Test
+name: WinHome Tests
 
 on:
   push:
@@ -7,9 +7,37 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test-native:
+    name: Native Windows Test
     runs-on: windows-latest
 
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore src/WinHome.csproj
+
+    - name: Build WinHome
+      run: dotnet publish src/WinHome.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+
+    - name: Run GHA Tests
+      shell: pwsh
+      run: |
+        cd publish
+        cp ../test-data/test-config-gha.yaml .
+        cp ../test-data/run-test-gha.ps1 .
+        cp ../test-data/verify-gha.ps1 .
+        cp ../README.md .
+        ./run-test-gha.ps1
+
+  test-container:
+    name: Container Test (Scoop/Choco Only)
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
 

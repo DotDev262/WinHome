@@ -67,7 +67,15 @@ namespace WinHome
                 return;
             }
 
-            // Interface Calls (Mockable)
+            // Check network if we have apps to install or WSL update enabled
+            if ((config.Apps.Any() || (config.Wsl != null && config.Wsl.Update)) && !dryRun)
+            {
+                if (!WaitForNetwork())
+                {
+                    _logger.LogWarning("[Warning] No internet connection detected. Package manager operations may fail.");
+                }
+            }
+
             var currentState = await BuildStateFromConfig(config);
 
             var previousState = LoadState();
@@ -99,24 +107,19 @@ namespace WinHome
             if (config.Apps.Any())
             {
                 _logger.LogInfo("\n--- Reconciling Apps ---");
-                var bootstrapLock = new object();
-                await Task.Run(() => Parallel.ForEach(config.Apps, app =>
+                foreach (var app in config.Apps)
                 {
+                    _logger.LogInfo($"[Engine] Processing {app.Manager}:{app.Id}...");
                     if (_managers.TryGetValue(app.Manager, out var mgr))
                     {
                         if (!mgr.IsAvailable())
                         {
-                            lock (bootstrapLock)
+                            _logger.LogInfo($"[Engine] Manager '{app.Manager}' not available. Bootstrapping...");
+                            mgr.Bootstrapper.Install(dryRun);
+                            if (!mgr.IsAvailable())
                             {
-                                if (!mgr.IsAvailable())
-                                {
-                                    mgr.Bootstrapper.Install(dryRun);
-                                    if (!mgr.IsAvailable())
-                                    {
-                                        _logger.LogError($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
-                                        return;
-                                    }
-                                }
+                                _logger.LogError($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
+                                continue;
                             }
                         }
                         mgr.Install(app, dryRun);
@@ -125,7 +128,7 @@ namespace WinHome
                     {
                         _logger.LogError($"[Error] Unknown manager: {app.Manager}");
                     }
-                }));
+                }
             }
 
             if (config.Git != null) _git.Configure(config.Git, dryRun);
@@ -263,6 +266,30 @@ namespace WinHome
             {
                 _logger.LogWarning($"[Warning] Could not save state: {ex.Message}");
             }
+        }
+
+        private bool WaitForNetwork(int timeoutSeconds = 30)
+        {
+            _logger.LogInfo("[Engine] Checking for internet connectivity...");
+            var start = DateTime.Now;
+            while ((DateTime.Now - start).TotalSeconds < timeoutSeconds)
+            {
+                try
+                {
+                    using var ping = new System.Net.NetworkInformation.Ping();
+                    var reply = ping.Send("1.1.1.1", 2000);
+                    if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
+                    {
+                        _logger.LogSuccess("[Engine] Internet connection verified.");
+                        return true;
+                    }
+                }
+                catch { }
+                
+                _logger.LogInfo("[Engine] Waiting for network...");
+                Thread.Sleep(2000);
+            }
+            return false;
         }
 
         private HashSet<string> LoadState()

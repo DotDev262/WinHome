@@ -33,28 +33,45 @@ namespace WinHome.Services.Bootstrappers
 
             Console.WriteLine($"[Bootstrapper] Installing {Name}...");
 
+            string command = "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
+                             "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
+
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = "-NoProfile -ExecutionPolicy Bypass -Command \"[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))\"",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
 
-            using var process = Process.Start(psi);
-            if (process == null)
+            try
             {
-                throw new Exception($"Failed to start installer for {Name}");
+                using var process = Process.Start(psi);
+                if (process == null) throw new Exception($"Failed to start installer for {Name}");
+
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    var error = process.StandardError.ReadToEnd();
+                    if (error.Contains("remote name could not be resolved") || error.Contains("Operation timed out"))
+                    {
+                        Console.WriteLine($"[Bootstrapper] Network error installing {Name}. Retrying in 10 seconds...");
+                        Thread.Sleep(10000);
+                        Install(false);
+                        return;
+                    }
+                    throw new Exception($"Failed to install {Name}: {error}");
+                }
             }
-
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
+            catch (Exception ex) when (!ex.Message.Contains("Failed to install"))
             {
-                var error = process.StandardError.ReadToEnd();
-                throw new Exception($"Failed to install {Name}: {error}");
+                 Console.WriteLine($"[Bootstrapper] Unexpected error: {ex.Message}. Retrying...");
+                 Thread.Sleep(5000);
+                 Install(false);
+                 return;
             }
 
             Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");

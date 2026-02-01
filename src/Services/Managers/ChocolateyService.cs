@@ -31,6 +31,13 @@ namespace WinHome.Services.Managers
             return Bootstrapper.IsInstalled();
         }
 
+        private void LogFiltered(string line, string context)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return;
+            if (line.Contains("Progress: Downloading")) return;
+            _logger.LogInfo($"[Choco:{context}] {line}");
+        }
+
         public void Install(AppConfig app, bool dryRun)
         {
             string executable = GetChocoExecutable();
@@ -50,7 +57,7 @@ namespace WinHome.Services.Managers
 
             string args = $"install {app.Id} -y";
 
-            if (!_processRunner.RunCommand(executable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false, line => LogFiltered(line, "Install")))
             {
                 throw new Exception($"Failed to install {app.Id} using Chocolatey.");
             }
@@ -70,7 +77,7 @@ namespace WinHome.Services.Managers
             _logger.LogInfo($"[Choco] Uninstalling {appId}...");
             string args = $"uninstall {appId} -y";
 
-            if (!_processRunner.RunCommand(executable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false, line => LogFiltered(line, "Uninstall")))
             {
                 throw new Exception($"Failed to uninstall {appId} using Chocolatey.");
             }

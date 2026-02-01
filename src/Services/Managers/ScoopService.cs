@@ -56,7 +56,7 @@ namespace WinHome.Services.Managers
             _logger.LogInfo($"[Scoop] Installing {app.Id}...");
             string args = $"install {app.Id}";
 
-            if (!_processRunner.RunCommand(executable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false, line => _logger.LogInfo($"[Scoop:Install] {line}")))
             {
                 throw new Exception($"Failed to install {app.Id} using Scoop.");
             }
@@ -75,7 +75,7 @@ namespace WinHome.Services.Managers
             _logger.LogInfo($"[Scoop] Uninstalling {appId}...");
             string args = $"uninstall {appId}";
 
-            if (!_processRunner.RunCommand(executable, args, false))
+            if (!_processRunner.RunCommand(executable, args, false, line => _logger.LogInfo($"[Scoop:Uninstall] {line}")))
             {
                 throw new Exception($"Failed to uninstall {appId} using Scoop.");
             }
