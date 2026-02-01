@@ -71,8 +71,10 @@ Assert-True ($hideFileExt -eq 0), "Show file extensions should be enabled (HideF
 try {
     $gitExec = "git"
     if (-not (Get-Command $gitExec -ErrorAction SilentlyContinue)) {
-        # Try common Scoop locations
+        # Try common locations
         $paths = @(
+            "$env:ProgramFiles\Git\bin\git.exe",
+            "$env:ProgramFiles\Git\cmd\git.exe",
             "$env:USERPROFILE\scoop\shims\git.exe",
             "$env:ProgramData\scoop\shims\git.exe",
             "$env:USERPROFILE\scoop\apps\git\current\cmd\git.exe",
@@ -86,12 +88,12 @@ try {
         }
     }
 
-    if ((Test-Path $gitExec) -or $gitExec -eq "git") {
+    if ((Test-Path $gitExec) -or (Get-Command $gitExec -ErrorAction SilentlyContinue)) {
         Write-Host "Using Git executable: $gitExec"
         $gitName = & $gitExec config --global user.name
         Assert-True ($gitName -eq "WinHome Test"), "Git user name should be set"
     } else {
-         Write-Host "Git executable not found, skipping config check."
+         Write-Host "Git executable not found in PATH or standard locations, skipping config check."
     }
 } catch {
     Write-Error "Failed to check for Git configuration: $_"
