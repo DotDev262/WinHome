@@ -7,7 +7,7 @@ WORKDIR /src
 COPY . .
 
 # Restore and publish the application as a self-contained executable
-RUN dotnet publish -c Release -o /app/publish --runtime win-x64 --self-contained true
+RUN dotnet publish src/WinHome.csproj -c Release -o /app/publish --runtime win-x64 --self-contained true
 
 # Final image - using a fuller Windows image for better compatibility with package managers
 FROM mcr.microsoft.com/windows/server:ltsc2022 AS final
