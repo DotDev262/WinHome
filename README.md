@@ -100,9 +100,9 @@ This roadmap is a living document that outlines the project's future direction. 
 - [x] ~~Scheduled Tasks provisioning~~
 - [x] ~~Add Chocolatey uninstall support~~
 - [x] **Winget Auto-Install**: Automatically installs Winget if missing.
-- [ ] **VSCode Integration**: Automatically sync settings and extensions.
-- [ ] **Resource Dependencies**: Introduce a `dependsOn:` attribute to control execution order.
 - [ ] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
+- [ ] **VSCode Plugin**: Automatically sync settings and extensions using the new plugin architecture.
+- [ ] **Resource Dependencies**: Introduce a `dependsOn:` attribute to control execution order.
 - [ ] **Transactional Rollbacks**: Implement logic to automatically undo changes on a failed run.
 - [ ] **Windows Container Support**: Add features for provisioning and managing Windows containers.
 - [ ] **Hyper-V VM Provisioning**: Introduce capabilities for managing local Hyper-V virtual machines.
@@ -110,7 +110,7 @@ This roadmap is a living document that outlines the project's future direction. 
 ### Developer Experience (DevEx) & Tooling
 - [x] ~~State diff viewer (`--diff`)~~
 - [x] **Enhanced Logging**: Filtered, real-time output for package managers.
-- [ ] **Configuration Schema Validation**: Validate `config.yaml` against a formal schema to provide better error messages.
+- [x] **Configuration Schema Validation**: Validate `config.yaml` against a formal schema to provide better error messages.
 - [ ] **Advanced State Management**: Add CLI commands to view, backup, and restore system state.
 - [ ] **Structured Output**: Add a `--json` flag for machine-readable output of run results.
 - [ ] **GUI Mode**: Develop a simple graphical user interface for non-technical users.
@@ -123,10 +123,10 @@ This roadmap is a living document that outlines the project's future direction. 
 - [x] **Containerized Acceptance Tests**: Build a full acceptance test suite that runs inside a clean Windows container.
 - [x] **Native GitHub Actions Testing**: End-to-end testing on real Windows VMs.
 - [x] **Complete Unit Test Coverage**: Ensure all services and managers have comprehensive unit tests.
+- [x] **Refactor Core Logic**: Decouple `Program.cs` and simplify the Dependency Injection setup.
 - [ ] **Publish Docs to GitHub Pages**: Automate the publishing of the `/docs` directory to a professional documentation website.
 - [ ] **Automate Release Notes**: Use tools like `release-drafter` to auto-generate changelogs for new releases.
 - [ ] **Formalize Contribution Process**: Create a `CONTRIBUTING.md` file and GitHub templates for issues and PRs.
-- [ ] **Refactor Core Logic**: Decouple `Program.cs` and simplify the Dependency Injection setup.
 
 ## 📅 Version Roadmap
 
@@ -146,21 +146,22 @@ Here is a tentative plan for upcoming releases.
   - [x] `SystemSettingsService`
   - [x] `ScheduledTaskService`
   - [x] `WindowsServiceManager`
-- [ ] **Refactor Core Logic**:
-  - [ ] Simplify Dependency Injection in `Program.cs`.
-  - [ ] Decouple `Program.cs` by moving logic into dedicated `CliBuilder` and `AppHost` classes.
+- [x] **Refactor Core Logic**:
+  - [x] Simplify Dependency Injection in `Program.cs`.
+  - [x] Decouple `Program.cs` by moving logic into dedicated `CliBuilder` and `AppHost` classes.
 - [x] **Logging & Testability**:
   - [x] Introduce a proper `ILogger` service (Console/JSON).
   - [x] Support `WINHOME_CONFIG_PATH` environment variable.
   - [x] Implement distinct exit codes for automation.
-- [ ] **Validation & Automation**:
-  - [ ] Add Configuration Schema Validation (JSON Schema).
+- [x] **Validation & Automation**:
+  - [x] Add Configuration Schema Validation (JSON Schema).
   - [x] Finalize Containerized Acceptance Test Suite.
 - [x] **Formalize Contribution Process** (`CONTRIBUTING.md`, templates).
 
-### v1.2 — The Core Features Release
-*Focus: Adding highly-requested features for end-users.*
-- [ ] **VSCode Integration** (Settings & Extension Sync).
+### v1.2 — The Plugins & Extensibility Release
+*Focus: Redesigning the core for extensibility and adding community-requested features.*
+- [ ] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
+- [ ] **VSCode Plugin**: Implement VSCode settings and extension sync as the first official plugin.
 - [ ] **Advanced State Management** (`state list`, `state backup`, `state restore`).
 - [ ] **Automation**:
   - [ ] Publish Docs to GitHub Pages (DocFx).
@@ -168,8 +169,7 @@ Here is a tentative plan for upcoming releases.
 - [ ] **Structured Output**: Finalize `--json` integration for all modules.
 
 ### v2.0 — The Architecture Release
-*Focus: Major architectural changes to support long-term extensibility and power.*
-- [ ] Introduce a full Plugin Architecture
+*Focus: Major architectural changes to support long-term power and reliability.*
 - [ ] Implement Resource Dependencies (`dependsOn:`)
 - [ ] Implement Transactional Rollbacks on failure
 - [ ] Evolve configuration towards a true DSL

@@ -2,6 +2,8 @@ version: "1.0"
 apps:
   - id: 7zip
     manager: scoop
+  - id: git
+    manager: scoop
   - id: wget
     manager: choco
 envVars:
