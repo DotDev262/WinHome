@@ -104,8 +104,23 @@ namespace WinHome.Services.Managers
             string args = $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --no-upgrade";
             if (!string.IsNullOrEmpty(app.Source)) args += $" --source {app.Source}";
 
-            if (!_processRunner.RunCommand(_wingetPath, args, false, line => LogFiltered(line, "Install")))
+            bool alreadyInstalled = false;
+            bool success = _processRunner.RunCommand(_wingetPath, args, false, line => 
             {
+                LogFiltered(line, "Install");
+                if (line != null && line.Contains("A package version is already installed", StringComparison.OrdinalIgnoreCase))
+                {
+                    alreadyInstalled = true;
+                }
+            });
+
+            if (!success)
+            {
+                if (alreadyInstalled)
+                {
+                    _logger.LogSuccess($"[Success] {app.Id} is already installed (detected during install attempt).");
+                    return;
+                }
                 throw new Exception($"Failed to install {app.Id} using Winget.");
             }
             _logger.LogSuccess($"[Success] Installed {app.Id}");

@@ -122,7 +122,7 @@ This roadmap is a living document that outlines the project's future direction. 
 - [x] ~~Mocked tests for registry operations~~
 - [x] **Containerized Acceptance Tests**: Build a full acceptance test suite that runs inside a clean Windows container.
 - [x] **Native GitHub Actions Testing**: End-to-end testing on real Windows VMs.
-- [ ] **Complete Unit Test Coverage**: Ensure all services and managers have comprehensive unit tests.
+- [x] **Complete Unit Test Coverage**: Ensure all services and managers have comprehensive unit tests.
 - [ ] **Publish Docs to GitHub Pages**: Automate the publishing of the `/docs` directory to a professional documentation website.
 - [ ] **Automate Release Notes**: Use tools like `release-drafter` to auto-generate changelogs for new releases.
 - [ ] **Formalize Contribution Process**: Create a `CONTRIBUTING.md` file and GitHub templates for issues and PRs.
@@ -134,15 +134,22 @@ Here is a tentative plan for upcoming releases.
 
 ### v1.1 — The Quality & DX Release
 *Focus: Internal refactoring, test coverage, and developer experience.*
-- [ ] **Complete Unit Test Coverage**:
+- [x] **Complete Unit Test Coverage**:
   - [x] `DotfileService`
   - [x] `WslService`
   - [x] `GitService`
   - [x] `EnvironmentService`
+  - [x] `WingetService`
+  - [x] `ScoopService`
+  - [x] `ChocolateyService`
+  - [x] `RegistryService`
+  - [x] `SystemSettingsService`
+  - [x] `ScheduledTaskService`
+  - [x] `WindowsServiceManager`
 - [ ] **Refactor Core Logic**:
   - [ ] Simplify Dependency Injection in `Program.cs`.
   - [ ] Decouple `Program.cs` by moving logic into dedicated `CliBuilder` and `AppHost` classes.
-- [ ] **Logging & Testability**:
+- [x] **Logging & Testability**:
   - [x] Introduce a proper `ILogger` service (Console/JSON).
   - [x] Support `WINHOME_CONFIG_PATH` environment variable.
   - [x] Implement distinct exit codes for automation.
@@ -166,26 +173,6 @@ Here is a tentative plan for upcoming releases.
 - [ ] Implement Resource Dependencies (`dependsOn:`)
 - [ ] Implement Transactional Rollbacks on failure
 - [ ] Evolve configuration towards a true DSL
-
----
-
-## 📅 Changelog
-
-### Day 6: Reliability & CI/CD
-- [x] **Winget Auto-Install**: WinHome now automatically installs Winget if it's missing (downloading from GitHub Releases).
-- [x] **Robust Logging**: Implemented filtered, real-time logging for all package managers, suppressing progress bar clutter.
-- [x] **Process Resilience**: Added timeouts and process tree killing to prevent shell command hangs.
-- [x] **Native GHA Testing**: Added a native Windows test job to GitHub Actions to properly test Winget integration.
-- [x] **Removed Mise**: Deprecated and removed Mise support to focus on core stability.
-
-### Day 5: Containerization & Advanced Features (Part 1)
-- [x] **Create a Test `Dockerfile`**: Developed a `Dockerfile` for Windows containers.
-
-### Day 1: Basic Code Cleanup
-- [x] **Split `Interfaces.cs`**: Moved each interface into its own file in `src/Interfaces/`.
-- [x] **Split `Model.cs`**: Moved each model class into its own file in `src/Models/`.
-- [x] **Remove Unused Files**: Deleted `tests/WinHome.Tests/UnitTest1.cs`.
-- [x] **Review `.gitignore`**: Audited and improved the `.gitignore` file.
 
 ---
 

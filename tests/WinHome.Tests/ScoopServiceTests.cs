@@ -39,6 +39,29 @@ namespace WinHome.Tests
         }
 
         [Fact]
+        public void Install_Succeeds_WhenAlreadyInstalledErrorOccurs()
+        {
+            // Arrange
+            var app = new AppConfig { Id = "testapp" };
+            bool dryRun = false;
+
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+                             .Returns(""); // Not installed
+
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", $"install {app.Id}", dryRun, It.IsAny<Action<string>>()))
+                             .Callback<string, string, bool, Action<string>>((_, _, _, onOutput) =>
+                             {
+                                 onOutput?.Invoke($"ERROR '{app.Id}' is already installed.");
+                             })
+                             .Returns(false); // Fails
+
+            // Act & Assert
+            // Should not throw
+            _scoopService.Install(app, dryRun);
+        }
+
+        [Fact]
         public void Uninstall_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange

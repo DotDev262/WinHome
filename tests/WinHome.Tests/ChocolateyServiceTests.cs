@@ -85,5 +85,26 @@ namespace WinHome.Tests
             var ex = Assert.Throws<Exception>(() => _chocolateyService.Install(app, dryRun));
             Assert.Equal($"Failed to install {app.Id} using Chocolatey.", ex.Message);
         }
+
+        [Fact]
+        public void Install_Succeeds_WhenAlreadyInstalledErrorOccurs()
+        {
+            // Arrange
+            var app = new AppConfig { Id = "testapp" };
+            bool dryRun = false;
+
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+                             .Returns(""); // Not installed
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"install {app.Id} -y", dryRun, It.IsAny<Action<string>>()))
+                             .Callback<string, string, bool, Action<string>>((_, _, _, onOutput) =>
+                             {
+                                 onOutput?.Invoke("Chocolatey installed 0/1 packages. ... 1 packages installed currently");
+                             })
+                             .Returns(false); // Fails (hypothetically, if choco decides to return non-zero)
+
+            // Act & Assert
+            // Should not throw
+            _chocolateyService.Install(app, dryRun);
+        }
     }
 }

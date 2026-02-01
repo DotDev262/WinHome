@@ -43,6 +43,32 @@ namespace WinHome.Tests
         }
 
         [Fact]
+        public void Install_Succeeds_WhenAlreadyInstalledErrorOccurs()
+        {
+            // Arrange
+            var app = new AppConfig { Id = "testapp" };
+            bool dryRun = false;
+
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+                             .Returns(""); // Not installed
+
+            // Allow for --version check
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "source update", false, It.IsAny<Action<string>>())).Returns(true);
+
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --no-upgrade", dryRun, It.IsAny<Action<string>>()))
+                             .Callback<string, string, bool, Action<string>>((_, _, _, onOutput) =>
+                             {
+                                 onOutput?.Invoke("[Winget:Install] A package version is already installed. Installation cancelled.");
+                             })
+                             .Returns(false); // Fails
+
+            // Act & Assert
+            // Should not throw
+            _wingetService.Install(app, dryRun);
+        }
+
+        [Fact]
         public void Uninstall_ThrowsException_WhenProcessRunnerFails()
         {
             // Arrange

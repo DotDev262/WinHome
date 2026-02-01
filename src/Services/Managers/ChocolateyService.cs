@@ -57,8 +57,24 @@ namespace WinHome.Services.Managers
 
             string args = $"install {app.Id} -y";
 
-            if (!_processRunner.RunCommand(executable, args, false, line => LogFiltered(line, "Install")))
+            bool alreadyInstalled = false;
+            bool success = _processRunner.RunCommand(executable, args, false, line => 
             {
+                LogFiltered(line, "Install");
+                // Chocolatey sometimes returns non-zero even if packages are technically present or if it just says "0/1 packages installed"
+                if (line != null && (line.Contains("already installed", StringComparison.OrdinalIgnoreCase) || line.Contains("packages installed currently", StringComparison.OrdinalIgnoreCase)))
+                {
+                    alreadyInstalled = true;
+                }
+            });
+
+            if (!success)
+            {
+                if (alreadyInstalled)
+                {
+                    _logger.LogSuccess($"[Success] {app.Id} is already installed (detected during install attempt).");
+                    return;
+                }
                 throw new Exception($"Failed to install {app.Id} using Chocolatey.");
             }
 

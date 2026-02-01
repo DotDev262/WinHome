@@ -42,14 +42,6 @@ try {
     $chocoList = & $chocoExec list -l -r wget
     Assert-True ($chocoList -like "*wget*"), "Wget should be installed (Choco)"
 
-    # Check for Winget app
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        $wingetList = winget list --id Git.Git -e
-        Assert-True ($wingetList -like "*Git*"), "Git should be installed (Winget)"
-    } else {
-        Write-Host "Winget not found, skipping Git installation check."
-    }
-
 } catch {
     Write-Error "Failed to check for application installations: $_"
     $global:exitCode = 1

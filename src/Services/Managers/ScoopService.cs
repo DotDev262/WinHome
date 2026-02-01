@@ -56,8 +56,23 @@ namespace WinHome.Services.Managers
             _logger.LogInfo($"[Scoop] Installing {app.Id}...");
             string args = $"install {app.Id}";
 
-            if (!_processRunner.RunCommand(executable, args, false, line => _logger.LogInfo($"[Scoop:Install] {line}")))
+            bool alreadyInstalled = false;
+            bool success = _processRunner.RunCommand(executable, args, false, line => 
             {
+                _logger.LogInfo($"[Scoop:Install] {line}");
+                if (line != null && line.Contains($"'{app.Id}' is already installed", StringComparison.OrdinalIgnoreCase))
+                {
+                    alreadyInstalled = true;
+                }
+            });
+
+            if (!success)
+            {
+                if (alreadyInstalled)
+                {
+                    _logger.LogSuccess($"[Success] {app.Id} is already installed (detected during install attempt).");
+                    return;
+                }
                 throw new Exception($"Failed to install {app.Id} using Scoop.");
             }
             _logger.LogSuccess($"[Success] Installed {app.Id}");
