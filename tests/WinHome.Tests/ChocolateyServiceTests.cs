@@ -27,6 +27,9 @@ namespace WinHome.Tests
             string appId = "testapp";
             bool dryRun = false;
 
+            // Allow version check
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+
             _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun, It.IsAny<Action<string>>()))
                              .Returns(true);
 
@@ -61,6 +64,9 @@ namespace WinHome.Tests
             string appId = "testapp";
             bool dryRun = false;
 
+            // Allow version check
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+
             _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun, It.IsAny<Action<string>>()))
                              .Returns(false);
 
@@ -75,6 +81,9 @@ namespace WinHome.Tests
             // Arrange
             var app = new AppConfig { Id = "testapp" };
             bool dryRun = false;
+
+            // Allow version check
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(true);
 
             _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(""); // Not installed
@@ -92,6 +101,9 @@ namespace WinHome.Tests
             // Arrange
             var app = new AppConfig { Id = "testapp" };
             bool dryRun = false;
+
+            // Allow version check
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(true);
 
             _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
                              .Returns(""); // Not installed
