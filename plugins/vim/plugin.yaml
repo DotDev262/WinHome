@@ -1,0 +1,7 @@
+name: vim
+version: 0.1.0
+type: python
+main: src/main.py
+capabilities:
+  - package_manager
+  - config_provider

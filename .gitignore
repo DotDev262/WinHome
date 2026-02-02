@@ -29,3 +29,9 @@ files/
 coverage/
 TestResults/
 appsettings.Development.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
