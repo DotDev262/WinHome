@@ -8,7 +8,9 @@ namespace WinHome.Infrastructure;
 
 public static class CliBuilder
 {
-    public static RootCommand BuildRootCommand(Func<FileInfo, bool, string?, bool, bool, bool, bool, Task<int>> runAction)
+    public static RootCommand BuildRootCommand(
+        Func<FileInfo, bool, string?, bool, bool, bool, bool, Task<int>> runAction,
+        Func<FileInfo?, Task<int>> generateAction)
     {
         var configOption = new Option<FileInfo>("--config")
         {
@@ -80,6 +82,20 @@ public static class CliBuilder
 
             return await runAction(file, dryRun, profile, debug, diff, json, update);
         });
+
+        // Generate Command
+        var generateCommand = new Command("generate", "Generate a configuration file from the current system state");
+        var outputOption = new Option<FileInfo?>("--output", "Output file path (default: stdout)");
+        outputOption.Aliases.Add("-o");
+        generateCommand.AddOption(outputOption);
+
+        generateCommand.SetAction(async (ParseResult result) =>
+        {
+            FileInfo? output = result.GetValue(outputOption);
+            return await generateAction(output);
+        });
+
+        rootCommand.AddCommand(generateCommand);
 
         return rootCommand;
     }

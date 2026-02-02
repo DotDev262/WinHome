@@ -93,5 +93,21 @@ namespace WinHome.Services.System
                 Console.WriteLine($"[Error] Registry revert failed: {ex.Message}");
             }
         }
+
+        public object? Read(string path, string name)
+        {
+            try
+            {
+                IRegistryKey root = _registryWrapper.GetRootKey(path, out string subKeyPath);
+                using (IRegistryKey? key = root.OpenSubKey(subKeyPath, writable: false))
+                {
+                    return key?.GetValue(name);
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }

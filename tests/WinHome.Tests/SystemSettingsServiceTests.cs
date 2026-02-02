@@ -11,12 +11,14 @@ namespace WinHome.Tests
     public class SystemSettingsServiceTests
     {
         private readonly Mock<IProcessRunner> _mockProcessRunner;
+        private readonly Mock<IRegistryService> _mockRegistryService;
         private readonly SystemSettingsService _service;
 
         public SystemSettingsServiceTests()
         {
             _mockProcessRunner = new Mock<IProcessRunner>();
-            _service = new SystemSettingsService(_mockProcessRunner.Object);
+            _mockRegistryService = new Mock<IRegistryService>();
+            _service = new SystemSettingsService(_mockProcessRunner.Object, _mockRegistryService.Object);
         }
 
         [Fact]

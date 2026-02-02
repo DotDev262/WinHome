@@ -115,7 +115,7 @@ This roadmap is a living document that outlines the project's future direction. 
 - [x] ~~Scheduled Tasks provisioning~~
 - [x] ~~Add Chocolatey uninstall support~~
 - [x] **Winget Auto-Install**: Automatically installs Winget if missing.
-- [ ] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
+- [x] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
 - [ ] **VSCode Plugin**: Automatically sync settings and extensions using the new plugin architecture.
 - [ ] **Resource Dependencies**: Introduce a `dependsOn:` attribute to control execution order.
 - [ ] **Transactional Rollbacks**: Implement logic to automatically undo changes on a failed run.
@@ -175,14 +175,14 @@ Here is a tentative plan for upcoming releases.
 
 ### v1.2 — The Plugins & Extensibility Release
 *Focus: Redesigning the core for extensibility and adding community-requested features.*
-- [ ] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
+- [x] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
 - [ ] **VSCode Plugin**: Implement VSCode settings and extension sync as the first official plugin.
-- [ ] **Vim/Neovim Plugin**: Configure plugins and settings for Vim/Neovim.
+- [x] **Vim/Neovim Plugin**: Configure plugins and settings for Vim/Neovim.
 - [ ] **Config Generator (`winhome generate`)**: Scan the system and create a `config.yaml` based on installed apps and settings.
 - [ ] **Advanced State Management** (`state list`, `state backup`, `state restore`).
-- [ ] **Secret Reference Logic**: Add support for referencing secrets from environment variables or secure vaults.
-- [ ] **Self-Update Mechanism**: Allow `WinHome` to update itself to the latest version.
-- [ ] **Security Hardening Presets**: Add pre-defined configurations for locking down Windows security settings.
+- [x] **Secret Reference Logic**: Add support for referencing secrets from environment variables or secure vaults.
+- [x] **Self-Update Mechanism**: Allow `WinHome` to update itself to the latest version.
+- [x] **Security Hardening Presets**: Add pre-defined configurations for locking down Windows security settings.
 - [ ] **Automation**:
   - [ ] Publish Docs to GitHub Pages (DocFx).
   - [ ] Automate Release Notes (`release-drafter`).

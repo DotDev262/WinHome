@@ -59,6 +59,7 @@ public static class AppHost
             sp.GetRequiredService<ILogger>(),
             null
         ));
+        services.AddSingleton<IGeneratorService, GeneratorService>();
         services.AddSingleton<IPluginRunner, PluginRunner>();
 
         // Bootstrappers

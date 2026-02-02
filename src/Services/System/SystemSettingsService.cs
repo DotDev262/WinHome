@@ -6,6 +6,7 @@ namespace WinHome.Services.System
     public class SystemSettingsService : ISystemSettingsService
     {
         private readonly IProcessRunner _processRunner;
+        private readonly IRegistryService _registryService;
         private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification" };
 
         private readonly Dictionary<string, List<RegistryTweak>> _securityPresets = new()
@@ -35,9 +36,10 @@ namespace WinHome.Services.System
             }
         };
 
-        public SystemSettingsService(IProcessRunner processRunner)
+        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService)
         {
             _processRunner = processRunner;
+            _registryService = registryService;
         }
 
         private record SettingDefinition(
@@ -141,6 +143,39 @@ namespace WinHome.Services.System
                     }
                 }
                 return tweaks;
+            });
+        }
+
+        public async Task<Dictionary<string, object>> GetCapturedSettingsAsync()
+        {
+            return await Task.Run(() =>
+            {
+                var captured = new Dictionary<string, object>();
+
+                foreach (var def in _catalog)
+                {
+                    try 
+                    {
+                        var regValue = _registryService.Read(def.RegistryPath, def.RegistryName);
+                        if (regValue != null)
+                        {
+                            // Find corresponding user-friendly key for this value
+                            var match = def.ValueMap.FirstOrDefault(kvp => kvp.Value.ToString() == regValue.ToString());
+                            if (!match.Equals(default(KeyValuePair<string, object>)))
+                            {
+                                // Handle Booleans properly
+                                object val = match.Key;
+                                if (bool.TryParse(match.Key, out bool bVal)) val = bVal;
+                                else if (int.TryParse(match.Key, out int iVal)) val = iVal;
+
+                                captured[def.SettingKey] = val;
+                            }
+                        }
+                    }
+                    catch { /* Ignore read errors */ }
+                }
+
+                return captured;
             });
         }
 
