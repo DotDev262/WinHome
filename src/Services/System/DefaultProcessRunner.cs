@@ -97,5 +97,29 @@ namespace WinHome.Services.System
             }
             catch { return string.Empty; }
         }
+        public string RunAndCapture(string fileName, string arguments)
+        {
+            try
+            {
+                var psi = new global::System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using var process = global::System.Diagnostics.Process.Start(psi);
+                if (process == null) return string.Empty;
+                
+                string output = process.StandardOutput.ReadToEnd().Trim();
+                process.WaitForExit();
+                return output;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
     }
 }

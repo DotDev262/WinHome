@@ -75,8 +75,8 @@ namespace WinHome.Services.System
         {
             try
             {
-                string name = RunGit("config --global user.name");
-                string email = RunGit("config --global user.email");
+                string name = _processRunner.RunAndCapture("git", "config --global user.name");
+                string email = _processRunner.RunAndCapture("git", "config --global user.email");
 
                 if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(email)) return null;
 
@@ -89,30 +89,6 @@ namespace WinHome.Services.System
             catch
             {
                 return null;
-            }
-        }
-
-        private string RunGit(string args)
-        {
-            try
-            {
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "git",
-                    Arguments = args,
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                using var p = System.Diagnostics.Process.Start(psi);
-                if (p == null) return "";
-                string output = p.StandardOutput.ReadToEnd().Trim();
-                p.WaitForExit();
-                return output;
-            }
-            catch
-            {
-                return "";
             }
         }
     }
