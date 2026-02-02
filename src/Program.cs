@@ -11,10 +11,23 @@ class Program
     {
         using IHost host = AppHost.CreateHost(args);
 
-        var rootCommand = CliBuilder.BuildRootCommand(async (file, dryRun, profile, debug, diff, json) =>
+        var rootCommand = CliBuilder.BuildRootCommand(async (file, dryRun, profile, debug, diff, json, update) =>
         {
-            var runner = host.Services.GetRequiredService<AppRunner>();
             var logger = host.Services.GetRequiredService<ILogger>();
+
+            if (update)
+            {
+                var updater = host.Services.GetRequiredService<IUpdateService>();
+                // In a real app, get version from Assembly
+                var currentVersion = "1.0.0"; 
+                if (await updater.CheckForUpdatesAsync(currentVersion))
+                {
+                    await updater.UpdateAsync();
+                }
+                return 0;
+            }
+
+            var runner = host.Services.GetRequiredService<AppRunner>();
             
             var exitCode = await runner.RunAsync(file, dryRun, profile, debug, diff, json);
 

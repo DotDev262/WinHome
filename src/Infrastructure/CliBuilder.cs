@@ -8,7 +8,7 @@ namespace WinHome.Infrastructure;
 
 public static class CliBuilder
 {
-    public static RootCommand BuildRootCommand(Func<FileInfo, bool, string?, bool, bool, bool, Task<int>> runAction)
+    public static RootCommand BuildRootCommand(Func<FileInfo, bool, string?, bool, bool, bool, bool, Task<int>> runAction)
     {
         var configOption = new Option<FileInfo>("--config")
         {
@@ -19,6 +19,13 @@ public static class CliBuilder
                 return new FileInfo(string.IsNullOrEmpty(configPath) ? "config.yaml" : configPath);
             }
         };
+
+        var updateOption = new Option<bool>("--update")
+        {
+            Description = "Check for updates and upgrade if available",
+            DefaultValueFactory = _ => false
+        };
+        updateOption.Aliases.Add("-u");
 
         var dryRunOption = new Option<bool>("--dry-run")
         {
@@ -54,6 +61,7 @@ public static class CliBuilder
 
         var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
         rootCommand.Options.Add(configOption);
+        rootCommand.Options.Add(updateOption);
         rootCommand.Options.Add(dryRunOption);
         rootCommand.Options.Add(profileOption);
         rootCommand.Options.Add(debugOption);
@@ -63,13 +71,14 @@ public static class CliBuilder
         rootCommand.SetAction(async (ParseResult result) =>
         {
             FileInfo file = result.GetValue(configOption)!;
+            bool update = result.GetValue(updateOption);
             bool dryRun = result.GetValue(dryRunOption);
             string? profile = result.GetValue(profileOption);
             bool debug = result.GetValue(debugOption);
             bool diff = result.GetValue(diffOption);
             bool json = result.GetValue(jsonOption);
 
-            return await runAction(file, dryRun, profile, debug, diff, json);
+            return await runAction(file, dryRun, profile, debug, diff, json, update);
         });
 
         return rootCommand;

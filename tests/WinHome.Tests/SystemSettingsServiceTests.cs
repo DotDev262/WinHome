@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Moq;
 using WinHome.Interfaces;
+using WinHome.Models;
 using WinHome.Services.System;
 using Xunit;
 
@@ -55,6 +56,21 @@ namespace WinHome.Tests
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
             _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("New-BurntToastNotification -Text 'Test Title', 'Test Message'")), false), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetTweaksAsync_Should_Return_Security_Presets()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "security_preset", "baseline" }
+            };
+
+            var tweaks = await _service.GetTweaksAsync(settings);
+            var tweaksList = new List<RegistryTweak>(tweaks);
+
+            Assert.Contains(tweaksList, t => t.Name == "EnableMulticast" && t.Value.Equals(0));
+            Assert.Contains(tweaksList, t => t.Name == "NoDriveTypeAutoRun" && t.Value.Equals(255));
         }
     }
 }

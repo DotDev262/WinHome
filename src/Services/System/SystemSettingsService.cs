@@ -8,6 +8,33 @@ namespace WinHome.Services.System
         private readonly IProcessRunner _processRunner;
         private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification" };
 
+        private readonly Dictionary<string, List<RegistryTweak>> _securityPresets = new()
+        {
+            ["baseline"] = new()
+            {
+                // Enable SmartScreen for apps and files
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost", Name = "EnableWebContentEvaluation", Value = 1, Type = "dword" },
+                // Disable Autorun/Autoplay
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", Name = "NoDriveTypeAutoRun", Value = 255, Type = "dword" },
+                // Disable LLMNR (Local Link Multicast Name Resolution)
+                new RegistryTweak { Path = @"HKLM\Software\Policies\Microsoft\Windows NT\DNSClient", Name = "EnableMulticast", Value = 0, Type = "dword" }
+            },
+            ["strict"] = new()
+            {
+                // Include baseline
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost", Name = "EnableWebContentEvaluation", Value = 1, Type = "dword" },
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", Name = "NoDriveTypeAutoRun", Value = 255, Type = "dword" },
+                new RegistryTweak { Path = @"HKLM\Software\Policies\Microsoft\Windows NT\DNSClient", Name = "EnableMulticast", Value = 0, Type = "dword" },
+                
+                // Disable Windows Script Host
+                new RegistryTweak { Path = @"HKLM\Software\Microsoft\Windows Script Host\Settings", Name = "Enabled", Value = 0, Type = "dword" },
+                // Disable Remote Assistance
+                new RegistryTweak { Path = @"HKLM\System\CurrentControlSet\Control\Remote Assistance", Name = "fAllowToGetHelp", Value = 0, Type = "dword" },
+                // Disable NetBIOS over TCP/IP (prevent LLMNR/NBT-NS poisoning)
+                new RegistryTweak { Path = @"HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces", Name = "NetbiosOptions", Value = 2, Type = "dword" }
+            }
+        };
+
         public SystemSettingsService(IProcessRunner processRunner)
         {
             _processRunner = processRunner;
@@ -73,10 +100,25 @@ namespace WinHome.Services.System
                 var tweaks = new List<RegistryTweak>();
                 if (settings == null) return tweaks;
 
-                foreach (var userSetting in settings.Where(s => !_nonRegistryKeys.Contains(s.Key.ToLower())))
+                foreach (var userSetting in settings)
                 {
                     string key = userSetting.Key.ToLower();
                     string val = userSetting.Value.ToString()?.ToLower() ?? "";
+
+                    if (key == "security_preset")
+                    {
+                        if (_securityPresets.TryGetValue(val, out var presetTweaks))
+                        {
+                            tweaks.AddRange(presetTweaks);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[Warning] Unknown security preset '{val}'. Allowed: {string.Join(", ", _securityPresets.Keys)}");
+                        }
+                        continue;
+                    }
+
+                    if (_nonRegistryKeys.Contains(key)) continue;
 
                     var matches = _catalog.Where(d => d.SettingKey == key);
 

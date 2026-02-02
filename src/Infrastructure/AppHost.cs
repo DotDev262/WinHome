@@ -51,6 +51,8 @@ public static class AppHost
         services.AddSingleton<IWindowsServiceManager, WindowsServiceManager>();
         services.AddSingleton<IScheduledTaskService, ScheduledTaskService>();
         services.AddSingleton<IRuntimeResolver, RuntimeResolver>();
+        services.AddSingleton<IUpdateService, UpdateService>();
+        services.AddSingleton<ISecretResolver, SecretResolver>();
         services.AddSingleton<IPluginManager>(sp => new PluginManager(
             sp.GetRequiredService<UvBootstrapper>(),
             sp.GetRequiredService<BunBootstrapper>(),
@@ -104,6 +106,11 @@ public static class AppHost
             sp.GetRequiredService<IPluginRunner>(),
             sp.GetRequiredService<ILogger>()
         ));
-        services.AddSingleton<AppRunner>();
+        services.AddSingleton<AppRunner>(sp => new AppRunner(
+            sp.GetRequiredService<Engine>(),
+            sp.GetRequiredService<IConfigValidator>(),
+            sp.GetRequiredService<ISecretResolver>(),
+            sp.GetRequiredService<ILogger>()
+        ));
     }
 }
