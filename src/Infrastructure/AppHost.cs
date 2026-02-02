@@ -50,6 +50,7 @@ public static class AppHost
         services.AddSingleton<IEnvironmentService, EnvironmentService>();
         services.AddSingleton<IWindowsServiceManager, WindowsServiceManager>();
         services.AddSingleton<IScheduledTaskService, ScheduledTaskService>();
+        services.AddSingleton<IRuntimeResolver, RuntimeResolver>();
         services.AddSingleton<IPluginManager>(sp => new PluginManager(
             sp.GetRequiredService<UvBootstrapper>(),
             sp.GetRequiredService<BunBootstrapper>(),

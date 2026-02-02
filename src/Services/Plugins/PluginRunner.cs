@@ -8,10 +8,12 @@ namespace WinHome.Services.Plugins
     public class PluginRunner : IPluginRunner
     {
         private readonly ILogger _logger;
+        private readonly IRuntimeResolver _runtimeResolver;
 
-        public PluginRunner(ILogger logger)
+        public PluginRunner(ILogger logger, IRuntimeResolver runtimeResolver)
         {
             _logger = logger;
+            _runtimeResolver = runtimeResolver;
         }
 
         public async Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context)
@@ -103,12 +105,14 @@ namespace WinHome.Services.Plugins
             {
                 case "python":
                     // uv run --quiet script.py
-                    return ("uv", $"run --quiet \"{mainPath}\"");
+                    var uvPath = _runtimeResolver.Resolve("uv");
+                    return (uvPath, $"run --quiet \"{mainPath}\"");
                 
                 case "typescript":
                 case "javascript":
                     // bun run script.ts
-                    return ("bun", $"run \"{mainPath}\"");
+                    var bunPath = _runtimeResolver.Resolve("bun");
+                    return (bunPath, $"run \"{mainPath}\"");
                 
                 case "executable":
                     return (mainPath, "");

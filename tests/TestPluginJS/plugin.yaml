@@ -1,0 +1,6 @@
+name: test-echo-js
+version: 1.0.0
+type: javascript
+main: src/index.js
+capabilities:
+  - test

@@ -19,6 +19,7 @@ namespace WinHome.Tests
         private readonly Mock<IScheduledTaskService> _mockScheduledTaskService;
         private readonly Mock<IPluginManager> _mockPluginManager;
         private readonly Mock<IPluginRunner> _mockPluginRunner;
+        private readonly Mock<IRuntimeResolver> _mockRuntimeResolver;
         private readonly Dictionary<string, IPackageManager> _managers;
 
         public EngineTests()
@@ -35,6 +36,7 @@ namespace WinHome.Tests
             _mockScheduledTaskService = new Mock<IScheduledTaskService>();
             _mockPluginManager = new Mock<IPluginManager>();
             _mockPluginRunner = new Mock<IPluginRunner>();
+            _mockRuntimeResolver = new Mock<IRuntimeResolver>();
             var mockLogger = new Mock<ILogger>();
 
             // Setup basic behavior

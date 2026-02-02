@@ -1,0 +1,6 @@
+name: test-echo
+version: 1.0.0
+type: python
+main: src/main.py
+capabilities:
+  - test
