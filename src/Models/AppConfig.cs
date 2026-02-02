@@ -12,5 +12,11 @@ namespace WinHome.Models
 
         [YamlMember(Alias = "manager")]
         public string Manager { get; set; } = "winget";
+
+        [YamlMember(Alias = "version")]
+        public string? Version { get; set; }
+
+        [YamlMember(Alias = "params")]
+        public string? Params { get; set; }
     }
 }

@@ -17,6 +17,8 @@ namespace WinHome
         private readonly IWindowsServiceManager _serviceManager;
         private readonly IScheduledTaskService _scheduledTaskService;
         private readonly ILogger _logger;
+        private readonly IPluginManager _pluginManager;
+        private readonly IPluginRunner _pluginRunner;
         private const string StateFileName = "winhome.state.json";
 
         public Engine(
@@ -29,6 +31,8 @@ namespace WinHome
             IEnvironmentService env,
             IWindowsServiceManager serviceManager,
             IScheduledTaskService scheduledTaskService,
+            IPluginManager pluginManager,
+            IPluginRunner pluginRunner,
             ILogger logger)
         {
             _managers = managers;
@@ -40,12 +44,31 @@ namespace WinHome
             _env = env;
             _serviceManager = serviceManager;
             _scheduledTaskService = scheduledTaskService;
+            _pluginManager = pluginManager;
+            _pluginRunner = pluginRunner;
             _logger = logger;
         }
 
         public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false)
         {
             _logger.LogInfo($"--- WinHome v{config.Version} ---");
+
+            // Load Plugins
+            var plugins = _pluginManager.DiscoverPlugins();
+            foreach (var plugin in plugins)
+            {
+                if (plugin.Capabilities.Contains("package_manager"))
+                {
+                    // Register the plugin as a package manager using its name (e.g., "npm", "pip", "cargo")
+                    // If the plugin name is "winhome-provider-npm", we might want to strip prefix or use a specific property.
+                    // For now, we use the Manifest Name.
+                    if (!_managers.ContainsKey(plugin.Name))
+                    {
+                        _logger.LogInfo($"[Plugin] Registering Package Manager: {plugin.Name}");
+                        _managers[plugin.Name] = new WinHome.Services.Plugins.PluginPackageManagerAdapter(plugin, _pluginRunner, _pluginManager);
+                    }
+                }
+            }
 
             if (!string.IsNullOrEmpty(profileName))
             {
@@ -143,6 +166,39 @@ namespace WinHome
             {
                 _logger.LogInfo("\n--- Configuring Environment Variables ---");
                 await Task.Run(() => Parallel.ForEach(config.EnvVars, env => _env.Apply(env, dryRun)));
+            }
+
+            // Plugin Extensions
+            if (config.Extensions.Any())
+            {
+                _logger.LogInfo("\n--- Running Plugin Extensions ---");
+                foreach (var ext in config.Extensions)
+                {
+                    var pluginName = ext.Key;
+                    var pluginConfig = ext.Value;
+
+                    // Find plugin by name
+                    var plugin = _pluginManager.DiscoverPlugins().FirstOrDefault(p => p.Name.Equals(pluginName, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (plugin != null)
+                    {
+                        _logger.LogInfo($"[Plugin] Applying configuration for '{pluginName}'...");
+                        var result = await _pluginRunner.ExecuteAsync(plugin, "apply", pluginConfig, new { dryRun = dryRun });
+                        
+                        if (!result.Success)
+                        {
+                            _logger.LogError($"[Error] Plugin '{pluginName}' failed: {result.Error}");
+                        }
+                        else if (result.Changed)
+                        {
+                            _logger.LogSuccess($"[Plugin] '{pluginName}' applied successfully.");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"[Warning] Configuration found for '{pluginName}' but no matching plugin is installed.");
+                    }
+                }
             }
 
             var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);

@@ -5,6 +5,7 @@ using WinHome.Interfaces;
 using WinHome.Services.Bootstrappers;
 using WinHome.Services.Logging;
 using WinHome.Services.Managers;
+using WinHome.Services.Plugins;
 using WinHome.Services.System;
 
 namespace WinHome.Infrastructure;
@@ -49,11 +50,20 @@ public static class AppHost
         services.AddSingleton<IEnvironmentService, EnvironmentService>();
         services.AddSingleton<IWindowsServiceManager, WindowsServiceManager>();
         services.AddSingleton<IScheduledTaskService, ScheduledTaskService>();
+        services.AddSingleton<IPluginManager>(sp => new PluginManager(
+            sp.GetRequiredService<UvBootstrapper>(),
+            sp.GetRequiredService<BunBootstrapper>(),
+            sp.GetRequiredService<ILogger>(),
+            null
+        ));
+        services.AddSingleton<IPluginRunner, PluginRunner>();
 
         // Bootstrappers
         services.AddSingleton<ChocolateyBootstrapper>();
         services.AddSingleton<ScoopBootstrapper>();
         services.AddSingleton<WingetBootstrapper>();
+        services.AddSingleton<UvBootstrapper>();
+        services.AddSingleton<BunBootstrapper>();
 
         // Package Managers
         services.AddSingleton<WingetService>(sp => new WingetService(
@@ -79,7 +89,20 @@ public static class AppHost
             { "scoop", sp.GetRequiredService<ScoopService>() }
         });
 
-        services.AddSingleton<Engine>();
+        services.AddSingleton<Engine>(sp => new Engine(
+            sp.GetRequiredService<Dictionary<string, IPackageManager>>(),
+            sp.GetRequiredService<IDotfileService>(),
+            sp.GetRequiredService<IRegistryService>(),
+            sp.GetRequiredService<ISystemSettingsService>(),
+            sp.GetRequiredService<IWslService>(),
+            sp.GetRequiredService<IGitService>(),
+            sp.GetRequiredService<IEnvironmentService>(),
+            sp.GetRequiredService<IWindowsServiceManager>(),
+            sp.GetRequiredService<IScheduledTaskService>(),
+            sp.GetRequiredService<IPluginManager>(),
+            sp.GetRequiredService<IPluginRunner>(),
+            sp.GetRequiredService<ILogger>()
+        ));
         services.AddSingleton<AppRunner>();
     }
 }

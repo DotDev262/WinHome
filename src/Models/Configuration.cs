@@ -38,5 +38,8 @@ namespace WinHome.Models
 
         [YamlMember(Alias = "scheduledTasks")]
         public List<ScheduledTaskConfig> ScheduledTasks { get; set; } = new();
+
+        [YamlMember(Alias = "extensions")]
+        public Dictionary<string, object> Extensions { get; set; } = new();
     }
 }

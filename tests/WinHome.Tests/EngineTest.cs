@@ -1,6 +1,7 @@
 using Moq;
 using WinHome.Interfaces;
 using WinHome.Models;
+using WinHome.Models.Plugins;
 using Xunit;
 
 namespace WinHome.Tests
@@ -16,6 +17,8 @@ namespace WinHome.Tests
         private readonly Mock<IEnvironmentService> _mockEnv;
         private readonly Mock<IWindowsServiceManager> _mockServiceManager;
         private readonly Mock<IScheduledTaskService> _mockScheduledTaskService;
+        private readonly Mock<IPluginManager> _mockPluginManager;
+        private readonly Mock<IPluginRunner> _mockPluginRunner;
         private readonly Dictionary<string, IPackageManager> _managers;
 
         public EngineTests()
@@ -30,12 +33,15 @@ namespace WinHome.Tests
             _mockEnv = new Mock<IEnvironmentService>();
             _mockServiceManager = new Mock<IWindowsServiceManager>();
             _mockScheduledTaskService = new Mock<IScheduledTaskService>();
+            _mockPluginManager = new Mock<IPluginManager>();
+            _mockPluginRunner = new Mock<IPluginRunner>();
             var mockLogger = new Mock<ILogger>();
 
             // Setup basic behavior
             _mockWinget.Setup(x => x.IsAvailable()).Returns(true);
             _mockSystemSettings.Setup(x => x.GetTweaksAsync(It.IsAny<Dictionary<string, object>>()))
                                .Returns(Task.FromResult<IEnumerable<RegistryTweak>>(new List<RegistryTweak>()));
+            _mockPluginManager.Setup(m => m.DiscoverPlugins()).Returns(new List<PluginManifest>());
 
             // 2. Setup Manager Dictionary
             _managers = new Dictionary<string, IPackageManager>
@@ -62,6 +68,8 @@ namespace WinHome.Tests
                 _mockEnv.Object,
                 _mockServiceManager.Object,
                 _mockScheduledTaskService.Object,
+                _mockPluginManager.Object,
+                _mockPluginRunner.Object,
                 mockLogger.Object
             );
 
@@ -95,6 +103,8 @@ namespace WinHome.Tests
                 _mockEnv.Object,
                 _mockServiceManager.Object,
                 _mockScheduledTaskService.Object,
+                _mockPluginManager.Object,
+                _mockPluginRunner.Object,
                 mockLogger.Object
             );
 
@@ -128,6 +138,8 @@ namespace WinHome.Tests
                 _mockEnv.Object,
                 _mockServiceManager.Object,
                 _mockScheduledTaskService.Object,
+                _mockPluginManager.Object,
+                _mockPluginRunner.Object,
                 mockLogger.Object
             );
             

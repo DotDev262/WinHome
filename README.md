@@ -37,6 +37,16 @@ The goal is to make Windows environment automation as simple, fast, and reliable
 
 ---
 
+## 📋 Prerequisites
+
+Before using WinHome, ensure your environment meets the following requirements:
+
+*   **Operating System:** Windows 10 (Version 1809 or higher) or Windows 11.
+*   **Privileges:** Must be executed with **Administrator** privileges to modify system settings and install packages.
+*   **Internet Connection:** Required for downloading packages and updates.
+
+---
+
 ## 🚀 Installation
 
 WinHome ships as a **self-contained single EXE** (no .NET runtime needed), compatible with all Windows x64 systems.
@@ -49,7 +59,9 @@ WinHome ships as a **self-contained single EXE** (no .NET runtime needed), compa
 
 ```powershell
 Invoke-WebRequest -Uri "https://github.com/DotDev262/WinHome/releases/latest/download/WinHome.exe" -OutFile "WinHome.exe"
-````
+```
+
+> **Post-Install Note:** For easier global access, we recommend moving `WinHome.exe` to a folder included in your system's `PATH` environment variable (e.g., `C:\Users\<User>\bin`).
 
 ---
 
@@ -64,6 +76,9 @@ A built-in **Reconciliation Engine** compares it to the live system and ensures 
 
 For a detailed breakdown of all configuration options, refer to the [Configuration Wiki](./docs/config.md).
 
+### ⚠️ Secrets & Security Warning
+
+**Do not commit `config.yaml` to public repositories** if it contains sensitive information such as API tokens, passwords, or private environment variables. We recommend using a private repository or `.gitignore` for configurations containing secrets.
 
 ---
 
@@ -162,7 +177,12 @@ Here is a tentative plan for upcoming releases.
 *Focus: Redesigning the core for extensibility and adding community-requested features.*
 - [ ] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
 - [ ] **VSCode Plugin**: Implement VSCode settings and extension sync as the first official plugin.
+- [ ] **Vim/Neovim Plugin**: Configure plugins and settings for Vim/Neovim.
+- [ ] **Config Generator (`winhome generate`)**: Scan the system and create a `config.yaml` based on installed apps and settings.
 - [ ] **Advanced State Management** (`state list`, `state backup`, `state restore`).
+- [ ] **Secret Reference Logic**: Add support for referencing secrets from environment variables or secure vaults.
+- [ ] **Self-Update Mechanism**: Allow `WinHome` to update itself to the latest version.
+- [ ] **Security Hardening Presets**: Add pre-defined configurations for locking down Windows security settings.
 - [ ] **Automation**:
   - [ ] Publish Docs to GitHub Pages (DocFx).
   - [ ] Automate Release Notes (`release-drafter`).
@@ -223,11 +243,11 @@ envVars:
     value: "nvim"
     action: "set"
   - variable: "Path"
-    value: "%USERPROFILE%\\bin"
+    value: "%USERPROFILE%\bin"
     action: "append"
 
 registryTweaks:
-  - path: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced"
+  - path: "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
     name: "HideFileExt"
     value: 0
     type: "dword"
@@ -261,6 +281,27 @@ profiles:
 
 ---
 
+## 🗑️ Uninstallation
+
+WinHome is fully portable. To uninstall it:
+
+1.  Delete the `WinHome.exe` file.
+2.  Delete the state file `winhome.state.json` (located in the same directory).
+
+No registry keys or hidden folders are left behind by the tool itself.
+
+---
+
+## ❓ Troubleshooting
+
+**"Winget not recognized"**
+> Ensure the **App Installer** is updated from the Microsoft Store. WinHome attempts to use the system-level Winget.
+
+**PowerShell Script Errors**
+> If you encounter execution policy errors, try running `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` in an administrative PowerShell window.
+
+---
+
 ## 🤝 Contributing
 
 Contributions, discussions, and feature ideas are welcome!
@@ -285,5 +326,3 @@ And most importantly, the open-source community. ❤️
 ## 📄 License
 
 Released under the **MIT License**.
-
----
