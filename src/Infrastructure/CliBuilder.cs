@@ -85,7 +85,10 @@ public static class CliBuilder
 
         // Generate Command
         var generateCommand = new Command("generate", "Generate a configuration file from the current system state");
-        var outputOption = new Option<FileInfo?>("--output", "Output file path (default: stdout)");
+        var outputOption = new Option<FileInfo?>("--output")
+        {
+            Description = "Output file path (default: stdout)"
+        };
         outputOption.Aliases.Add("-o");
         generateCommand.Options.Add(outputOption);
 

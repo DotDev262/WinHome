@@ -9,8 +9,13 @@ if ($winhomeExitCode -ne 0) {
     exit $winhomeExitCode
 }
 
-# Run verification script
-./verify.ps1
-$verifyExitCode = $LASTEXITCODE
+# Run verification tests (Pester)
+Write-Host "Running Pester integration tests..."
+$pesterResult = Invoke-Pester -Path ./verify.Tests.ps1 -Output Detailed -PassThru
 
-exit $verifyExitCode
+if ($pesterResult.FailedCount -gt 0) {
+    Write-Error "Pester tests failed with $($pesterResult.FailedCount) errors."
+    exit 1
+}
+
+exit 0

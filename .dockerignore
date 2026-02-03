@@ -1,0 +1,65 @@
+# Build outputs
+**/bin/
+**/obj/
+**/publish/
+**/out/
+
+# IDE files
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/.vsconfig
+
+# Git
+**/.git/
+**/.gitignore
+**/.gitattributes
+
+# Documentation
+**/CHANGELOG.md
+**/LICENSE
+**/docs/
+
+# CI/CD
+**/.github/
+**/azure-pipelines.yml
+**/Jenkinsfile
+
+# Docker
+**/Dockerfile*
+**/.dockerignore
+**/.docker/
+
+# Test artifacts
+**/TestResults/
+**/*.trx
+**/coverage/
+
+# Temporary files
+**/tmp/
+**/temp/
+**/*.tmp
+**/*.temp
+**/*.log
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+desktop.ini
+
+# NuGet
+**/packages/
+**/*.nupkg
+
+# Local development
+**/local/
+**/.env
+**/secrets/
+**/appsettings.Development.json
+
+# Scripts that aren't needed in build
+*.ps1
+!test-data/run-test-container.ps1
+!test-data/verify-container.ps1

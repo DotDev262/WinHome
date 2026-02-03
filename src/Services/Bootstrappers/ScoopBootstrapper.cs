@@ -45,13 +45,14 @@ namespace WinHome.Services.Bootstrappers
 
             Console.WriteLine($"[Bootstrapper] Installing {Name}...");
 
-            // Simplified command: Bypass is already set via FileName args, no need to set RemoteSigned explicitly which causes scope conflicts
-            string command = "irm get.scoop.sh -outfile install.ps1; .\\install.ps1 -RunAsAdmin; if (Test-Path .\\install.ps1) { Remove-Item .\\install.ps1 }";
+            // Set execution policy first, then install Scoop
+            // This fixes the "cannot be loaded because running scripts is disabled" error
+            string command = "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; irm get.scoop.sh -outfile install.ps1; .\\install.ps1 -RunAsAdmin; if (Test-Path .\\install.ps1) { Remove-Item .\\install.ps1 }";
 
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"",
+                Arguments = $"-NoProfile -Command \"{command}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
