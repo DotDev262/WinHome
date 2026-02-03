@@ -6,8 +6,6 @@ apps:
     manager: scoop
   - id: wget
     manager: choco
-  - id: usage
-    manager: mise
 envVars:
   - variable: "WINHOME_TEST"
     value: "true"

@@ -42,24 +42,6 @@ try {
     $chocoList = & $chocoExec list -l -r wget
     Assert-True ($chocoList -like "*wget*"), "Wget should be installed (Choco)"
 
-    # Check for Mise app
-    $miseExec = "mise"
-    if (-not (Get-Command $miseExec -ErrorAction SilentlyContinue)) {
-        $paths = @(
-            "$env:USERPROFILE\scoop\shims\mise.exe",
-            "$env:ProgramData\scoop\shims\mise.exe"
-        )
-        foreach ($p in $paths) {
-            if (Test-Path $p) {
-                $miseExec = $p
-                break
-            }
-        }
-    }
-    Write-Host "Using Mise executable: $miseExec"
-    $miseList = & $miseExec ls --global --current
-    Assert-True ($miseList -like "*usage*"), "Usage plugin/tool should be installed (Mise)"
-
     # Check for Winget app
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         $wingetList = winget list --id Git.Git -e

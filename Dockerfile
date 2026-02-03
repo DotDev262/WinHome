@@ -21,6 +21,8 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope LocalMachine -Force"
 COPY --from=build /app/publish .
 # Copy the test data
 COPY test-data/ .
+# Copy the tests (for plugin source)
+COPY tests/ tests/
 # Copy the source for the dotfile
 COPY src/ .
 # Copy README.md for the dotfile test
