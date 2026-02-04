@@ -1,3 +1,4 @@
+using System.Text.Json;
 using WinHome.Interfaces;
 using WinHome.Models;
 
@@ -50,25 +51,72 @@ namespace WinHome.Services.System
             return await Task.Run(() =>
             {
                 var apps = new List<AppConfig>();
-                // We'll use `winget export` logic essentially
-                // winget export -o -
-                // But parsing JSON output is better if available.
-                // For simplicity/robustness, we'll try to parse `winget list` or just ask the user to fill it.
-                // Actually, let's implement a basic `winget list` parser or leave it empty for V1 if parsing is too complex.
-                
-                // Better: Run `winget list` and capture IDs.
-                // Since this can be slow and produce thousands of items (libs, vc++ runtimes), 
-                // a "full dump" might be too noisy.
-                // Let's settle for a placeholder or a very simple scan.
-                
-                // Compromise: We won't scan ALL apps to avoid noise (System components etc).
-                // We'll just return an empty list with a comment/example in a real scenario,
-                // OR we try to parse explicitly installed ones.
-                
-                // For this implementation, let's leave it empty to be safe and fast,
-                // as robustly filtering "user installed apps" vs "system frameworks" is hard on Windows.
+                string tempFile = Path.GetTempFileName();
+                try
+                {
+                    // export to temp file
+                    // winget export -o <file> --source winget --accept-source-agreements
+                    bool success = _processRunner.RunCommand("winget", $"export -o \"{tempFile}\" --source winget --accept-source-agreements", false);
+
+                    if (success && File.Exists(tempFile))
+                    {
+                        string json = File.ReadAllText(tempFile);
+                        apps = ParseWingetExport(json);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Failed to export installed apps: {ex.Message}");
+                }
+                finally
+                {
+                    if (File.Exists(tempFile))
+                    {
+                        try { File.Delete(tempFile); } catch { }
+                    }
+                }
+
                 return apps;
             });
+        }
+
+        public static List<AppConfig> ParseWingetExport(string json)
+        {
+            var apps = new List<AppConfig>();
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                try
+                {
+                    using (JsonDocument doc = JsonDocument.Parse(json))
+                    {
+                        if (doc.RootElement.TryGetProperty("Sources", out JsonElement sources))
+                        {
+                            foreach (var source in sources.EnumerateArray())
+                            {
+                                if (source.TryGetProperty("Packages", out JsonElement packages))
+                                {
+                                    foreach (var pkg in packages.EnumerateArray())
+                                    {
+                                        if (pkg.TryGetProperty("PackageIdentifier", out JsonElement id))
+                                        {
+                                            apps.Add(new AppConfig
+                                            {
+                                                Id = id.GetString() ?? "",
+                                                Manager = "winget"
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Invalid JSON, return empty list
+                }
+            }
+            return apps;
         }
 
         private GitConfig? GetGitConfig()

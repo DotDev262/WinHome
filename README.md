@@ -178,7 +178,7 @@ Here is a tentative plan for upcoming releases.
 - [x] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
 - [ ] **VSCode Plugin**: Implement VSCode settings and extension sync as the first official plugin.
 - [x] **Vim/Neovim Plugin**: Configure plugins and settings for Vim/Neovim.
-- [ ] **Config Generator (`winhome generate`)**: Scan the system and create a `config.yaml` based on installed apps and settings.
+- [x] **Config Generator (`winhome generate`)**: Scan the system and create a `config.yaml` based on installed apps and settings.
 - [ ] **Advanced State Management** (`state list`, `state backup`, `state restore`).
 - [x] **Secret Reference Logic**: Add support for referencing secrets from environment variables or secure vaults.
 - [x] **Self-Update Mechanism**: Allow `WinHome` to update itself to the latest version.

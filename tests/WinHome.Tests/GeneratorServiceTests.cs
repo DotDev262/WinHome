@@ -73,5 +73,42 @@ namespace WinHome.Tests
             Assert.Equal("Test User", config.Git.UserName);
             Assert.Equal("test@example.com", config.Git.UserEmail);
         }
+
+        [Fact]
+        public void ParseWingetExport_Parses_Json_Correctly()
+        {
+            // Arrange
+            string json = @"{
+              ""$schema"": ""https://aka.ms/winget-packages.schema.2.0.json"",
+              ""CreationDate"": ""2021-01-01T00:00:00.000-00:00"",
+              ""Sources"": [
+                {
+                  ""Packages"": [
+                    {
+                      ""PackageIdentifier"": ""Microsoft.PowerToys""
+                    },
+                    {
+                      ""PackageIdentifier"": ""Mozilla.Firefox""
+                    }
+                  ],
+                  ""SourceDetails"": {
+                    ""Argument"": ""https://cdn.winget.microsoft.com/cache"",
+                    ""Identifier"": ""Microsoft.Winget.Source_8wekyb3d8bbwe"",
+                    ""Name"": ""winget"",
+                    ""Type"": ""Microsoft.Winget.Source""
+                  }
+                }
+              ],
+              ""WinGetVersion"": ""1.0.0""
+            }";
+
+            // Act
+            var apps = GeneratorService.ParseWingetExport(json);
+
+            // Assert
+            Assert.Equal(2, apps.Count);
+            Assert.Contains(apps, a => a.Id == "Microsoft.PowerToys" && a.Manager == "winget");
+            Assert.Contains(apps, a => a.Id == "Mozilla.Firefox" && a.Manager == "winget");
+        }
     }
 }
