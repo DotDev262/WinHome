@@ -10,7 +10,8 @@ public static class CliBuilder
 {
     public static RootCommand BuildRootCommand(
         Func<FileInfo, bool, string?, bool, bool, bool, bool, Task<int>> runAction,
-        Func<FileInfo?, Task<int>> generateAction)
+        Func<FileInfo?, Task<int>> generateAction,
+        Func<string, string?, Task<int>> stateAction)
     {
         var configOption = new Option<FileInfo>("--config")
         {
@@ -99,6 +100,39 @@ public static class CliBuilder
         });
 
         rootCommand.Add(generateCommand);
+
+        // State Command
+        var stateCommand = new Command("state", "Manage the system state managed by WinHome");
+        
+        var listSubCommand = new Command("list", "List all items currently managed by WinHome");
+        listSubCommand.SetAction(async (ParseResult result) =>
+        {
+            return await stateAction("list", null);
+        });
+
+        var backupSubCommand = new Command("backup", "Backup the current state file");
+        var backupPathArgument = new Argument<string>("path") { Description = "Path to save the backup" };
+        backupSubCommand.Arguments.Add(backupPathArgument);
+        backupSubCommand.SetAction(async (ParseResult result) =>
+        {
+            var path = result.GetValue(backupPathArgument);
+            return await stateAction("backup", path);
+        });
+
+        var restoreSubCommand = new Command("restore", "Restore the state file from a backup");
+        var restorePathArgument = new Argument<string>("path") { Description = "Path to the backup file to restore" };
+        restoreSubCommand.Arguments.Add(restorePathArgument);
+        restoreSubCommand.SetAction(async (ParseResult result) =>
+        {
+            var path = result.GetValue(restorePathArgument);
+            return await stateAction("restore", path);
+        });
+
+        stateCommand.Subcommands.Add(listSubCommand);
+        stateCommand.Subcommands.Add(backupSubCommand);
+        stateCommand.Subcommands.Add(restoreSubCommand);
+
+        rootCommand.Add(stateCommand);
 
         return rootCommand;
     }

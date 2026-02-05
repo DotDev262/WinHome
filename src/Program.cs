@@ -75,6 +75,40 @@ class Program
                     logger.LogError($"[Generator] Failed to generate configuration: {ex.Message}");
                     return 1;
                 }
+            },
+            // State Action
+            async (command, path) =>
+            {
+                var stateService = host.Services.GetRequiredService<IStateService>();
+                var logger = host.Services.GetRequiredService<ILogger>();
+
+                switch (command)
+                {
+                    case "list":
+                        var items = stateService.ListItems();
+                        if (!items.Any())
+                        {
+                            logger.LogInfo("[State] No items are currently managed by WinHome.");
+                        }
+                        else
+                        {
+                            logger.LogInfo("\n--- Managed Items ---");
+                            foreach (var item in items)
+                            {
+                                Console.WriteLine($"  - {item}");
+                            }
+                        }
+                        break;
+                    case "backup":
+                        if (string.IsNullOrEmpty(path)) return 1;
+                        stateService.BackupState(path);
+                        break;
+                    case "restore":
+                        if (string.IsNullOrEmpty(path)) return 1;
+                        stateService.RestoreState(path);
+                        break;
+                }
+                return 0;
             }
         );
 

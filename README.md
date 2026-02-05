@@ -116,7 +116,7 @@ This roadmap is a living document that outlines the project's future direction. 
 - [x] ~~Add Chocolatey uninstall support~~
 - [x] **Winget Auto-Install**: Automatically installs Winget if missing.
 - [x] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
-- [ ] **VSCode Plugin**: Automatically sync settings and extensions using the new plugin architecture.
+- [x] **VSCode Plugin**: Automatically sync settings and extensions using the new plugin architecture.
 - [ ] **Resource Dependencies**: Introduce a `dependsOn:` attribute to control execution order.
 - [ ] **Transactional Rollbacks**: Implement logic to automatically undo changes on a failed run.
 - [ ] **Windows Container Support**: Add features for provisioning and managing Windows containers.
@@ -179,7 +179,7 @@ Here is a tentative plan for upcoming releases.
 - [ ] **VSCode Plugin**: Implement VSCode settings and extension sync as the first official plugin.
 - [x] **Vim/Neovim Plugin**: Configure plugins and settings for Vim/Neovim.
 - [x] **Config Generator (`winhome generate`)**: Scan the system and create a `config.yaml` based on installed apps and settings.
-- [ ] **Advanced State Management** (`state list`, `state backup`, `state restore`).
+- [x] **Advanced State Management** (`state list`, `state backup`, `state restore`).
 - [x] **Secret Reference Logic**: Add support for referencing secrets from environment variables or secure vaults.
 - [x] **Self-Update Mechanism**: Allow `WinHome` to update itself to the latest version.
 - [x] **Security Hardening Presets**: Add pre-defined configurations for locking down Windows security settings.

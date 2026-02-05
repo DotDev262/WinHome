@@ -53,6 +53,7 @@ public static class AppHost
         services.AddSingleton<IRuntimeResolver, RuntimeResolver>();
         services.AddSingleton<IUpdateService, UpdateService>();
         services.AddSingleton<ISecretResolver, SecretResolver>();
+        services.AddSingleton<IStateService, StateService>();
         services.AddSingleton<IPluginManager>(sp => new PluginManager(
             sp.GetRequiredService<UvBootstrapper>(),
             sp.GetRequiredService<BunBootstrapper>(),
@@ -105,6 +106,7 @@ public static class AppHost
             sp.GetRequiredService<IScheduledTaskService>(),
             sp.GetRequiredService<IPluginManager>(),
             sp.GetRequiredService<IPluginRunner>(),
+            sp.GetRequiredService<IStateService>(),
             sp.GetRequiredService<ILogger>()
         ));
         services.AddSingleton<AppRunner>(sp => new AppRunner(

@@ -19,7 +19,7 @@ namespace WinHome
         private readonly ILogger _logger;
         private readonly IPluginManager _pluginManager;
         private readonly IPluginRunner _pluginRunner;
-        private const string StateFileName = "winhome.state.json";
+        private readonly IStateService _stateService;
 
         public Engine(
             Dictionary<string, IPackageManager> managers,
@@ -33,6 +33,7 @@ namespace WinHome
             IScheduledTaskService scheduledTaskService,
             IPluginManager pluginManager,
             IPluginRunner pluginRunner,
+            IStateService stateService,
             ILogger logger)
         {
             _managers = managers;
@@ -46,6 +47,7 @@ namespace WinHome
             _scheduledTaskService = scheduledTaskService;
             _pluginManager = pluginManager;
             _pluginRunner = pluginRunner;
+            _stateService = stateService;
             _logger = logger;
         }
 
@@ -101,7 +103,7 @@ namespace WinHome
 
             var currentState = await BuildStateFromConfig(config);
 
-            var previousState = LoadState();
+            var previousState = _stateService.LoadState();
 
             // Cleanup
             var itemsToRemove = previousState.Except(currentState).ToList();
@@ -236,7 +238,7 @@ namespace WinHome
 
             if (!dryRun)
             {
-                SaveState(currentState);
+                _stateService.SaveState(currentState);
                 _logger.LogSuccess("\n[State Saved] Configuration synced.");
             }
             else
@@ -249,7 +251,7 @@ namespace WinHome
         {
             _logger.LogInfo("\n--- State Diff ---");
 
-            var previousState = LoadState();
+            var previousState = _stateService.LoadState();
             var currentState = await BuildStateFromConfig(config);
 
             var itemsToRemove = previousState.Except(currentState).ToList();
@@ -311,19 +313,6 @@ namespace WinHome
             return state;
         }
 
-        private void SaveState(HashSet<string> state)
-        {
-            try
-            {
-                string json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(StateFileName, json);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning($"[Warning] Could not save state: {ex.Message}");
-            }
-        }
-
         private bool WaitForNetwork(int timeoutSeconds = 30)
         {
             _logger.LogInfo("[Engine] Checking for internet connectivity...");
@@ -346,17 +335,6 @@ namespace WinHome
                 Thread.Sleep(2000);
             }
             return false;
-        }
-
-        private HashSet<string> LoadState()
-        {
-            if (!File.Exists(StateFileName)) return new HashSet<string>();
-            try
-            {
-                string json = File.ReadAllText(StateFileName);
-                return JsonSerializer.Deserialize<HashSet<string>>(json) ?? new HashSet<string>();
-            }
-            catch { return new HashSet<string>(); }
         }
     }
 }

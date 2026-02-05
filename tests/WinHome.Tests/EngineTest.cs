@@ -19,6 +19,7 @@ namespace WinHome.Tests
         private readonly Mock<IScheduledTaskService> _mockScheduledTaskService;
         private readonly Mock<IPluginManager> _mockPluginManager;
         private readonly Mock<IPluginRunner> _mockPluginRunner;
+        private readonly Mock<IStateService> _mockStateService;
         private readonly Mock<IRuntimeResolver> _mockRuntimeResolver;
         private readonly Dictionary<string, IPackageManager> _managers;
 
@@ -36,6 +37,7 @@ namespace WinHome.Tests
             _mockScheduledTaskService = new Mock<IScheduledTaskService>();
             _mockPluginManager = new Mock<IPluginManager>();
             _mockPluginRunner = new Mock<IPluginRunner>();
+            _mockStateService = new Mock<IStateService>();
             _mockRuntimeResolver = new Mock<IRuntimeResolver>();
             var mockLogger = new Mock<ILogger>();
 
@@ -44,6 +46,7 @@ namespace WinHome.Tests
             _mockSystemSettings.Setup(x => x.GetTweaksAsync(It.IsAny<Dictionary<string, object>>()))
                                .Returns(Task.FromResult<IEnumerable<RegistryTweak>>(new List<RegistryTweak>()));
             _mockPluginManager.Setup(m => m.DiscoverPlugins()).Returns(new List<PluginManifest>());
+            _mockStateService.Setup(s => s.LoadState()).Returns(new HashSet<string>());
 
             // 2. Setup Manager Dictionary
             _managers = new Dictionary<string, IPackageManager>
@@ -72,6 +75,7 @@ namespace WinHome.Tests
                 _mockScheduledTaskService.Object,
                 _mockPluginManager.Object,
                 _mockPluginRunner.Object,
+                _mockStateService.Object,
                 mockLogger.Object
             );
 
@@ -107,6 +111,7 @@ namespace WinHome.Tests
                 _mockScheduledTaskService.Object,
                 _mockPluginManager.Object,
                 _mockPluginRunner.Object,
+                _mockStateService.Object,
                 mockLogger.Object
             );
 
@@ -142,11 +147,12 @@ namespace WinHome.Tests
                 _mockScheduledTaskService.Object,
                 _mockPluginManager.Object,
                 _mockPluginRunner.Object,
+                _mockStateService.Object,
                 mockLogger.Object
             );
             
             var previousState = new HashSet<string> { "winget:UnchangedApp", "winget:OldApp" };
-            File.WriteAllText("winhome.state.json", System.Text.Json.JsonSerializer.Serialize(previousState));
+            _mockStateService.Setup(s => s.LoadState()).Returns(previousState);
 
             // Act
             await engine.PrintDiffAsync(config);
@@ -157,10 +163,8 @@ namespace WinHome.Tests
             mockLogger.Verify(l => l.LogSuccess(It.Is<string>(s => s.Contains("Items to Add"))), Times.Once);
             mockLogger.Verify(l => l.LogSuccess(It.Is<string>(s => s.Contains("winget:NewApp"))), Times.Once);
             mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("Unchanged Items"))), Times.Once);
-            mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("winget:UnchangedApp"))), Times.Once);
-
-            // Cleanup
-            File.Delete("winhome.state.json");
-        }
-    }
-}
+                        mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("winget:UnchangedApp"))), Times.Once);
+                    }
+                }
+            }
+            

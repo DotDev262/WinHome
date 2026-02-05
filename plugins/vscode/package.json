@@ -1,0 +1,9 @@
+{
+  "name": "winhome-vscode-plugin",
+  "version": "0.1.0",
+  "description": "VSCode plugin for WinHome",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@types/node": "^20.0.0"
+  }
+}

@@ -77,6 +77,7 @@ capabilities:
                 new Mock<IScheduledTaskService>().Object,
                 mockPluginManager.Object,
                 mockPluginRunner.Object,
+                new Mock<IStateService>().Object,
                 mockLogger.Object
             );
 

@@ -1,0 +1,7 @@
+name: vscode
+version: 0.1.0
+type: typescript
+main: src/index.ts
+capabilities:
+  - package_manager
+  - config_provider
