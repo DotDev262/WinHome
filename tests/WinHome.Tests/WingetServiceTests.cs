@@ -1,3 +1,4 @@
+using System;
 using Moq;
 using Xunit;
 using WinHome.Interfaces;
@@ -10,14 +11,19 @@ namespace WinHome.Tests
     {
         private readonly Mock<IProcessRunner> _mockProcessRunner;
         private readonly Mock<IPackageManagerBootstrapper> _mockBootstrapper;
+        private readonly Mock<IRuntimeResolver> _mockRuntimeResolver;
         private readonly WingetService _wingetService;
 
         public WingetServiceTests()
         {
             _mockProcessRunner = new Mock<IProcessRunner>();
             _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
+            _mockRuntimeResolver = new Mock<IRuntimeResolver>();
             var mockLogger = new Mock<ILogger>();
-            _wingetService = new WingetService(_mockProcessRunner.Object, _mockBootstrapper.Object, mockLogger.Object);
+
+            _mockRuntimeResolver.Setup(r => r.Resolve("winget")).Returns("winget");
+
+            _wingetService = new WingetService(_mockProcessRunner.Object, _mockBootstrapper.Object, mockLogger.Object, _mockRuntimeResolver.Object);
         }
 
         [Fact]

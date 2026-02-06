@@ -11,41 +11,22 @@ namespace WinHome.Services.Managers
         private bool _sourceUpdated = false;
         private readonly IProcessRunner _processRunner;
         private readonly ILogger _logger;
+        private readonly IRuntimeResolver _resolver;
         public IPackageManagerBootstrapper Bootstrapper { get; }
 
-        public WingetService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger)
+        public WingetService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
         {
             _processRunner = processRunner;
             Bootstrapper = bootstrapper;
             _logger = logger;
+            _resolver = resolver;
         }
 
         private void ResolveWingetPath()
         {
             if (_pathResolved && _wingetPath != "winget") return;
-
-            _logger.LogInfo("[Winget] Verifying winget installation...");
-            // Try quick check first
-            if (_processRunner.RunCommand("winget", "--version", false, line => LogFiltered(line, "Output")))
-            {
-                _wingetPath = "winget";
-                _pathResolved = true;
-                _logger.LogInfo("[Winget] winget is available in PATH.");
-                return;
-            }
-
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string fullPath = Path.Combine(localAppData, "Microsoft", "WindowsApps", "winget.exe");
-            if (File.Exists(fullPath))
-            {
-                _wingetPath = fullPath;
-                _pathResolved = true;
-                _logger.LogInfo($"[Winget] winget found at local path: {fullPath}");
-            }
-            else
-            {
-                _logger.LogWarning("[Winget] winget.exe not found in PATH or default local path.");
-            }
+            _wingetPath = _resolver.Resolve("winget");
+            _pathResolved = true;
         }
 
         private void LogFiltered(string line, string context)

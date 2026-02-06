@@ -13,54 +13,40 @@ public static class CliBuilder
         Func<FileInfo?, Task<int>> generateAction,
         Func<string, string?, Task<int>> stateAction)
     {
-        var configOption = new Option<FileInfo>("--config")
+        var configOption = new Option<FileInfo>("--config");
+        configOption.Description = "Path to the YAML configuration file";
+        configOption.DefaultValueFactory = _ =>
         {
-            Description = "Path to the YAML configuration file",
-            DefaultValueFactory = _ =>
-            {
-                var configPath = Environment.GetEnvironmentVariable("WINHOME_CONFIG_PATH");
-                return new FileInfo(string.IsNullOrEmpty(configPath) ? "config.yaml" : configPath);
-            }
+            var configPath = Environment.GetEnvironmentVariable("WINHOME_CONFIG_PATH");
+            return new FileInfo(string.IsNullOrEmpty(configPath) ? "config.yaml" : configPath);
         };
 
-        var updateOption = new Option<bool>("--update")
-        {
-            Description = "Check for updates and upgrade if available",
-            DefaultValueFactory = _ => false
-        };
+        var updateOption = new Option<bool>("--update");
+        updateOption.Description = "Check for updates and upgrade if available";
+        updateOption.DefaultValueFactory = _ => false;
         updateOption.Aliases.Add("-u");
 
-        var dryRunOption = new Option<bool>("--dry-run")
-        {
-            Description = "Preview changes without applying them",
-            DefaultValueFactory = _ => false
-        };
+        var dryRunOption = new Option<bool>("--dry-run");
+        dryRunOption.Description = "Preview changes without applying them";
+        dryRunOption.DefaultValueFactory = _ => false;
         dryRunOption.Aliases.Add("-d");
 
-        var profileOption = new Option<string?>("--profile")
-        {
-            Description = "Activate a specific profile (e.g. work, personal)",
-            DefaultValueFactory = _ => null
-        };
+        var profileOption = new Option<string?>("--profile");
+        profileOption.Description = "Activate a specific profile (e.g. work, personal)";
+        profileOption.DefaultValueFactory = _ => null;
         profileOption.Aliases.Add("-p");
 
-        var debugOption = new Option<bool>("--debug")
-        {
-            Description = "Enable verbose logging and configuration validation",
-            DefaultValueFactory = _ => false
-        };
+        var debugOption = new Option<bool>("--debug");
+        debugOption.Description = "Enable verbose logging and configuration validation";
+        debugOption.DefaultValueFactory = _ => false;
 
-        var diffOption = new Option<bool>("--diff")
-        {
-            Description = "Show a diff of the changes that will be made",
-            DefaultValueFactory = _ => false
-        };
+        var diffOption = new Option<bool>("--diff");
+        diffOption.Description = "Show a diff of the changes that will be made";
+        diffOption.DefaultValueFactory = _ => false;
 
-        var jsonOption = new Option<bool>("--json")
-        {
-            Description = "Output results as JSON",
-            DefaultValueFactory = _ => false
-        };
+        var jsonOption = new Option<bool>("--json");
+        jsonOption.Description = "Output results as JSON";
+        jsonOption.DefaultValueFactory = _ => false;
 
         var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
         rootCommand.Options.Add(configOption);
@@ -85,11 +71,10 @@ public static class CliBuilder
         });
 
         // Generate Command
-        var generateCommand = new Command("generate", "Generate a configuration file from the current system state");
-        var outputOption = new Option<FileInfo?>("--output")
-        {
-            Description = "Output file path (default: stdout)"
-        };
+        var generateCommand = new Command("generate");
+        generateCommand.Description = "Generate a configuration file from the current system state";
+        var outputOption = new Option<FileInfo?>("--output");
+        outputOption.Description = "Output file path (default: stdout)";
         outputOption.Aliases.Add("-o");
         generateCommand.Options.Add(outputOption);
 
@@ -102,15 +87,18 @@ public static class CliBuilder
         rootCommand.Add(generateCommand);
 
         // State Command
-        var stateCommand = new Command("state", "Manage the system state managed by WinHome");
+        var stateCommand = new Command("state");
+        stateCommand.Description = "Manage the system state managed by WinHome";
         
-        var listSubCommand = new Command("list", "List all items currently managed by WinHome");
+        var listSubCommand = new Command("list");
+        listSubCommand.Description = "List all items currently managed by WinHome";
         listSubCommand.SetAction(async (ParseResult result) =>
         {
             return await stateAction("list", null);
         });
 
-        var backupSubCommand = new Command("backup", "Backup the current state file");
+        var backupSubCommand = new Command("backup");
+        backupSubCommand.Description = "Backup the current state file";
         var backupPathArgument = new Argument<string>("path") { Description = "Path to save the backup" };
         backupSubCommand.Arguments.Add(backupPathArgument);
         backupSubCommand.SetAction(async (ParseResult result) =>
@@ -119,7 +107,8 @@ public static class CliBuilder
             return await stateAction("backup", path);
         });
 
-        var restoreSubCommand = new Command("restore", "Restore the state file from a backup");
+        var restoreSubCommand = new Command("restore");
+        restoreSubCommand.Description = "Restore the state file from a backup";
         var restorePathArgument = new Argument<string>("path") { Description = "Path to the backup file to restore" };
         restoreSubCommand.Arguments.Add(restorePathArgument);
         restoreSubCommand.SetAction(async (ParseResult result) =>

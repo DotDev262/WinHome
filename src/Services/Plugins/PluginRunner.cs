@@ -83,7 +83,11 @@ namespace WinHome.Services.Plugins
 
                 try
                 {
-                    var result = JsonSerializer.Deserialize<PluginResult>(output);
+                    // Attempt robust parsing: Find the last line that looks like JSON
+                    var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    string jsonLine = lines.LastOrDefault(l => l.StartsWith("{") && l.EndsWith("}")) ?? output;
+
+                    var result = JsonSerializer.Deserialize<PluginResult>(jsonLine);
                     return result ?? new PluginResult { Success = false, Error = "Deserialized null result." };
                 }
                 catch (JsonException ex)

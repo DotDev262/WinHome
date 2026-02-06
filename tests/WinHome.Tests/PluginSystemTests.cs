@@ -55,6 +55,7 @@ capabilities:
             var mockPluginManager = new Mock<IPluginManager>();
             var mockPluginRunner = new Mock<IPluginRunner>();
             var mockLogger = new Mock<ILogger>();
+            var mockRuntimeResolver = new Mock<IRuntimeResolver>();
 
             var testPlugin = new PluginManifest
             {
@@ -78,7 +79,8 @@ capabilities:
                 mockPluginManager.Object,
                 mockPluginRunner.Object,
                 new Mock<IStateService>().Object,
-                mockLogger.Object
+                mockLogger.Object,
+                mockRuntimeResolver.Object
             );
 
             var config = new Configuration
@@ -116,9 +118,10 @@ capabilities:
             // Arrange
             var mockRunner = new Mock<IPluginRunner>();
             var mockManager = new Mock<IPluginManager>();
+            var mockRuntimeResolver = new Mock<IRuntimeResolver>();
             var manifest = new PluginManifest { Name = "test-plugin", Type = "python" };
             
-            var adapter = new PluginPackageManagerAdapter(manifest, mockRunner.Object, mockManager.Object);
+            var adapter = new PluginPackageManagerAdapter(manifest, mockRunner.Object, mockManager.Object, mockRuntimeResolver.Object);
             
             mockRunner.Setup(r => r.ExecuteAsync(manifest, "install", It.IsAny<object>(), It.IsAny<object>()))
                 .ReturnsAsync(new PluginResult { Success = true });

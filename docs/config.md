@@ -8,9 +8,9 @@ Select a module below to see its configuration options.
 - [Winget](./modules/winget.md)
 - [Chocolatey](./modules/chocolatey.md)
 - [Scoop](./modules/scoop.md)
-- [Mise](./modules/mise.md)
 
 ## System Configuration
+- [Plugins & Extensions](./modules/plugins.md)
 - [Dotfiles](./modules/dotfiles.md)
 - [Environment Variables](./modules/env.md)
 - [Git](./modules/git.md)

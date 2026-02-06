@@ -63,5 +63,30 @@ namespace WinHome.Services.System
                 _logger.LogError($"[Error] Failed to set Env Var: {ex.Message}");
             }
         }
+
+        public void RefreshPath()
+        {
+            try
+            {
+                // Reload Machine PATH
+                string machinePath = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.Machine) ?? string.Empty;
+                // Reload User PATH
+                string userPath = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? string.Empty;
+
+                // Merge them
+                var combinedPath = string.Join(";", 
+                    machinePath.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                    .Concat(userPath.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                    .Distinct(StringComparer.OrdinalIgnoreCase));
+
+                // Update CURRENT process environment
+                Environment.SetEnvironmentVariable("Path", combinedPath, EnvironmentVariableTarget.Process);
+                _logger.LogInfo("[Env] Refreshed process PATH from registry.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[Env] Failed to refresh process PATH: {ex.Message}");
+            }
+        }
     }
 }

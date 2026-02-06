@@ -28,13 +28,21 @@ For rapid integration testing, we use **Windows Sandbox**. This provides a tempo
 - Windows 10/11 Pro or Enterprise
 - "Windows Sandbox" feature enabled
 
-**How to run:**
-1.  Execute the helper script to build and launch:
+**Full System Integration Test:**
+1.  Execute the launcher script:
     ```powershell
-    .\start-sandbox.ps1
+    powershell -File testing/infrastructure/start-sandbox.ps1
     ```
-2.  The sandbox will open with the project mapped to the desktop.
-3.  Follow the on-screen instructions in the Sandbox's PowerShell window to run the latest build.
+2.  The sandbox will automatically build the project, setup plugins, install runtimes (`uv`, `bun`), and run the full test configuration (`test-config.yaml`).
+3.  Verification results will be displayed in the terminal upon logon.
+
+**Plugin-Only Integration Test:**
+For faster iteration when working on plugins:
+1.  Ensure the project is built (`dotnet publish`).
+2.  Launch the specialized sandbox:
+    ```powershell
+    Invoke-Item testing/infrastructure/WinHome-Plugins.wsb
+    ```
 
 **Why use this?**
 - **Safety**: Changes (installing apps, changing registry) are discarded when you close the window.
@@ -47,18 +55,19 @@ For rapid integration testing, we use **Windows Sandbox**. This provides a tempo
 Our GitHub Actions pipeline utilizes **Windows Server Core** containers to run integration tests.
 
 ### Dockerfile Strategy
+- **Location**: `testing/infrastructure/Dockerfile`.
 - **Base Image**: `mcr.microsoft.com/windows/servercore:ltsc2022`.
 - **Optimizations**: 
     - Layer caching for `.csproj` restores.
     - Pester module pre-installed.
-    - `README.md` and test data included in the build context.
+    - Full plugin source code and runtimes included.
 
 ### Running Container Tests Locally
 If you have Docker Desktop for Windows configured for **Windows Containers**:
 
 ```powershell
-# Build and Run
-docker build -t winhome:test .
+# Build and Run from project root
+docker build -t winhome:test -f testing/infrastructure/Dockerfile .
 docker run winhome:test
 ```
 

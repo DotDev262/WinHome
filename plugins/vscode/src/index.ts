@@ -63,7 +63,8 @@ function install(args: any, context: any, requestId: string): Response {
 
   log(`Installing VSCode extension: ${packageId}...`);
   try {
-    execSync(`code --install-extension ${packageId}`, { stdio: "inherit" });
+    // Redirect stdout (1) to stderr (2) so it doesn't pollute the JSON response channel
+    execSync(`code --install-extension ${packageId}`, { stdio: ["ignore", 2, 2] });
     return { requestId: requestId, success: true, changed: true };
   } catch (e: any) {
     return { requestId: requestId, success: false, changed: false, error: e.message };
@@ -85,7 +86,8 @@ function uninstall(args: any, context: any, requestId: string): Response {
 
   log(`Uninstalling VSCode extension: ${packageId}...`);
   try {
-    execSync(`code --uninstall-extension ${packageId}`, { stdio: "inherit" });
+    // Redirect stdout (1) to stderr (2) so it doesn't pollute the JSON response channel
+    execSync(`code --uninstall-extension ${packageId}`, { stdio: ["ignore", 2, 2] });
     return { requestId: requestId, success: true, changed: true };
   } catch (e: any) {
     return { requestId: requestId, success: false, changed: false, error: e.message };
@@ -93,7 +95,25 @@ function uninstall(args: any, context: any, requestId: string): Response {
 }
 
 function applyConfig(args: any, context: any, requestId: string): Response {
-  // args is the config object for vscode
+  // args structure:
+  // {
+  //   "extensions": [ "dbaeumer.vscode-eslint" ],
+  //   "settings": { "editor.tabSize": 2 }
+  // }
+
+  let overallSuccess = true;
+  let overallChanged = false;
+
+  // 1. Install Extensions
+  if (args.extensions && Array.isArray(args.extensions)) {
+    for (const ext of args.extensions) {
+      const res = install({ packageId: ext }, context, requestId);
+      if (!res.success) overallSuccess = false;
+      if (res.changed) overallChanged = true;
+    }
+  }
+
+  // 2. Apply Settings
   const desiredSettings = args.settings || {};
   
   if (!fs.existsSync(VSCODE_USER_PATH)) {
@@ -120,20 +140,20 @@ function applyConfig(args: any, context: any, requestId: string): Response {
     }
   }
 
-  if (!changed) {
-    return { requestId: requestId, success: true, changed: false };
+  if (!changed && !overallChanged) {
+    return { requestId: requestId, success: overallSuccess, changed: false };
   }
 
   if (context.dryRun) {
     log("Would update VSCode settings.json");
-    return { requestId: requestId, success: true, changed: false };
+    return { requestId: requestId, success: overallSuccess, changed: false };
   }
 
   try {
     fs.writeFileSync(SETTINGS_JSON_PATH, JSON.stringify(currentSettings, null, 4), "utf8");
-    return { requestId: requestId, success: true, changed: true };
+    return { requestId: requestId, success: overallSuccess, changed: true };
   } catch (e: any) {
-    return { requestId: requestId, success: false, changed: false, error: e.message };
+    return { requestId: requestId, success: false, changed: overallChanged, error: e.message };
   }
 }
 

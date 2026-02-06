@@ -1,0 +1,24 @@
+version: "1.0"
+
+# First-Class Plugin Sections
+vim:
+  extensions:
+    - "tpope/vim-commentary"
+  settings:
+    number: true
+    relativenumber: true
+    theme: "morning"
+
+vscode:
+  extensions:
+    - "dbaeumer.vscode-eslint"
+  settings:
+    "editor.tabSize": 2
+    "files.autoSave": "afterDelay"
+
+# Generic Plugin Section
+extensions:
+  test-echo:
+    message: "Python Plugin Integration Test"
+  test-echo-js:
+    message: "JavaScript Plugin Integration Test"

@@ -3,15 +3,25 @@
 # Setup plugins
 $pluginDir = Join-Path $env:LOCALAPPDATA "WinHome\plugins"
 $testPluginSrc = "tests\TestPluginJS"
-$testPluginDest = Join-Path $pluginDir "test-echo-js"
+$testPluginPySrc = "tests\TestPlugin"
+$vimPluginSrc = "plugins\vim"
+$vscodePluginSrc = "plugins\vscode"
 
-if (Test-Path $testPluginSrc) {
-    Write-Host "Setting up test plugin in $testPluginDest"
-    New-Item -ItemType Directory -Force -Path $testPluginDest | Out-Null
-    Copy-Item "$testPluginSrc\*" -Destination $testPluginDest -Recurse -Force
-} else {
-    Write-Warning "Test plugin source not found at $testPluginSrc"
+function Copy-Plugin($src, $name) {
+    if (Test-Path $src) {
+        $dest = Join-Path $pluginDir $name
+        Write-Host "Setting up plugin $name in $dest"
+        New-Item -ItemType Directory -Force -Path $dest | Out-Null
+        Copy-Item "$src\*" -Destination $dest -Recurse -Force
+    } else {
+        Write-Warning "Plugin source not found at $src"
+    }
 }
+
+Copy-Plugin $testPluginSrc "test-echo-js"
+Copy-Plugin $testPluginPySrc "test-echo-py"
+Copy-Plugin $vimPluginSrc "vim"
+Copy-Plugin $vscodePluginSrc "vscode"
 
 # Run WinHome
 ./WinHome.exe --config test-config-container.yaml --debug

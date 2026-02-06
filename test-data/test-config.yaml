@@ -6,6 +6,12 @@ apps:
     manager: scoop
   - id: wget
     manager: choco
+  - id: "tpope/vim-fugitive"
+    manager: "vim"
+  - id: "esbenp.prettier-vscode"
+    manager: "vscode"
+  - id: "vscode"
+    manager: "choco"
 envVars:
   - variable: "WINHOME_TEST"
     value: "true"
@@ -25,3 +31,14 @@ git:
   userEmail: "test@winhome.local"
   settings:
     init.defaultBranch: main
+extensions:
+  vim:
+    settings:
+      number: true
+      relativenumber: true
+  vscode:
+    settings:
+      "editor.formatOnSave": true
+      "workbench.colorTheme": "Default Dark Modern"
+  test-echo:
+    message: "Hello from Python Plugin!"

@@ -27,7 +27,10 @@ namespace WinHome.Services.System
                     process.ErrorDataReceived += (s, e) => { if (e.Data != null) onOutput(e.Data); };
                 }
 
-                process.Start();
+                if (!process.Start())
+                {
+                    return false;
+                }
 
                 if (onOutput != null)
                 {
@@ -48,7 +51,11 @@ namespace WinHome.Services.System
                 }
                 return process.ExitCode == 0;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                if (onOutput != null) onOutput($"[ProcessRunner] Error starting {fileName}: {ex.Message}");
+                return false;
+            }
         }
 
         public string RunCommandWithOutput(string fileName, string args)

@@ -1,0 +1,14 @@
+<Configuration>
+  <VGpu>Disable</VGpu>
+  <Networking>Enable</Networking>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\Users\Aryan\Documents\Projects\WinHome</HostFolder>
+      <SandboxFolder>C:\Users\WDAGUtilityAccount\Desktop\WinHome</SandboxFolder>
+      <ReadOnly>false</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>powershell -ExecutionPolicy Bypass -Command "start powershell -NoExit -Command 'cd C:\Users\WDAGUtilityAccount\Desktop\WinHome\testing\infrastructure; $env:WINHOME_STATE_PATH = [System.IO.Path]::Combine($env:TEMP, \"winhome.sandbox.state.json\"); powershell -ExecutionPolicy Bypass -File ./run-sandbox-test.ps1' "</Command>
+  </LogonCommand>
+</Configuration>

@@ -6,6 +6,8 @@ apps:
     manager: scoop
   - id: wget
     manager: choco
+  - id: "tpope/vim-fugitive"
+    manager: "vim"
 envVars:
   - variable: "WINHOME_TEST"
     value: "true"
@@ -25,3 +27,7 @@ git:
   userEmail: "test@winhome.local"
   settings:
     init.defaultBranch: main
+extensions:
+  vim:
+    settings:
+      number: true

@@ -23,7 +23,7 @@ RUN dotnet publish src/WinHome.csproj \
     --no-restore \
     /p:PublishSingleFile=true
 
-# Runtime stage - Server Core for CLI-only tools (faster in CI, ~3-4GB smaller)
+# Runtime stage
 FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS final
 
 WORKDIR /app
@@ -31,9 +31,10 @@ WORKDIR /app
 # Copy published application
 COPY --from=build /app/publish .
 
-# Copy test resources
+# Copy test resources (from project root context)
 COPY test-data/ .
 COPY tests/ tests/
+COPY plugins/ plugins/
 COPY src/ src/
 COPY README.md .
 

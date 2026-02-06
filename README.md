@@ -176,17 +176,17 @@ Here is a tentative plan for upcoming releases.
 ### v1.2 — The Plugins & Extensibility Release
 *Focus: Redesigning the core for extensibility and adding community-requested features.*
 - [x] **Plugin Architecture**: Redesign the core to support external providers for services and package managers.
-- [ ] **VSCode Plugin**: Implement VSCode settings and extension sync as the first official plugin.
+- [x] **VSCode Plugin**: Implement VSCode settings and extension sync as the first official plugin.
 - [x] **Vim/Neovim Plugin**: Configure plugins and settings for Vim/Neovim.
 - [x] **Config Generator (`winhome generate`)**: Scan the system and create a `config.yaml` based on installed apps and settings.
 - [x] **Advanced State Management** (`state list`, `state backup`, `state restore`).
 - [x] **Secret Reference Logic**: Add support for referencing secrets from environment variables or secure vaults.
 - [x] **Self-Update Mechanism**: Allow `WinHome` to update itself to the latest version.
 - [x] **Security Hardening Presets**: Add pre-defined configurations for locking down Windows security settings.
-- [ ] **Automation**:
-  - [ ] Publish Docs to GitHub Pages (DocFx).
-  - [ ] Automate Release Notes (`release-drafter`).
-- [ ] **Structured Output**: Finalize `--json` integration for all modules.
+- [x] **Automation**:
+  - [x] Publish Docs to GitHub Pages (DocFx).
+  - [x] Automate Release Notes (`release-drafter`).
+- [x] **Structured Output**: Finalize `--json` integration for all modules.
 
 ### v2.0 — The Architecture Release
 *Focus: Major architectural changes to support long-term power and reliability.*

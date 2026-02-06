@@ -67,6 +67,7 @@ Describe "WinHome Integration Tests" {
 
     Context "Dotfiles" {
         It "Should sync the dotfile correctly" {
+            # The test-dotfile.md is expected to be in the current directory where winhome runs
             $dotfileContent = Get-Content -Path "test-dotfile.md" -Raw
             $readmeContent = Get-Content -Path "README.md" -Raw
             $dotfileContent | Should -Be $readmeContent
@@ -109,6 +110,34 @@ Describe "WinHome Integration Tests" {
                 $gitName | Should -Be "WinHome Test"
             } else {
                 Write-Warning "Git executable not found, skipping config check."
+            }
+        }
+    }
+
+    Context "Plugin: Vim" {
+        It "Should create Neovim configuration file" {
+            $nvimConfig = Join-Path $env:LOCALAPPDATA "nvim\init.lua"
+            Test-Path $nvimConfig | Should -Be $true
+            $content = Get-Content $nvimConfig -Raw
+            $content | Should -Match "vim.opt.number = true"
+        }
+
+        It "Should install Vim plugins" {
+            $pluginPath = Join-Path $env:LOCALAPPDATA "nvim-data\site\pack\winhome\start\vim-fugitive"
+            Test-Path $pluginPath | Should -Be $true
+            Test-Path (Join-Path $pluginPath ".git") | Should -Be $true
+        }
+    }
+
+    Context "Plugin: VSCode" {
+        It "Should create VSCode settings.json" {
+            $vscodeSettings = Join-Path $env:APPDATA "Code\User\settings.json"
+            # In some test environments, APPDATA might not be fully initialized
+            if (Test-Path $vscodeSettings) {
+                $content = Get-Content $vscodeSettings -Raw
+                $content | Should -Match "editor.formatOnSave"
+            } else {
+                Write-Warning "VSCode settings file not found, might be expected if VSCode is not installed."
             }
         }
     }

@@ -14,17 +14,21 @@ public static class AppHost
 {
     public static IHost CreateHost(string[] args)
     {
+        // Check for --json flag in args to force JSON logging early
+        bool isJson = args.Contains("--json");
+
         return Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>
             {
-                ConfigureServices(context.Configuration, services);
+                ConfigureServices(context.Configuration, services, isJson);
             })
             .Build();
     }
 
-    public static void ConfigureServices(IConfiguration configuration, IServiceCollection services)
+    public static void ConfigureServices(IConfiguration configuration, IServiceCollection services, bool isJsonForce = false)
     {
-        var isJson = configuration.GetValue<bool>("json");
+        var isJsonConfig = configuration.GetValue<bool>("json");
+        var isJson = isJsonForce || isJsonConfig;
 
         if (isJson)
         {
@@ -74,17 +78,20 @@ public static class AppHost
         services.AddSingleton<WingetService>(sp => new WingetService(
             sp.GetRequiredService<IProcessRunner>(),
             sp.GetRequiredService<WingetBootstrapper>(),
-            sp.GetRequiredService<ILogger>()
+            sp.GetRequiredService<ILogger>(),
+            sp.GetRequiredService<IRuntimeResolver>()
         ));
         services.AddSingleton<ChocolateyService>(sp => new ChocolateyService(
             sp.GetRequiredService<IProcessRunner>(),
             sp.GetRequiredService<ChocolateyBootstrapper>(),
-            sp.GetRequiredService<ILogger>()
+            sp.GetRequiredService<ILogger>(),
+            sp.GetRequiredService<IRuntimeResolver>()
         ));
         services.AddSingleton<ScoopService>(sp => new ScoopService(
             sp.GetRequiredService<IProcessRunner>(),
             sp.GetRequiredService<ScoopBootstrapper>(),
-            sp.GetRequiredService<ILogger>()
+            sp.GetRequiredService<ILogger>(),
+            sp.GetRequiredService<IRuntimeResolver>()
         ));
 
         services.AddSingleton<Dictionary<string, IPackageManager>>(sp => new()
@@ -107,7 +114,8 @@ public static class AppHost
             sp.GetRequiredService<IPluginManager>(),
             sp.GetRequiredService<IPluginRunner>(),
             sp.GetRequiredService<IStateService>(),
-            sp.GetRequiredService<ILogger>()
+            sp.GetRequiredService<ILogger>(),
+            sp.GetRequiredService<IRuntimeResolver>()
         ));
         services.AddSingleton<AppRunner>(sp => new AppRunner(
             sp.GetRequiredService<Engine>(),

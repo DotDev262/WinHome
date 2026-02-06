@@ -8,30 +8,20 @@ namespace WinHome.Services.Managers
     {
         private readonly IProcessRunner _processRunner;
         private readonly ILogger _logger;
+        private readonly IRuntimeResolver _resolver;
         public IPackageManagerBootstrapper Bootstrapper { get; }
 
-        public ScoopService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger)
+        public ScoopService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
         {
             _processRunner = processRunner;
             Bootstrapper = bootstrapper;
             _logger = logger;
+            _resolver = resolver;
         }
 
         private string GetScoopExecutable()
         {
-            if (_processRunner.RunCommand("scoop", "--version", false)) return "scoop.cmd";
-            
-            string[] paths = {
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd"),
-                Path.Combine(Environment.GetEnvironmentVariable("ProgramData") ?? @"C:\ProgramData", "scoop", "shims", "scoop.cmd")
-            };
-
-            foreach (var path in paths)
-            {
-                if (File.Exists(path)) return path;
-            }
-
-            return "scoop.cmd"; // Fallback to original behavior
+            return _resolver.Resolve("scoop");
         }
 
         public bool IsAvailable()
@@ -58,23 +48,29 @@ namespace WinHome.Services.Managers
             string args = $"install {app.Id}";
 
             bool alreadyInstalled = false;
+            bool manifestNotFound = false;
             bool success = _processRunner.RunCommand(executable, args, false, line => 
             {
+                if (line == null) return;
                 _logger.LogInfo($"[Scoop:Install] {line}");
-                if (line != null && line.Contains($"'{app.Id}' is already installed", StringComparison.OrdinalIgnoreCase))
+                if (line.Contains($"'{app.Id}' is already installed", StringComparison.OrdinalIgnoreCase))
                 {
                     alreadyInstalled = true;
                 }
+                if (line.Contains("Couldn't find manifest", StringComparison.OrdinalIgnoreCase))
+                {
+                    manifestNotFound = true;
+                }
             });
 
-            if (!success)
+            if (!success || manifestNotFound)
             {
                 if (alreadyInstalled)
                 {
                     _logger.LogSuccess($"[Success] {app.Id} is already installed (detected during install attempt).");
                     return;
                 }
-                throw new Exception($"Failed to install {app.Id} using Scoop.");
+                throw new Exception($"Failed to install {app.Id} using Scoop.{(manifestNotFound ? " Manifest not found." : "")}");
             }
             _logger.LogSuccess($"[Success] Installed {app.Id}");
         }

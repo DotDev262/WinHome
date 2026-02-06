@@ -54,5 +54,13 @@ namespace WinHome.Models
         [YamlMember(Alias = "extensions")]
         [JsonPropertyName("extensions")]
         public Dictionary<string, object> Extensions { get; set; } = new();
+
+        [YamlMember(Alias = "vim")]
+        [JsonPropertyName("vim")]
+        public object? Vim { get; set; }
+
+        [YamlMember(Alias = "vscode")]
+        [JsonPropertyName("vscode")]
+        public object? Vscode { get; set; }
     }
 }

@@ -76,7 +76,8 @@ namespace WinHome.Tests
                 _mockPluginManager.Object,
                 _mockPluginRunner.Object,
                 _mockStateService.Object,
-                mockLogger.Object
+                mockLogger.Object,
+                _mockRuntimeResolver.Object
             );
 
             // Act
@@ -112,7 +113,8 @@ namespace WinHome.Tests
                 _mockPluginManager.Object,
                 _mockPluginRunner.Object,
                 _mockStateService.Object,
-                mockLogger.Object
+                mockLogger.Object,
+                _mockRuntimeResolver.Object
             );
 
             // Act
@@ -148,7 +150,8 @@ namespace WinHome.Tests
                 _mockPluginManager.Object,
                 _mockPluginRunner.Object,
                 _mockStateService.Object,
-                mockLogger.Object
+                mockLogger.Object,
+                _mockRuntimeResolver.Object
             );
             
             var previousState = new HashSet<string> { "winget:UnchangedApp", "winget:OldApp" };

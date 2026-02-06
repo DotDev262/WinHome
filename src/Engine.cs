@@ -20,6 +20,7 @@ namespace WinHome
         private readonly IPluginManager _pluginManager;
         private readonly IPluginRunner _pluginRunner;
         private readonly IStateService _stateService;
+        private readonly IRuntimeResolver _runtimeResolver;
 
         public Engine(
             Dictionary<string, IPackageManager> managers,
@@ -34,7 +35,8 @@ namespace WinHome
             IPluginManager pluginManager,
             IPluginRunner pluginRunner,
             IStateService stateService,
-            ILogger logger)
+            ILogger logger,
+            IRuntimeResolver runtimeResolver)
         {
             _managers = managers;
             _dotfiles = dotfiles;
@@ -49,6 +51,7 @@ namespace WinHome
             _pluginRunner = pluginRunner;
             _stateService = stateService;
             _logger = logger;
+            _runtimeResolver = runtimeResolver;
         }
 
         public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false)
@@ -67,7 +70,7 @@ namespace WinHome
                     if (!_managers.ContainsKey(plugin.Name))
                     {
                         _logger.LogInfo($"[Plugin] Registering Package Manager: {plugin.Name}");
-                        _managers[plugin.Name] = new WinHome.Services.Plugins.PluginPackageManagerAdapter(plugin, _pluginRunner, _pluginManager);
+                        _managers[plugin.Name] = new WinHome.Services.Plugins.PluginPackageManagerAdapter(plugin, _pluginRunner, _pluginManager, _runtimeResolver);
                     }
                 }
             }
@@ -128,6 +131,32 @@ namespace WinHome
                 }));
             }
 
+            // 1. Ensure System Managers (Scoop) are ready if needed by plugins
+            if (plugins.Any(p => p.Type.ToLower() == "python" || p.Type.ToLower() == "javascript" || p.Type.ToLower() == "typescript"))
+            {
+                if (_managers.TryGetValue("scoop", out var scoopMgr))
+                {
+                    if (!scoopMgr.IsAvailable())
+                    {
+                        _logger.LogInfo("\n--- Bootstrapping System Managers ---");
+                        _logger.LogInfo("[Engine] Bootstrapping Scoop for plugin runtimes...");
+                        scoopMgr.Bootstrapper.Install(dryRun);
+                    }
+                }
+            }
+
+            // 2. Reconcile Plugin Runtimes
+            var pluginsNeedingRuntime = plugins.Where(p => !p.Type.Equals("executable", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (pluginsNeedingRuntime.Any())
+            {
+                _logger.LogInfo("\n--- Reconciling Plugin Runtimes ---");
+                foreach (var plugin in pluginsNeedingRuntime)
+                {
+                    await _pluginManager.EnsureRuntimeAsync(plugin);
+                }
+                _env.RefreshPath();
+            }
+
             // Install Apps
             if (config.Apps.Any())
             {
@@ -148,6 +177,7 @@ namespace WinHome
                             }
                         }
                         mgr.Install(app, dryRun);
+                        _env.RefreshPath();
                     }
                     else
                     {
@@ -171,10 +201,14 @@ namespace WinHome
             }
 
             // Plugin Extensions
-            if (config.Extensions.Any())
+            var allExtensions = new Dictionary<string, object>(config.Extensions);
+            if (config.Vim != null) allExtensions["vim"] = config.Vim;
+            if (config.Vscode != null) allExtensions["vscode"] = config.Vscode;
+
+            if (allExtensions.Any())
             {
                 _logger.LogInfo("\n--- Running Plugin Extensions ---");
-                foreach (var ext in config.Extensions)
+                foreach (var ext in allExtensions)
                 {
                     var pluginName = ext.Key;
                     var pluginConfig = ext.Value;
@@ -184,6 +218,7 @@ namespace WinHome
                     
                     if (plugin != null)
                     {
+                        await _pluginManager.EnsureRuntimeAsync(plugin);
                         _logger.LogInfo($"[Plugin] Applying configuration for '{pluginName}'...");
                         var result = await _pluginRunner.ExecuteAsync(plugin, "apply", pluginConfig, new { dryRun = dryRun });
                         

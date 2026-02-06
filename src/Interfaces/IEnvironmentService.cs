@@ -5,5 +5,6 @@ namespace WinHome.Interfaces
     public interface IEnvironmentService
     {
         void Apply(EnvVarConfig env, bool dryRun);
+        void RefreshPath();
     }
 }

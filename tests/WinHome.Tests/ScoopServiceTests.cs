@@ -1,3 +1,4 @@
+using System;
 using Moq;
 using Xunit;
 using WinHome.Interfaces;
@@ -10,14 +11,19 @@ namespace WinHome.Tests
     {
         private readonly Mock<IProcessRunner> _mockProcessRunner;
         private readonly Mock<IPackageManagerBootstrapper> _mockBootstrapper;
+        private readonly Mock<IRuntimeResolver> _mockRuntimeResolver;
         private readonly ScoopService _scoopService;
 
         public ScoopServiceTests()
         {
             _mockProcessRunner = new Mock<IProcessRunner>();
             _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
+            _mockRuntimeResolver = new Mock<IRuntimeResolver>();
             var mockLogger = new Mock<ILogger>();
-            _scoopService = new ScoopService(_mockProcessRunner.Object, _mockBootstrapper.Object, mockLogger.Object);
+
+            _mockRuntimeResolver.Setup(r => r.Resolve("scoop")).Returns("scoop.cmd");
+
+            _scoopService = new ScoopService(_mockProcessRunner.Object, _mockBootstrapper.Object, mockLogger.Object, _mockRuntimeResolver.Object);
         }
 
         [Fact]

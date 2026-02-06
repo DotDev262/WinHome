@@ -28,15 +28,19 @@ namespace WinHome.Services.Bootstrappers
                 return;
             }
 
-            Console.WriteLine($"[Bootstrapper] Installing {Name}...");
+            Console.WriteLine($"[Bootstrapper] Installing {Name} via Scoop...");
 
-            // Official install script for Windows
-            string command = "irm https://astral.sh/uv/install.ps1 | iex";
+            string scoopPath = "scoop.cmd";
+            string userScoop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd");
+            string globalScoop = Path.Combine(Environment.GetEnvironmentVariable("ProgramData") ?? "C:\\ProgramData", "scoop", "shims", "scoop.cmd");
+
+            if (File.Exists(userScoop)) scoopPath = userScoop;
+            else if (File.Exists(globalScoop)) scoopPath = globalScoop;
 
             var psi = new ProcessStartInfo
             {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"",
+                FileName = scoopPath,
+                Arguments = "install uv",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,

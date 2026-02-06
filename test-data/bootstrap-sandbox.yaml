@@ -1,0 +1,6 @@
+version: "1.0"
+apps:
+  - id: vim
+    manager: scoop
+  - id: vscode
+    manager: choco

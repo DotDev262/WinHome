@@ -8,23 +8,20 @@ namespace WinHome.Services.Managers
     {
         private readonly IProcessRunner _processRunner;
         private readonly ILogger _logger;
+        private readonly IRuntimeResolver _resolver;
         public IPackageManagerBootstrapper Bootstrapper { get; }
 
-        public ChocolateyService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger)
+        public ChocolateyService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
         {
             _processRunner = processRunner;
             Bootstrapper = bootstrapper;
             _logger = logger;
+            _resolver = resolver;
         }
 
         private string GetChocoExecutable()
         {
-            if (_processRunner.RunCommand("choco", "--version", false)) return "choco";
-
-            string chocoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "chocolatey", "bin", "choco.exe");
-            if (File.Exists(chocoPath)) return chocoPath;
-
-            return "choco";
+            return _resolver.Resolve("choco");
         }
 
         public bool IsAvailable()
