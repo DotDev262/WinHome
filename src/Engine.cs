@@ -59,17 +59,17 @@ namespace WinHome
             _logger.LogInfo($"--- WinHome v{config.Version} ---");
 
             // Load Plugins
-            var plugins = _pluginManager.DiscoverPlugins();
+            var plugins = _pluginManager.DiscoverPlugins().ToList();
+            var loggedPlugins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var plugin in plugins)
             {
                 if (plugin.Capabilities.Contains("package_manager"))
                 {
-                    // Register the plugin as a package manager using its name (e.g., "npm", "pip", "cargo")
-                    // If the plugin name is "winhome-provider-npm", we might want to strip prefix or use a specific property.
-                    // For now, we use the Manifest Name.
+                    // Register the plugin as a package manager
                     if (!_managers.ContainsKey(plugin.Name))
                     {
-                        _logger.LogInfo($"[Plugin] Registering Package Manager: {plugin.Name}");
+                        // Delay logging discovery until it's actually used by an app
                         _managers[plugin.Name] = new WinHome.Services.Plugins.PluginPackageManagerAdapter(plugin, _pluginRunner, _pluginManager, _runtimeResolver);
                     }
                 }
@@ -149,12 +149,23 @@ namespace WinHome
             var pluginsNeedingRuntime = plugins.Where(p => !p.Type.Equals("executable", StringComparison.OrdinalIgnoreCase)).ToList();
             if (pluginsNeedingRuntime.Any())
             {
-                _logger.LogInfo("\n--- Reconciling Plugin Runtimes ---");
-                foreach (var plugin in pluginsNeedingRuntime)
+                // Only reconcile runtimes for plugins that are actually used in the config
+                var usedPluginNames = config.Apps.Select(a => a.Manager)
+                    .Concat(new[] { "vim", "vscode" }.Where(_ => config.Vim != null || config.Vscode != null))
+                    .Concat(config.Extensions.Keys)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var usedPluginsNeedingRuntime = pluginsNeedingRuntime.Where(p => usedPluginNames.Contains(p.Name)).ToList();
+
+                if (usedPluginsNeedingRuntime.Any())
                 {
-                    await _pluginManager.EnsureRuntimeAsync(plugin);
+                    _logger.LogInfo("\n--- Reconciling Plugin Runtimes ---");
+                    foreach (var plugin in usedPluginsNeedingRuntime)
+                    {
+                        await _pluginManager.EnsureRuntimeAsync(plugin);
+                    }
+                    _env.RefreshPath();
                 }
-                _env.RefreshPath();
             }
 
             // Install Apps
@@ -166,6 +177,14 @@ namespace WinHome
                     _logger.LogInfo($"[Engine] Processing {app.Manager}:{app.Id}...");
                     if (_managers.TryGetValue(app.Manager, out var mgr))
                     {
+                        if (mgr is WinHome.Services.Plugins.PluginPackageManagerAdapter adapter)
+                        {
+                             if (loggedPlugins.Add(app.Manager))
+                             {
+                                 _logger.LogInfo($"[Plugin] Discovered: {app.Manager} ({adapter.PluginType})");
+                             }
+                        }
+
                         if (!mgr.IsAvailable())
                         {
                             _logger.LogInfo($"[Engine] Manager '{app.Manager}' not available. Bootstrapping...");
@@ -214,10 +233,15 @@ namespace WinHome
                     var pluginConfig = ext.Value;
 
                     // Find plugin by name
-                    var plugin = _pluginManager.DiscoverPlugins().FirstOrDefault(p => p.Name.Equals(pluginName, StringComparison.OrdinalIgnoreCase));
+                    var plugin = plugins.FirstOrDefault(p => p.Name.Equals(pluginName, StringComparison.OrdinalIgnoreCase));
                     
                     if (plugin != null)
                     {
+                        if (loggedPlugins.Add(plugin.Name))
+                        {
+                             _logger.LogInfo($"[Plugin] Discovered: {plugin.Name} ({plugin.Type})");
+                        }
+                        
                         await _pluginManager.EnsureRuntimeAsync(plugin);
                         _logger.LogInfo($"[Plugin] Applying configuration for '{pluginName}'...");
                         var result = await _pluginRunner.ExecuteAsync(plugin, "apply", pluginConfig, new { dryRun = dryRun });

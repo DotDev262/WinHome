@@ -20,6 +20,8 @@ namespace WinHome.Services.Plugins
             _resolver = resolver;
         }
 
+        public string PluginType => _plugin.Type;
+
         public IPackageManagerBootstrapper Bootstrapper => new PluginRuntimeBootstrapper(_plugin, _manager, _resolver);
 
         public bool IsAvailable()

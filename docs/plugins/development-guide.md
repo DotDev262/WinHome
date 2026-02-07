@@ -6,6 +6,8 @@ WinHome v1.2 introduces a **Process-Based Plugin Architecture**, allowing you to
 WinHome plugins are standalone folders located in `%LOCALAPPDATA%\WinHome\plugins`.
 When WinHome runs, it scans these folders for a `plugin.yaml` manifest.
 
+**Lazy Discovery:** To keep output clean, WinHome only logs the discovery of a plugin and ensures its runtime (Python/Bun) if it is actually referenced in the current `config.yaml` (either via `apps`, `extensions`, or a dedicated top-level section).
+
 Communication happens via **JSON over Standard I/O**:
 1.  WinHome spawns your plugin process.
 2.  WinHome writes a **Request** JSON object to your `stdin`.

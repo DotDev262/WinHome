@@ -54,7 +54,6 @@ namespace WinHome.Services.Plugins
                         var manifest = deserializer.Deserialize<PluginManifest>(content);
                         manifest.DirectoryPath = dir;
                         plugins.Add(manifest);
-                        _logger.LogInfo($"[Plugin] Discovered: {manifest.Name} ({manifest.Type})");
                     }
                     catch (Exception ex)
                     {

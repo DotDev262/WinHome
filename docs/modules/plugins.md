@@ -28,22 +28,40 @@ vim:
 
 ## VSCode
 
-The `vscode` section allows you to manage extensions and user settings.
+The `vscode` section allows you to manage extensions and user settings for both the default profile and named profiles.
 
 ### Example
 ```yaml
 vscode:
+  # Default Profile
   extensions:
     - "dbaeumer.vscode-eslint"
     - "esbenp.prettier-vscode"
   settings:
     "editor.tabSize": 2
     "files.autoSave": "afterDelay"
+  
+  # Named Profiles
+  profiles:
+    "Work":
+      extensions:
+        - "ms-dotnettools.csdevkit"
+      settings:
+        "editor.fontSize": 14
+    "Personal":
+      settings:
+        "workbench.colorTheme": "Default Dark Modern"
 ```
 
 ### Options
-- `extensions`: A list of VSCode extension IDs to install.
-- `settings`: A dictionary of settings to merge into `settings.json`.
+- `extensions`: A list of VSCode extension IDs to install in the default profile.
+- `settings`: A dictionary of settings to merge into the default `settings.json`.
+- `profiles`: A dictionary of named profiles to manage.
+  - `<profile-name>`:
+    - `extensions`: Extensions specific to this profile.
+    - `settings`: Settings specific to this profile.
+
+> **Note:** WinHome will automatically create the profile in VSCode if it doesn't exist by adding it to `storage.json`.
 
 ---
 
