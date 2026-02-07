@@ -1,6 +1,8 @@
 - name: Home
   href: index.md
 - name: Documentation
-  href: docs/config.md
-- name: API Documentation
-  href: api/index.md
+  href: docs/
+  topicHref: docs/config.md
+- name: API
+  href: api/
+  topicHref: api/index.md

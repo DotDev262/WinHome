@@ -52,12 +52,14 @@
     ],
     "dest": "_site",
     "template": [
-      "default"
+      "default",
+      "modern"
     ],
     "globalMetadata": {
-      "_appTitle": "WinHome Documentation",
+      "_appTitle": "WinHome",
       "_appFooter": "WinHome - Infrastructure as Code for Windows",
-      "_enableSearch": true
+      "_enableSearch": true,
+      "_enableNewTab": true
     }
   }
 }
