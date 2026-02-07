@@ -1,2 +1,4 @@
+- name: ⬅️ Back to Documentation
+  href: ../toc.yml
 - name: Plugin Spec v1
   href: plugin_spec_v1.md
