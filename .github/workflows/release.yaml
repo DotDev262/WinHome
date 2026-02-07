@@ -22,6 +22,17 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore WinHome.sln
 
+    - name: Install uv and bun (for tests)
+      shell: pwsh
+      run: |
+        # Install uv
+        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+        echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
+        
+        # Install bun
+        powershell -ExecutionPolicy ByPass -c "irm https://bun.sh/install.ps1 | iex"
+        echo "$env:USERPROFILE\.bun\bin" >> $env:GITHUB_PATH
+
     - name: Run Tests
       run: dotnet test WinHome.sln --no-restore --verbosity normal --collect "XPlat Code Coverage"
 

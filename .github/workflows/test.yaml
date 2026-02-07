@@ -22,6 +22,20 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore src/WinHome.csproj
 
+    - name: Install uv and bun (for tests)
+      shell: pwsh
+      run: |
+        # Install uv
+        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+        echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
+        
+        # Install bun
+        powershell -ExecutionPolicy ByPass -c "irm https://bun.sh/install.ps1 | iex"
+        echo "$env:USERPROFILE\.bun\bin" >> $env:GITHUB_PATH
+
+    - name: Run Unit Tests
+      run: dotnet test tests/WinHome.Tests/WinHome.Tests.csproj
+
     - name: Build WinHome
       run: dotnet publish src/WinHome.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
 
