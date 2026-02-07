@@ -1,8 +1,8 @@
-- name: Home
+- name: 🏠 Home
   href: index.md
-- name: Documentation
+- name: 📘 Documentation
   href: docs/
   topicHref: docs/config.md
-- name: API
+- name: 📖 API Reference
   href: api/
   topicHref: api/index.md
