@@ -51,6 +51,10 @@
       }
     ],
     "dest": "_site",
+    "template": [
+      "default",
+      "modern"
+    ],
     "globalMetadata": {
       "_appTitle": "WinHome Documentation",
       "_appFooter": "WinHome - Infrastructure as Code for Windows",

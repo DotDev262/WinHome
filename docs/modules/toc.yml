@@ -1,0 +1,24 @@
+- name: Winget
+  href: winget.md
+- name: Scoop
+  href: scoop.md
+- name: Chocolatey
+  href: chocolatey.md
+- name: WSL
+  href: wsl.md
+- name: Git
+  href: git.md
+- name: Dotfiles
+  href: dotfiles.md
+- name: Environment Variables
+  href: env.md
+- name: Registry Tweaks
+  href: registry.md
+- name: System Settings
+  href: system_settings.md
+- name: Windows Services
+  href: win_services.md
+- name: Scheduled Tasks
+  href: scheduled_tasks.md
+- name: Plugins Provider
+  href: plugins.md

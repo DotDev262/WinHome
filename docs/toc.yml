@@ -1,0 +1,12 @@
+- name: Overview
+  href: config.md
+- name: Configuration Reference
+  href: config-reference.md
+- name: Modules
+  href: modules/toc.yml
+- name: Plugins
+  href: plugins/toc.yml
+- name: Architecture
+  href: architecture/toc.yml
+- name: Testing Guide
+  href: testing.md
