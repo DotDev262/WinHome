@@ -39,6 +39,12 @@ To run the tests, run the following command from the root of the repository:
 dotnet test WinHome.sln
 ```
 
+## 🐧 Linux & 🍎 macOS Development
+
+You can develop and run unit tests for WinHome on Linux and macOS using the .NET 10 SDK. Since the engine is Windows-specific, we use mocks to ensure high test coverage on non-Windows platforms.
+
+For a detailed guide on how to contribute from a non-Windows machine, see the **[Cross-Platform Development Guide](./docs/cross-platform-dev.md)**.
+
 ### Make your changes
 
 Now, go make your changes!

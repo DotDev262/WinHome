@@ -12,5 +12,7 @@
   href: plugins/toc.yml
 - name: Architecture
   href: architecture/toc.yml
+- name: 🐧 Cross-Platform Development
+  href: cross-platform-dev.md
 - name: Testing Guide
   href: testing.md

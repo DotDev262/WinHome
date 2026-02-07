@@ -221,6 +221,7 @@ Built with modern .NET engineering patterns:
 * **Dependency Injection** (`Microsoft.Extensions.Hosting`)
 * **Strategy Pattern** across package managers
 * **Testable Core** via abstractions (Registry, FS, Processes)
+* **Cross-Platform Dev**: Can be developed/unit-tested on Linux & macOS.
 * **CI/CD** via GitHub Actions (SingleFile & Native builds)
 
 ---
