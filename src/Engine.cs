@@ -196,6 +196,10 @@ namespace WinHome
                             }
                         }
                         mgr.Install(app, dryRun);
+                        if (!dryRun)
+                        {
+                            _stateService.MarkAsApplied($"{app.Manager}:{app.Id}");
+                        }
                         _env.RefreshPath();
                     }
                     else
@@ -268,7 +272,15 @@ namespace WinHome
             if (allTweaks.Any() && OperatingSystem.IsWindows())
             {
                 _logger.LogInfo("\n--- Applying Registry Tweaks ---");
-                await Task.Run(() => Parallel.ForEach(allTweaks, tweak => _registry.Apply(tweak, dryRun)));
+                // Run sequentially to ensure state is saved accurately after each operation
+                foreach (var tweak in allTweaks)
+                {
+                    _registry.Apply(tweak, dryRun);
+                    if (!dryRun)
+                    {
+                        _stateService.MarkAsApplied($"reg:{tweak.Path}|{tweak.Name}");
+                    }
+                }
             }
 
             if (config.SystemSettings.Any() && OperatingSystem.IsWindows())

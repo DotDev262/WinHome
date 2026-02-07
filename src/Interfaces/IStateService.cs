@@ -6,6 +6,7 @@ namespace WinHome.Interfaces
     {
         HashSet<string> LoadState();
         void SaveState(HashSet<string> state);
+        void MarkAsApplied(string item);
         void BackupState(string backupPath);
         void RestoreState(string backupPath);
         IEnumerable<string> ListItems();

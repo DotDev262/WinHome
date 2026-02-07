@@ -7,6 +7,7 @@ namespace WinHome.Services.System
     {
         private readonly string _stateFilePath;
         private readonly ILogger _logger;
+        private HashSet<string> _inMemoryState;
 
         public StateService(ILogger logger)
         {
@@ -14,6 +15,7 @@ namespace WinHome.Services.System
             
             var envPath = Environment.GetEnvironmentVariable("WINHOME_STATE_PATH");
             _stateFilePath = string.IsNullOrEmpty(envPath) ? "winhome.state.json" : envPath;
+            _inMemoryState = LoadState();
         }
 
         public HashSet<string> LoadState()
@@ -21,7 +23,10 @@ namespace WinHome.Services.System
             if (!File.Exists(_stateFilePath)) return new HashSet<string>();
             try
             {
-                string json = File.ReadAllText(_stateFilePath);
+                // Use FileShare.ReadWrite to allow reading even if we are writing (though we lock on write)
+                using var stream = File.Open(_stateFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var reader = new StreamReader(stream);
+                string json = reader.ReadToEnd();
                 return JsonSerializer.Deserialize<HashSet<string>>(json) ?? new HashSet<string>();
             }
             catch (Exception ex)
@@ -33,10 +38,27 @@ namespace WinHome.Services.System
 
         public void SaveState(HashSet<string> state)
         {
+            _inMemoryState = state;
+            FlushToDisk();
+        }
+
+        public void MarkAsApplied(string item)
+        {
+            if (_inMemoryState.Add(item))
+            {
+                FlushToDisk();
+            }
+        }
+
+        private void FlushToDisk()
+        {
             try
             {
-                string json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(_stateFilePath, json);
+                string json = JsonSerializer.Serialize(_inMemoryState, new JsonSerializerOptions { WriteIndented = true });
+                // Use FileShare.Read to prevent others from writing but allow reading
+                using var stream = File.Open(_stateFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                using var writer = new StreamWriter(stream);
+                writer.Write(json);
             }
             catch (Exception ex)
             {
@@ -72,6 +94,7 @@ namespace WinHome.Services.System
                 {
                     File.Copy(backupPath, _stateFilePath, true);
                     _logger.LogSuccess($"[State] State restored from: {backupPath}");
+                    _inMemoryState = LoadState();
                 }
                 else
                 {
@@ -86,7 +109,7 @@ namespace WinHome.Services.System
 
         public IEnumerable<string> ListItems()
         {
-            return LoadState();
+            return _inMemoryState;
         }
     }
 }

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using WinHome.Interfaces;
 using WinHome.Models.Plugins;
@@ -43,6 +44,7 @@ namespace WinHome.Services.Plugins
             startInfo.Environment["WINHOME_PLUGIN_NAME"] = plugin.Name;
 
             using var process = new Process { StartInfo = startInfo };
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             
             try
             {
@@ -61,20 +63,38 @@ namespace WinHome.Services.Plugins
 
                 // 1. Send Request
                 string jsonRequest = JsonSerializer.Serialize(request);
-                await process.StandardInput.WriteLineAsync(jsonRequest);
+                await process.StandardInput.WriteLineAsync(jsonRequest.AsMemory(), cts.Token);
                 process.StandardInput.Close(); // Close Stdin to signal EOF to the plugin if it reads until EOF
 
-                // 2. Read Response
-                // We assume the plugin prints one line of JSON or the whole output is JSON.
-                // Reading to end is safer for now.
-                string output = await process.StandardOutput.ReadToEndAsync();
+                // 2. Read Response with Size Limit (10MB) and Timeout
+                var outputBuilder = new StringBuilder();
+                char[] buffer = new char[4096];
+                int totalRead = 0;
+                int maxBytes = 10 * 1024 * 1024; // 10 MB
+
+                while (true) 
+                {
+                    int read = await process.StandardOutput.ReadAsync(buffer.AsMemory(), cts.Token);
+                    if (read == 0) break;
+                    
+                    totalRead += read;
+                    if (totalRead > maxBytes) 
+                    {
+                        process.Kill();
+                        throw new InvalidOperationException("Plugin output exceeded size limit (10MB).");
+                    }
+                    
+                    outputBuilder.Append(buffer, 0, read);
+                }
                 
-                await process.WaitForExitAsync();
+                await process.WaitForExitAsync(cts.Token);
 
                 if (process.ExitCode != 0)
                 {
                     return new PluginResult { Success = false, Error = $"Plugin process exited with code {process.ExitCode}" };
                 }
+
+                string output = outputBuilder.ToString();
 
                 if (string.IsNullOrWhiteSpace(output))
                 {
@@ -95,8 +115,14 @@ namespace WinHome.Services.Plugins
                     return new PluginResult { Success = false, Error = $"Invalid JSON response: {ex.Message}. Output: {output}" };
                 }
             }
+            catch (OperationCanceledException)
+            {
+                try { process.Kill(); } catch { }
+                return new PluginResult { Success = false, Error = "Plugin timed out after 30 seconds." };
+            }
             catch (Exception ex)
             {
+                try { if (!process.HasExited) process.Kill(); } catch { }
                 return new PluginResult { Success = false, Error = $"Runner Exception: {ex.Message}" };
             }
         }

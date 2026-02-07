@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using System.Runtime.Versioning;
 using WinHome.Interfaces;
 using WinHome.Models;
+using WinHome.Infrastructure.Helpers;
 
 namespace WinHome.Services.System
 {
@@ -19,6 +20,9 @@ namespace WinHome.Services.System
         {
             try
             {
+                // Security Check: Prevent HKCU modification when running as SYSTEM
+                RegistryGuard.ValidateContext(tweak.Path);
+
                 IRegistryKey root = _registryWrapper.GetRootKey(tweak.Path, out string subKeyPath);
 
                 using (IRegistryKey? key = root.OpenSubKey(subKeyPath, writable: false))
@@ -61,6 +65,11 @@ namespace WinHome.Services.System
             catch (Exception ex)
             {
                 Console.WriteLine($"[Error] Registry apply failed: {ex.Message}");
+                // If it's our security exception, we rethrow it or ensure it's logged as critical.
+                if (ex is InvalidOperationException && ex.Message.StartsWith("Security Risk"))
+                {
+                     throw;
+                }
             }
         }
 
@@ -68,6 +77,9 @@ namespace WinHome.Services.System
         {
             try
             {
+                // Security Check
+                RegistryGuard.ValidateContext(path);
+
                 IRegistryKey root = _registryWrapper.GetRootKey(path, out string subKeyPath);
                 using (IRegistryKey? key = root.OpenSubKey(subKeyPath, writable: !dryRun))
                 {

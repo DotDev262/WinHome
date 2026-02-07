@@ -106,6 +106,24 @@ For a detailed breakdown of all configuration options, refer to the [Configurati
 
 ---
 
+## 🛡️ Security & Reliability
+
+WinHome implements enterprise-grade security controls to prevent common infrastructure automation pitfalls.
+
+### 🔒 Context Awareness (RegistryGuard)
+WinHome actively detects if it is running as `SYSTEM` (common in CI/CD or Scheduled Tasks) and **blocks attempts to modify `HKEY_CURRENT_USER`**. This prevents the "Admin Context Trap" where settings are accidentally applied to the LocalSystem profile instead of the logged-in user.
+
+### 💾 Crash Resilience (Write-Through State)
+The state engine uses a **Write-Through** pattern. Every successful action (e.g., installing an app, applying a registry key) is immediately flushed to disk (`winhome.state.json`). If the process crashes or is terminated (Ctrl+C), your progress is saved, and the next run will resume correctly without "zombie" state issues.
+
+### 📦 Plugin Sandboxing
+External plugins (Python/Node.js) run in a sandboxed process with strict limits:
+*   **Memory Limit:** 10MB max output buffer to prevent OOM attacks.
+*   **Time Limit:** 30-second execution timeout to prevent hangs.
+*   **Isolation:** Plugins communicate strictly via JSON over Stdin/Stdout.
+
+---
+
 ## 🗺️ Roadmap / Planned Features
 
 This roadmap is a living document that outlines the project's future direction. It will be updated with new features and ideas as the project evolves.
