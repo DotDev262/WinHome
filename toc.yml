@@ -1,6 +1,6 @@
 - name: Home
-  href: README.md
+  href: index.md
 - name: Documentation
-  href: docs/toc.yml
+  href: docs/config.md
 - name: API Documentation
-  href: api/
+  href: api/index.md
