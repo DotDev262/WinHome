@@ -20,22 +20,40 @@ jobs:
         dotnet-version: 10.0.x 
 
     - name: Restore dependencies
-      
       run: dotnet restore WinHome.sln
 
     - name: Run Tests
-      
       run: dotnet test WinHome.sln --no-restore --verbosity normal --collect "XPlat Code Coverage"
 
     - name: Publish WinHome (Single File)
-      
-      
       run: dotnet publish src/WinHome.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true -o ./publish
+
+    - name: Generate Checksum
+      shell: powershell
+      run: |
+        $path = "./publish/WinHome.exe"
+        $hash = Get-FileHash $path -Algorithm SHA256
+        $hashString = $hash.Hash
+        $fileName = Split-Path $path -Leaf
+        "$hashString  $fileName" | Out-File -FilePath "./publish/checksum.txt" -Encoding ascii
+        Write-Host "Generated Checksum: $hashString"
+        # Set output for use in release body
+        echo "HASH=$hashString" >> $env:GITHUB_ENV
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
-        files: ./publish/WinHome.exe
+        files: |
+          ./publish/WinHome.exe
+          ./publish/checksum.txt
         draft: false
         prerelease: false
         generate_release_notes: true
+        append_body: true
+        body: |
+          
+          ### 🔒 Checksums
+          
+          | Filename | SHA256 |
+          | :--- | :--- |
+          | `WinHome.exe` | `${{ env.HASH }}` |

@@ -25,7 +25,7 @@ class Program
                     {
                         var updater = host.Services.GetRequiredService<IUpdateService>();
                         // In a real app, get version from Assembly
-                        var currentVersion = "1.0.0"; 
+                        var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.2.0"; 
                         if (await updater.CheckForUpdatesAsync(currentVersion))
                         {
                             await updater.UpdateAsync();
