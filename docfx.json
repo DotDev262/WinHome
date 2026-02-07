@@ -59,7 +59,8 @@
       "_appTitle": "WinHome",
       "_appFooter": "WinHome - Infrastructure as Code for Windows",
       "_enableSearch": true,
-      "_enableNewTab": true
+      "_enableNewTab": true,
+      "_disableNavbar": true
     }
   }
 }

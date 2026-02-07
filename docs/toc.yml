@@ -1,3 +1,7 @@
+- name: 🏠 Home
+  href: ../index.md
+- name: 📖 API Documentation
+  href: ../api/index.md
 - name: Overview
   href: config.md
 - name: Configuration Reference
