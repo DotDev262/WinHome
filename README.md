@@ -117,7 +117,7 @@ WinHome actively detects if it is running as `SYSTEM` (common in CI/CD or Schedu
 The state engine uses a **Write-Through** pattern. Every successful action (e.g., installing an app, applying a registry key) is immediately flushed to disk (`winhome.state.json`). If the process crashes or is terminated (Ctrl+C), your progress is saved, and the next run will resume correctly without "zombie" state issues.
 
 ### 📦 Plugin Sandboxing
-External plugins (Python/Node.js) run in a sandboxed process with strict limits:
+External plugins (Bun, Uv) run in a sandboxed process with strict limits:
 *   **Memory Limit:** 10MB max output buffer to prevent OOM attacks.
 *   **Time Limit:** 30-second execution timeout to prevent hangs.
 *   **Isolation:** Plugins communicate strictly via JSON over Stdin/Stdout.
