@@ -1,0 +1,28 @@
+{
+  "projectName": "WinHome",
+  "projectOwner": "DotDev262",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "DotDev262",
+      "name": "DotDev262",
+      "avatar_url": "https://github.com/DotDev262.png",
+      "profile": "https://github.com/DotDev262",
+      "contributions": [
+        "code",
+        "design",
+        "ideas",
+        "doc"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "WinHome",
+  "projectOwner": "DotDev262"
+}

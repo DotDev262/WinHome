@@ -1,0 +1,19 @@
+{
+	"name": "WinHome Development",
+	"image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-dotnettools.csdevkit",
+				"ms-dotnettools.csharp",
+				"mhutch.mono-debug-client",
+				"redhat.vscode-yaml"
+			]
+		}
+	},
+	"postCreateCommand": "dotnet restore WinHome.sln",
+	"remoteUser": "vscode"
+}

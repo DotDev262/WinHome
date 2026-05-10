@@ -326,6 +326,28 @@ No registry keys or hidden folders are left behind by the tool itself.
 Contributions, discussions, and feature ideas are welcome!
 Please open an Issue or Pull Request on GitHub.
 
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+### ✨ Contributors
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/DotDev262"><img src="https://github.com/DotDev262.png" width="100px;" alt="DotDev262"/><br /><sub><b>DotDev262</b></sub></a><br /><a href="https://github.com/DotDev262/WinHome/commits?author=DotDev262" title="Code">💻</a> <a href="#design-DotDev262" title="Design">🎨</a> <a href="#ideas-DotDev262" title="Ideas">🤔</a> <a href="https://github.com/DotDev262/WinHome/commits?author=DotDev262" title="Documentation">📖</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+
 ---
 
 ## 🙏 This Is Possible Thanks To
