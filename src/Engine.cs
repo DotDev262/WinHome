@@ -340,7 +340,7 @@ namespace WinHome
                 _logger.LogError("\n[-] Items to Remove:");
                 foreach (var item in itemsToRemove)
                 {
-                    _logger.LogError($"  - {item}");
+                    _logger.LogError($"  - {FormatFriendlyName(item)}");
                 }
             }
 
@@ -349,7 +349,7 @@ namespace WinHome
                 _logger.LogSuccess("\n[+] Items to Add:");
                 foreach (var item in itemsToAdd)
                 {
-                    _logger.LogSuccess($"  + {item}");
+                    _logger.LogSuccess($"  + {FormatFriendlyName(item)}");
                 }
             }
 
@@ -358,9 +358,37 @@ namespace WinHome
                 _logger.LogInfo("\n[=] Unchanged Items:");
                 foreach (var item in unchangedItems)
                 {
-                    _logger.LogInfo($"  = {item}");
+                    _logger.LogInfo($"  = {FormatFriendlyName(item)}");
                 }
             }
+        }
+
+        private string FormatFriendlyName(string item)
+        {
+            if (item.StartsWith("reg:"))
+            {
+                var parts = item.Substring(4).Split('|', 2);
+                if (parts.Length == 2)
+                {
+                    string path = parts[0];
+                    string name = parts[1];
+                    string? settingKey = _systemSettings.GetFriendlyName(path, name);
+                    if (settingKey != null)
+                    {
+                        return $"System Setting: {settingKey}";
+                    }
+                    return $"Registry Tweak: {path} -> {name}";
+                }
+            }
+            else
+            {
+                var parts = item.Split(':', 2);
+                if (parts.Length == 2)
+                {
+                    return $"App ({parts[0]}): {parts[1]}";
+                }
+            }
+            return item;
         }
 
         private async Task<HashSet<string>> BuildStateFromConfig(Configuration config)
