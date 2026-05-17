@@ -85,6 +85,10 @@ namespace WinHome.Services.Plugins
                         await Task.Run(() => _bunBootstrapper.Install(false));
                     }
                     break;
+
+                case "powershell":
+                    _logger.LogInfo($"[Plugin] {plugin.Name} requires 'powershell'. Assuming system powershell is available.");
+                    break;
             }
         }
     }

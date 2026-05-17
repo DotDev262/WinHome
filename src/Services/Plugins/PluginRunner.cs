@@ -127,7 +127,7 @@ namespace WinHome.Services.Plugins
             }
         }
 
-        private (string FileName, string Arguments) BuildProcessStartInfo(PluginManifest plugin)
+        public (string FileName, string Arguments) BuildProcessStartInfo(PluginManifest plugin)
         {
             string mainPath = Path.Combine(plugin.DirectoryPath, plugin.Main);
 
@@ -146,6 +146,26 @@ namespace WinHome.Services.Plugins
 
                 case "executable":
                     return (mainPath, "");
+
+                case "powershell":
+                    string powershellPath = "powershell";
+                    try
+                    {
+                        var pwshResolved = _runtimeResolver.Resolve("pwsh");
+                        if (pwshResolved != "pwsh" && File.Exists(pwshResolved))
+                        {
+                            powershellPath = pwshResolved;
+                        }
+                        else
+                        {
+                            powershellPath = _runtimeResolver.Resolve("powershell");
+                        }
+                    }
+                    catch
+                    {
+                        powershellPath = _runtimeResolver.Resolve("powershell");
+                    }
+                    return (powershellPath, $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{mainPath}\"");
 
                 default:
                     throw new NotSupportedException($"Plugin type '{plugin.Type}' is not supported.");

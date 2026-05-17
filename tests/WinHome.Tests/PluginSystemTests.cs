@@ -137,5 +137,90 @@ capabilities:
                 It.IsAny<object>()),
                 Times.Once);
         }
+
+        [Fact]
+        public void PluginRunner_Builds_Correct_PowerShell_Command_Fallback()
+        {
+            // Arrange
+            var mockLogger = new Mock<ILogger>();
+            var mockRuntimeResolver = new Mock<IRuntimeResolver>();
+
+            mockRuntimeResolver.Setup(r => r.Resolve("pwsh")).Returns("pwsh");
+            mockRuntimeResolver.Setup(r => r.Resolve("powershell")).Returns(@"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe");
+
+            var runner = new PluginRunner(mockLogger.Object, mockRuntimeResolver.Object);
+            var manifest = new PluginManifest
+            {
+                Name = "test-powershell-plugin",
+                Type = "powershell",
+                Main = "plugin.ps1",
+                DirectoryPath = @"C:\plugins\test-powershell-plugin"
+            };
+
+            // Act
+            var (fileName, arguments) = runner.BuildProcessStartInfo(manifest);
+
+            // Assert
+            Assert.Equal(@"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe", fileName);
+            Assert.Contains("-NoProfile", arguments);
+            Assert.Contains("-NonInteractive", arguments);
+            Assert.Contains("-ExecutionPolicy Bypass", arguments);
+            Assert.Contains("-File", arguments);
+            Assert.Contains("plugin.ps1", arguments);
+        }
+
+        [Fact]
+        public void PluginRunner_Builds_Correct_PowerShell_Command_Core()
+        {
+            // Arrange
+            var mockLogger = new Mock<ILogger>();
+            var mockRuntimeResolver = new Mock<IRuntimeResolver>();
+
+            // We mock pwsh to point to powershell.exe since we know it exists.
+            var existingPath = @"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe";
+            mockRuntimeResolver.Setup(r => r.Resolve("pwsh")).Returns(existingPath);
+
+            var runner = new PluginRunner(mockLogger.Object, mockRuntimeResolver.Object);
+            var manifest = new PluginManifest
+            {
+                Name = "test-powershell-plugin",
+                Type = "powershell",
+                Main = "plugin.ps1",
+                DirectoryPath = @"C:\plugins\test-powershell-plugin"
+            };
+
+            // Act
+            var (fileName, arguments) = runner.BuildProcessStartInfo(manifest);
+
+            // Assert
+            Assert.Equal(existingPath, fileName);
+            Assert.Contains("-NoProfile", arguments);
+            Assert.Contains("-NonInteractive", arguments);
+            Assert.Contains("-ExecutionPolicy Bypass", arguments);
+            Assert.Contains("-File", arguments);
+            Assert.Contains("plugin.ps1", arguments);
+        }
+
+        [Fact]
+        public async Task PluginManager_EnsureRuntime_Supports_PowerShell()
+        {
+            // Arrange
+            var mockLogger = new Mock<ILogger>();
+            var mockProcessRunner = new Mock<IProcessRunner>();
+            var uvBootstrapper = new WinHome.Services.Bootstrappers.UvBootstrapper(mockProcessRunner.Object);
+            var bunBootstrapper = new WinHome.Services.Bootstrappers.BunBootstrapper(mockProcessRunner.Object);
+
+            var manager = new PluginManager(uvBootstrapper, bunBootstrapper, mockLogger.Object, Path.GetTempPath());
+            var manifest = new PluginManifest
+            {
+                Name = "test-powershell-plugin",
+                Type = "powershell"
+            };
+
+            // Act & Assert
+            var exception = await Record.ExceptionAsync(() => manager.EnsureRuntimeAsync(manifest));
+            Assert.Null(exception);
+            mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("requires 'powershell'") && s.Contains("Assuming system powershell"))), Times.Once);
+        }
     }
 }

@@ -1,0 +1,7 @@
+name: test-powershell
+version: 0.1.0
+type: powershell
+main: plugin.ps1
+capabilities:
+  - package_manager
+  - config_provider
