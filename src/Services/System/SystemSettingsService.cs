@@ -179,6 +179,15 @@ namespace WinHome.Services.System
             });
         }
 
+        public string? GetFriendlyName(string registryPath, string registryName)
+        {
+            var match = _catalog.FirstOrDefault(d =>
+                d.RegistryPath.Equals(registryPath, StringComparison.OrdinalIgnoreCase) &&
+                d.RegistryName.Equals(registryName, StringComparison.OrdinalIgnoreCase));
+
+            return match?.SettingKey;
+        }
+
         public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object> settings, bool dryRun)
         {
             if (settings == null) return Task.CompletedTask;
