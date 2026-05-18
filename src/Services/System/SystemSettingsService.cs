@@ -7,6 +7,7 @@ namespace WinHome.Services.System
     {
         private readonly IProcessRunner _processRunner;
         private readonly IRegistryService _registryService;
+        private readonly ILogger _logger;
         private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification" };
 
         private readonly Dictionary<string, List<RegistryTweak>> _securityPresets = new()
@@ -36,10 +37,11 @@ namespace WinHome.Services.System
             }
         };
 
-        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService)
+        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService, ILogger logger)
         {
             _processRunner = processRunner;
             _registryService = registryService;
+            _logger = logger;
         }
 
         private record SettingDefinition(
@@ -115,7 +117,7 @@ namespace WinHome.Services.System
                         }
                         else
                         {
-                            Console.WriteLine($"[Warning] Unknown security preset '{val}'. Allowed: {string.Join(", ", _securityPresets.Keys)}");
+                            _logger.LogWarning($"Unknown security preset '{val}'. Allowed: {string.Join(", ", _securityPresets.Keys)}");
                         }
                         continue;
                     }
@@ -138,7 +140,7 @@ namespace WinHome.Services.System
                         }
                         else
                         {
-                            Console.WriteLine($"[Warning] Invalid value '{val}' for setting '{key}'. Allowed: {string.Join(", ", def.ValueMap.Keys)}");
+                            _logger.LogWarning($"Invalid value '{val}' for setting '{key}'. Allowed: {string.Join(", ", def.ValueMap.Keys)}");
                         }
                     }
                 }
@@ -191,15 +193,37 @@ namespace WinHome.Services.System
                     case "brightness":
                         if (int.TryParse(userSetting.Value.ToString(), out int brightness))
                         {
-                            string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
-                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                            if (brightness < 0 || brightness > 100)
+                            {
+                                _logger.LogWarning($"Brightness value '{brightness}' is out of range. It must be between 0 and 100.");
+                            }
+                            else
+                            {
+                                string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
+                                _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Invalid brightness value '{userSetting.Value}'. It must be a valid integer between 0 and 100.");
                         }
                         break;
                     case "volume":
                         if (int.TryParse(userSetting.Value.ToString(), out int volume))
                         {
-                            string command = $"Set-AudioDevice -PlaybackVolume {volume}";
-                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                            if (volume < 0 || volume > 100)
+                            {
+                                _logger.LogWarning($"Volume value '{volume}' is out of range. It must be between 0 and 100.");
+                            }
+                            else
+                            {
+                                string command = $"Set-AudioDevice -PlaybackVolume {volume}";
+                                _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Invalid volume value '{userSetting.Value}'. It must be a valid integer between 0 and 100.");
                         }
                         break;
                     case "notification":
