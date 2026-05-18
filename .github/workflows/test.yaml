@@ -56,7 +56,7 @@ jobs:
     - uses: actions/checkout@v6
 
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag winhome:test
+      run: docker build . --file testing/infrastructure/Dockerfile --tag winhome:test
 
     - name: Run the container
       run: docker run winhome:test

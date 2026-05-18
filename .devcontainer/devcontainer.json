@@ -14,6 +14,6 @@
 			]
 		}
 	},
-	"postCreateCommand": "dotnet restore WinHome.sln && (curl -fsSL https://bun.sh/install | bash) && (curl -LsSf https://astral.sh/uv/install.sh | sh)",
+	"postCreateCommand": "dotnet restore WinHome.sln && (aria2c -s 16 -x 16 -o bun-install.sh https://bun.sh/install && bash bun-install.sh && rm bun-install.sh) && (aria2c -s 16 -x 16 -o uv-install.sh https://astral.sh/uv/install.sh && sh uv-install.sh && rm uv-install.sh)",
 	"remoteUser": "vscode"
 }
