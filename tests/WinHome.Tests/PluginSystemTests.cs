@@ -222,5 +222,60 @@ capabilities:
             Assert.Null(exception);
             mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("requires 'powershell'") && s.Contains("Assuming system powershell"))), Times.Once);
         }
+
+        [Fact]
+        public async Task PluginManager_EnsureRuntime_Logs_PwshCore_WhenResolved()
+        {
+            // Arrange
+            var mockLogger = new Mock<ILogger>();
+            var mockProcessRunner = new Mock<IProcessRunner>();
+            var mockRuntimeResolver = new Mock<IRuntimeResolver>();
+            var uvBootstrapper = new WinHome.Services.Bootstrappers.UvBootstrapper(mockProcessRunner.Object);
+            var bunBootstrapper = new WinHome.Services.Bootstrappers.BunBootstrapper(mockProcessRunner.Object);
+
+            // Mock pwsh to exist and return a valid path (using powershell.exe since we know it exists on Windows)
+            var existingPath = @"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe";
+            mockRuntimeResolver.Setup(r => r.Resolve("pwsh")).Returns(existingPath);
+
+            var manager = new PluginManager(uvBootstrapper, bunBootstrapper, mockLogger.Object, Path.GetTempPath(), mockRuntimeResolver.Object);
+            var manifest = new PluginManifest
+            {
+                Name = "test-powershell-plugin",
+                Type = "powershell"
+            };
+
+            // Act
+            await manager.EnsureRuntimeAsync(manifest);
+
+            // Assert
+            mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("requires 'powershell'") && s.Contains("Using pwsh (Core)"))), Times.Once);
+        }
+
+        [Fact]
+        public async Task PluginManager_EnsureRuntime_Logs_WindowsPowerShell_Fallback_WhenPwshNotResolved()
+        {
+            // Arrange
+            var mockLogger = new Mock<ILogger>();
+            var mockProcessRunner = new Mock<IProcessRunner>();
+            var mockRuntimeResolver = new Mock<IRuntimeResolver>();
+            var uvBootstrapper = new WinHome.Services.Bootstrappers.UvBootstrapper(mockProcessRunner.Object);
+            var bunBootstrapper = new WinHome.Services.Bootstrappers.BunBootstrapper(mockProcessRunner.Object);
+
+            // Mock pwsh to return "pwsh" (meaning it failed to resolve to a concrete file path)
+            mockRuntimeResolver.Setup(r => r.Resolve("pwsh")).Returns("pwsh");
+
+            var manager = new PluginManager(uvBootstrapper, bunBootstrapper, mockLogger.Object, Path.GetTempPath(), mockRuntimeResolver.Object);
+            var manifest = new PluginManifest
+            {
+                Name = "test-powershell-plugin",
+                Type = "powershell"
+            };
+
+            // Act
+            await manager.EnsureRuntimeAsync(manifest);
+
+            // Assert
+            mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("requires 'powershell'") && s.Contains("Falling back to Windows PowerShell"))), Times.Once);
+        }
     }
 }

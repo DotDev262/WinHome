@@ -62,7 +62,8 @@ public static class AppHost
             sp.GetRequiredService<UvBootstrapper>(),
             sp.GetRequiredService<BunBootstrapper>(),
             sp.GetRequiredService<ILogger>(),
-            null
+            null,
+            sp.GetRequiredService<IRuntimeResolver>()
         ));
         services.AddSingleton<IGeneratorService, GeneratorService>();
         services.AddSingleton<IPluginRunner, PluginRunner>();

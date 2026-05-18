@@ -26,7 +26,7 @@ $context = $request.context
 # 3. Setup Response Structure
 $success = $true
 $changed = $false
-$error = $null
+$err = $null
 $data = $null
 
 # 4. Command Routing Logic
@@ -70,7 +70,7 @@ switch ($command) {
 
     default {
         $success = $false
-        $error = "Unknown command: $command"
+        $err = "Unknown command: $command"
     }
 }
 
@@ -79,7 +79,7 @@ $response = @{
     requestId = $requestId
     success   = $success
     changed   = $changed
-    error     = $error
+    error     = $err
     data      = $data
 }
 
