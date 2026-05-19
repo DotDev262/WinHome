@@ -65,6 +65,44 @@ vscode:
 
 ---
 
+## PowerToys
+
+Configure the `powertoys` plugin under `extensions` to manage PowerToys settings stored in `%LOCALAPPDATA%\Microsoft\PowerToys`.
+
+### Example
+```yaml
+extensions:
+  powertoys:
+    general:
+      settings:
+        theme: 0
+    modules:
+      fancyzones:
+        enabled: true
+        settings:
+          shiftDrag: true
+      awake:
+        enabled: true
+        settings:
+          keepAwake: true
+          keepAwakeTimeInMinutes: 30
+      powerrename:
+        enabled: true
+        settings:
+          isEnabled: true
+```
+
+### Options
+- `general`: Merge into `%LOCALAPPDATA%\Microsoft\PowerToys\settings.json`.
+  - `settings`: Dictionary merged at the top level.
+  - `raw`: Dictionary merged at the top level (advanced).
+- `modules`: Dictionary of module configs.
+  - `fancyzones`, `awake`, `powerrename`: Supported modules.
+  - `enabled`: Sets the module's top-level `enabled` flag.
+  - `settings`: Merged into the module's `properties` block.
+  - `properties`: Alias for `settings`.
+  - `raw`: Merge into the module's top-level JSON (advanced).
+
 ## Generic Extensions
 
 For other plugins that do not have a dedicated top-level section, use the `extensions` block.
