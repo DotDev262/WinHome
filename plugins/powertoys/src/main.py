@@ -23,13 +23,12 @@ def get_settings_path(module_key):
 
 def read_settings(path):
     if not os.path.exists(path):
-        return {}
+        return {}, None
     try:
         with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            return json.load(f), None
     except Exception as e:
-        log(f'Error reading {path}: {e}')
-        return {}
+        return None, f'Error reading {path}: {e}'
 
 def write_settings(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -51,8 +50,7 @@ def merge_dict(target, updates):
 
 def apply_general_config(desired, current):
     if not isinstance(desired, dict):
-        log('General config must be a dictionary.')
-        return False
+        return False, False, 'General config must be a dictionary.'
 
     changed = False
     raw = desired.get('raw')
@@ -67,12 +65,11 @@ def apply_general_config(desired, current):
     if raw is None and settings is None:
         changed = merge_dict(current, desired) or changed
 
-    return changed
+    return True, changed, None
 
 def apply_module_config(desired, current):
     if not isinstance(desired, dict):
-        log('Module config must be a dictionary.')
-        return False
+        return False, False, 'Module config must be a dictionary.'
 
     changed = False
 
@@ -99,7 +96,7 @@ def apply_module_config(desired, current):
     if not any(k in desired for k in ('enabled', 'settings', 'properties', 'raw')):
         changed = merge_dict(current, desired) or changed
 
-    return changed
+    return True, changed, None
 
 def normalize_module_config(args):
     modules = {}
@@ -117,6 +114,7 @@ def apply_config(args, context, request_id):
     dry_run = context.get('dryRun', False)
     overall_changed = False
     overall_success = True
+    first_error = None
 
     if not LOCALAPPDATA:
         return {
@@ -128,20 +126,33 @@ def apply_config(args, context, request_id):
 
     general_config = args.get('general')
     if general_config is not None:
-        current_general = read_settings(GENERAL_SETTINGS_PATH)
-        general_changed = apply_general_config(general_config, current_general)
-
-        if general_changed:
-            if dry_run:
-                log(f'Would update general settings at {GENERAL_SETTINGS_PATH}')
-            else:
-                try:
-                    write_settings(GENERAL_SETTINGS_PATH, current_general)
-                    log('Updated general PowerToys settings')
-                    overall_changed = True
-                except Exception as e:
-                    log(f'Error writing general settings: {e}')
-                    overall_success = False
+        current_general, error = read_settings(GENERAL_SETTINGS_PATH)
+        if error:
+            log(error)
+            overall_success = False
+            if first_error is None:
+                first_error = error
+        else:
+            success, general_changed, error = apply_general_config(general_config, current_general)
+            if not success:
+                log(error)
+                overall_success = False
+                if first_error is None:
+                    first_error = error
+            elif general_changed:
+                if dry_run:
+                    log(f'Would update general settings at {GENERAL_SETTINGS_PATH}')
+                else:
+                    try:
+                        write_settings(GENERAL_SETTINGS_PATH, current_general)
+                        log('Updated general PowerToys settings')
+                        overall_changed = True
+                    except Exception as e:
+                        error = f'Error writing general settings: {e}'
+                        log(error)
+                        overall_success = False
+                        if first_error is None:
+                            first_error = error
 
     modules = normalize_module_config(args)
 
@@ -152,8 +163,21 @@ def apply_config(args, context, request_id):
             overall_success = False
             continue
 
-        current = read_settings(path)
-        changed = apply_module_config(desired, current)
+        current, error = read_settings(path)
+        if error:
+            log(error)
+            overall_success = False
+            if first_error is None:
+                first_error = error
+            continue
+
+        success, changed, error = apply_module_config(desired, current)
+        if not success:
+            log(error)
+            overall_success = False
+            if first_error is None:
+                first_error = error
+            continue
 
         if not changed:
             log(f'{module_key}: already up to date')
@@ -168,8 +192,11 @@ def apply_config(args, context, request_id):
             log(f'Updated {module_key} settings')
             overall_changed = True
         except Exception as e:
-            log(f'Error writing {module_key} settings: {e}')
+            error = f'Error writing {module_key} settings: {e}'
+            log(error)
             overall_success = False
+            if first_error is None:
+                first_error = error
 
     if overall_changed and not dry_run and os.path.exists(GENERAL_SETTINGS_PATH):
         try:
@@ -180,10 +207,19 @@ def apply_config(args, context, request_id):
     return {
         'requestId': request_id,
         'success': overall_success,
-        'changed': overall_changed
+        'changed': overall_changed,
+        'error': first_error
     }
 
 def check_installed(args, request_id):
+    if not LOCALAPPDATA:
+        return {
+            'requestId': request_id,
+            'success': False,
+            'changed': False,
+            'error': 'LOCALAPPDATA is not set.',
+            'data': False
+        }
     module_key = args.get('module', '')
     path = get_settings_path(module_key) if module_key else GENERAL_SETTINGS_PATH
     exists = path is not None and os.path.exists(path)
