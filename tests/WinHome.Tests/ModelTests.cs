@@ -122,7 +122,7 @@ public class ModelTests
         Assert.Equal(original.UserEmail, deserialized.UserEmail);
         Assert.Equal(original.SigningKey, deserialized.SigningKey);
         Assert.Equal(original.CommitGpgSign, deserialized.CommitGpgSign);
-        
+
         // Assert dictionary values
         Assert.NotNull(deserialized.Settings);
         Assert.Equal(original.Settings["core.editor"], deserialized.Settings["core.editor"]);
@@ -159,7 +159,7 @@ public class ModelTests
         Assert.Equal(original.UserEmail, deserialized.UserEmail);
         Assert.Equal(original.SigningKey, deserialized.SigningKey);
         Assert.Equal(original.CommitGpgSign, deserialized.CommitGpgSign);
-        
+
         Assert.NotNull(deserialized.Settings);
         Assert.Equal(original.Settings["core.autocrlf"], deserialized.Settings["core.autocrlf"]);
     }
@@ -177,7 +177,7 @@ public class ModelTests
         Assert.Equal(2, config.DefaultVersion);
         Assert.Null(config.DefaultDistro);
         Assert.False(config.Update);
-        
+
         // List should be initialized but empty
         Assert.NotNull(config.Distros);
         Assert.Empty(config.Distros);
@@ -208,7 +208,7 @@ public class ModelTests
         Assert.Equal(original.DefaultVersion, deserialized.DefaultVersion);
         Assert.Equal(original.DefaultDistro, deserialized.DefaultDistro);
         Assert.Equal(original.Update, deserialized.Update);
-        
+
         // Verify nested list data
         Assert.NotNull(deserialized.Distros);
         Assert.Equal(original.Distros.Count, deserialized.Distros.Count);
@@ -243,7 +243,7 @@ public class ModelTests
         Assert.Equal(original.DefaultVersion, deserialized.DefaultVersion);
         Assert.Equal(original.DefaultDistro, deserialized.DefaultDistro);
         Assert.Equal(original.Update, deserialized.Update);
-        
+
         Assert.NotNull(deserialized.Distros);
         Assert.Single(deserialized.Distros);
         Assert.Equal(original.Distros[0].Name, deserialized.Distros[0].Name);
