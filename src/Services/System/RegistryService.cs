@@ -60,8 +60,8 @@ namespace WinHome.Services.System
                         _ => RegistryValueKind.String
                     };
 
-                    object valueToWrite = tweak.Value;
-                    if (valueToWrite is System.Text.Json.JsonElement jsonElement)
+                    object? valueToWrite = tweak.Value;
+                    if (valueToWrite is global::System.Text.Json.JsonElement jsonElement)
                     {
                         if (kind == RegistryValueKind.DWord) valueToWrite = jsonElement.GetInt32();
                         else if (kind == RegistryValueKind.QWord) valueToWrite = jsonElement.GetInt64();
@@ -73,7 +73,7 @@ namespace WinHome.Services.System
                         else if (kind == RegistryValueKind.QWord) valueToWrite = Convert.ToInt64(tweak.Value);
                     }
 
-                    key.SetValue(tweak.Name, valueToWrite, kind);
+                    key.SetValue(tweak.Name, valueToWrite ?? string.Empty, kind);
                     Console.WriteLine($"[Registry] Set {tweak.Name} = {tweak.Value}");
                 }
             }
