@@ -81,6 +81,7 @@ A built-in **Reconciliation Engine** compares it to the live system and ensures 
 * Fully idempotent — run it once or 100 times: *the result is identical*
 
 For a detailed breakdown of all configuration options, refer to the [Configuration Wiki](./docs/config.md).
+
 For complete, real-world setup examples (Developer, Minimalist, Gamer), see the [Configuration Cookbook](./docs/cookbook.md).
 
 ### ⚠️ Secrets & Security Warning
