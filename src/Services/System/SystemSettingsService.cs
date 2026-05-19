@@ -1,5 +1,7 @@
 using WinHome.Interfaces;
 using WinHome.Models;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace WinHome.Services.System
 {
@@ -92,7 +94,33 @@ namespace WinHome.Services.System
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", "dword",
                 new() { { "true", 1 }, { "false", 0 } }),
 
+            new("transparency",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
 
+            new("taskbar_autohide",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3", "Settings", "binary",
+                new()
+                {
+                    { "true", new byte[] { 0x30, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 } },
+                    { "false", new byte[] { 0x30, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 } }
+                }),
+
+            new("taskbar_task_view",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowTaskViewButton", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("taskbar_end_task",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarEndTask", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("start_show_recent",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "Start_TrackDocs", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("snap_assist_flyout",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "EnableSnapAssistFlyout", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
         };
 
         public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object> settings)
@@ -160,7 +188,14 @@ namespace WinHome.Services.System
                         if (regValue != null)
                         {
                             // Find corresponding user-friendly key for this value
-                            var match = def.ValueMap.FirstOrDefault(kvp => kvp.Value.ToString() == regValue.ToString());
+                            var match = def.ValueMap.FirstOrDefault(kvp => 
+                            {
+                                if (kvp.Value is byte[] kvpBytes && regValue is byte[] regBytes)
+                                {
+                                    return kvpBytes.SequenceEqual(regBytes);
+                                }
+                                return kvp.Value?.ToString() == regValue?.ToString();
+                            });
                             if (!match.Equals(default(KeyValuePair<string, object>)))
                             {
                                 // Handle Booleans properly
