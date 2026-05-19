@@ -107,7 +107,7 @@ namespace WinHome.Services.System
                 foreach (var userSetting in settings)
                 {
                     string key = userSetting.Key.ToLower();
-                    string val = userSetting.Value.ToString()?.ToLower() ?? "";
+                    string val = userSetting.Value?.ToString()?.ToLower() ?? "";
 
                     if (key == "security_preset")
                     {
@@ -191,7 +191,7 @@ namespace WinHome.Services.System
                 switch (key)
                 {
                     case "brightness":
-                        if (int.TryParse(userSetting.Value.ToString(), out int brightness))
+                        if (userSetting.Value != null && int.TryParse(userSetting.Value.ToString(), out int brightness))
                         {
                             if (brightness < 0 || brightness > 100)
                             {
@@ -205,11 +205,11 @@ namespace WinHome.Services.System
                         }
                         else
                         {
-                            _logger.LogWarning($"Invalid brightness value '{userSetting.Value}'. It must be a valid integer between 0 and 100.");
+                            _logger.LogWarning($"Invalid brightness value '{userSetting.Value ?? "null"}'. It must be a valid integer between 0 and 100.");
                         }
                         break;
                     case "volume":
-                        if (int.TryParse(userSetting.Value.ToString(), out int volume))
+                        if (userSetting.Value != null && int.TryParse(userSetting.Value.ToString(), out int volume))
                         {
                             if (volume < 0 || volume > 100)
                             {
@@ -223,7 +223,7 @@ namespace WinHome.Services.System
                         }
                         else
                         {
-                            _logger.LogWarning($"Invalid volume value '{userSetting.Value}'. It must be a valid integer between 0 and 100.");
+                            _logger.LogWarning($"Invalid volume value '{userSetting.Value ?? "null"}'. It must be a valid integer between 0 and 100.");
                         }
                         break;
                     case "notification":

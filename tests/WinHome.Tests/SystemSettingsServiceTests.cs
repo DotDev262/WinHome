@@ -174,5 +174,48 @@ namespace WinHome.Tests
             _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.IsAny<string>(), false), Times.Never);
             _mockLogger.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("Invalid volume value"))), Times.Once);
         }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_Should_LogWarning_For_Null_Brightness()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "brightness", null! }
+            };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.IsAny<string>(), false), Times.Never);
+            _mockLogger.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("Invalid brightness value 'null'"))), Times.Once);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_Should_LogWarning_For_Null_Volume()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "volume", null! }
+            };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.IsAny<string>(), false), Times.Never);
+            _mockLogger.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("Invalid volume value 'null'"))), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetTweaksAsync_Should_LogWarning_For_Null_Value()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "taskbar_alignment", null! }
+            };
+
+            var tweaks = await _service.GetTweaksAsync(settings);
+            var tweaksList = new List<RegistryTweak>(tweaks);
+
+            Assert.Empty(tweaksList);
+            _mockLogger.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("Invalid value '' for setting 'taskbar_alignment'"))), Times.Once);
+        }
     }
 }
