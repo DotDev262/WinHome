@@ -162,11 +162,11 @@ namespace WinHome.Tests
 
             // Assert
             mockLogger.Verify(l => l.LogError(It.Is<string>(s => s.Contains("Items to Remove"))), Times.Once);
-            mockLogger.Verify(l => l.LogError(It.Is<string>(s => s.Contains("winget:OldApp"))), Times.Once);
+            mockLogger.Verify(l => l.LogError(It.Is<string>(s => s.Contains("App (winget): OldApp"))), Times.Once);
             mockLogger.Verify(l => l.LogSuccess(It.Is<string>(s => s.Contains("Items to Add"))), Times.Once);
-            mockLogger.Verify(l => l.LogSuccess(It.Is<string>(s => s.Contains("winget:NewApp"))), Times.Once);
+            mockLogger.Verify(l => l.LogSuccess(It.Is<string>(s => s.Contains("App (winget): NewApp"))), Times.Once);
             mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("Unchanged Items"))), Times.Once);
-            mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("winget:UnchangedApp"))), Times.Once);
+            mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("App (winget): UnchangedApp"))), Times.Once);
         }
     }
 }

@@ -42,3 +42,11 @@ extensions:
       "workbench.colorTheme": "Default Dark Modern"
   test-echo:
     message: "Hello from Python Plugin!"
+  obsidian:
+    vaults:
+      - path: "C:\\Users\\test\\Documents\\TestVault"
+        settings:
+          spellcheck: true
+          accentColor: "#002aff"
+        plugins:
+          - "obsidian-git"

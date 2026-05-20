@@ -62,5 +62,9 @@ namespace WinHome.Models
         [YamlMember(Alias = "vscode")]
         [JsonPropertyName("vscode")]
         public object? Vscode { get; set; }
+
+        [YamlMember(Alias = "obsidian")]
+        [JsonPropertyName("obsidian")]
+        public object? Obsidian { get; set; }
     }
 }

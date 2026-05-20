@@ -41,24 +41,6 @@ extensions:
       theme: "gruvbox"
 ```
 
-**Example (PowerToys Plugin):**
-```yaml
-extensions:
-  powertoys:
-    general:
-      settings:
-        theme: 0
-    modules:
-      fancyzones:
-        enabled: true
-        settings:
-          shiftDrag: true
-      awake:
-        enabled: true
-        settings:
-          keepAwake: true
-```
-
 ## Apps
 Install applications using supported managers (`winget`, `scoop`, `choco`) or installed plugins.
 
