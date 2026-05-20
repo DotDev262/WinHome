@@ -52,6 +52,12 @@ def apply_general_config(desired, current):
     if not isinstance(desired, dict):
         return False, False, 'General config must be a dictionary.'
 
+    if 'raw' in desired and not isinstance(desired.get('raw'), dict):
+        return False, False, 'General config raw must be a dictionary.'
+
+    if 'settings' in desired and not isinstance(desired.get('settings'), dict):
+        return False, False, 'General config settings must be a dictionary.'
+
     changed = False
     raw = desired.get('raw')
     settings = desired.get('settings')
@@ -70,6 +76,15 @@ def apply_general_config(desired, current):
 def apply_module_config(desired, current):
     if not isinstance(desired, dict):
         return False, False, 'Module config must be a dictionary.'
+
+    if 'raw' in desired and not isinstance(desired.get('raw'), dict):
+        return False, False, 'Module config raw must be a dictionary.'
+
+    if 'settings' in desired and not isinstance(desired.get('settings'), dict):
+        return False, False, 'Module config settings must be a dictionary.'
+
+    if 'properties' in desired and not isinstance(desired.get('properties'), dict):
+        return False, False, 'Module config properties must be a dictionary.'
 
     changed = False
 
@@ -159,8 +174,11 @@ def apply_config(args, context, request_id):
     for module_key, desired in modules.items():
         path = get_settings_path(module_key)
         if not path:
-            log(f'Unknown module: {module_key}')
+            error = f'Unknown module: {module_key}'
+            log(error)
             overall_success = False
+            if first_error is None:
+                first_error = error
             continue
 
         current, error = read_settings(path)
