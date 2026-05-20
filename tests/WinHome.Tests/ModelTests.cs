@@ -78,6 +78,127 @@ public class ModelTests
 
     #endregion
 
+    #region WslDistroConfig Tests
+
+    [Fact]
+    public void WslDistroConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new WslDistroConfig();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Name);
+        Assert.Null(config.SetupScript);
+    }
+
+    [Fact]
+    public void WslDistroConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new WslDistroConfig
+        {
+            Name = "Ubuntu-22.04",
+            SetupScript = "~/setup.sh"
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<WslDistroConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.SetupScript, deserialized.SetupScript);
+    }
+
+    [Fact]
+    public void WslDistroConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new WslDistroConfig
+        {
+            Name = "Debian",
+            SetupScript = "/opt/setup.sh"
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<WslDistroConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.SetupScript, deserialized.SetupScript);
+    }
+
+    #endregion
+
+    #region WindowsServiceConfig Tests
+
+    [Fact]
+    public void WindowsServiceConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new WindowsServiceConfig();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Name);
+        Assert.Equal("running", config.State);
+        Assert.Null(config.StartupType);
+    }
+
+    [Fact]
+    public void WindowsServiceConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new WindowsServiceConfig
+        {
+            Name = "Spooler",
+            State = "stopped",
+            StartupType = "manual"
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<WindowsServiceConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.State, deserialized.State);
+        Assert.Equal(original.StartupType, deserialized.StartupType);
+    }
+
+    [Fact]
+    public void WindowsServiceConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new WindowsServiceConfig
+        {
+            Name = "W32Time",
+            State = "running",
+            StartupType = "automatic"
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<WindowsServiceConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.State, deserialized.State);
+        Assert.Equal(original.StartupType, deserialized.StartupType);
+    }
+
+    #endregion
+
     #region DotfileConfig Tests
 
     [Fact]
