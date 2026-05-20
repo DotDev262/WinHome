@@ -19,6 +19,7 @@ function Copy-Plugin($src, $name) {
 
 Copy-Plugin "../../plugins\vim" "vim"
 Copy-Plugin "../../plugins\vscode" "vscode"
+Copy-Plugin "../../plugins\obsidian" "obsidian"
 Copy-Plugin "../../tests\TestPluginJS" "test-echo-js"
 Copy-Plugin "../../tests\TestPlugin" "test-echo-py"
 

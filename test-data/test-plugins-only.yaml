@@ -16,6 +16,14 @@ vscode:
     "editor.tabSize": 2
     "files.autoSave": "afterDelay"
 
+obsidian:
+  vaults:
+    - path: "C:\\Users\\test\\Documents\\TestVault"
+      settings:
+        spellcheck: true
+      plugins:
+        - "obsidian-git"
+
 # Generic Plugin Section
 extensions:
   test-echo:
