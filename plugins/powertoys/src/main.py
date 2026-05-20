@@ -98,12 +98,14 @@ def apply_module_config(desired, current):
         properties = {}
 
     if isinstance(desired.get('settings'), dict):
-        changed = merge_dict(properties, desired.get('settings')) or changed
-        current['properties'] = properties
+        if merge_dict(properties, desired.get('settings')):
+            current['properties'] = properties
+            changed = True
 
     if isinstance(desired.get('properties'), dict):
-        changed = merge_dict(properties, desired.get('properties')) or changed
-        current['properties'] = properties
+        if merge_dict(properties, desired.get('properties')):
+            current['properties'] = properties
+            changed = True
 
     if isinstance(desired.get('raw'), dict):
         changed = merge_dict(current, desired.get('raw')) or changed
@@ -218,6 +220,7 @@ def apply_config(args, context, request_id):
 
     if overall_changed and not dry_run and os.path.exists(GENERAL_SETTINGS_PATH):
         try:
+            # Touch the general settings so PowerToys notices module-only changes.
             os.utime(GENERAL_SETTINGS_PATH, None)
         except Exception as e:
             log(f'Warning: failed to touch general settings: {e}')

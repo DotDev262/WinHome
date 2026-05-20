@@ -41,6 +41,42 @@ extensions:
       theme: "gruvbox"
 ```
 
+**Example (Obsidian Plugin):**
+```yaml
+extensions:
+  obsidian:
+    vaults:
+      - path: "C:\\Users\\test\\Documents\\TestVault"
+        settings:
+          spellcheck: true
+          accentColor: "#002aff"
+        plugins:
+          - "obsidian-git"
+```
+
+**Example (PowerToys Plugin):**
+```yaml
+extensions:
+  powertoys:
+    general:
+      settings:
+        theme: 0
+    modules:
+      fancyzones:
+        enabled: true
+        settings:
+          shiftDrag: true
+      awake:
+        enabled: true
+        settings:
+          keepAwake: true
+          keepAwakeTimeInMinutes: 30
+      powerrename:
+        enabled: true
+        settings:
+          isEnabled: true
+```
+
 ## Apps
 Install applications using supported managers (`winget`, `scoop`, `choco`) or installed plugins.
 

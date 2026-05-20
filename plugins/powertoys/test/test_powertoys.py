@@ -139,9 +139,9 @@ def test_check_installed():
             "context": {}
         }, env)
         assert res["success"]
-        assert not res["data"] # Doesn't exist yet
+        assert not res["data"]  # Doesn't exist yet
 
-        # Write setting.json for fancyzones
+        # Write settings.json for fancyzones
         fz_path = os.path.join(pt_dir, "FancyZones", "settings.json")
         with open(fz_path, "w") as f:
             json.dump({}, f)
@@ -153,12 +153,114 @@ def test_check_installed():
             "context": {}
         }, env)
         assert res2["success"]
-        assert res2["data"] # Now exists
+        assert res2["data"]  # Now exists
         print("OK check_installed")
+
+def test_dry_run():
+    with tempfile.TemporaryDirectory() as tmp:
+        env = os.environ.copy()
+        env["LOCALAPPDATA"] = tmp
+        pt_dir = setup_powertoys_dir(tmp)
+
+        fz_path = os.path.join(pt_dir, "FancyZones", "settings.json")
+        with open(fz_path, "w") as f:
+            json.dump({"enabled": False}, f)
+
+        res = run_plugin({
+            "requestId": "6",
+            "command": "apply",
+            "args": {
+                "fancyzones": {
+                    "enabled": True
+                }
+            },
+            "context": {"dryRun": True}
+        }, env)
+
+        assert res["success"], res
+        assert not res["changed"]  # dry run: no actual write
+
+        # File should be unchanged
+        with open(fz_path) as f:
+            data = json.load(f)
+        assert data["enabled"] == False
+        print("OK dry_run")
+
+def test_unknown_module():
+    with tempfile.TemporaryDirectory() as tmp:
+        env = os.environ.copy()
+        env["LOCALAPPDATA"] = tmp
+        setup_powertoys_dir(tmp)
+
+        res = run_plugin({
+            "requestId": "7",
+            "command": "apply",
+            "args": {
+                "modules": {
+                    "nonexistent_module": {
+                        "enabled": True
+                    }
+                }
+            },
+            "context": {"dryRun": False}
+        }, env)
+
+        assert not res["success"]  # should fail for unknown module
+        assert res["error"] is not None
+        print("OK unknown_module")
+
+def test_corrupt_json():
+    with tempfile.TemporaryDirectory() as tmp:
+        env = os.environ.copy()
+        env["LOCALAPPDATA"] = tmp
+        pt_dir = setup_powertoys_dir(tmp)
+
+        # Write corrupt JSON
+        fz_path = os.path.join(pt_dir, "FancyZones", "settings.json")
+        with open(fz_path, "w") as f:
+            f.write("{ this is not valid json }")
+
+        res = run_plugin({
+            "requestId": "8",
+            "command": "apply",
+            "args": {
+                "fancyzones": {
+                    "enabled": True
+                }
+            },
+            "context": {"dryRun": False}
+        }, env)
+
+        assert not res["success"]  # should fail, not silently overwrite
+        assert res["error"] is not None
+        print("OK corrupt_json")
+
+def test_missing_localappdata():
+    env = os.environ.copy()
+    env["LOCALAPPDATA"] = ""  # unset
+
+    res = run_plugin({
+        "requestId": "9",
+        "command": "apply",
+        "args": {
+            "fancyzones": {
+                "enabled": True
+            }
+        },
+        "context": {"dryRun": False}
+    }, env)
+
+    assert not res["success"]
+    assert res["error"] == "LOCALAPPDATA is not set."
+    print("OK missing_localappdata")
 
 if __name__ == "__main__":
     test_apply_general_settings()
     test_apply_module_settings()
     test_idempotent()
     test_check_installed()
+    test_dry_run()
+    test_unknown_module()
+    test_corrupt_json()
+    test_missing_localappdata()
     print("\nAll PowerToys tests passed.")
