@@ -78,6 +78,145 @@ public class ModelTests
 
     #endregion
 
+    #region DotfileConfig Tests
+
+    [Fact]
+    public void DotfileConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new DotfileConfig();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Src);
+        Assert.Equal(string.Empty, config.Target);
+    }
+
+    [Fact]
+    public void DotfileConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new DotfileConfig
+        {
+            Src = "./dotfiles/.gitconfig",
+            Target = "~/.gitconfig"
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<DotfileConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Src, deserialized.Src);
+        Assert.Equal(original.Target, deserialized.Target);
+    }
+
+    [Fact]
+    public void DotfileConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new DotfileConfig
+        {
+            Src = "./dotfiles/.vimrc",
+            Target = "~/.vimrc"
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<DotfileConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Src, deserialized.Src);
+        Assert.Equal(original.Target, deserialized.Target);
+    }
+
+    #endregion
+
+    #region ProfileConfig Tests
+
+    [Fact]
+    public void ProfileConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new ProfileConfig();
+
+        // Assert
+        Assert.Null(config.Git);
+    }
+
+    [Fact]
+    public void ProfileConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new ProfileConfig
+        {
+            Git = new GitConfig
+            {
+                UserName = "Profile User",
+                UserEmail = "profile@example.com",
+                CommitGpgSign = true,
+                Settings = new Dictionary<string, string>
+                {
+                    { "core.editor", "code --wait" }
+                }
+            }
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<ProfileConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.NotNull(deserialized.Git);
+        Assert.Equal(original.Git.UserName, deserialized.Git.UserName);
+        Assert.Equal(original.Git.UserEmail, deserialized.Git.UserEmail);
+        Assert.Equal(original.Git.CommitGpgSign, deserialized.Git.CommitGpgSign);
+        Assert.Equal(original.Git.Settings["core.editor"], deserialized.Git.Settings["core.editor"]);
+    }
+
+    [Fact]
+    public void ProfileConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new ProfileConfig
+        {
+            Git = new GitConfig
+            {
+                UserName = "Yaml User",
+                UserEmail = "yaml@example.com",
+                SigningKey = "ABC123",
+                CommitGpgSign = false,
+                Settings = new Dictionary<string, string>
+                {
+                    { "core.autocrlf", "true" }
+                }
+            }
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<ProfileConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.NotNull(deserialized.Git);
+        Assert.Equal(original.Git.UserName, deserialized.Git.UserName);
+        Assert.Equal(original.Git.UserEmail, deserialized.Git.UserEmail);
+        Assert.Equal(original.Git.SigningKey, deserialized.Git.SigningKey);
+        Assert.Equal(original.Git.CommitGpgSign, deserialized.Git.CommitGpgSign);
+        Assert.Equal(original.Git.Settings["core.autocrlf"], deserialized.Git.Settings["core.autocrlf"]);
+    }
+
+    #endregion
+
     #region GitConfig Tests
 
     [Fact]
