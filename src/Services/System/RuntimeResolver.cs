@@ -80,6 +80,7 @@ namespace WinHome.Services.System
                 {
                     string line = rawLine.Trim();
                     if (string.IsNullOrEmpty(line)) continue;
+                    if (!Path.IsPathRooted(line)) continue;
 
                     if (line.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
                         line.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) ||
@@ -89,6 +90,11 @@ namespace WinHome.Services.System
                     }
 
                     if (string.IsNullOrEmpty(fullPath)) fullPath = line;
+                }
+
+                if (string.IsNullOrEmpty(fullPath))
+                {
+                    _logger.LogInfo($"[RuntimeResolver] No valid PATH match for '{runtimeName}'.");
                 }
 
                 return fullPath;
