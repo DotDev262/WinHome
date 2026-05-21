@@ -7,7 +7,11 @@ namespace WinHome.Services.System
     {
         private readonly IProcessRunner _processRunner;
         private readonly IRegistryService _registryService;
+        private readonly ILogger _logger;
         private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification" };
+
+        private const int MinVolumeOrBrightness = 0;
+        private const int MaxVolumeOrBrightness = 100;
 
         private readonly Dictionary<string, List<RegistryTweak>> _securityPresets = new()
         {
@@ -36,10 +40,11 @@ namespace WinHome.Services.System
             }
         };
 
-        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService)
+        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService, ILogger logger)
         {
             _processRunner = processRunner;
             _registryService = registryService;
+            _logger = logger;
         }
 
         private record SettingDefinition(
@@ -191,6 +196,11 @@ namespace WinHome.Services.System
                     case "brightness":
                         if (int.TryParse(userSetting.Value.ToString(), out int brightness))
                         {
+                            if (brightness < MinVolumeOrBrightness || brightness > MaxVolumeOrBrightness)
+                            {
+                                _logger.LogWarning($"[Settings] Brightness value '{brightness}' is out of range. Must be between {MinVolumeOrBrightness} and {MaxVolumeOrBrightness}. Skipping.");
+                                break;
+                            }
                             string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
                             _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
                         }
@@ -198,6 +208,11 @@ namespace WinHome.Services.System
                     case "volume":
                         if (int.TryParse(userSetting.Value.ToString(), out int volume))
                         {
+                            if (volume < MinVolumeOrBrightness || volume > MaxVolumeOrBrightness)
+                            {
+                                _logger.LogWarning($"[Settings] Volume value '{volume}' is out of range. Must be between {MinVolumeOrBrightness} and {MaxVolumeOrBrightness}. Skipping.");
+                                break;
+                            }
                             string command = $"Set-AudioDevice -PlaybackVolume {volume}";
                             _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
                         }
