@@ -57,7 +57,7 @@ namespace WinHome.Tests
                 Times.Once);
             _mockLogger.Verify(
                 l => l.Log(
-                    LogLevel.Warning,
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((state, t) => true),
                     It.IsAny<Exception>(),
@@ -78,7 +78,7 @@ namespace WinHome.Tests
 
             _mockLogger.Verify(
                 l => l.Log(
-                    LogLevel.Warning,
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Brightness") && state.ToString()!.Contains(value.ToString())),
                     It.IsAny<Exception>(),
@@ -118,7 +118,7 @@ namespace WinHome.Tests
                 Times.Once);
             _mockLogger.Verify(
                 l => l.Log(
-                    LogLevel.Warning,
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((state, t) => true),
                     It.IsAny<Exception>(),
@@ -139,7 +139,7 @@ namespace WinHome.Tests
 
             _mockLogger.Verify(
                 l => l.Log(
-                    LogLevel.Warning,
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Volume") && state.ToString()!.Contains(value.ToString())),
                     It.IsAny<Exception>(),
