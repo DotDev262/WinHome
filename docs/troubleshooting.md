@@ -83,6 +83,8 @@ Progress is saved to `winhome.state.json` after every successful action. If WinH
 
 ## Filing a Good Bug Report
 
+Before opening a new issue, please check existing [GitHub Issues](https://github.com/DotDev262/WinHome/issues) and [Discussions](https://github.com/DotDev262/WinHome/discussions) to avoid duplicates.
+
 When opening an issue, please include:
 
 1. **WinHome version** — Check the release page for the version you downloaded.

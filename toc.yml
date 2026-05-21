@@ -6,3 +6,5 @@
 - name: 📖 API Reference
   href: api/
   topicHref: api/index.md
+- name: Troubleshooting
+  href: troubleshooting.md
