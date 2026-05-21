@@ -63,6 +63,25 @@ namespace WinHome.Services.System
                         string json = File.ReadAllText(tempFile);
                         apps = ParseWingetExport(json);
                     }
+                    try
+                    {
+                        string scoopOutput = _processRunner.RunCommandWithOutput("scoop", "list");
+                        apps.AddRange(ParseScoopList(scoopOutput));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"Scoop not available: {ex.Message}");
+                   }
+
+                    try
+                    {
+                        string chocoOutput = _processRunner.RunCommandWithOutput("choco","list --local-only");
+                        apps.AddRange(ParseChocolateyList(chocoOutput));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"Chocolatey not available: {ex.Message}");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -118,6 +137,61 @@ namespace WinHome.Services.System
             }
             return apps;
         }
+        public static List<AppConfig> ParseScoopList(string output)
+        {
+              var apps = new List<AppConfig>();
+
+              if (string.IsNullOrWhiteSpace(output))
+                    return apps;
+
+              foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+              {
+                   var trimmed = line.Trim();
+
+                   if (string.IsNullOrWhiteSpace(trimmed) ||
+                       trimmed.StartsWith("Name") ||
+                       trimmed.StartsWith("---"))
+                       continue;
+
+                    var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                    apps.Add(new AppConfig
+                    {
+                       Id = parts[0],
+                       Manager = "scoop"
+                    });
+                }
+
+                 return apps;
+        }
+
+         public static List<AppConfig> ParseChocolateyList(string output)
+         {
+                var apps = new List<AppConfig>();
+
+                 if (string.IsNullOrWhiteSpace(output))
+                     return apps;
+
+                foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                {
+                     var trimmed = line.Trim();
+
+                      if (string.IsNullOrWhiteSpace(trimmed) ||
+                              trimmed.StartsWith("Chocolatey") ||
+                              trimmed.Contains("packages installed"))
+                              continue;
+
+                       var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                       apps.Add(new AppConfig
+                       {
+                           Id = parts[0],
+                         Manager = "chocolatey"
+                        });
+                }
+
+                return apps;
+         }
 
         private GitConfig? GetGitConfig()
         {
