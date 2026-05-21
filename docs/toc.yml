@@ -4,6 +4,8 @@
   href: ../api/
 - name: Overview
   href: config.md
+- name: Getting Started
+  href: getting-started.md
 - name: Configuration Reference
   href: config-reference.md
 - name: Modules
