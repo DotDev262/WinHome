@@ -6,9 +6,17 @@ namespace WinHome.Services.Logging
     public class JsonLogger : ILogger
     {
         private readonly List<LogEntry> _logEntries = new();
+        private volatile LogLevel _minLevel = LogLevel.Info;
+
+        public void SetMinLevel(LogLevel level)
+        {
+            _minLevel = level;
+        }
 
         public void Log(string message, LogLevel level)
         {
+            if (level < _minLevel) return;
+
             _logEntries.Add(new LogEntry(message, level));
         }
 

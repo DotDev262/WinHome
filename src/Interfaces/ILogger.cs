@@ -2,6 +2,8 @@ namespace WinHome.Interfaces
 {
     public enum LogLevel
     {
+        Trace,
+        Debug,
         Info,
         Success,
         Warning,
@@ -15,5 +17,6 @@ namespace WinHome.Interfaces
         void LogSuccess(string message);
         void LogWarning(string message);
         void LogError(string message);
+        void SetMinLevel(LogLevel level);
     }
 }

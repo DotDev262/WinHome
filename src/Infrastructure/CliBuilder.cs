@@ -9,7 +9,7 @@ namespace WinHome.Infrastructure;
 public static class CliBuilder
 {
     public static RootCommand BuildRootCommand(
-        Func<FileInfo, bool, string?, bool, bool, bool, bool, Task<int>> runAction,
+        Func<FileInfo, bool, string?, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
         Func<FileInfo?, Task<int>> generateAction,
         Func<string, string?, Task<int>> stateAction)
     {
@@ -37,12 +37,22 @@ public static class CliBuilder
         profileOption.Aliases.Add("-p");
 
         var debugOption = new Option<bool>("--debug");
-        debugOption.Description = "Enable verbose logging and configuration validation";
+        debugOption.Description = "Show detailed error information including stack traces";
         debugOption.DefaultValueFactory = _ => false;
 
         var diffOption = new Option<bool>("--diff");
         diffOption.Description = "Show a diff of the changes that will be made";
         diffOption.DefaultValueFactory = _ => false;
+
+        var verboseOption = new Option<bool>("--verbose");
+        verboseOption.Description = "Show detailed log output (Trace and Debug messages)";
+        verboseOption.DefaultValueFactory = _ => false;
+        verboseOption.Aliases.Add("-v");
+
+        var quietOption = new Option<bool>("--quiet");
+        quietOption.Description = "Suppress non-essential output (only Errors and Warnings)";
+        quietOption.DefaultValueFactory = _ => false;
+        quietOption.Aliases.Add("-q");
 
         var jsonOption = new Option<bool>("--json");
         jsonOption.Description = "Output results as JSON";
@@ -55,6 +65,8 @@ public static class CliBuilder
         rootCommand.Options.Add(profileOption);
         rootCommand.Options.Add(debugOption);
         rootCommand.Options.Add(diffOption);
+        rootCommand.Options.Add(verboseOption);
+        rootCommand.Options.Add(quietOption);
         rootCommand.Options.Add(jsonOption);
 
         rootCommand.SetAction(async (ParseResult result) =>
@@ -65,9 +77,19 @@ public static class CliBuilder
             string? profile = result.GetValue(profileOption);
             bool debug = result.GetValue(debugOption);
             bool diff = result.GetValue(diffOption);
+            bool verbose = result.GetValue(verboseOption);
+            bool quiet = result.GetValue(quietOption);
             bool json = result.GetValue(jsonOption);
 
-            return await runAction(file, dryRun, profile, debug, diff, json, update);
+            LogLevel minLogLevel;
+            if (quiet)
+                minLogLevel = LogLevel.Warning;
+            else if (verbose)
+                minLogLevel = LogLevel.Trace;
+            else
+                minLogLevel = LogLevel.Info;
+
+            return await runAction(file, dryRun, profile, debug, diff, json, update, minLogLevel);
         });
 
         // Generate Command

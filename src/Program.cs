@@ -17,9 +17,10 @@ class Program
 
             var rootCommand = CliBuilder.BuildRootCommand(
                 // Run Action
-                async (file, dryRun, profile, debug, diff, json, update) =>
+                async (file, dryRun, profile, debug, diff, json, update, minLogLevel) =>
                 {
                     var logger = host.Services.GetRequiredService<ILogger>();
+                    logger.SetMinLevel(minLogLevel);
 
                     if (update)
                     {
