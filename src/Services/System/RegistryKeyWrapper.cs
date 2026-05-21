@@ -33,10 +33,10 @@ namespace WinHome.Services.System
             return subKey == null ? null : new RegistryKeyWrapper(subKey);
         }
 
-        public IRegistryKey CreateSubKey(string name, bool writable)
+        public IRegistryKey? CreateSubKey(string name, bool writable)
         {
             var subKey = _registryKey.CreateSubKey(name, writable);
-            return new RegistryKeyWrapper(subKey);
+            return subKey == null ? null : new RegistryKeyWrapper(subKey);
         }
 
         public void Dispose()
