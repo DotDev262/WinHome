@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Moq;
 using WinHome.Interfaces;
 using WinHome.Models;
@@ -12,21 +14,19 @@ namespace WinHome.Tests
     {
         private readonly Mock<IProcessRunner> _mockProcessRunner;
         private readonly Mock<IRegistryService> _mockRegistryService;
-        private readonly Mock<ILogger> _mockLogger;
+        private readonly Mock<ILogger<SystemSettingsService>> _mockLogger;
         private readonly SystemSettingsService _service;
 
         public SystemSettingsServiceTests()
         {
             _mockProcessRunner = new Mock<IProcessRunner>();
             _mockRegistryService = new Mock<IRegistryService>();
-            _mockLogger = new Mock<ILogger>();
+            _mockLogger = new Mock<ILogger<SystemSettingsService>>();
             _service = new SystemSettingsService(
                 _mockProcessRunner.Object,
                 _mockRegistryService.Object,
                 _mockLogger.Object);
         }
-
-        // ─── Brightness ──────────────────────────────────────────────────────────────
 
         [Fact]
         public async Task ApplyNonRegistrySettingsAsync_Should_Set_Brightness()
@@ -55,7 +55,14 @@ namespace WinHome.Tests
             _mockProcessRunner.Verify(
                 r => r.RunCommand("powershell", It.Is<string>(s => s.Contains($"WmiSetBrightness(1, {value})")), false),
                 Times.Once);
-            _mockLogger.Verify(l => l.LogWarning(It.IsAny<string>()), Times.Never);
+            _mockLogger.Verify(
+                l => l.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
         }
 
         [Theory]
@@ -70,14 +77,17 @@ namespace WinHome.Tests
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
             _mockLogger.Verify(
-                l => l.LogWarning(It.Is<string>(msg => msg.Contains("Brightness") && msg.Contains(value.ToString()))),
+                l => l.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Brightness") && state.ToString()!.Contains(value.ToString())),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
             _mockProcessRunner.Verify(
                 r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
                 Times.Never);
         }
-
-        // ─── Volume ──────────────────────────────────────────────────────────────────
 
         [Fact]
         public async Task ApplyNonRegistrySettingsAsync_Should_Set_Volume()
@@ -106,7 +116,14 @@ namespace WinHome.Tests
             _mockProcessRunner.Verify(
                 r => r.RunCommand("powershell", It.Is<string>(s => s.Contains($"Set-AudioDevice -PlaybackVolume {value}")), false),
                 Times.Once);
-            _mockLogger.Verify(l => l.LogWarning(It.IsAny<string>()), Times.Never);
+            _mockLogger.Verify(
+                l => l.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
         }
 
         [Theory]
@@ -121,14 +138,17 @@ namespace WinHome.Tests
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
             _mockLogger.Verify(
-                l => l.LogWarning(It.Is<string>(msg => msg.Contains("Volume") && msg.Contains(value.ToString()))),
+                l => l.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Volume") && state.ToString()!.Contains(value.ToString())),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
             _mockProcessRunner.Verify(
                 r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
                 Times.Never);
         }
-
-        // ─── Notifications ───────────────────────────────────────────────────────────
 
         [Fact]
         public async Task ApplyNonRegistrySettingsAsync_Should_Send_Notification()
@@ -146,8 +166,6 @@ namespace WinHome.Tests
                     false),
                 Times.Once);
         }
-
-        // ─── Security Presets ────────────────────────────────────────────────────────
 
         [Fact]
         public async Task GetTweaksAsync_Should_Return_Security_Presets()

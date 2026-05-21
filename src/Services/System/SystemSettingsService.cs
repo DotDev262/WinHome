@@ -1,5 +1,6 @@
 using WinHome.Interfaces;
 using WinHome.Models;
+using Microsoft.Extensions.Logging;
 
 namespace WinHome.Services.System
 {
@@ -7,7 +8,7 @@ namespace WinHome.Services.System
     {
         private readonly IProcessRunner _processRunner;
         private readonly IRegistryService _registryService;
-        private readonly ILogger _logger;
+        private readonly ILogger<SystemSettingsService> _logger;
         private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification" };
 
         private const int MinVolumeOrBrightness = 0;
@@ -40,7 +41,7 @@ namespace WinHome.Services.System
             }
         };
 
-        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService, ILogger logger)
+        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService, ILogger<SystemSettingsService> logger)
         {
             _processRunner = processRunner;
             _registryService = registryService;
@@ -194,7 +195,7 @@ namespace WinHome.Services.System
                 switch (key)
                 {
                     case "brightness":
-                        if (int.TryParse(userSetting.Value.ToString(), out int brightness))
+                        if (userSetting.Value?.ToString() is string brightnessVal && int.TryParse(brightnessVal, out int brightness))
                         {
                             if (brightness < MinVolumeOrBrightness || brightness > MaxVolumeOrBrightness)
                             {
@@ -206,7 +207,7 @@ namespace WinHome.Services.System
                         }
                         break;
                     case "volume":
-                        if (int.TryParse(userSetting.Value.ToString(), out int volume))
+                        if (userSetting.Value?.ToString() is string volumeVal && int.TryParse(volumeVal, out int volume))
                         {
                             if (volume < MinVolumeOrBrightness || volume > MaxVolumeOrBrightness)
                             {
