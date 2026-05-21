@@ -76,58 +76,114 @@ namespace WinHome.Tests
         }
 
         [Fact]
-        public async Task GetTweaksAsync_Should_Return_Privacy_Preset_Tweaks()
+        public async Task GetTweaksAsync_Should_Return_Transparency_Tweaks()
         {
             var settings = new Dictionary<string, object>
             {
-                { "security_preset", "privacy" }
+                { "transparency", "true" }
             };
 
             var tweaks = await _service.GetTweaksAsync(settings);
             var tweaksList = new List<RegistryTweak>(tweaks);
 
-            Assert.Equal(8, tweaksList.Count);
+            Assert.Single(tweaksList);
+            Assert.Equal("EnableTransparency", tweaksList[0].Name);
+            Assert.Equal(1, tweaksList[0].Value);
+            Assert.Equal("dword", tweaksList[0].Type);
         }
 
         [Fact]
-        public async Task GetTweaksAsync_Privacy_Preset_Should_Contain_Expected_Registry_Keys()
+        public async Task GetCapturedSettingsAsync_Should_Capture_Transparency()
         {
-            var settings = new Dictionary<string, object>
-            {
-                { "security_preset", "privacy" }
-            };
+            _mockRegistryService
+                .Setup(r => r.Read(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency"))
+                .Returns(1);
 
-            var tweaks = await _service.GetTweaksAsync(settings);
-            var tweaksList = new List<RegistryTweak>(tweaks);
+            var captured = await _service.GetCapturedSettingsAsync();
 
-            // Telemetry data collection
-            Assert.Contains(tweaksList, t => t.Name == "AllowTelemetry" && t.Value.Equals(0));
-            // Advertising ID
-            Assert.Contains(tweaksList, t => t.Name == "Enabled" && t.Path.Contains("AdvertisingInfo") && t.Value.Equals(0));
-            // Activity History
-            Assert.Contains(tweaksList, t => t.Name == "EnableActivityFeed" && t.Value.Equals(0));
-            Assert.Contains(tweaksList, t => t.Name == "UploadUserActivities" && t.Value.Equals(0));
-            // Tailored Experiences
-            Assert.Contains(tweaksList, t => t.Name == "TailoredExperiencesWithDiagnosticDataEnabled" && t.Value.Equals(0));
-            // Feedback Notifications
-            Assert.Contains(tweaksList, t => t.Name == "NumberOfSIUFInPeriod" && t.Value.Equals(0));
-            // Input Personalization
-            Assert.Contains(tweaksList, t => t.Name == "RestrictImplicitTextCollection" && t.Value.Equals(1));
-            Assert.Contains(tweaksList, t => t.Name == "HarvestContacts" && t.Value.Equals(0));
+            Assert.True(captured.ContainsKey("transparency"));
+            Assert.Equal(true, captured["transparency"]);
         }
 
         [Fact]
-        public async Task GetTweaksAsync_Should_Return_Empty_For_Unknown_Preset()
+        public async Task GetTweaksAsync_Should_Return_TaskbarAutoHide_Tweaks()
         {
             var settings = new Dictionary<string, object>
             {
-                { "security_preset", "nonexistent" }
+                { "taskbar_autohide", "true" }
             };
 
             var tweaks = await _service.GetTweaksAsync(settings);
             var tweaksList = new List<RegistryTweak>(tweaks);
 
-            Assert.Empty(tweaksList);
+            Assert.Single(tweaksList);
+            Assert.Equal("Settings", tweaksList[0].Name);
+            Assert.Equal("binary", tweaksList[0].Type);
+            Assert.IsType<byte[]>(tweaksList[0].Value);
+
+            var byteVal = (byte[])tweaksList[0].Value;
+            Assert.Equal(0x03, byteVal[8]); // 9th byte is 0x03 for auto-hide enable
+        }
+
+        [Fact]
+        public async Task GetCapturedSettingsAsync_Should_Capture_TaskbarAutoHide()
+        {
+            var mockBytes = new byte[] { 0x30, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
+            _mockRegistryService
+                .Setup(r => r.Read(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3", "Settings"))
+                .Returns(mockBytes);
+
+            var captured = await _service.GetCapturedSettingsAsync();
+
+            Assert.True(captured.ContainsKey("taskbar_autohide"));
+            Assert.Equal(true, captured["taskbar_autohide"]);
+        }
+
+        [Fact]
+        public async Task GetTweaksAsync_Should_Return_Remaining_Custom_Tweaks()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "taskbar_task_view", "true" },
+                { "taskbar_end_task", "true" },
+                { "start_show_recent", "true" },
+                { "snap_assist_flyout", "true" }
+            };
+
+            var tweaks = await _service.GetTweaksAsync(settings);
+            var tweaksList = new List<RegistryTweak>(tweaks);
+
+            Assert.Equal(4, tweaksList.Count);
+
+            Assert.Contains(tweaksList, t => t.Name == "ShowTaskViewButton" && t.Value.Equals(1));
+            Assert.Contains(tweaksList, t => t.Name == "TaskbarEndTask" && t.Value.Equals(1));
+            Assert.Contains(tweaksList, t => t.Name == "Start_TrackDocs" && t.Value.Equals(1));
+            Assert.Contains(tweaksList, t => t.Name == "EnableSnapAssistFlyout" && t.Value.Equals(1));
+        }
+
+        [Fact]
+        public async Task GetCapturedSettingsAsync_Should_Capture_Remaining_Custom_Settings()
+        {
+            _mockRegistryService
+                .Setup(r => r.Read(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowTaskViewButton"))
+                .Returns(1);
+            _mockRegistryService
+                .Setup(r => r.Read(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarEndTask"))
+                .Returns(1);
+            _mockRegistryService
+                .Setup(r => r.Read(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "Start_TrackDocs"))
+                .Returns(1);
+            _mockRegistryService
+                .Setup(r => r.Read(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "EnableSnapAssistFlyout"))
+                .Returns(1);
+
+            var captured = await _service.GetCapturedSettingsAsync();
+
+            Assert.True((bool)captured["taskbar_task_view"]);
+            Assert.True((bool)captured["taskbar_end_task"]);
+            Assert.True((bool)captured["start_show_recent"]);
+            Assert.True((bool)captured["snap_assist_flyout"]);
         }
     }
 }
