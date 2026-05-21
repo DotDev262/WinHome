@@ -1,0 +1,75 @@
+name: GSSoC Label Sync
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        id: get-labels
+        with:
+          result-encoding: string
+          script: |
+            const prBody = context.payload.pull_request.body || '';
+            const prNumber = context.payload.pull_request.number;
+
+            const issueRefPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
+            const matchedIssues = new Set();
+            let match;
+            while ((match = issueRefPattern.exec(prBody)) !== null) {
+              matchedIssues.add(parseInt(match[1], 10));
+            }
+
+            if (matchedIssues.size === 0) {
+              console.log('No issue references found in PR body.');
+              return '';
+            }
+
+            console.log(`Issue references found: ${[...matchedIssues].join(', ')}`);
+
+            const gssocLabels = [];
+            for (const issueNumber of matchedIssues) {
+              try {
+                const { data: issue } = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                });
+
+                for (const label of issue.labels) {
+                  const name = typeof label === 'string' ? label : label.name;
+                  if (name.startsWith('level:') || name.startsWith('type:') || name.startsWith('quality:')) {
+                    gssocLabels.push(name);
+                  }
+                }
+              } catch (error) {
+                console.log(`Could not fetch issue #${issueNumber}: ${error.message}`);
+              }
+            }
+
+            if (gssocLabels.length === 0) {
+              console.log('No GSSoC labels found on referenced issues.');
+              return '';
+            }
+
+            console.log(`GSSoC labels to apply: ${gssocLabels.join(', ')}`);
+            return gssocLabels.join(',');
+
+      - name: Apply GSSoC labels
+        if: steps.get-labels.outputs.result != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LABELS="${{ steps.get-labels.outputs.result }}"
+          echo "Applying labels: $LABELS"
+          gh issue edit ${{ github.event.pull_request.number }} \
+            --add-label "$LABELS" \
+            --repo ${{ github.repository }}

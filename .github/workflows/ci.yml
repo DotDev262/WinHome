@@ -1,45 +1,63 @@
-name: WinHome Tests
+name: CI
 
 on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  test-native:
-    name: Native Windows Test
-    runs-on: windows-latest
-
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
     - uses: actions/checkout@v6
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: '10.0.x'
+        dotnet-version: 10.0.x
+
+    - name: Check formatting
+      run: dotnet format --verify-no-changes --verbosity diagnostic WinHome.sln
+
+    - name: Build
+      run: dotnet build WinHome.sln
+
+  test:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
 
     - name: Restore dependencies
       run: dotnet restore src/WinHome.csproj
 
-    - name: Install uv and bun (for tests)
+    - name: Install uv and bun
       shell: pwsh
       run: |
-        # Install uv
         powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
         echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
-        
-        # Install bun
         powershell -ExecutionPolicy ByPass -c "irm https://bun.sh/install.ps1 | iex"
         echo "$env:USERPROFILE\.bun\bin" >> $env:GITHUB_PATH
 
-    - name: Run Unit Tests
+    - name: Run tests
       run: dotnet test tests/WinHome.Tests/WinHome.Tests.csproj
 
     - name: Build WinHome
       run: dotnet publish src/WinHome.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
 
-    - name: Run GHA Tests
+    - name: Run GHA tests
       shell: pwsh
       run: |
         cd publish
@@ -48,15 +66,3 @@ jobs:
         cp ../test-data/verify-gha.ps1 .
         cp ../README.md .
         ./run-test-gha.ps1
-
-  test-container:
-    name: Container Test (Scoop/Choco Only)
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v6
-
-    - name: Build the Docker image
-      run: docker build . --file testing/infrastructure/Dockerfile --tag winhome:test
-
-    - name: Run the container
-      run: docker run winhome:test

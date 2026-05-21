@@ -1,6 +1,8 @@
 using WinHome.Interfaces;
 using WinHome.Models;
 using Microsoft.Extensions.Logging;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace WinHome.Services.System
 {
@@ -38,6 +40,25 @@ namespace WinHome.Services.System
                 new RegistryTweak { Path = @"HKLM\System\CurrentControlSet\Control\Remote Assistance", Name = "fAllowToGetHelp", Value = 0, Type = "dword" },
                 // Disable NetBIOS over TCP/IP (prevent LLMNR/NBT-NS poisoning)
                 new RegistryTweak { Path = @"HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces", Name = "NetbiosOptions", Value = 2, Type = "dword" }
+            },
+            ["privacy"] = new()
+            {
+                // Disable Windows Telemetry data collection
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", Name = "AllowTelemetry", Value = 0, Type = "dword" },
+                // Disable Advertising ID for personalized ads
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", Name = "Enabled", Value = 0, Type = "dword" },
+                // Disable Activity History feed
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", Name = "EnableActivityFeed", Value = 0, Type = "dword" },
+                // Disable Activity History cloud upload
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", Name = "UploadUserActivities", Value = 0, Type = "dword" },
+                // Disable Tailored Experiences based on diagnostic data
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy", Name = "TailoredExperiencesWithDiagnosticDataEnabled", Value = 0, Type = "dword" },
+                // Disable Feedback Notifications
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Siuf\Rules", Name = "NumberOfSIUFInPeriod", Value = 0, Type = "dword" },
+                // Disable implicit text/ink collection for input personalization
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization", Name = "RestrictImplicitTextCollection", Value = 1, Type = "dword" },
+                // Disable contact harvesting for handwriting recognition
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization\TrainedDataStore", Name = "HarvestContacts", Value = 0, Type = "dword" }
             }
         };
 
@@ -98,10 +119,36 @@ namespace WinHome.Services.System
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", "dword",
                 new() { { "true", 1 }, { "false", 0 } }),
 
+            new("transparency",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
 
+            new("taskbar_autohide",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3", "Settings", "binary",
+                new()
+                {
+                    { "true", new byte[] { 0x30, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 } },
+                    { "false", new byte[] { 0x30, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 } }
+                }),
+
+            new("taskbar_task_view",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowTaskViewButton", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("taskbar_end_task",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarEndTask", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("start_show_recent",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "Start_TrackDocs", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("snap_assist_flyout",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "EnableSnapAssistFlyout", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
         };
 
-        public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object> settings)
+        public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings)
         {
             return await Task.Run(() =>
             {
@@ -166,7 +213,14 @@ namespace WinHome.Services.System
                         if (regValue != null)
                         {
                             // Find corresponding user-friendly key for this value
-                            var match = def.ValueMap.FirstOrDefault(kvp => kvp.Value.ToString() == regValue.ToString());
+                            var match = def.ValueMap.FirstOrDefault(kvp =>
+                            {
+                                if (kvp.Value is byte[] kvpBytes && regValue is byte[] regBytes)
+                                {
+                                    return kvpBytes.SequenceEqual(regBytes);
+                                }
+                                return kvp.Value?.ToString() == regValue?.ToString();
+                            });
                             if (!match.Equals(default(KeyValuePair<string, object>)))
                             {
                                 // Handle Booleans properly
@@ -185,7 +239,16 @@ namespace WinHome.Services.System
             });
         }
 
-        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object> settings, bool dryRun)
+        public string? GetFriendlyName(string registryPath, string registryName)
+        {
+            var match = _catalog.FirstOrDefault(d =>
+                d.RegistryPath.Equals(registryPath, StringComparison.OrdinalIgnoreCase) &&
+                d.RegistryName.Equals(registryName, StringComparison.OrdinalIgnoreCase));
+
+            return match?.SettingKey;
+        }
+
+        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun)
         {
             if (settings == null) return Task.CompletedTask;
 

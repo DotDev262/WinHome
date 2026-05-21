@@ -8,6 +8,6 @@ namespace WinHome.Interfaces
         object? GetValue(string name);
         void DeleteValue(string name);
         IRegistryKey? OpenSubKey(string name, bool writable);
-        IRegistryKey CreateSubKey(string name, bool writable);
+        IRegistryKey? CreateSubKey(string name, bool writable);
     }
 }

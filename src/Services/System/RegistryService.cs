@@ -29,7 +29,7 @@ namespace WinHome.Services.System
                 {
                     object? currentValue = key?.GetValue(tweak.Name);
 
-                    if (currentValue != null && currentValue.ToString() == tweak.Value.ToString())
+                    if (currentValue != null && currentValue.ToString() == tweak.Value?.ToString())
                     {
                         Console.WriteLine($"[Registry] Skipped: {tweak.Name} (Already set)");
                         return;
@@ -44,8 +44,14 @@ namespace WinHome.Services.System
                     }
                 }
 
-                using (IRegistryKey key = root.CreateSubKey(subKeyPath, writable: true))
+                using (IRegistryKey? key = root.CreateSubKey(subKeyPath, writable: true))
                 {
+                    if (key == null)
+                    {
+                        Console.WriteLine($"[Error] Could not create registry subkey: {tweak.Path}");
+                        return;
+                    }
+
                     RegistryValueKind kind = tweak.Type.ToLower() switch
                     {
                         "dword" => RegistryValueKind.DWord,
@@ -54,11 +60,20 @@ namespace WinHome.Services.System
                         _ => RegistryValueKind.String
                     };
 
-                    object valueToWrite = tweak.Value;
-                    if (kind == RegistryValueKind.DWord) valueToWrite = Convert.ToInt32(tweak.Value);
-                    if (kind == RegistryValueKind.QWord) valueToWrite = Convert.ToInt64(tweak.Value);
+                    object? valueToWrite = tweak.Value;
+                    if (valueToWrite is global::System.Text.Json.JsonElement jsonElement)
+                    {
+                        if (kind == RegistryValueKind.DWord) valueToWrite = jsonElement.GetInt32();
+                        else if (kind == RegistryValueKind.QWord) valueToWrite = jsonElement.GetInt64();
+                        else valueToWrite = jsonElement.ToString() ?? string.Empty;
+                    }
+                    else
+                    {
+                        if (kind == RegistryValueKind.DWord) valueToWrite = Convert.ToInt32(tweak.Value);
+                        else if (kind == RegistryValueKind.QWord) valueToWrite = Convert.ToInt64(tweak.Value);
+                    }
 
-                    key.SetValue(tweak.Name, valueToWrite, kind);
+                    key.SetValue(tweak.Name, valueToWrite ?? string.Empty, kind);
                     Console.WriteLine($"[Registry] Set {tweak.Name} = {tweak.Value}");
                 }
             }

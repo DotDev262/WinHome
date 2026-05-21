@@ -151,7 +151,7 @@ namespace WinHome
             {
                 // Only reconcile runtimes for plugins that are actually used in the config
                 var usedPluginNames = config.Apps.Select(a => a.Manager)
-                    .Concat(new[] { "vim", "vscode" }.Where(_ => config.Vim != null || config.Vscode != null))
+                    .Concat(new[] { "vim", "vscode", "obsidian", "ohmyposh" }.Where(_ => config.Vim != null || config.Vscode != null || config.Obsidian != null || config.Ohmyposh != null))
                     .Concat(config.Extensions.Keys)
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -227,6 +227,8 @@ namespace WinHome
             var allExtensions = new Dictionary<string, object>(config.Extensions);
             if (config.Vim != null) allExtensions["vim"] = config.Vim;
             if (config.Vscode != null) allExtensions["vscode"] = config.Vscode;
+            if (config.Obsidian != null) allExtensions["obsidian"] = config.Obsidian;
+            if (config.Ohmyposh != null) allExtensions["ohmyposh"] = config.Ohmyposh;
 
             if (allExtensions.Any())
             {
@@ -340,7 +342,7 @@ namespace WinHome
                 _logger.LogError("\n[-] Items to Remove:");
                 foreach (var item in itemsToRemove)
                 {
-                    _logger.LogError($"  - {item}");
+                    _logger.LogError($"  - {FormatFriendlyName(item)}");
                 }
             }
 
@@ -349,7 +351,7 @@ namespace WinHome
                 _logger.LogSuccess("\n[+] Items to Add:");
                 foreach (var item in itemsToAdd)
                 {
-                    _logger.LogSuccess($"  + {item}");
+                    _logger.LogSuccess($"  + {FormatFriendlyName(item)}");
                 }
             }
 
@@ -358,9 +360,37 @@ namespace WinHome
                 _logger.LogInfo("\n[=] Unchanged Items:");
                 foreach (var item in unchangedItems)
                 {
-                    _logger.LogInfo($"  = {item}");
+                    _logger.LogInfo($"  = {FormatFriendlyName(item)}");
                 }
             }
+        }
+
+        private string FormatFriendlyName(string item)
+        {
+            if (item.StartsWith("reg:"))
+            {
+                var parts = item.Substring(4).Split('|', 2);
+                if (parts.Length == 2)
+                {
+                    string path = parts[0];
+                    string name = parts[1];
+                    string? settingKey = _systemSettings.GetFriendlyName(path, name);
+                    if (settingKey != null)
+                    {
+                        return $"System Setting: {settingKey}";
+                    }
+                    return $"Registry Tweak: {path} -> {name}";
+                }
+            }
+            else
+            {
+                var parts = item.Split(':', 2);
+                if (parts.Length == 2)
+                {
+                    return $"App ({parts[0]}): {parts[1]}";
+                }
+            }
+            return item;
         }
 
         private async Task<HashSet<string>> BuildStateFromConfig(Configuration config)
