@@ -128,5 +128,28 @@ namespace WinHome.Services.System
                 return string.Empty;
             }
         }
+
+        public bool RunProcessWithStartInfo(ProcessStartInfo startInfo)
+        {
+            try
+            {
+                using var process = Process.Start(startInfo);
+                if (process == null) throw new Exception("Failed to start process");
+
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    var error = process.StandardError.ReadToEnd();
+                    throw new Exception($"Process failed with exit code {process.ExitCode}: {error}");
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
     }
 }

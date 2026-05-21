@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace WinHome.Interfaces
 {
     public interface IProcessRunner
@@ -6,5 +8,6 @@ namespace WinHome.Interfaces
         string RunCommandWithOutput(string fileName, string args);
         string RunCommandWithOutput(string fileName, string args, string? standardInput);
         string RunAndCapture(string fileName, string arguments);
+        bool RunProcessWithStartInfo(ProcessStartInfo startInfo);
     }
 }
