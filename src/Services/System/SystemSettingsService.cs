@@ -2,9 +2,11 @@ using WinHome.Interfaces;
 using WinHome.Models;
 using System.Linq;
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 
 namespace WinHome.Services.System
 {
+    [SupportedOSPlatform("windows")]
     public class SystemSettingsService : ISystemSettingsService
     {
         private readonly IProcessRunner _processRunner;
