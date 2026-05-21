@@ -1,8 +1,10 @@
 using WinHome.Interfaces;
 using WinHome.Models;
+using System.Runtime.Versioning;
 
 namespace WinHome.Services.System
 {
+    [SupportedOSPlatform("windows")]
     public class WslService : IWslService
     {
         private readonly IProcessRunner _processRunner;
