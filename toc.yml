@@ -6,5 +6,5 @@
 - name: 📖 API Reference
   href: api/
   topicHref: api/index.md
-  - name: Security Guide
+- name: Security Guide
   href: docs/security.md

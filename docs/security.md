@@ -64,22 +64,17 @@ Useful for:
 
 ---
 
-### Vault-Based Secrets
+### Windows Credential Manager
 
-Vault systems are recommended for enterprise and production environments.
+```yaml
+envVars:
+  - variable: "DB_PASSWORD"
+    value: "{{ vault:database-password }}"
+```
 
-#### Recommended Providers
+Reads credentials securely from Windows Credential Manager.
 
-- HashiCorp Vault
-- Azure Key Vault
-- AWS Secrets Manager
-
-#### Benefits
-
-- Centralized secret rotation
-- Access auditing
-- Better security isolation
-- Reduced credential exposure
+This is the only currently supported vault integration in WinHome.
 
 ---
 

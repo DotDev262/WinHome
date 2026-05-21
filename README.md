@@ -116,9 +116,8 @@ For complete, real-world setup examples (Developer, Minimalist, Gamer), see the 
 
 ## 🛡️ Security & Reliability
 
-📘 For detailed security guidance and best practices, see the [Security Guide](./docs/security.md).
-
 WinHome implements enterprise-grade security controls to prevent common infrastructure automation pitfalls.
+
 
 ### 🔒 Context Awareness (RegistryGuard)
 WinHome actively detects if it is running as `SYSTEM` (common in CI/CD or Scheduled Tasks) and **blocks attempts to modify `HKEY_CURRENT_USER`**. This prevents the "Admin Context Trap" where settings are accidentally applied to the LocalSystem profile instead of the logged-in user.
@@ -373,6 +372,10 @@ WinHome stands on the shoulders of incredible open-source technologies:
 * **PowerShell**
 
 And most importantly, the open-source community. ❤️
+
+
+📘 For detailed security guidance and best practices, see the [Security Guide](./docs/security.md).
+
 
 ---
 
