@@ -268,6 +268,10 @@ namespace WinHome.Services.System
                             string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
                             _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
                         }
+                        else if (userSetting.Value != null)
+                        {
+                            _logger.LogWarning($"[Settings] Brightness value '{userSetting.Value}' is not a valid integer. Skipping.");
+                        }
                         break;
                     case "volume":
                         if (userSetting.Value?.ToString() is string volumeVal && int.TryParse(volumeVal, out int volume))
@@ -279,6 +283,10 @@ namespace WinHome.Services.System
                             }
                             string command = $"Set-AudioDevice -PlaybackVolume {volume}";
                             _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                        }
+                        else if (userSetting.Value != null)
+                        {
+                            _logger.LogWarning($"[Settings] Volume value '{userSetting.Value}' is not a valid integer. Skipping.");
                         }
                         break;
                     case "notification":

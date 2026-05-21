@@ -89,6 +89,48 @@ namespace WinHome.Tests
                 Times.Never);
         }
 
+        [Theory]
+        [InlineData("abc")]
+        [InlineData("50.5")]
+        public async Task ApplyNonRegistrySettingsAsync_Brightness_InvalidFormat_Should_LogWarning_And_Skip(string value)
+        {
+            var settings = new Dictionary<string, object> { { "brightness", value } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Brightness") && state.ToString()!.Contains(value)),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_Brightness_Null_Should_SkipSilently()
+        {
+            var settings = new Dictionary<string, object> { { "brightness", null } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
         [Fact]
         public async Task ApplyNonRegistrySettingsAsync_Should_Set_Volume()
         {
@@ -145,6 +187,48 @@ namespace WinHome.Tests
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Theory]
+        [InlineData("abc")]
+        [InlineData("50.5")]
+        public async Task ApplyNonRegistrySettingsAsync_Volume_InvalidFormat_Should_LogWarning_And_Skip(string value)
+        {
+            var settings = new Dictionary<string, object> { { "volume", value } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Volume") && state.ToString()!.Contains(value)),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_Volume_Null_Should_SkipSilently()
+        {
+            var settings = new Dictionary<string, object> { { "volume", null } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
             _mockProcessRunner.Verify(
                 r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
                 Times.Never);
