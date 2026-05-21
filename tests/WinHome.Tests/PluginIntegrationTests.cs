@@ -4,6 +4,7 @@ using WinHome.Interfaces;
 using WinHome.Models.Plugins;
 using WinHome.Services.Plugins;
 using WinHome.Services.Bootstrappers;
+using WinHome.Services.System;
 using Xunit;
 
 namespace WinHome.Tests
@@ -15,7 +16,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var mockLogger = new Mock<ILogger>();
-            var resolver = new WinHome.Services.System.RuntimeResolver(mockLogger.Object);
+            var resolver = new RuntimeResolver(mockLogger.Object, new DefaultProcessRunner(), new DefaultFileSystem());
 
             // Skip if uv is not installed
             try
@@ -72,7 +73,7 @@ namespace WinHome.Tests
         {
             // Arrange
             var mockLogger = new Mock<ILogger>();
-            var resolver = new WinHome.Services.System.RuntimeResolver(mockLogger.Object);
+            var resolver = new RuntimeResolver(mockLogger.Object, new DefaultProcessRunner(), new DefaultFileSystem());
 
             // Skip if bun is not installed
             try
