@@ -77,3 +77,4 @@ We value your time!
 For quick questions or community support, please use our **[GitHub Discussions](https://github.com/DotDev262/WinHome/discussions)**.
 
 Thank you for your contribution!
+If you encounter issues while setting up, see our [Troubleshooting Guide](docs/troubleshooting.md).

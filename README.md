@@ -322,7 +322,7 @@ No registry keys or hidden folders are left behind by the tool itself.
 ---
 
 ## ❓ Troubleshooting
-
+For a comprehensive troubleshooting guide, see [Troubleshooting](docs/troubleshooting.md).
 **"Winget not recognized"**
 > Ensure the **App Installer** is updated from the Microsoft Store. WinHome attempts to use the system-level Winget.
 
