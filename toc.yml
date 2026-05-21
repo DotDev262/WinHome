@@ -4,7 +4,6 @@
 - name: 📘 Documentation
   href: docs/
   topicHref: docs/config.md
-
 - name: Getting Started
   href: docs/getting-started.md  
   
