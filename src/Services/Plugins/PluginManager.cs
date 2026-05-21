@@ -7,6 +7,10 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace WinHome.Services.Plugins
 {
+    /// <summary>
+    /// Manages the registration, file system discovery, configuration loading, 
+    /// and runtime dependency validation for system extendability plugins.
+    /// </summary>
     public class PluginManager : IPluginManager
     {
         private readonly UvBootstrapper _uvBootstrapper;
@@ -15,6 +19,14 @@ namespace WinHome.Services.Plugins
         private readonly string _pluginsDir;
         private readonly IRuntimeResolver? _runtimeResolver;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PluginManager"/> class with required environment bootstrappers and log tools.
+        /// </summary>
+        /// <param name="uvBootstrapper">The Python package management tool setup utility instance.</param>
+        /// <param name="bunBootstrapper">The JavaScript/TypeScript fast engine setup tool utility instance.</param>
+        /// <param name="logger">The logging pipeline configuration instance used to output status updates.</param>
+        /// <param name="pluginsDirectory">The custom target directory path string override for locating extensions, or null to default to local app data.</param>
+        /// <param name="runtimeResolver">The environment execution path verification and mapping configuration utility lookup system.</param>
         public PluginManager(
             UvBootstrapper uvBootstrapper,
             BunBootstrapper bunBootstrapper,
@@ -33,6 +45,10 @@ namespace WinHome.Services.Plugins
                 "plugins");
         }
 
+        /// <summary>
+        /// Traverses the system plugins storage directory looking for subfolders containing valid YAML descriptor documents to load.
+        /// </summary>
+        /// <returns>A collection of read and verified configuration structural metadata instances representing found extension entries.</returns>
         public IEnumerable<PluginManifest> DiscoverPlugins()
         {
             if (!Directory.Exists(_pluginsDir))
@@ -68,6 +84,11 @@ namespace WinHome.Services.Plugins
             return plugins;
         }
 
+        /// <summary>
+        /// Evaluates a plugin's targeting platform configuration settings and triggers automated installation of missing external script runtimes.
+        /// </summary>
+        /// <param name="plugin">The structural context metadata properties model representing the target plugin requiring execution host validation.</param>
+        /// <returns>A asynchronous processing placeholder <see cref="Task"/> context wrapping structural verification steps.</returns>
         public async Task EnsureRuntimeAsync(PluginManifest plugin)
         {
             switch (plugin.Type.ToLower())

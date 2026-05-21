@@ -3,16 +3,32 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
 {
+    /// <summary>
+    /// Implements the bootstrapper logic to detect, verify, and install the Chocolatey package manager on the host system.
+    /// </summary>
     public class ChocolateyBootstrapper : IPackageManagerBootstrapper
     {
         private readonly IProcessRunner _processRunner;
+
+        /// <summary>
+        /// Gets the identifying name of the package manager runtime engine.
+        /// </summary>
         public string Name => "Chocolatey";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChocolateyBootstrapper"/> class with a specified process execution runner.
+        /// </summary>
+        /// <param name="processRunner">The system process runner instance used to execute setup and detection commands.</param>
         public ChocolateyBootstrapper(IProcessRunner processRunner)
         {
             _processRunner = processRunner;
         }
 
+        /// <summary>
+        /// Checks whether the Chocolatey package manager is currently installed on the host system by running a version command 
+        /// or verifying its default path location in ProgramData.
+        /// </summary>
+        /// <returns><c>true</c> if Chocolatey is detected via command execution or its executable path exists; otherwise, <c>false</c>.</returns>
         public bool IsInstalled()
         {
             if (_processRunner.RunCommand("choco", "--version", false)) return true;
@@ -21,6 +37,12 @@ namespace WinHome.Services.Bootstrappers
             return File.Exists(chocoPath);
         }
 
+        /// <summary>
+        /// Installs the Chocolatey package manager by executing the official remote PowerShell deployment script.
+        /// Includes automated retry mechanisms for unexpected network resolution or execution errors.
+        /// </summary>
+        /// <param name="dryRun">If set to <c>true</c>, simulates the installation steps and logs output without modifying the host machine.</param>
+        /// <exception cref="Exception">Thrown if an unrecoverable failure occurs during execution or if the installation loop finishes with a non-zero exit code.</exception>
         public void Install(bool dryRun)
         {
             if (dryRun)

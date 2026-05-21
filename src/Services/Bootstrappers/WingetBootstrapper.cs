@@ -6,18 +6,36 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
 {
+    /// <summary>
+    /// Implements the bootstrapper logic to detect, verify, and install the Microsoft Winget package manager 
+    /// along with its required execution dependencies from GitHub releases.
+    /// </summary>
     public class WingetBootstrapper : IPackageManagerBootstrapper
     {
         private readonly IProcessRunner _processRunner;
         private readonly ILogger _logger;
+
+        /// <summary>
+        /// Gets the identifying name of the package manager runtime engine.
+        /// </summary>
         public string Name => "Winget";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WingetBootstrapper"/> class with a process runner and logging service.
+        /// </summary>
+        /// <param name="processRunner">The system process runner instance used to execute setup and detection commands.</param>
+        /// <param name="logger">The diagnostic logging service instance used to track setup progress.</param>
         public WingetBootstrapper(IProcessRunner processRunner, ILogger logger)
         {
             _processRunner = processRunner;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Checks whether the Winget package manager is currently installed on the host machine by checking the environment command lines 
+        /// or scanning for a local Appx execution alias file path.
+        /// </summary>
+        /// <returns><c>true</c> if Winget is accessible or its executable file resides in WindowsApps; otherwise, <c>false</c>.</returns>
         public bool IsInstalled()
         {
             if (_processRunner.RunCommand("winget", "--version", false)) return true;
@@ -29,6 +47,12 @@ namespace WinHome.Services.Bootstrappers
             return exists;
         }
 
+        /// <summary>
+        /// Installs the Winget package manager by dynamically pulling structural package bundles and their system architecture dependencies 
+        /// directly from the upstream GitHub api endpoints and running an Appx registration sequence.
+        /// </summary>
+        /// <param name="dryRun">If set to <c>true</c>, logs the remote package target retrieval info without writing changes to disk.</param>
+        /// <exception cref="Exception">Thrown if unrecoverable connection, extraction, or package registration deployment blocks fail.</exception>
         public void Install(bool dryRun)
         {
             if (dryRun)

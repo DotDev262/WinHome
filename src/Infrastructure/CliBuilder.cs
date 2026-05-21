@@ -6,8 +6,20 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Infrastructure;
 
+/// <summary>
+/// Provides a factory builder to compile, configure, and wire the POSIX-compliant 
+/// command-line interface (CLI) options, arguments, and subcommands for the WinHome engine.
+/// </summary>
 public static class CliBuilder
 {
+    /// <summary>
+    /// Constructs the root command parsing hierarchy, mapping core application flags and 
+    /// multi-tier subcommands into execution delegate pipelines.
+    /// </summary>
+    /// <param name="runAction">The asynchronous orchestration handler delegate executing primary system synchronization routines.</param>
+    /// <param name="generateAction">The asynchronous routine delegate generating configuration manifests from current machine states.</param>
+    /// <param name="stateAction">The asynchronous execution delegate managing system cache listing, backups, and structural state restoration passes.</param>
+    /// <returns>A fully configured <see cref="RootCommand"/> object tree mapped ready for execution engine invocation.</returns>
     public static RootCommand BuildRootCommand(
         Func<FileInfo, bool, string?, bool, bool, bool, bool, Task<int>> runAction,
         Func<FileInfo?, Task<int>> generateAction,

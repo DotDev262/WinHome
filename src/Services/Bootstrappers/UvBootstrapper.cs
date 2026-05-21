@@ -3,21 +3,41 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
 {
+    /// <summary>
+    /// Implements the bootstrapper logic to detect, verify, and install the uv Python package manager on the host system.
+    /// </summary>
     public class UvBootstrapper : IPackageManagerBootstrapper
     {
         private readonly IProcessRunner _processRunner;
+
+        /// <summary>
+        /// Gets the identifying name of the package manager runtime engine.
+        /// </summary>
         public string Name => "uv";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UvBootstrapper"/> class with a specified process execution runner.
+        /// </summary>
+        /// <param name="processRunner">The system process runner instance used to execute setup and detection commands.</param>
         public UvBootstrapper(IProcessRunner processRunner)
         {
             _processRunner = processRunner;
         }
 
+        /// <summary>
+        /// Checks whether the uv Python manager is currently installed on the host system by querying its version.
+        /// </summary>
+        /// <returns><c>true</c> if the uv executable responds successfully; otherwise, <c>false</c>.</returns>
         public bool IsInstalled()
         {
             return _processRunner.RunCommand("uv", "--version", false);
         }
 
+        /// <summary>
+        /// Installs the uv Python manager using the Scoop command-line installer shims layout.
+        /// </summary>
+        /// <param name="dryRun">If set to <c>true</c>, simulates the installation steps and logs output without modifying the system environment.</param>
+        /// <exception cref="Exception">Thrown if the installation process fails to start or exits with a non-zero exit code.</exception>
         public void Install(bool dryRun)
         {
             if (dryRun)

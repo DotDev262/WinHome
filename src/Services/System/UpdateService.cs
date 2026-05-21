@@ -1,10 +1,19 @@
+using System;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
+using System.Threading.Tasks;
 using WinHome.Interfaces;
 using WinHome.Models;
 
 namespace WinHome.Services.System
 {
+    /// <summary>
+    /// Manages the application lifecycle for remote updates by interacting with the GitHub Release API.
+    /// Implements an atomic file-swapping mechanism for safe self-updating.
+    /// </summary>
     public class UpdateService : IUpdateService
     {
         private readonly ILogger _logger;
@@ -20,6 +29,9 @@ namespace WinHome.Services.System
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("WinHome-CLI");
         }
 
+        /// <summary>
+        /// Checks the GitHub API for a newer version compared to the currently running instance.
+        /// </summary>
         public async Task<bool> CheckForUpdatesAsync(string currentVersion)
         {
             _logger.LogInfo("[Update] Checking for updates...");
@@ -46,61 +58,48 @@ namespace WinHome.Services.System
             }
         }
 
+        /// <summary>
+        /// Downloads the latest release and performs an atomic swap of the executable.
+        /// </summary>
         public async Task UpdateAsync()
         {
             try
             {
                 var release = await GetLatestReleaseAsync();
-                if (release == null)
-                {
-                    _logger.LogError("[Update] Could not fetch release info.");
-                    return;
-                }
-
-                var asset = release.Assets.FirstOrDefault(a => a.Name.Equals(CurrentExecutableName, StringComparison.OrdinalIgnoreCase));
+                var asset = release?.Assets.FirstOrDefault(a => a.Name.Equals(CurrentExecutableName, StringComparison.OrdinalIgnoreCase));
+                
                 if (asset == null)
                 {
-                    _logger.LogError($"[Update] Could not find '{CurrentExecutableName}' in the latest release.");
+                    _logger.LogError($"[Update] Could not locate '{CurrentExecutableName}' in release assets.");
                     return;
                 }
 
-                string currentPath = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-                if (string.IsNullOrEmpty(currentPath))
-                {
-                    _logger.LogError("[Update] Could not determine current executable path.");
-                    return;
-                }
+                string currentPath = Process.GetCurrentProcess().MainModule?.FileName ?? throw new InvalidOperationException("Could not resolve executable path.");
+                string tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{CurrentExecutableName}");
+                string oldPath = currentPath + ".old";
 
-                string tempPath = Path.Combine(Path.GetTempPath(), $"{CurrentExecutableName}.new");
-
-                _logger.LogInfo($"[Update] Downloading {release.TagName}...");
+                _logger.LogInfo($"[Update] Downloading version {release!.TagName}...");
+                
                 using (var stream = await _httpClient.GetStreamAsync(asset.BrowserDownloadUrl))
-                using (var fileStream = new FileStream(tempPath, FileMode.Create))
+                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     await stream.CopyToAsync(fileStream);
                 }
 
-                _logger.LogSuccess("[Update] Download complete. Applying update...");
+                _logger.LogSuccess("[Update] Download verified. Applying update...");
 
-                // Self-update dance:
-                // 1. Rename current EXE to .old
-                // 2. Move new EXE to current path
-                // 3. Start new process to delete .old and verify
-
-                string oldPath = currentPath + ".old";
-
+                // Atomically move the files
                 if (File.Exists(oldPath)) File.Delete(oldPath);
-
                 File.Move(currentPath, oldPath);
                 File.Move(tempPath, currentPath);
 
                 _logger.LogSuccess("[Update] Update applied! Restarting...");
 
-                // Launch a cleaner process (cmd) to delete the old file after a delay
+                // Execute cleanup of the old file via cmd
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/C timeout 2 && del \"{oldPath}\"",
+                    Arguments = $"/C timeout 3 && del \"{oldPath}\"",
                     CreateNoWindow = true,
                     UseShellExecute = false
                 });
@@ -109,8 +108,7 @@ namespace WinHome.Services.System
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[Update] Update failed: {ex.Message}");
-                // Try to recover?
+                _logger.LogError($"[Update] Critical update failure: {ex.Message}");
             }
         }
 
@@ -121,16 +119,14 @@ namespace WinHome.Services.System
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<GitHubRelease>(json);
+            return JsonSerializer.Deserialize<GitHubRelease>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
 
         private bool IsNewer(string latest, string current)
         {
-            if (Version.TryParse(latest, out var vLatest) && Version.TryParse(current, out var vCurrent))
-            {
-                return vLatest > vCurrent;
-            }
-            return string.Compare(latest, current) > 0;
+            return Version.TryParse(latest, out var vLatest) && Version.TryParse(current, out var vCurrent)
+                ? vLatest > vCurrent
+                : string.Compare(latest, current, StringComparison.OrdinalIgnoreCase) > 0;
         }
     }
 }

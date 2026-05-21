@@ -1,33 +1,43 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Win32.TaskScheduler;
 using System;
+using Microsoft.Win32.TaskScheduler;
 using System.Runtime.Versioning;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using WinHome.Interfaces;
 using WinHome.Models;
 
 namespace WinHome.Services.System
 {
+    /// <summary>
+    /// Provides administrative orchestration for the Windows Task Scheduler, enabling 
+    /// programmatic creation, registration, and management of automated background tasks 
+    /// via abstracted trigger and execution action configurations.
+    /// </summary>
     [SupportedOSPlatform("windows")]
     public class ScheduledTaskService : IScheduledTaskService
     {
-        private readonly ILogger<ScheduledTaskService> _logger;
+        private readonly ILogger _logger;
 
-        public ScheduledTaskService(ILogger<ScheduledTaskService> logger)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ScheduledTaskService"/> class with telemetry support.
+        /// </summary>
+        /// <param name="logger">The diagnostic log tracker capture utility routing system statuses or errors.</param>
+        public ScheduledTaskService(ILogger logger)
         {
             _logger = logger;
         }
 
+        /// <summary>
+        /// Registers or updates a persistent scheduled task definition in the root system task folder 
+        /// based on the provided configuration schema.
+        /// </summary>
+        /// <param name="task">The parsed task metadata container containing triggers, actions, and security context info.</param>
+        /// <param name="dryRun">A flag which, when <c>true</c>, simulates the operation via logs without modifying the Task Scheduler registry.</param>
         public void Apply(ScheduledTaskConfig task, bool dryRun)
         {
-            _logger.LogInformation($"Applying scheduled task '{task.Name}'...");
+            _logger.LogInfo($"[TaskScheduler] Initializing configuration for '{task.Name}'...");
 
             if (dryRun)
             {
-                _logger.LogInformation($"[DryRun] Would create or update scheduled task '{task.Name}'.");
+                _logger.LogInfo($"[DryRun] Would register scheduled task '{task.Path}' defined as '{task.Name}'.");
                 return;
             }
 
@@ -40,52 +50,43 @@ namespace WinHome.Services.System
 
                 foreach (var trigger in task.Triggers)
                 {
-                    var taskTrigger = CreateTrigger(trigger);
-                    taskDefinition.Triggers.Add(taskTrigger);
+                    taskDefinition.Triggers.Add(CreateTrigger(trigger));
                 }
 
                 foreach (var action in task.Actions)
                 {
-                    var taskAction = CreateAction(action);
-                    taskDefinition.Actions.Add(taskAction);
+                    taskDefinition.Actions.Add(CreateAction(action));
                 }
 
                 ts.RootFolder.RegisterTaskDefinition(task.Path, taskDefinition);
             }
 
-            _logger.LogInformation($"Scheduled task '{task.Name}' applied successfully.");
+            _logger.LogSuccess($"[TaskScheduler] Scheduled task '{task.Name}' registered successfully.");
         }
 
+        /// <summary>
+        /// Factory method that generates specific <see cref="Trigger"/> types based on requested temporal conditions 
+        /// and applies standard repetition and boundary constraints.
+        /// </summary>
+        /// <param name="triggerConfig">The configuration model specifying trigger types, timings, and recurrence rules.</param>
+        /// <returns>A concrete <see cref="Trigger"/> instance for the Windows Task Scheduler engine.</returns>
         private Trigger CreateTrigger(TriggerConfig triggerConfig)
         {
-            Trigger trigger;
-
-            switch (triggerConfig.Type.ToLower())
+            Trigger trigger = triggerConfig.Type.ToLower() switch
             {
-                case "daily":
-                    trigger = new DailyTrigger();
-                    break;
-                case "weekly":
-                    trigger = new WeeklyTrigger();
-                    break;
-                case "monthly":
-                    trigger = new MonthlyTrigger();
-                    break;
-                case "logon":
-                    trigger = new LogonTrigger();
-                    break;
-                default:
-                    throw new NotSupportedException($"Trigger type '{triggerConfig.Type}' is not supported.");
-            }
+                "daily" => new DailyTrigger(),
+                "weekly" => new WeeklyTrigger(),
+                "monthly" => new MonthlyTrigger(),
+                "logon" => new LogonTrigger(),
+                _ => throw new NotSupportedException($"Trigger type '{triggerConfig.Type}' is not supported.")
+            };
 
             trigger.Enabled = triggerConfig.Enabled;
-            if (triggerConfig.StartBoundary.HasValue)
-                trigger.StartBoundary = triggerConfig.StartBoundary.Value;
-            if (triggerConfig.EndBoundary.HasValue)
-                trigger.EndBoundary = triggerConfig.EndBoundary.Value;
-            if (triggerConfig.ExecutionTimeLimit.HasValue)
-                trigger.ExecutionTimeLimit = triggerConfig.ExecutionTimeLimit.Value;
+            if (triggerConfig.StartBoundary.HasValue) trigger.StartBoundary = triggerConfig.StartBoundary.Value;
+            if (triggerConfig.EndBoundary.HasValue) trigger.EndBoundary = triggerConfig.EndBoundary.Value;
+            if (triggerConfig.ExecutionTimeLimit.HasValue) trigger.ExecutionTimeLimit = triggerConfig.ExecutionTimeLimit.Value;
             trigger.Id = triggerConfig.Id;
+
             if (triggerConfig.Repetition != null)
             {
                 trigger.Repetition.Interval = triggerConfig.Repetition.Interval;
@@ -93,24 +94,21 @@ namespace WinHome.Services.System
                 trigger.Repetition.StopAtDurationEnd = triggerConfig.Repetition.StopAtDurationEnd;
             }
 
-
             return trigger;
         }
 
+        /// <summary>
+        /// Factory method mapping logical action configurations to native OS execution primitives.
+        /// </summary>
+        /// <param name="actionConfig">The configuration model defining the binary path, arguments, and context for the task action.</param>
+        /// <returns>A concrete <see cref="Microsoft.Win32.TaskScheduler.Action"/> instance.</returns>
         private Microsoft.Win32.TaskScheduler.Action CreateAction(ActionConfig actionConfig)
         {
-            Microsoft.Win32.TaskScheduler.Action action;
-
-            switch (actionConfig.Type.ToLower())
+            return actionConfig.Type.ToLower() switch
             {
-                case "exec":
-                    action = new ExecAction(actionConfig.Path, actionConfig.Arguments, actionConfig.WorkingDirectory);
-                    break;
-                default:
-                    throw new NotSupportedException($"Action type '{actionConfig.Type}' is not supported.");
-            }
-
-            return action;
+                "exec" => new ExecAction(actionConfig.Path, actionConfig.Arguments, actionConfig.WorkingDirectory),
+                _ => throw new NotSupportedException($"Action type '{actionConfig.Type}' is not supported.")
+            };
         }
     }
 }

@@ -4,13 +4,28 @@ using WinHome.Services.Bootstrappers;
 
 namespace WinHome.Services.Managers
 {
+    /// <summary>
+    /// Provides an implementation of the package manager service using Scoop to manage 
+    /// command-line utility configurations, installations, and software removals.
+    /// </summary>
     public class ScoopService : IPackageManager
     {
         private readonly IProcessRunner _processRunner;
         private readonly ILogger _logger;
         private readonly IRuntimeResolver _resolver;
+
+        /// <summary>
+        /// Gets the bootstrapper instance responsible for evaluating or deploying the underlying Scoop infrastructure.
+        /// </summary>
         public IPackageManagerBootstrapper Bootstrapper { get; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ScoopService"/> class with necessary sub-system dependencies.
+        /// </summary>
+        /// <param name="processRunner">The system process runner instance used to execute command-line operations.</param>
+        /// <param name="bootstrapper">The tool deployment bootstrapper specific to managing the Scoop runtime life-cycle.</param>
+        /// <param name="logger">The diagnostic logging service instance used to output status and event details.</param>
+        /// <param name="resolver">The environment runtime configuration resolver utilized to map application executable entry points.</param>
         public ScoopService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
         {
             _processRunner = processRunner;
@@ -24,11 +39,21 @@ namespace WinHome.Services.Managers
             return _resolver.Resolve("scoop");
         }
 
+        /// <summary>
+        /// Evaluates whether the underlying Scoop core command engine is ready and verified for use on the system.
+        /// </summary>
+        /// <returns><c>true</c> if the package manager engine is verified as installed; otherwise, <c>false</c>.</returns>
         public bool IsAvailable()
         {
             return Bootstrapper.IsInstalled();
         }
 
+        /// <summary>
+        /// Deploys a specified application package through the Scoop service command-line interface runtime.
+        /// </summary>
+        /// <param name="app">The configuration model data denoting the identification parameters of the targeted package to install.</param>
+        /// <param name="dryRun">If set to <c>true</c>, simulates the package download and deployment steps without writing environmental changes.</param>
+        /// <exception cref="Exception">Thrown if an unexpected operational failure occurs during process execution or if the bucket manifest is missing.</exception>
         public void Install(AppConfig app, bool dryRun)
         {
             string executable = GetScoopExecutable();
@@ -75,6 +100,12 @@ namespace WinHome.Services.Managers
             _logger.LogSuccess($"[Success] Installed {app.Id}");
         }
 
+        /// <summary>
+        /// Uninstalls a specified application package by executing the Scoop removal commands.
+        /// </summary>
+        /// <param name="appId">The unique string identity representing the tracking package descriptor to remove.</param>
+        /// <param name="dryRun">If set to <c>true</c>, performs an operational simulation check without making permanent host updates.</param>
+        /// <exception cref="Exception">Thrown if the application removal process errors out or fails execution routines.</exception>
         public void Uninstall(string appId, bool dryRun)
         {
             string executable = GetScoopExecutable();
@@ -94,6 +125,11 @@ namespace WinHome.Services.Managers
             _logger.LogSuccess($"[Success] Uninstalled {appId}");
         }
 
+        /// <summary>
+        /// Queries the local Scoop database manifest registry directory to verify if the tracking identifier package is actively present.
+        /// </summary>
+        /// <param name="appId">The target application string identity identifier to lookup.</param>
+        /// <returns><c>true</c> if the targeted local package match string exists within the generated manifest list output; otherwise, <c>false</c>.</returns>
         public bool IsInstalled(string appId)
         {
             string executable = GetScoopExecutable();

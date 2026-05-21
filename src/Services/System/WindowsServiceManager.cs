@@ -1,11 +1,16 @@
+using System;
+using System.ServiceProcess;
+using System.Runtime.Versioning;
+using Microsoft.Extensions.Logging;
 using WinHome.Interfaces;
 using WinHome.Models;
-using Microsoft.Extensions.Logging;
-using System.ServiceProcess; // Required for ServiceControllerStatus
-using System.Runtime.Versioning;
 
 namespace WinHome.Services.System
 {
+    /// <summary>
+    /// Manages Windows Service configurations including startup types and operational states.
+    /// Acts as an abstraction layer over the native Service Control Manager (SCM).
+    /// </summary>
     [SupportedOSPlatform("windows")]
     public class WindowsServiceManager : IWindowsServiceManager
     {
@@ -23,22 +28,25 @@ namespace WinHome.Services.System
             _serviceControllerWrapper = serviceControllerWrapper;
         }
 
+        /// <summary>
+        /// Applies the desired configuration to a service.
+        /// </summary>
         public void Apply(WindowsServiceConfig service, bool dryRun)
         {
-            _logger.LogInformation($"Processing service: {service.Name}");
+            _logger.LogInformation($"[Service] Processing service: {service.Name}");
 
             if (!_serviceControllerWrapper.ServiceExists(service.Name))
             {
-                _logger.LogWarning($"Service '{service.Name}' not found. Skipping.");
+                _logger.LogWarning($"[Service] Service '{service.Name}' not found on host. Skipping.");
                 return;
             }
 
-            if (service.StartupType != null)
+            if (!string.IsNullOrWhiteSpace(service.StartupType))
             {
                 SetStartupType(service.Name, service.StartupType, dryRun);
             }
 
-            if (service.State != null)
+            if (!string.IsNullOrWhiteSpace(service.State))
             {
                 SetServiceState(service.Name, service.State, dryRun);
             }
@@ -46,69 +54,52 @@ namespace WinHome.Services.System
 
         private void SetStartupType(string serviceName, string startupType, bool dryRun)
         {
-            _logger.LogInformation($"{(dryRun ? "[Dry Run] " : "")}Setting startup type of service '{serviceName}' to '{startupType}'");
-            // sc.exe config "serviceName" start= auto/demand/disabled
+            string prefix = dryRun ? "[Dry Run] " : "";
+            _logger.LogInformation($"{prefix}Setting startup type of '{serviceName}' to '{startupType}'");
+            
+            // Note: 'sc.exe' syntax is strictly 'start= auto' (note the required space)
             var args = $"config \"{serviceName}\" start= {startupType}";
+            
             if (!_processRunner.RunCommand("sc.exe", args, dryRun))
             {
-                _logger.LogError($"Failed to set startup type for service '{serviceName}'.");
+                _logger.LogError($"[Service] Failed to set startup type to '{startupType}' for service '{serviceName}'.");
             }
         }
 
         private void SetServiceState(string serviceName, string state, bool dryRun)
         {
             var currentStatus = _serviceControllerWrapper.GetServiceStatus(serviceName);
-            _logger.LogInformation($"Service '{serviceName}' current status: {currentStatus}");
+            
+            bool isRunning = currentStatus == ServiceControllerStatus.Running;
+            bool isStopped = currentStatus == ServiceControllerStatus.Stopped;
 
-            string action = "";
-            bool shouldAct = false;
+            string action = state.ToLower() switch
+            {
+                "running" when !isRunning => "start",
+                "stopped" when !isStopped => "stop",
+                _ => string.Empty
+            };
 
-            if (state.Equals("running", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(action))
             {
-                if (currentStatus != ServiceControllerStatus.Running)
-                {
-                    action = "start";
-                    shouldAct = true;
-                }
-            }
-            else if (state.Equals("stopped", StringComparison.OrdinalIgnoreCase))
-            {
-                if (currentStatus != ServiceControllerStatus.Stopped)
-                {
-                    action = "stop";
-                    shouldAct = true;
-                }
-            }
-            else
-            {
-                _logger.LogWarning($"Unknown service state '{state}' for service '{serviceName}'. Skipping state management.");
-                return;
-            }
-
-            if (!shouldAct)
-            {
-                _logger.LogInformation($"Service '{serviceName}' is already in the desired state ('{state}'). No action needed.");
+                _logger.LogInformation($"[Service] '{serviceName}' is already in the desired state ('{state}'). No action needed.");
                 return;
             }
 
             _logger.LogInformation($"{(dryRun ? "[Dry Run] " : "")}{action.Capitalize()}ing service '{serviceName}'...");
+
             if (!dryRun)
             {
                 try
                 {
-                    if (action == "start")
-                    {
-                        _serviceControllerWrapper.StartService(serviceName);
-                    }
-                    else if (action == "stop")
-                    {
-                        _serviceControllerWrapper.StopService(serviceName);
-                    }
-                    _logger.LogInformation($"Successfully {action}ed service '{serviceName}'.");
+                    if (action == "start") _serviceControllerWrapper.StartService(serviceName);
+                    else _serviceControllerWrapper.StopService(serviceName);
+
+                    _logger.LogSuccess($"[Service] Successfully {action}ed service '{serviceName}'.");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Failed to {action} service '{serviceName}': {ex.Message}");
+                    _logger.LogError($"[Service] Failed to {action} service '{serviceName}': {ex.Message}");
                 }
             }
         }
@@ -116,13 +107,7 @@ namespace WinHome.Services.System
 
     public static class StringExtensions
     {
-        public static string Capitalize(this string input)
-        {
-            if (string.IsNullOrEmpty(input))
-            {
-                return input;
-            }
-            return char.ToUpper(input[0]) + input.Substring(1);
-        }
+        public static string Capitalize(this string input) =>
+            string.IsNullOrEmpty(input) ? input : char.ToUpper(input[0]) + input.Substring(1);
     }
 }

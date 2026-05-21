@@ -6,17 +6,34 @@ using WinHome.Models.Plugins;
 
 namespace WinHome.Services.Plugins
 {
+    /// <summary>
+    /// Executes external extension scripts or programs within an isolated background process boundary, 
+    /// orchestrating JSON serialization exchanges over system standard streams.
+    /// </summary>
     public class PluginRunner : IPluginRunner
     {
         private readonly ILogger _logger;
         private readonly IRuntimeResolver _runtimeResolver;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PluginRunner"/> class with tracking diagnostic tools.
+        /// </summary>
+        /// <param name="logger">The pipeline configuration logging wrapper utilized to record system output stream messages.</param>
+        /// <param name="runtimeResolver">The cross-platform environmental binary configuration file location path mapper helper.</param>
         public PluginRunner(ILogger logger, IRuntimeResolver runtimeResolver)
         {
             _logger = logger;
             _runtimeResolver = runtimeResolver;
         }
 
+        /// <summary>
+        /// Spawns an external task lifecycle tracking worker process to pipe a structured command action argument schema block asynchronously.
+        /// </summary>
+        /// <param name="plugin">The structural context metadata properties model configuration profile mapping the script target type details.</param>
+        /// <param name="command">The specific operation directive or internal function name string the plugin script needs to run.</param>
+        /// <param name="args">An optional structured parameter payload containing variables passed directly into the process environment.</param>
+        /// <param name="context">An optional operational condition state flag object passed down alongside the command payload context mapping.</param>
+        /// <returns>A tracking asynchronous result task instance holding a deserialized <see cref="PluginResult"/> metadata record layer.</returns>
         public async Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context)
         {
             var (fileName, arguments) = BuildProcessStartInfo(plugin);
@@ -127,6 +144,12 @@ namespace WinHome.Services.Plugins
             }
         }
 
+        /// <summary>
+        /// Dynamically cross-references the matching plugin target category against native platforms to build appropriate launching runtime shell instruction path arguments.
+        /// </summary>
+        /// <param name="plugin">The plugin structural context metadata configuration configuration profile used to map targeting types.</param>
+        /// <returns>A value tuple layout structure where <c>FileName</c> maps to the engine binary host and <c>Arguments</c> holds the script source targeting parameters.</returns>
+        /// <exception cref="NotSupportedException">Thrown if an unrecognized plugin environment layout specification pattern type parameter is detected.</exception>
         public (string FileName, string Arguments) BuildProcessStartInfo(PluginManifest plugin)
         {
             string mainPath = Path.Combine(plugin.DirectoryPath, plugin.Main);

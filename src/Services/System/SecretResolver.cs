@@ -1,13 +1,22 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using WinHome.Interfaces;
 
 namespace WinHome.Services.System
 {
+    /// <summary>
+    /// Implements a sophisticated configuration resolver that scans objects for placeholder syntax 
+    /// (e.g., <c>{{ provider:key }}</c>) and dynamically substitutes them with secrets retrieved from 
+    /// environment variables, filesystem paths, or the Windows Credential Manager vault.
+    /// </summary>
     public class SecretResolver : ISecretResolver
     {
         private readonly ILogger _logger;
+        
         // Regex to match {{ provider:key }}
         // Captures: 1=provider, 2=key
         private static readonly Regex SecretPattern = new Regex(@"{{\s*(\w+):(.+?)\s*}}", RegexOptions.Compiled);
@@ -36,11 +45,20 @@ namespace WinHome.Services.System
             public string UserName;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SecretResolver"/> class.
+        /// </summary>
+        /// <param name="logger">The diagnostic logging utility used to record resolution warnings or failures.</param>
         public SecretResolver(ILogger logger)
         {
             _logger = logger;
         }
 
+        /// <summary>
+        /// Parses a string for secret placeholders and replaces them with resolved values.
+        /// </summary>
+        /// <param name="input">The raw string containing potential secret placeholders.</param>
+        /// <returns>The interpolated string with resolved values.</returns>
         public string Resolve(string input)
         {
             if (string.IsNullOrEmpty(input)) return input;
@@ -68,6 +86,10 @@ namespace WinHome.Services.System
             });
         }
 
+        /// <summary>
+        /// Recursively traverses an object (including Lists and Dictionaries) to resolve secret placeholders in string properties.
+        /// </summary>
+        /// <param name="obj">The target object to perform in-place resolution upon.</param>
         public void ResolveObject(object obj)
         {
             if (obj == null) return;
@@ -80,14 +102,8 @@ namespace WinHome.Services.System
                 for (int i = 0; i < list.Count; i++)
                 {
                     var item = list[i];
-                    if (item is string str)
-                    {
-                        list[i] = Resolve(str);
-                    }
-                    else if (item != null && !item.GetType().IsPrimitive)
-                    {
-                        ResolveObject(item);
-                    }
+                    if (item is string str) list[i] = Resolve(str);
+                    else if (item != null && !item.GetType().IsPrimitive) ResolveObject(item);
                 }
                 return;
             }
@@ -101,14 +117,8 @@ namespace WinHome.Services.System
                 foreach (var key in keys)
                 {
                     var value = dict[key];
-                    if (value is string strVal)
-                    {
-                        dict[key] = Resolve(strVal);
-                    }
-                    else if (value != null && !value.GetType().IsPrimitive)
-                    {
-                        ResolveObject(value);
-                    }
+                    if (value is string strVal) dict[key] = Resolve(strVal);
+                    else if (value != null && !value.GetType().IsPrimitive) ResolveObject(value);
                 }
                 return;
             }
@@ -116,18 +126,14 @@ namespace WinHome.Services.System
             // Handle Properties
             foreach (var prop in type.GetProperties())
             {
-                if (!prop.CanRead) continue;
-
-                // Skip indexers
-                if (prop.GetIndexParameters().Length > 0) continue;
+                if (!prop.CanRead || prop.GetIndexParameters().Length > 0) continue;
 
                 var value = prop.GetValue(obj);
                 if (value == null) continue;
 
                 if (prop.PropertyType == typeof(string) && prop.CanWrite)
                 {
-                    var resolved = Resolve((string)value);
-                    prop.SetValue(obj, resolved);
+                    prop.SetValue(obj, Resolve((string)value));
                 }
                 else if (!prop.PropertyType.IsPrimitive && !prop.PropertyType.IsEnum && prop.PropertyType != typeof(string))
                 {
@@ -155,18 +161,15 @@ namespace WinHome.Services.System
                 return string.Empty;
             }
 
-            // Try CRED_TYPE_GENERIC (1) first, then CRED_TYPE_DOMAIN_PASSWORD (2) used by cmdkey
-            uint[] credTypes = { 1, 2 };
+            uint[] credTypes = { 1, 2 }; // Generic (1) and Domain Password (2)
             foreach (var credType in credTypes)
             {
-                if (!CredRead(targetName, credType, 0, out IntPtr credPtr))
-                    continue;
+                if (!CredRead(targetName, credType, 0, out IntPtr credPtr)) continue;
 
                 try
                 {
                     var cred = Marshal.PtrToStructure<CREDENTIAL>(credPtr);
-                    if (cred.CredentialBlobSize == 0 || cred.CredentialBlob == IntPtr.Zero)
-                        return string.Empty;
+                    if (cred.CredentialBlobSize == 0 || cred.CredentialBlob == IntPtr.Zero) return string.Empty;
 
                     return Marshal.PtrToStringUni(cred.CredentialBlob, (int)(cred.CredentialBlobSize / sizeof(char)));
                 }
@@ -182,7 +185,6 @@ namespace WinHome.Services.System
 
         private string ResolveFile(string path)
         {
-            // Handle ~
             if (path.StartsWith("~"))
             {
                 path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), path.TrimStart('~', '/', '\\'));

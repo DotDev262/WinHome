@@ -1,0 +1,282 @@
+﻿
+===== IConfigValidator.cs =====
+namespace WinHome.Interfaces;
+
+public interface IConfigValidator
+{
+    (bool IsValid, List<string> Errors) Validate(string yamlText);
+}
+
+===== IDotfileService.cs =====
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IDotfileService
+    {
+        void Apply(DotfileConfig dotfile, bool dryRun);
+    }
+}
+
+===== IEnvironmentService.cs =====
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IEnvironmentService
+    {
+        void Apply(EnvVarConfig env, bool dryRun);
+        void RefreshPath();
+    }
+}
+
+===== IGeneratorService.cs =====
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IGeneratorService
+    {
+        Task<Configuration> GenerateAsync();
+    }
+}
+
+===== IGitService.cs =====
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IGitService
+    {
+        void Configure(GitConfig config, bool dryRun);
+    }
+}
+
+===== ILogger.cs =====
+namespace WinHome.Interfaces
+{
+    public enum LogLevel
+    {
+        Info,
+        Success,
+        Warning,
+        Error
+    }
+
+    public interface ILogger
+    {
+        void Log(string message, LogLevel level);
+        void LogInfo(string message);
+        void LogSuccess(string message);
+        void LogWarning(string message);
+        void LogError(string message);
+    }
+}
+
+===== IPackageManager.cs =====
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IPackageManager
+    {
+        IPackageManagerBootstrapper Bootstrapper { get; }
+        bool IsAvailable();
+        void Install(AppConfig app, bool dryRun);
+        void Uninstall(string appId, bool dryRun);
+        bool IsInstalled(string appId);
+    }
+}
+
+===== IPackageManagerBootstrapper.cs =====
+namespace WinHome.Interfaces
+{
+    public interface IPackageManagerBootstrapper
+    {
+        string Name { get; }
+        bool IsInstalled();
+        void Install(bool dryRun);
+    }
+}
+
+===== IPluginManager.cs =====
+using WinHome.Models.Plugins;
+
+namespace WinHome.Interfaces
+{
+    public interface IPluginManager
+    {
+        IEnumerable<PluginManifest> DiscoverPlugins();
+        Task EnsureRuntimeAsync(PluginManifest plugin);
+    }
+}
+
+===== IPluginRunner.cs =====
+using WinHome.Models.Plugins;
+
+namespace WinHome.Interfaces
+{
+    public interface IPluginRunner
+    {
+        Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context);
+    }
+}
+
+===== IProcessRunner.cs =====
+namespace WinHome.Interfaces
+{
+    public interface IProcessRunner
+    {
+        bool RunCommand(string fileName, string arguments, bool dryRun, Action<string>? onOutput = null);
+        string RunCommandWithOutput(string fileName, string args);
+        string RunCommandWithOutput(string fileName, string args, string? standardInput);
+        string RunAndCapture(string fileName, string arguments);
+    }
+}
+
+===== IRegistryKey.cs =====
+using Microsoft.Win32;
+
+namespace WinHome.Interfaces
+{
+    public interface IRegistryKey : IDisposable
+    {
+        void SetValue(string name, object value, RegistryValueKind kind);
+        object? GetValue(string name);
+        void DeleteValue(string name);
+        IRegistryKey? OpenSubKey(string name, bool writable);
+        IRegistryKey? CreateSubKey(string name, bool writable);
+    }
+}
+
+===== IRegistryService.cs =====
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IRegistryService
+    {
+        void Apply(RegistryTweak tweak, bool dryRun);
+        void Revert(string path, string name, bool dryRun);
+        object? Read(string path, string name);
+    }
+}
+
+===== IRegistryWrapper.cs =====
+using Microsoft.Win32;
+
+namespace WinHome.Interfaces
+{
+    public interface IRegistryWrapper
+    {
+        IRegistryKey GetRootKey(string fullPath, out string subKey);
+    }
+}
+
+===== IRuntimeResolver.cs =====
+namespace WinHome.Interfaces
+{
+    public interface IRuntimeResolver
+    {
+        string Resolve(string runtimeName);
+    }
+}
+
+===== IScheduledTaskService.cs =====
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IScheduledTaskService
+    {
+        void Apply(ScheduledTaskConfig task, bool dryRun);
+    }
+}
+
+===== ISecretResolver.cs =====
+namespace WinHome.Interfaces
+{
+    public interface ISecretResolver
+    {
+        string Resolve(string input);
+        void ResolveObject(object obj);
+    }
+}
+
+===== IServiceControllerWrapper.cs =====
+using System.ServiceProcess;
+
+namespace WinHome.Interfaces
+{
+    public interface IServiceControllerWrapper
+    {
+        bool ServiceExists(string serviceName);
+        ServiceControllerStatus GetServiceStatus(string serviceName);
+        void StartService(string serviceName);
+        void StopService(string serviceName);
+    }
+}
+
+===== IStateService.cs =====
+using System.Collections.Generic;
+
+namespace WinHome.Interfaces
+{
+    public interface IStateService
+    {
+        HashSet<string> LoadState();
+        void SaveState(HashSet<string> state);
+        void MarkAsApplied(string item);
+        void BackupState(string backupPath);
+        void RestoreState(string backupPath);
+        IEnumerable<string> ListItems();
+    }
+}
+
+===== ISystemSettingsService.cs =====
+using WinHome.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace WinHome.Interfaces
+{
+    public interface ISystemSettingsService
+    {
+        Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings);
+        Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun);
+        Task<Dictionary<string, object>> GetCapturedSettingsAsync();
+        string? GetFriendlyName(string registryPath, string registryName);
+    }
+}
+
+===== IUpdateService.cs =====
+namespace WinHome.Interfaces
+{
+    public interface IUpdateService
+    {
+        Task<bool> CheckForUpdatesAsync(string currentVersion);
+        Task UpdateAsync();
+    }
+}
+
+===== IWindowsServiceManager.cs =====
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IWindowsServiceManager
+    {
+        void Apply(WindowsServiceConfig service, bool dryRun);
+    }
+}
+
+===== IWslService.cs =====
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IWslService
+    {
+        void Configure(WslConfig config, bool dryRun);
+    }
+}

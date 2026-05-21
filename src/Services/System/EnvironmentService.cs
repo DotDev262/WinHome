@@ -4,18 +4,35 @@ using WinHome.Models;
 
 namespace WinHome.Services.System
 {
+    /// <summary>
+    /// Provides concrete operations to query, mutate, append, and refresh Windows environment variables 
+    /// explicitly bounded within specific user and session execution scopes.
+    /// </summary>
     [SupportedOSPlatform("windows")]
     public class EnvironmentService : IEnvironmentService
     {
         private readonly ILogger _logger;
-        // We strictly target the USER scope. No Admin needed.
+        
+        /// <summary>
+        /// Specifies the targeted scope for environment changes. Strictly isolates targets to the User hive 
+        /// to ensure execution safety without requiring elevated administrative privileges.
+        /// </summary>
         private const EnvironmentVariableTarget Target = EnvironmentVariableTarget.User;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EnvironmentService"/> class with operational logger dependencies.
+        /// </summary>
+        /// <param name="logger">The diagnostic log tracker capture utility routing operations and errors.</param>
         public EnvironmentService(ILogger logger)
         {
             _logger = logger;
         }
 
+        /// <summary>
+        /// Evaluates and applies structural state changes to a targeted environment variable based on configuration directives.
+        /// </summary>
+        /// <param name="env">The configuration data context specifying the targeted variable name, mutation payload value, and operation type.</param>
+        /// <param name="dryRun">A conditional execution safety modifier flag which, when <c>true</c>, exits early and avoids mutating system registry states.</param>
         public void Apply(EnvVarConfig env, bool dryRun)
         {
             if (string.IsNullOrEmpty(env.Variable)) return;
@@ -24,14 +41,14 @@ namespace WinHome.Services.System
             string newValue = env.Value;
 
             // Handle Path Appending
-            if (env.Action.ToLower() == "append")
+            if (env.Action.Equals("append", StringComparison.OrdinalIgnoreCase))
             {
                 var parts = currentValue.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
 
-                // Idempotency: Don't add if already there
+                // Idempotency check: Skip configuration if the value is already present in the collection
                 if (parts.Contains(newValue, StringComparer.OrdinalIgnoreCase))
                 {
-                    _logger.LogInfo($"[Env] Skipped: '{newValue}' already in {env.Variable}");
+                    _logger.LogSuccess($"[Env] Skipped: '{newValue}' already in {env.Variable}");
                     return;
                 }
 
@@ -39,17 +56,17 @@ namespace WinHome.Services.System
             }
             else
             {
-                // Handle Set (Overwrite)
+                // Handle Set (Overwrite verification)
                 if (currentValue == newValue)
                 {
-                    _logger.LogInfo($"[Env] Skipped: {env.Variable} is already correct.");
+                    _logger.LogSuccess($"[Env] Skipped: {env.Variable} is already correct.");
                     return;
                 }
             }
 
             if (dryRun)
             {
-                _logger.LogWarning($"[DryRun] Would set User Env Var '{env.Variable}' to '{newValue}'");
+                _logger.LogError($"[DryRun] Would set User Env Var '{env.Variable}' to '{newValue}'");
                 return;
             }
 
@@ -64,6 +81,10 @@ namespace WinHome.Services.System
             }
         }
 
+        /// <summary>
+        /// Re-reads and synchronizes the active runtime process execution PATH string collection by aggregating 
+        /// and distinct-filtering local Machine and user registry configuration settings.
+        /// </summary>
         public void RefreshPath()
         {
             try
@@ -73,19 +94,19 @@ namespace WinHome.Services.System
                 // Reload User PATH
                 string userPath = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? string.Empty;
 
-                // Merge them
+                // Merge collections with an identity distinct-filter mapping
                 var combinedPath = string.Join(";",
                     machinePath.Split(';', StringSplitOptions.RemoveEmptyEntries)
                     .Concat(userPath.Split(';', StringSplitOptions.RemoveEmptyEntries))
                     .Distinct(StringComparer.OrdinalIgnoreCase));
 
-                // Update CURRENT process environment
+                // Update CURRENT process environment block mapping
                 Environment.SetEnvironmentVariable("Path", combinedPath, EnvironmentVariableTarget.Process);
-                _logger.LogInfo("[Env] Refreshed process PATH from registry.");
+                _logger.LogSuccess("[Env] Refreshed process PATH from registry.");
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"[Env] Failed to refresh process PATH: {ex.Message}");
+                _logger.LogError($"[Env] Failed to refresh process PATH: {ex.Message}");
             }
         }
     }

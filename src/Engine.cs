@@ -4,6 +4,10 @@ using WinHome.Models;
 
 namespace WinHome
 {
+    /// <summary>
+    /// Serves as the central orchestration driver for the WinHome configuration utility, 
+    /// managing lifecycle state reconciliation, parallel dependency processing, and component execution.
+    /// </summary>
     public class Engine
     {
         // Dependencies are now Interfaces (Mockable)
@@ -22,6 +26,23 @@ namespace WinHome
         private readonly IStateService _stateService;
         private readonly IRuntimeResolver _runtimeResolver;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Engine"/> class with completely decoupled sub-service interface engines.
+        /// </summary>
+        /// <param name="managers">A lookup collection of available platform-native and extension package manager adapter implementations.</param>
+        /// <param name="dotfiles">The service layer managing folder deployment and tracking symbolic link operations.</param>
+        /// <param name="registry">The hardware configuration state abstraction provider for altering and reverting system registry entries.</param>
+        /// <param name="systemSettings">The engine processing user settings values and translating them into underlying functional tweaks.</param>
+        /// <param name="wsl">The subsystem deployment layer handling Linux instance initialization and updates.</param>
+        /// <param name="git">The configuration utility mapping automated global or identity repository states.</param>
+        /// <param name="env">The process workspace execution environment helper used to manage profile or path settings variables.</param>
+        /// <param name="serviceManager">The management utility tracking native Windows background process configurations.</param>
+        /// <param name="scheduledTaskService">The automation tool mapping triggers and timed tracking scripts to the Windows Task Scheduler.</param>
+        /// <param name="pluginManager">The extension subsystem coordinator used for finding script modules on disk.</param>
+        /// <param name="pluginRunner">The process host execution wrapper handling stream messaging with third-party extensions.</param>
+        /// <param name="stateService">The structural persistent state caching layer recording applied system states between run operations.</param>
+        /// <param name="logger">The global diagnostic message logging broker tracking system operational history.</param>
+        /// <param name="runtimeResolver">The platform environment file layout variable translation tool tracking active execution setups.</param>
         public Engine(
             Dictionary<string, IPackageManager> managers,
             IDotfileService dotfiles,
@@ -54,6 +75,15 @@ namespace WinHome
             _runtimeResolver = runtimeResolver;
         }
 
+        /// <summary>
+        /// Executes a full, asynchronous system configuration evaluation and synchronization pass matching the incoming structural specifications.
+        /// </summary>
+        /// <param name="config">The parsed input configuration profile specifying the target system state layout.</param>
+        /// <param name="dryRun">If set to <c>true</c>, simulates execution steps without making any permanent changes to the system environment or state caches.</param>
+        /// <param name="profileName">An optional parameter tracking a designated subset profile name string to selectively activate.</param>
+        /// <param name="debug">If set to <c>true</c>, flags diagnostic message details to downstream log layers.</param>
+        /// <param name="diff">If set to <c>true</c>, shortcuts standard execution flows to compare states and output discrepancies.</param>
+        /// <returns>A tracking placeholder <see cref="Task"/> representing the asynchronous orchestration execution sequence.</returns>
         public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false)
         {
             _logger.LogInfo($"--- WinHome v{config.Version} ---");
@@ -320,6 +350,11 @@ namespace WinHome
             }
         }
 
+        /// <summary>
+        /// Reads, aggregates, and outputs a descriptive delta comparison summary highlighting state variance between cached historical runs and the target settings structure.
+        /// </summary>
+        /// <param name="config">The parsed input configuration profile specifying the requested state layout.</param>
+        /// <returns>A tracking asynchronous processing execution placeholder <see cref="Task"/> instance.</returns>
         public async Task PrintDiffAsync(Configuration config)
         {
             _logger.LogInfo("\n--- State Diff ---");

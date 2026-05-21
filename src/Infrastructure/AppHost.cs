@@ -10,8 +10,18 @@ using WinHome.Services.System;
 
 namespace WinHome.Infrastructure;
 
+/// <summary>
+/// Provides global bootstrapping management, service collection registrations, and generic host construction 
+/// for the WinHome engine subsystem layers.
+/// </summary>
 public static class AppHost
 {
+    /// <summary>
+    /// Builds and configures an <see cref="IHost"/> instance with standard configurations, evaluating CLI input flags 
+    /// early to derive transient pipeline routing behaviors.
+    /// </summary>
+    /// <param name="args">The sequence of raw string values parsed directly from the shell invocation context.</param>
+    /// <returns>A fully materialized, unstarted <see cref="IHost"/> instance containing resolving configuration environments.</returns>
     public static IHost CreateHost(string[] args)
     {
         // Check for --json flag in args to force JSON logging early
@@ -25,6 +35,13 @@ public static class AppHost
             .Build();
     }
 
+    /// <summary>
+    /// Declares, instantiates, and binds specialized domain implementation signatures against the 
+    /// application's central inversion of control (IoC) collection registry container.
+    /// </summary>
+    /// <param name="configuration">The root application operational property matrix provider reading from disks or configuration vectors.</param>
+    /// <param name="services">The active service broker target collection container instance where dependency bounds are injected.</param>
+    /// <param name="isJsonForce">A conditional command modifier flag indicating if logging metrics must override to JSON structures.</param>
     public static void ConfigureServices(IConfiguration configuration, IServiceCollection services, bool isJsonForce = false)
     {
         var isJsonConfig = configuration.GetValue<bool>("json");

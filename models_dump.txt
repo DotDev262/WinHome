@@ -1,0 +1,514 @@
+﻿
+===== ActionConfig.cs =====
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class ActionConfig
+    {
+        [YamlMember(Alias = "type")]
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "path")]
+        [JsonPropertyName("path")]
+        public string Path { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "arguments")]
+        [JsonPropertyName("arguments")]
+        public string? Arguments { get; set; }
+
+        [YamlMember(Alias = "workingDirectory")]
+        [JsonPropertyName("workingDirectory")]
+        public string? WorkingDirectory { get; set; }
+    }
+}
+
+===== AppConfig.cs =====
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class AppConfig
+    {
+        [YamlMember(Alias = "id")]
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "source")]
+        [JsonPropertyName("source")]
+        public string? Source { get; set; }
+
+        [YamlMember(Alias = "manager")]
+        [JsonPropertyName("manager")]
+        public string Manager { get; set; } = "winget";
+
+        [YamlMember(Alias = "version")]
+        [JsonPropertyName("version")]
+        public string? Version { get; set; }
+
+        [YamlMember(Alias = "params")]
+        [JsonPropertyName("params")]
+        public string? Params { get; set; }
+    }
+}
+
+===== Configuration.cs =====
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using WinHome.Models;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class Configuration
+    {
+        [YamlMember(Alias = "version")]
+        [JsonPropertyName("version")]
+        public string Version { get; set; } = "1.0";
+
+        [YamlMember(Alias = "apps")]
+        [JsonPropertyName("apps")]
+        public List<AppConfig> Apps { get; set; } = new();
+
+        [YamlMember(Alias = "registryTweaks")]
+        [JsonPropertyName("registryTweaks")]
+        public List<RegistryTweak> RegistryTweaks { get; set; } = new();
+
+        [YamlMember(Alias = "dotfiles")]
+        [JsonPropertyName("dotfiles")]
+        public List<DotfileConfig> Dotfiles { get; set; } = new();
+
+        [YamlMember(Alias = "systemSettings")]
+        [JsonPropertyName("systemSettings")]
+        public Dictionary<string, object> SystemSettings { get; set; } = new();
+
+        [YamlMember(Alias = "wsl")]
+        [JsonPropertyName("wsl")]
+        public WslConfig? Wsl { get; set; }
+
+        [YamlMember(Alias = "git")]
+        [JsonPropertyName("git")]
+        public GitConfig? Git { get; set; }
+
+        [YamlMember(Alias = "profiles")]
+        [JsonPropertyName("profiles")]
+        public Dictionary<string, ProfileConfig> Profiles { get; set; } = new();
+
+        [YamlMember(Alias = "envVars")]
+        [JsonPropertyName("envVars")]
+        public List<EnvVarConfig> EnvVars { get; set; } = new();
+
+        [YamlMember(Alias = "services")]
+        [JsonPropertyName("services")]
+        public List<WindowsServiceConfig> Services { get; set; } = new();
+
+        [YamlMember(Alias = "scheduledTasks")]
+        [JsonPropertyName("scheduledTasks")]
+        public List<ScheduledTaskConfig> ScheduledTasks { get; set; } = new();
+
+        [YamlMember(Alias = "extensions")]
+        [JsonPropertyName("extensions")]
+        public Dictionary<string, object> Extensions { get; set; } = new();
+
+        [YamlMember(Alias = "vim")]
+        [JsonPropertyName("vim")]
+        public object? Vim { get; set; }
+
+        [YamlMember(Alias = "vscode")]
+        [JsonPropertyName("vscode")]
+        public object? Vscode { get; set; }
+
+        [YamlMember(Alias = "obsidian")]
+        [JsonPropertyName("obsidian")]
+        public object? Obsidian { get; set; }
+
+        [YamlMember(Alias = "ohmyposh")]
+        [JsonPropertyName("ohmyposh")]
+        public object? Ohmyposh { get; set; }
+    }
+}
+
+===== DotfileConfig.cs =====
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class DotfileConfig
+    {
+        [YamlMember(Alias = "src")]
+        [JsonPropertyName("src")]
+        public string Src { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "target")]
+        [JsonPropertyName("target")]
+        public string Target { get; set; } = string.Empty;
+    }
+}
+
+===== EnvVarConfig.cs =====
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class EnvVarConfig
+    {
+        [YamlMember(Alias = "variable")]
+        [JsonPropertyName("variable")]
+        public string Variable { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "value")]
+        [JsonPropertyName("value")]
+        public string Value { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "action")]
+        [JsonPropertyName("action")]
+        public string Action { get; set; } = "set";
+    }
+}
+
+===== GitConfig.cs =====
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class GitConfig
+    {
+        // Convenience properties (Common stuff)
+        [YamlMember(Alias = "userName")]
+        [JsonPropertyName("userName")]
+        public string? UserName { get; set; }
+
+        [YamlMember(Alias = "userEmail")]
+        [JsonPropertyName("userEmail")]
+        public string? UserEmail { get; set; }
+
+        [YamlMember(Alias = "signingKey")]
+        [JsonPropertyName("signingKey")]
+        public string? SigningKey { get; set; }
+
+        [YamlMember(Alias = "commitGpgSign")]
+        [JsonPropertyName("commitGpgSign")]
+        public bool? CommitGpgSign { get; set; }
+
+        // NEW: Generic Dictionary for EVERYTHING else
+        // Maps "core.editor" -> "code --wait"
+        [YamlMember(Alias = "settings")]
+        [JsonPropertyName("settings")]
+        public Dictionary<string, string> Settings { get; set; } = new();
+    }
+}
+
+===== GitHubRelease.cs =====
+using System.Text.Json.Serialization;
+
+namespace WinHome.Models
+{
+    public class GitHubRelease
+    {
+        [JsonPropertyName("tag_name")]
+        public string TagName { get; set; } = string.Empty;
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("assets")]
+        public List<GitHubAsset> Assets { get; set; } = new();
+
+        [JsonPropertyName("body")]
+        public string Body { get; set; } = string.Empty;
+    }
+
+    public class GitHubAsset
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("browser_download_url")]
+        public string BrowserDownloadUrl { get; set; } = string.Empty;
+    }
+}
+
+===== ProfileConfig.cs =====
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class ProfileConfig
+    {
+        [YamlMember(Alias = "git")]
+        [JsonPropertyName("git")]
+        public GitConfig? Git { get; set; }
+
+        // You can add 'Apps' or 'SystemSettings' here later if you want profile-specific apps
+    }
+}
+
+===== RegistryTweak.cs =====
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class RegistryTweak
+    {
+        [YamlMember(Alias = "path")]
+        [JsonPropertyName("path")]
+        public string Path { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "name")]
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "value")]
+        [JsonPropertyName("value")]
+        public object Value { get; set; } = new();
+
+        [YamlMember(Alias = "type")]
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "string";
+    }
+}
+
+===== RepetitionPatternConfig.cs =====
+using System;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class RepetitionPatternConfig
+    {
+        [YamlMember(Alias = "interval")]
+        [JsonPropertyName("interval")]
+        public TimeSpan Interval { get; set; }
+
+        [YamlMember(Alias = "duration")]
+        [JsonPropertyName("duration")]
+        public TimeSpan Duration { get; set; }
+
+        [YamlMember(Alias = "stopAtDurationEnd")]
+        [JsonPropertyName("stopAtDurationEnd")]
+        public bool StopAtDurationEnd { get; set; }
+    }
+}
+
+===== ScheduledTaskConfig.cs =====
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class ScheduledTaskConfig
+    {
+        [YamlMember(Alias = "name")]
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "path")]
+        [JsonPropertyName("path")]
+        public string Path { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "description")]
+        [JsonPropertyName("description")]
+        public string? Description { get; set; }
+
+        [YamlMember(Alias = "author")]
+        [JsonPropertyName("author")]
+        public string? Author { get; set; }
+
+        [YamlMember(Alias = "triggers")]
+        [JsonPropertyName("triggers")]
+        public List<TriggerConfig> Triggers { get; set; } = new();
+
+        [YamlMember(Alias = "actions")]
+        [JsonPropertyName("actions")]
+        public List<ActionConfig> Actions { get; set; } = new();
+    }
+}
+
+===== TriggerConfig.cs =====
+using System;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class TriggerConfig
+    {
+        [YamlMember(Alias = "type")]
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "enabled")]
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = true;
+
+        [YamlMember(Alias = "startBoundary")]
+        [JsonPropertyName("startBoundary")]
+        public DateTime? StartBoundary { get; set; }
+
+        [YamlMember(Alias = "endBoundary")]
+        [JsonPropertyName("endBoundary")]
+        public DateTime? EndBoundary { get; set; }
+
+        [YamlMember(Alias = "executionTimeLimit")]
+        [JsonPropertyName("executionTimeLimit")]
+        public TimeSpan? ExecutionTimeLimit { get; set; }
+
+        [YamlMember(Alias = "id")]
+        [JsonPropertyName("id")]
+        public string? Id { get; set; }
+
+        [YamlMember(Alias = "repetition")]
+        [JsonPropertyName("repetition")]
+        public RepetitionPatternConfig? Repetition { get; set; }
+
+        [YamlMember(Alias = "delay")]
+        [JsonPropertyName("delay")]
+        public TimeSpan? Delay { get; set; }
+    }
+}
+
+===== WindowsServiceConfig.cs =====
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class WindowsServiceConfig
+    {
+        [YamlMember(Alias = "name")]
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "state")]
+        [JsonPropertyName("state")]
+        public string State { get; set; } = "running"; // running, stopped
+
+        [YamlMember(Alias = "startup")]
+        [JsonPropertyName("startup")]
+        public string? StartupType { get; set; } // automatic, manual, disabled
+    }
+}
+
+===== WslConfig.cs =====
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class WslConfig
+    {
+        [YamlMember(Alias = "defaultVersion")]
+        [JsonPropertyName("defaultVersion")]
+        public int DefaultVersion { get; set; } = 2;
+
+        [YamlMember(Alias = "defaultDistro")]
+        [JsonPropertyName("defaultDistro")]
+        public string? DefaultDistro { get; set; }
+
+        [YamlMember(Alias = "update")]
+        [JsonPropertyName("update")]
+        public bool Update { get; set; } = false;
+
+
+        [YamlMember(Alias = "distros")]
+        [JsonPropertyName("distros")]
+        public List<WslDistroConfig> Distros { get; set; } = new();
+    }
+}
+
+===== WslDistroConfig.cs =====
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class WslDistroConfig
+    {
+        [YamlMember(Alias = "name")]
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "setupScript")]
+        [JsonPropertyName("setupScript")]
+        public string? SetupScript { get; set; }
+    }
+}
+
+===== PluginManifest.cs =====
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models.Plugins
+{
+    public class PluginManifest
+    {
+        [YamlMember(Alias = "name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "version")]
+        public string Version { get; set; } = "1.0.0";
+
+        [YamlMember(Alias = "type")]
+        public string Type { get; set; } = "executable"; // python, typescript, executable
+
+        [YamlMember(Alias = "main")]
+        public string Main { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "capabilities")]
+        public List<string> Capabilities { get; set; } = new();
+
+        // Internal path set during discovery
+        public string DirectoryPath { get; set; } = string.Empty;
+    }
+}
+
+===== PluginMessages.cs =====
+using System.Text.Json.Serialization;
+
+namespace WinHome.Models.Plugins
+{
+    public class PluginRequest
+    {
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; } = Guid.NewGuid().ToString();
+
+        [JsonPropertyName("command")]
+        public string Command { get; set; } = string.Empty;
+
+        [JsonPropertyName("args")]
+        public object? Args { get; set; }
+
+        [JsonPropertyName("context")]
+        public object? Context { get; set; }
+    }
+
+    public class PluginResult
+    {
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; } = string.Empty;
+
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("changed")]
+        public bool Changed { get; set; }
+
+        [JsonPropertyName("error")]
+        public string? Error { get; set; }
+
+        [JsonPropertyName("data")]
+        public object? Data { get; set; }
+    }
+}

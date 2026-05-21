@@ -3,16 +3,32 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
 {
+    /// <summary>
+    /// Implements the bootstrapper logic to detect, verify, and install the Scoop package manager on the host system.
+    /// </summary>
     public class ScoopBootstrapper : IPackageManagerBootstrapper
     {
         private readonly IProcessRunner _processRunner;
+
+        /// <summary>
+        /// Gets the identifying name of the package manager runtime engine.
+        /// </summary>
         public string Name => "Scoop";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ScoopBootstrapper"/> class with a specified process execution runner.
+        /// </summary>
+        /// <param name="processRunner">The system process runner instance used to execute setup and detection commands.</param>
         public ScoopBootstrapper(IProcessRunner processRunner)
         {
             _processRunner = processRunner;
         }
 
+        /// <summary>
+        /// Checks whether the Scoop package manager is currently installed on the host system by executing a version check 
+        /// or falling back to searching default local and global installation directories.
+        /// </summary>
+        /// <returns><c>true</c> if Scoop is detected via command execution or any fallback path location exists; otherwise, <c>false</c>.</returns>
         public bool IsInstalled()
         {
             if (_processRunner.RunCommand("scoop", "--version", false)) return true;
@@ -33,6 +49,12 @@ namespace WinHome.Services.Bootstrappers
             return false;
         }
 
+        /// <summary>
+        /// Installs the Scoop package manager by adjusting the current user script execution policy and deploying via the official script.
+        /// Includes automated recursive retry logic for transient network name resolution failures.
+        /// </summary>
+        /// <param name="dryRun">If set to <c>true</c>, simulates the installation steps and logs output without modifying the system environment.</param>
+        /// <exception cref="Exception">Thrown if the process fails to start or if the installation pipeline exits with errors.</exception>
         public void Install(bool dryRun)
         {
             if (dryRun)

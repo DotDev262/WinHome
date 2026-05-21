@@ -1,0 +1,5418 @@
+﻿
+
+===== D:\DESKTOP\open source7\WinHome\src\Engine.cs =====
+
+using System.Text.Json;
+using WinHome.Interfaces;
+using WinHome.Models;
+
+namespace WinHome
+{
+    public class Engine
+    {
+        // Dependencies are now Interfaces (Mockable)
+        private readonly Dictionary<string, IPackageManager> _managers;
+        private readonly IDotfileService _dotfiles;
+        private readonly IRegistryService _registry;
+        private readonly ISystemSettingsService _systemSettings;
+        private readonly IWslService _wsl;
+        private readonly IGitService _git;
+        private readonly IEnvironmentService _env;
+        private readonly IWindowsServiceManager _serviceManager;
+        private readonly IScheduledTaskService _scheduledTaskService;
+        private readonly ILogger _logger;
+        private readonly IPluginManager _pluginManager;
+        private readonly IPluginRunner _pluginRunner;
+        private readonly IStateService _stateService;
+        private readonly IRuntimeResolver _runtimeResolver;
+
+        public Engine(
+            Dictionary<string, IPackageManager> managers,
+            IDotfileService dotfiles,
+            IRegistryService registry,
+            ISystemSettingsService systemSettings,
+            IWslService wsl,
+            IGitService git,
+            IEnvironmentService env,
+            IWindowsServiceManager serviceManager,
+            IScheduledTaskService scheduledTaskService,
+            IPluginManager pluginManager,
+            IPluginRunner pluginRunner,
+            IStateService stateService,
+            ILogger logger,
+            IRuntimeResolver runtimeResolver)
+        {
+            _managers = managers;
+            _dotfiles = dotfiles;
+            _registry = registry;
+            _systemSettings = systemSettings;
+            _wsl = wsl;
+            _git = git;
+            _env = env;
+            _serviceManager = serviceManager;
+            _scheduledTaskService = scheduledTaskService;
+            _pluginManager = pluginManager;
+            _pluginRunner = pluginRunner;
+            _stateService = stateService;
+            _logger = logger;
+            _runtimeResolver = runtimeResolver;
+        }
+
+        public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false)
+        {
+            _logger.LogInfo($"--- WinHome v{config.Version} ---");
+
+            // Load Plugins
+            var plugins = _pluginManager.DiscoverPlugins().ToList();
+            var loggedPlugins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var plugin in plugins)
+            {
+                if (plugin.Capabilities.Contains("package_manager"))
+                {
+                    // Register the plugin as a package manager
+                    if (!_managers.ContainsKey(plugin.Name))
+                    {
+                        // Delay logging discovery until it's actually used by an app
+                        _managers[plugin.Name] = new WinHome.Services.Plugins.PluginPackageManagerAdapter(plugin, _pluginRunner, _pluginManager, _runtimeResolver);
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(profileName))
+            {
+                if (config.Profiles != null && config.Profiles.TryGetValue(profileName, out var profile))
+                {
+                    _logger.LogInfo($"\n[Profile] Activating '{profileName}'...");
+                    if (profile.Git != null) config.Git = profile.Git;
+                }
+                else
+                {
+                    _logger.LogError($"[Error] Profile '{profileName}' not found.");
+                    if (!dryRun) return;
+                }
+            }
+
+            if (diff)
+            {
+                await PrintDiffAsync(config);
+                return;
+            }
+
+            // Check network if we have apps to install or WSL update enabled
+            if ((config.Apps.Any() || (config.Wsl != null && config.Wsl.Update)) && !dryRun)
+            {
+                if (!WaitForNetwork())
+                {
+                    _logger.LogWarning("[Warning] No internet connection detected. Package manager operations may fail.");
+                }
+            }
+
+            var currentState = await BuildStateFromConfig(config);
+
+            var previousState = _stateService.LoadState();
+
+            // Cleanup
+            var itemsToRemove = previousState.Except(currentState).ToList();
+            if (itemsToRemove.Any())
+            {
+                _logger.LogInfo("\n--- Cleaning Up ---");
+                await Task.Run(() => Parallel.ForEach(itemsToRemove, uniqueId =>
+                {
+                    if (uniqueId.StartsWith("reg:"))
+                    {
+                        var parts = uniqueId.Substring(4).Split('|', 2);
+                        if (parts.Length == 2) _registry.Revert(parts[0], parts[1], dryRun);
+                    }
+                    else
+                    {
+                        var parts = uniqueId.Split(':', 2);
+                        if (parts.Length == 2 && _managers.TryGetValue(parts[0], out var mgr))
+                        {
+                            mgr.Uninstall(parts[1], dryRun);
+                        }
+                    }
+                }));
+            }
+
+            // 1. Ensure System Managers (Scoop) are ready if needed by plugins
+            if (plugins.Any(p => p.Type.ToLower() == "python" || p.Type.ToLower() == "javascript" || p.Type.ToLower() == "typescript"))
+            {
+                if (_managers.TryGetValue("scoop", out var scoopMgr))
+                {
+                    if (!scoopMgr.IsAvailable())
+                    {
+                        _logger.LogInfo("\n--- Bootstrapping System Managers ---");
+                        _logger.LogInfo("[Engine] Bootstrapping Scoop for plugin runtimes...");
+                        scoopMgr.Bootstrapper.Install(dryRun);
+                    }
+                }
+            }
+
+            // 2. Reconcile Plugin Runtimes
+            var pluginsNeedingRuntime = plugins.Where(p => !p.Type.Equals("executable", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (pluginsNeedingRuntime.Any())
+            {
+                // Only reconcile runtimes for plugins that are actually used in the config
+                var usedPluginNames = config.Apps.Select(a => a.Manager)
+                    .Concat(new[] { "vim", "vscode", "obsidian", "ohmyposh" }.Where(_ => config.Vim != null || config.Vscode != null || config.Obsidian != null || config.Ohmyposh != null))
+                    .Concat(config.Extensions.Keys)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var usedPluginsNeedingRuntime = pluginsNeedingRuntime.Where(p => usedPluginNames.Contains(p.Name)).ToList();
+
+                if (usedPluginsNeedingRuntime.Any())
+                {
+                    _logger.LogInfo("\n--- Reconciling Plugin Runtimes ---");
+                    foreach (var plugin in usedPluginsNeedingRuntime)
+                    {
+                        await _pluginManager.EnsureRuntimeAsync(plugin);
+                    }
+                    _env.RefreshPath();
+                }
+            }
+
+            // Install Apps
+            if (config.Apps.Any())
+            {
+                _logger.LogInfo("\n--- Reconciling Apps ---");
+                foreach (var app in config.Apps)
+                {
+                    _logger.LogInfo($"[Engine] Processing {app.Manager}:{app.Id}...");
+                    if (_managers.TryGetValue(app.Manager, out var mgr))
+                    {
+                        if (mgr is WinHome.Services.Plugins.PluginPackageManagerAdapter adapter)
+                        {
+                            if (loggedPlugins.Add(app.Manager))
+                            {
+                                _logger.LogInfo($"[Plugin] Discovered: {app.Manager} ({adapter.PluginType})");
+                            }
+                        }
+
+                        if (!mgr.IsAvailable())
+                        {
+                            _logger.LogInfo($"[Engine] Manager '{app.Manager}' not available. Bootstrapping...");
+                            mgr.Bootstrapper.Install(dryRun);
+                            if (!mgr.IsAvailable())
+                            {
+                                _logger.LogError($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
+                                continue;
+                            }
+                        }
+                        mgr.Install(app, dryRun);
+                        if (!dryRun)
+                        {
+                            _stateService.MarkAsApplied($"{app.Manager}:{app.Id}");
+                        }
+                        _env.RefreshPath();
+                    }
+                    else
+                    {
+                        _logger.LogError($"[Error] Unknown manager: {app.Manager}");
+                    }
+                }
+            }
+
+            if (config.Git != null) _git.Configure(config.Git, dryRun);
+
+            if (config.Wsl != null)
+            {
+                _logger.LogInfo("\n--- Configuring WSL ---");
+                _wsl.Configure(config.Wsl, dryRun);
+            }
+
+            if (config.EnvVars.Any())
+            {
+                _logger.LogInfo("\n--- Configuring Environment Variables ---");
+                await Task.Run(() => Parallel.ForEach(config.EnvVars, env => _env.Apply(env, dryRun)));
+            }
+
+            // Plugin Extensions
+            var allExtensions = new Dictionary<string, object>(config.Extensions);
+            if (config.Vim != null) allExtensions["vim"] = config.Vim;
+            if (config.Vscode != null) allExtensions["vscode"] = config.Vscode;
+            if (config.Obsidian != null) allExtensions["obsidian"] = config.Obsidian;
+            if (config.Ohmyposh != null) allExtensions["ohmyposh"] = config.Ohmyposh;
+
+            if (allExtensions.Any())
+            {
+                _logger.LogInfo("\n--- Running Plugin Extensions ---");
+                foreach (var ext in allExtensions)
+                {
+                    var pluginName = ext.Key;
+                    var pluginConfig = ext.Value;
+
+                    // Find plugin by name
+                    var plugin = plugins.FirstOrDefault(p => p.Name.Equals(pluginName, StringComparison.OrdinalIgnoreCase));
+
+                    if (plugin != null)
+                    {
+                        if (loggedPlugins.Add(plugin.Name))
+                        {
+                            _logger.LogInfo($"[Plugin] Discovered: {plugin.Name} ({plugin.Type})");
+                        }
+
+                        await _pluginManager.EnsureRuntimeAsync(plugin);
+                        _logger.LogInfo($"[Plugin] Applying configuration for '{pluginName}'...");
+                        var result = await _pluginRunner.ExecuteAsync(plugin, "apply", pluginConfig, new { dryRun = dryRun });
+
+                        if (!result.Success)
+                        {
+                            _logger.LogError($"[Error] Plugin '{pluginName}' failed: {result.Error}");
+                        }
+                        else if (result.Changed)
+                        {
+                            _logger.LogSuccess($"[Plugin] '{pluginName}' applied successfully.");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"[Warning] Configuration found for '{pluginName}' but no matching plugin is installed.");
+                    }
+                }
+            }
+
+            var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
+            var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
+
+            if (allTweaks.Any() && OperatingSystem.IsWindows())
+            {
+                _logger.LogInfo("\n--- Applying Registry Tweaks ---");
+                // Run sequentially to ensure state is saved accurately after each operation
+                foreach (var tweak in allTweaks)
+                {
+                    _registry.Apply(tweak, dryRun);
+                    if (!dryRun)
+                    {
+                        _stateService.MarkAsApplied($"reg:{tweak.Path}|{tweak.Name}");
+                    }
+                }
+            }
+
+            if (config.SystemSettings.Any() && OperatingSystem.IsWindows())
+            {
+                _logger.LogInfo("\n--- Applying System Settings ---");
+                await _systemSettings.ApplyNonRegistrySettingsAsync(config.SystemSettings, dryRun);
+            }
+
+            if (config.Dotfiles.Any())
+            {
+                _logger.LogInfo("\n--- Linking Dotfiles ---");
+                await Task.Run(() => Parallel.ForEach(config.Dotfiles, dotfile => _dotfiles.Apply(dotfile, dryRun)));
+            }
+
+            if (config.Services.Any())
+            {
+                _logger.LogInfo("\n--- Managing Windows Services ---");
+                await Task.Run(() => Parallel.ForEach(config.Services, service => _serviceManager.Apply(service, dryRun)));
+            }
+
+            if (config.ScheduledTasks.Any())
+            {
+                _logger.LogInfo("\n--- Scheduling Tasks ---");
+                await Task.Run(() => Parallel.ForEach(config.ScheduledTasks, task => _scheduledTaskService.Apply(task, dryRun)));
+            }
+
+            if (!dryRun)
+            {
+                _stateService.SaveState(currentState);
+                _logger.LogSuccess("\n[State Saved] Configuration synced.");
+            }
+            else
+            {
+                _logger.LogWarning("\n[Dry Run] State was NOT saved.");
+            }
+        }
+
+        public async Task PrintDiffAsync(Configuration config)
+        {
+            _logger.LogInfo("\n--- State Diff ---");
+
+            var previousState = _stateService.LoadState();
+            var currentState = await BuildStateFromConfig(config);
+
+            var itemsToRemove = previousState.Except(currentState).ToList();
+            var itemsToAdd = currentState.Except(previousState).ToList();
+            var unchangedItems = previousState.Intersect(currentState).ToList();
+
+            if (!itemsToRemove.Any() && !itemsToAdd.Any())
+            {
+                _logger.LogSuccess("No changes detected. System is up to date.");
+                return;
+            }
+
+            if (itemsToRemove.Any())
+            {
+                _logger.LogError("\n[-] Items to Remove:");
+                foreach (var item in itemsToRemove)
+                {
+                    _logger.LogError($"  - {FormatFriendlyName(item)}");
+                }
+            }
+
+            if (itemsToAdd.Any())
+            {
+                _logger.LogSuccess("\n[+] Items to Add:");
+                foreach (var item in itemsToAdd)
+                {
+                    _logger.LogSuccess($"  + {FormatFriendlyName(item)}");
+                }
+            }
+
+            if (unchangedItems.Any())
+            {
+                _logger.LogInfo("\n[=] Unchanged Items:");
+                foreach (var item in unchangedItems)
+                {
+                    _logger.LogInfo($"  = {FormatFriendlyName(item)}");
+                }
+            }
+        }
+
+        private string FormatFriendlyName(string item)
+        {
+            if (item.StartsWith("reg:"))
+            {
+                var parts = item.Substring(4).Split('|', 2);
+                if (parts.Length == 2)
+                {
+                    string path = parts[0];
+                    string name = parts[1];
+                    string? settingKey = _systemSettings.GetFriendlyName(path, name);
+                    if (settingKey != null)
+                    {
+                        return $"System Setting: {settingKey}";
+                    }
+                    return $"Registry Tweak: {path} -> {name}";
+                }
+            }
+            else
+            {
+                var parts = item.Split(':', 2);
+                if (parts.Length == 2)
+                {
+                    return $"App ({parts[0]}): {parts[1]}";
+                }
+            }
+            return item;
+        }
+
+        private async Task<HashSet<string>> BuildStateFromConfig(Configuration config)
+        {
+            var state = new HashSet<string>();
+
+            // App managers
+            foreach (var app in config.Apps)
+            {
+                state.Add($"{app.Manager}:{app.Id}");
+            }
+
+            // Registry tweaks
+            var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
+            var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
+            foreach (var reg in allTweaks)
+            {
+                state.Add($"reg:{reg.Path}|{reg.Name}");
+            }
+
+            return state;
+        }
+
+        private bool WaitForNetwork(int timeoutSeconds = 30)
+        {
+            _logger.LogInfo("[Engine] Checking for internet connectivity...");
+            var start = DateTime.Now;
+            while ((DateTime.Now - start).TotalSeconds < timeoutSeconds)
+            {
+                try
+                {
+                    using var ping = new System.Net.NetworkInformation.Ping();
+                    var reply = ping.Send("1.1.1.1", 2000);
+                    if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
+                    {
+                        _logger.LogSuccess("[Engine] Internet connection verified.");
+                        return true;
+                    }
+                }
+                catch { }
+
+                _logger.LogInfo("[Engine] Waiting for network...");
+                Thread.Sleep(2000);
+            }
+            return false;
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Program.cs =====
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System.CommandLine;
+using WinHome.Infrastructure;
+using WinHome.Interfaces;
+using WinHome.Services.Logging;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+
+class Program
+{
+    static async Task<int> Main(string[] args)
+    {
+        try
+        {
+            using IHost host = AppHost.CreateHost(args);
+
+            var rootCommand = CliBuilder.BuildRootCommand(
+                // Run Action
+                async (file, dryRun, profile, debug, diff, json, update) =>
+                {
+                    var logger = host.Services.GetRequiredService<ILogger>();
+
+                    if (update)
+                    {
+                        var updater = host.Services.GetRequiredService<IUpdateService>();
+                        // In a real app, get version from Assembly
+                        var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.2.0";
+                        if (await updater.CheckForUpdatesAsync(currentVersion))
+                        {
+                            await updater.UpdateAsync();
+                        }
+                        return 0;
+                    }
+
+                    var runner = host.Services.GetRequiredService<AppRunner>();
+
+                    var exitCode = await runner.RunAsync(file, dryRun, profile, debug, diff, json);
+
+                    if (logger is JsonLogger jsonLogger)
+                    {
+                        Console.WriteLine(jsonLogger.ToJson());
+                    }
+
+                    return exitCode;
+                },
+                // Generate Action
+                async (outputFile) =>
+                {
+                    var generator = host.Services.GetRequiredService<IGeneratorService>();
+                    var logger = host.Services.GetRequiredService<ILogger>();
+
+                    try
+                    {
+                        var config = await generator.GenerateAsync();
+
+                        var serializer = new SerializerBuilder()
+                            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
+                            .Build();
+
+                        var yaml = serializer.Serialize(config);
+
+                        if (outputFile != null)
+                        {
+                            await File.WriteAllTextAsync(outputFile.FullName, yaml);
+                            logger.LogSuccess($"[Generator] Configuration saved to {outputFile.FullName}");
+                        }
+                        else
+                        {
+                            Console.WriteLine(yaml);
+                        }
+                        return 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"[Generator] Failed to generate configuration: {ex.Message}");
+                        return 1;
+                    }
+                },
+                // State Action
+                async (command, path) =>
+                {
+                    var stateService = host.Services.GetRequiredService<IStateService>();
+                    var logger = host.Services.GetRequiredService<ILogger>();
+
+                    switch (command)
+                    {
+                        case "list":
+                            var items = stateService.ListItems();
+                            if (!items.Any())
+                            {
+                                logger.LogInfo("[State] No items are currently managed by WinHome.");
+                            }
+                            else
+                            {
+                                logger.LogInfo("\n--- Managed Items ---");
+                                foreach (var item in items)
+                                {
+                                    Console.WriteLine($"  - {item}");
+                                }
+                            }
+                            break;
+                        case "backup":
+                            if (string.IsNullOrEmpty(path)) return 1;
+                            stateService.BackupState(path);
+                            break;
+                        case "restore":
+                            if (string.IsNullOrEmpty(path)) return 1;
+                            stateService.RestoreState(path);
+                            break;
+                    }
+                    return 0;
+                }
+            );
+
+            return await rootCommand.Parse(args).InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[Fatal Error] An unhandled exception occurred:");
+            Console.WriteLine(ex.Message);
+
+            if (args.Contains("--debug"))
+            {
+                Console.WriteLine(ex.StackTrace);
+            }
+            Console.ResetColor();
+            return 1;
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Infrastructure\AppHost.cs =====
+
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using WinHome.Interfaces;
+using WinHome.Services.Bootstrappers;
+using WinHome.Services.Logging;
+using WinHome.Services.Managers;
+using WinHome.Services.Plugins;
+using WinHome.Services.System;
+
+namespace WinHome.Infrastructure;
+
+public static class AppHost
+{
+    public static IHost CreateHost(string[] args)
+    {
+        // Check for --json flag in args to force JSON logging early
+        bool isJson = args.Contains("--json");
+
+        return Host.CreateDefaultBuilder(args)
+            .ConfigureServices((context, services) =>
+            {
+                ConfigureServices(context.Configuration, services, isJson);
+            })
+            .Build();
+    }
+
+    public static void ConfigureServices(IConfiguration configuration, IServiceCollection services, bool isJsonForce = false)
+    {
+        var isJsonConfig = configuration.GetValue<bool>("json");
+        var isJson = isJsonForce || isJsonConfig;
+
+        if (isJson)
+        {
+            services.AddSingleton<ILogger, JsonLogger>();
+        }
+        else
+        {
+            services.AddSingleton<ILogger, ConsoleLogger>();
+        }
+
+        // System Services
+        services.AddSingleton<IProcessRunner, DefaultProcessRunner>();
+        services.AddSingleton<IServiceControllerWrapper, ServiceControllerWrapper>();
+        services.AddSingleton<IRegistryWrapper, RegistryWrapper>();
+
+        // Domain Services
+        services.AddSingleton<IConfigValidator, ConfigValidator>();
+        services.AddSingleton<IDotfileService, DotfileService>();
+        services.AddSingleton<IRegistryService, RegistryService>();
+        services.AddSingleton<ISystemSettingsService, SystemSettingsService>();
+        services.AddSingleton<IWslService, WslService>();
+        services.AddSingleton<IGitService, GitService>();
+        services.AddSingleton<IEnvironmentService, EnvironmentService>();
+        services.AddSingleton<IWindowsServiceManager, WindowsServiceManager>();
+        services.AddSingleton<IScheduledTaskService, ScheduledTaskService>();
+        services.AddSingleton<IRuntimeResolver, RuntimeResolver>();
+        services.AddSingleton<IUpdateService, UpdateService>();
+        services.AddSingleton<ISecretResolver, SecretResolver>();
+        services.AddSingleton<IStateService, StateService>();
+        services.AddSingleton<IPluginManager>(sp => new PluginManager(
+            sp.GetRequiredService<UvBootstrapper>(),
+            sp.GetRequiredService<BunBootstrapper>(),
+            sp.GetRequiredService<ILogger>(),
+            null,
+            sp.GetRequiredService<IRuntimeResolver>()
+        ));
+        services.AddSingleton<IGeneratorService, GeneratorService>();
+        services.AddSingleton<IPluginRunner, PluginRunner>();
+
+        // Bootstrappers
+        services.AddSingleton<ChocolateyBootstrapper>();
+        services.AddSingleton<ScoopBootstrapper>();
+        services.AddSingleton<WingetBootstrapper>();
+        services.AddSingleton<UvBootstrapper>();
+        services.AddSingleton<BunBootstrapper>();
+
+        // Package Managers
+        services.AddSingleton<WingetService>(sp => new WingetService(
+            sp.GetRequiredService<IProcessRunner>(),
+            sp.GetRequiredService<WingetBootstrapper>(),
+            sp.GetRequiredService<ILogger>(),
+            sp.GetRequiredService<IRuntimeResolver>()
+        ));
+        services.AddSingleton<ChocolateyService>(sp => new ChocolateyService(
+            sp.GetRequiredService<IProcessRunner>(),
+            sp.GetRequiredService<ChocolateyBootstrapper>(),
+            sp.GetRequiredService<ILogger>(),
+            sp.GetRequiredService<IRuntimeResolver>()
+        ));
+        services.AddSingleton<ScoopService>(sp => new ScoopService(
+            sp.GetRequiredService<IProcessRunner>(),
+            sp.GetRequiredService<ScoopBootstrapper>(),
+            sp.GetRequiredService<ILogger>(),
+            sp.GetRequiredService<IRuntimeResolver>()
+        ));
+
+        services.AddSingleton<Dictionary<string, IPackageManager>>(sp => new()
+        {
+            { "winget", sp.GetRequiredService<WingetService>() },
+            { "choco", sp.GetRequiredService<ChocolateyService>() },
+            { "scoop", sp.GetRequiredService<ScoopService>() }
+        });
+
+        services.AddSingleton<Engine>(sp => new Engine(
+            sp.GetRequiredService<Dictionary<string, IPackageManager>>(),
+            sp.GetRequiredService<IDotfileService>(),
+            sp.GetRequiredService<IRegistryService>(),
+            sp.GetRequiredService<ISystemSettingsService>(),
+            sp.GetRequiredService<IWslService>(),
+            sp.GetRequiredService<IGitService>(),
+            sp.GetRequiredService<IEnvironmentService>(),
+            sp.GetRequiredService<IWindowsServiceManager>(),
+            sp.GetRequiredService<IScheduledTaskService>(),
+            sp.GetRequiredService<IPluginManager>(),
+            sp.GetRequiredService<IPluginRunner>(),
+            sp.GetRequiredService<IStateService>(),
+            sp.GetRequiredService<ILogger>(),
+            sp.GetRequiredService<IRuntimeResolver>()
+        ));
+        services.AddSingleton<AppRunner>(sp => new AppRunner(
+            sp.GetRequiredService<Engine>(),
+            sp.GetRequiredService<IConfigValidator>(),
+            sp.GetRequiredService<ISecretResolver>(),
+            sp.GetRequiredService<ILogger>()
+        ));
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Infrastructure\AppRunner.cs =====
+
+using WinHome.Interfaces;
+using WinHome.Models;
+using WinHome.Services.Logging;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+
+namespace WinHome.Infrastructure;
+
+public class AppRunner
+{
+    private readonly Engine _engine;
+    private readonly IConfigValidator _validator;
+    private readonly ISecretResolver _secretResolver;
+    private readonly ILogger _logger;
+
+    public AppRunner(Engine engine, IConfigValidator validator, ISecretResolver secretResolver, ILogger logger)
+    {
+        _engine = engine;
+        _validator = validator;
+        _secretResolver = secretResolver;
+        _logger = logger;
+    }
+
+    public async Task<int> RunAsync(FileInfo configFile, bool dryRun, string? profile, bool debug, bool diff, bool json)
+    {
+        try
+        {
+            if (!configFile.Exists)
+            {
+                _logger.LogError($"[Error] Configuration file not found: {configFile.FullName}");
+                return 1;
+            }
+
+            var yamlContent = await File.ReadAllTextAsync(configFile.FullName);
+
+            var validation = _validator.Validate(yamlContent);
+            if (!validation.IsValid)
+            {
+                _logger.LogError("[Error] Configuration validation failed:");
+                foreach (var err in validation.Errors) _logger.LogError($"  - {err}");
+                return 1;
+            }
+
+            var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .IgnoreUnmatchedProperties()
+                .Build();
+
+            var config = deserializer.Deserialize<Configuration>(yamlContent);
+
+            // Resolve Secrets
+            _secretResolver.ResolveObject(config);
+
+            await _engine.RunAsync(config, dryRun, profile, debug, diff);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"[Fatal] An unexpected error occurred: {ex.Message}");
+            if (debug) _logger.LogError(ex.StackTrace ?? "");
+            return 1;
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Infrastructure\CliBuilder.cs =====
+
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using WinHome.Interfaces;
+using WinHome.Models;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Infrastructure;
+
+public static class CliBuilder
+{
+    public static RootCommand BuildRootCommand(
+        Func<FileInfo, bool, string?, bool, bool, bool, bool, Task<int>> runAction,
+        Func<FileInfo?, Task<int>> generateAction,
+        Func<string, string?, Task<int>> stateAction)
+    {
+        var configOption = new Option<FileInfo>("--config");
+        configOption.Description = "Path to the YAML configuration file";
+        configOption.DefaultValueFactory = _ =>
+        {
+            var configPath = Environment.GetEnvironmentVariable("WINHOME_CONFIG_PATH");
+            return new FileInfo(string.IsNullOrEmpty(configPath) ? "config.yaml" : configPath);
+        };
+
+        var updateOption = new Option<bool>("--update");
+        updateOption.Description = "Check for updates and upgrade if available";
+        updateOption.DefaultValueFactory = _ => false;
+        updateOption.Aliases.Add("-u");
+
+        var dryRunOption = new Option<bool>("--dry-run");
+        dryRunOption.Description = "Preview changes without applying them";
+        dryRunOption.DefaultValueFactory = _ => false;
+        dryRunOption.Aliases.Add("-d");
+
+        var profileOption = new Option<string?>("--profile");
+        profileOption.Description = "Activate a specific profile (e.g. work, personal)";
+        profileOption.DefaultValueFactory = _ => null;
+        profileOption.Aliases.Add("-p");
+
+        var debugOption = new Option<bool>("--debug");
+        debugOption.Description = "Enable verbose logging and configuration validation";
+        debugOption.DefaultValueFactory = _ => false;
+
+        var diffOption = new Option<bool>("--diff");
+        diffOption.Description = "Show a diff of the changes that will be made";
+        diffOption.DefaultValueFactory = _ => false;
+
+        var jsonOption = new Option<bool>("--json");
+        jsonOption.Description = "Output results as JSON";
+        jsonOption.DefaultValueFactory = _ => false;
+
+        var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
+        rootCommand.Options.Add(configOption);
+        rootCommand.Options.Add(updateOption);
+        rootCommand.Options.Add(dryRunOption);
+        rootCommand.Options.Add(profileOption);
+        rootCommand.Options.Add(debugOption);
+        rootCommand.Options.Add(diffOption);
+        rootCommand.Options.Add(jsonOption);
+
+        rootCommand.SetAction(async (ParseResult result) =>
+        {
+            FileInfo file = result.GetValue(configOption)!;
+            bool update = result.GetValue(updateOption);
+            bool dryRun = result.GetValue(dryRunOption);
+            string? profile = result.GetValue(profileOption);
+            bool debug = result.GetValue(debugOption);
+            bool diff = result.GetValue(diffOption);
+            bool json = result.GetValue(jsonOption);
+
+            return await runAction(file, dryRun, profile, debug, diff, json, update);
+        });
+
+        // Generate Command
+        var generateCommand = new Command("generate");
+        generateCommand.Description = "Generate a configuration file from the current system state";
+        var outputOption = new Option<FileInfo?>("--output");
+        outputOption.Description = "Output file path (default: stdout)";
+        outputOption.Aliases.Add("-o");
+        generateCommand.Options.Add(outputOption);
+
+        generateCommand.SetAction(async (ParseResult result) =>
+        {
+            FileInfo? output = result.GetValue(outputOption);
+            return await generateAction(output);
+        });
+
+        rootCommand.Add(generateCommand);
+
+        // State Command
+        var stateCommand = new Command("state");
+        stateCommand.Description = "Manage the system state managed by WinHome";
+
+        var listSubCommand = new Command("list");
+        listSubCommand.Description = "List all items currently managed by WinHome";
+        listSubCommand.SetAction(async (ParseResult result) =>
+        {
+            return await stateAction("list", null);
+        });
+
+        var backupSubCommand = new Command("backup");
+        backupSubCommand.Description = "Backup the current state file";
+        var backupPathArgument = new Argument<string>("path") { Description = "Path to save the backup" };
+        backupSubCommand.Arguments.Add(backupPathArgument);
+        backupSubCommand.SetAction(async (ParseResult result) =>
+        {
+            var path = result.GetValue(backupPathArgument);
+            return await stateAction("backup", path);
+        });
+
+        var restoreSubCommand = new Command("restore");
+        restoreSubCommand.Description = "Restore the state file from a backup";
+        var restorePathArgument = new Argument<string>("path") { Description = "Path to the backup file to restore" };
+        restoreSubCommand.Arguments.Add(restorePathArgument);
+        restoreSubCommand.SetAction(async (ParseResult result) =>
+        {
+            var path = result.GetValue(restorePathArgument);
+            return await stateAction("restore", path);
+        });
+
+        stateCommand.Subcommands.Add(listSubCommand);
+        stateCommand.Subcommands.Add(backupSubCommand);
+        stateCommand.Subcommands.Add(restoreSubCommand);
+
+        rootCommand.Add(stateCommand);
+
+        return rootCommand;
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Infrastructure\Helpers\RegistryGuard.cs =====
+
+using System.Security.Principal;
+using System.Runtime.Versioning;
+
+namespace WinHome.Infrastructure.Helpers
+{
+    [SupportedOSPlatform("windows")]
+    public static class RegistryGuard
+    {
+        public static void ValidateContext(string keyPath)
+        {
+            if (string.IsNullOrEmpty(keyPath)) return;
+
+            // Normalize check for HKCU
+            bool isUserHive = keyPath.StartsWith("HKCU", StringComparison.OrdinalIgnoreCase) ||
+                              keyPath.StartsWith("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase);
+
+            if (isUserHive)
+            {
+                var currentIdentity = WindowsIdentity.GetCurrent();
+                if (currentIdentity.IsSystem)
+                {
+                    throw new InvalidOperationException(
+                        "Security Risk: Attempting to modify HKCU while running as SYSTEM. " +
+                        "This will apply settings to the LocalSystem profile (S-1-5-18), not the logged-in user. " +
+                        "Please use the full HKEY_USERS\\<SID> path instead to target a specific user.");
+                }
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IConfigValidator.cs =====
+
+namespace WinHome.Interfaces;
+
+public interface IConfigValidator
+{
+    (bool IsValid, List<string> Errors) Validate(string yamlText);
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IDotfileService.cs =====
+
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IDotfileService
+    {
+        void Apply(DotfileConfig dotfile, bool dryRun);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IEnvironmentService.cs =====
+
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IEnvironmentService
+    {
+        void Apply(EnvVarConfig env, bool dryRun);
+        void RefreshPath();
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IGeneratorService.cs =====
+
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IGeneratorService
+    {
+        Task<Configuration> GenerateAsync();
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IGitService.cs =====
+
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IGitService
+    {
+        void Configure(GitConfig config, bool dryRun);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\ILogger.cs =====
+
+namespace WinHome.Interfaces
+{
+    public enum LogLevel
+    {
+        Info,
+        Success,
+        Warning,
+        Error
+    }
+
+    public interface ILogger
+    {
+        void Log(string message, LogLevel level);
+        void LogInfo(string message);
+        void LogSuccess(string message);
+        void LogWarning(string message);
+        void LogError(string message);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IPackageManager.cs =====
+
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IPackageManager
+    {
+        IPackageManagerBootstrapper Bootstrapper { get; }
+        bool IsAvailable();
+        void Install(AppConfig app, bool dryRun);
+        void Uninstall(string appId, bool dryRun);
+        bool IsInstalled(string appId);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IPackageManagerBootstrapper.cs =====
+
+namespace WinHome.Interfaces
+{
+    public interface IPackageManagerBootstrapper
+    {
+        string Name { get; }
+        bool IsInstalled();
+        void Install(bool dryRun);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IPluginManager.cs =====
+
+using WinHome.Models.Plugins;
+
+namespace WinHome.Interfaces
+{
+    public interface IPluginManager
+    {
+        IEnumerable<PluginManifest> DiscoverPlugins();
+        Task EnsureRuntimeAsync(PluginManifest plugin);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IPluginRunner.cs =====
+
+using WinHome.Models.Plugins;
+
+namespace WinHome.Interfaces
+{
+    public interface IPluginRunner
+    {
+        Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IProcessRunner.cs =====
+
+namespace WinHome.Interfaces
+{
+    public interface IProcessRunner
+    {
+        bool RunCommand(string fileName, string arguments, bool dryRun, Action<string>? onOutput = null);
+        string RunCommandWithOutput(string fileName, string args);
+        string RunCommandWithOutput(string fileName, string args, string? standardInput);
+        string RunAndCapture(string fileName, string arguments);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IRegistryKey.cs =====
+
+using Microsoft.Win32;
+
+namespace WinHome.Interfaces
+{
+    public interface IRegistryKey : IDisposable
+    {
+        void SetValue(string name, object value, RegistryValueKind kind);
+        object? GetValue(string name);
+        void DeleteValue(string name);
+        IRegistryKey? OpenSubKey(string name, bool writable);
+        IRegistryKey? CreateSubKey(string name, bool writable);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IRegistryService.cs =====
+
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IRegistryService
+    {
+        void Apply(RegistryTweak tweak, bool dryRun);
+        void Revert(string path, string name, bool dryRun);
+        object? Read(string path, string name);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IRegistryWrapper.cs =====
+
+using Microsoft.Win32;
+
+namespace WinHome.Interfaces
+{
+    public interface IRegistryWrapper
+    {
+        IRegistryKey GetRootKey(string fullPath, out string subKey);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IRuntimeResolver.cs =====
+
+namespace WinHome.Interfaces
+{
+    public interface IRuntimeResolver
+    {
+        string Resolve(string runtimeName);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IScheduledTaskService.cs =====
+
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IScheduledTaskService
+    {
+        void Apply(ScheduledTaskConfig task, bool dryRun);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\ISecretResolver.cs =====
+
+namespace WinHome.Interfaces
+{
+    public interface ISecretResolver
+    {
+        string Resolve(string input);
+        void ResolveObject(object obj);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IServiceControllerWrapper.cs =====
+
+using System.ServiceProcess;
+
+namespace WinHome.Interfaces
+{
+    public interface IServiceControllerWrapper
+    {
+        bool ServiceExists(string serviceName);
+        ServiceControllerStatus GetServiceStatus(string serviceName);
+        void StartService(string serviceName);
+        void StopService(string serviceName);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IStateService.cs =====
+
+using System.Collections.Generic;
+
+namespace WinHome.Interfaces
+{
+    public interface IStateService
+    {
+        HashSet<string> LoadState();
+        void SaveState(HashSet<string> state);
+        void MarkAsApplied(string item);
+        void BackupState(string backupPath);
+        void RestoreState(string backupPath);
+        IEnumerable<string> ListItems();
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\ISystemSettingsService.cs =====
+
+using WinHome.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace WinHome.Interfaces
+{
+    public interface ISystemSettingsService
+    {
+        Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings);
+        Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun);
+        Task<Dictionary<string, object>> GetCapturedSettingsAsync();
+        string? GetFriendlyName(string registryPath, string registryName);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IUpdateService.cs =====
+
+namespace WinHome.Interfaces
+{
+    public interface IUpdateService
+    {
+        Task<bool> CheckForUpdatesAsync(string currentVersion);
+        Task UpdateAsync();
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IWindowsServiceManager.cs =====
+
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IWindowsServiceManager
+    {
+        void Apply(WindowsServiceConfig service, bool dryRun);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Interfaces\IWslService.cs =====
+
+using WinHome.Models;
+
+namespace WinHome.Interfaces
+{
+    public interface IWslService
+    {
+        void Configure(WslConfig config, bool dryRun);
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\ActionConfig.cs =====
+
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class ActionConfig
+    {
+        [YamlMember(Alias = "type")]
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "path")]
+        [JsonPropertyName("path")]
+        public string Path { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "arguments")]
+        [JsonPropertyName("arguments")]
+        public string? Arguments { get; set; }
+
+        [YamlMember(Alias = "workingDirectory")]
+        [JsonPropertyName("workingDirectory")]
+        public string? WorkingDirectory { get; set; }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\AppConfig.cs =====
+
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class AppConfig
+    {
+        [YamlMember(Alias = "id")]
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "source")]
+        [JsonPropertyName("source")]
+        public string? Source { get; set; }
+
+        [YamlMember(Alias = "manager")]
+        [JsonPropertyName("manager")]
+        public string Manager { get; set; } = "winget";
+
+        [YamlMember(Alias = "version")]
+        [JsonPropertyName("version")]
+        public string? Version { get; set; }
+
+        [YamlMember(Alias = "params")]
+        [JsonPropertyName("params")]
+        public string? Params { get; set; }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\Configuration.cs =====
+
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using WinHome.Models;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class Configuration
+    {
+        [YamlMember(Alias = "version")]
+        [JsonPropertyName("version")]
+        public string Version { get; set; } = "1.0";
+
+        [YamlMember(Alias = "apps")]
+        [JsonPropertyName("apps")]
+        public List<AppConfig> Apps { get; set; } = new();
+
+        [YamlMember(Alias = "registryTweaks")]
+        [JsonPropertyName("registryTweaks")]
+        public List<RegistryTweak> RegistryTweaks { get; set; } = new();
+
+        [YamlMember(Alias = "dotfiles")]
+        [JsonPropertyName("dotfiles")]
+        public List<DotfileConfig> Dotfiles { get; set; } = new();
+
+        [YamlMember(Alias = "systemSettings")]
+        [JsonPropertyName("systemSettings")]
+        public Dictionary<string, object> SystemSettings { get; set; } = new();
+
+        [YamlMember(Alias = "wsl")]
+        [JsonPropertyName("wsl")]
+        public WslConfig? Wsl { get; set; }
+
+        [YamlMember(Alias = "git")]
+        [JsonPropertyName("git")]
+        public GitConfig? Git { get; set; }
+
+        [YamlMember(Alias = "profiles")]
+        [JsonPropertyName("profiles")]
+        public Dictionary<string, ProfileConfig> Profiles { get; set; } = new();
+
+        [YamlMember(Alias = "envVars")]
+        [JsonPropertyName("envVars")]
+        public List<EnvVarConfig> EnvVars { get; set; } = new();
+
+        [YamlMember(Alias = "services")]
+        [JsonPropertyName("services")]
+        public List<WindowsServiceConfig> Services { get; set; } = new();
+
+        [YamlMember(Alias = "scheduledTasks")]
+        [JsonPropertyName("scheduledTasks")]
+        public List<ScheduledTaskConfig> ScheduledTasks { get; set; } = new();
+
+        [YamlMember(Alias = "extensions")]
+        [JsonPropertyName("extensions")]
+        public Dictionary<string, object> Extensions { get; set; } = new();
+
+        [YamlMember(Alias = "vim")]
+        [JsonPropertyName("vim")]
+        public object? Vim { get; set; }
+
+        [YamlMember(Alias = "vscode")]
+        [JsonPropertyName("vscode")]
+        public object? Vscode { get; set; }
+
+        [YamlMember(Alias = "obsidian")]
+        [JsonPropertyName("obsidian")]
+        public object? Obsidian { get; set; }
+
+        [YamlMember(Alias = "ohmyposh")]
+        [JsonPropertyName("ohmyposh")]
+        public object? Ohmyposh { get; set; }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\DotfileConfig.cs =====
+
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class DotfileConfig
+    {
+        [YamlMember(Alias = "src")]
+        [JsonPropertyName("src")]
+        public string Src { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "target")]
+        [JsonPropertyName("target")]
+        public string Target { get; set; } = string.Empty;
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\EnvVarConfig.cs =====
+
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class EnvVarConfig
+    {
+        [YamlMember(Alias = "variable")]
+        [JsonPropertyName("variable")]
+        public string Variable { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "value")]
+        [JsonPropertyName("value")]
+        public string Value { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "action")]
+        [JsonPropertyName("action")]
+        public string Action { get; set; } = "set";
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\GitConfig.cs =====
+
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class GitConfig
+    {
+        // Convenience properties (Common stuff)
+        [YamlMember(Alias = "userName")]
+        [JsonPropertyName("userName")]
+        public string? UserName { get; set; }
+
+        [YamlMember(Alias = "userEmail")]
+        [JsonPropertyName("userEmail")]
+        public string? UserEmail { get; set; }
+
+        [YamlMember(Alias = "signingKey")]
+        [JsonPropertyName("signingKey")]
+        public string? SigningKey { get; set; }
+
+        [YamlMember(Alias = "commitGpgSign")]
+        [JsonPropertyName("commitGpgSign")]
+        public bool? CommitGpgSign { get; set; }
+
+        // NEW: Generic Dictionary for EVERYTHING else
+        // Maps "core.editor" -> "code --wait"
+        [YamlMember(Alias = "settings")]
+        [JsonPropertyName("settings")]
+        public Dictionary<string, string> Settings { get; set; } = new();
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\GitHubRelease.cs =====
+
+using System.Text.Json.Serialization;
+
+namespace WinHome.Models
+{
+    public class GitHubRelease
+    {
+        [JsonPropertyName("tag_name")]
+        public string TagName { get; set; } = string.Empty;
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("assets")]
+        public List<GitHubAsset> Assets { get; set; } = new();
+
+        [JsonPropertyName("body")]
+        public string Body { get; set; } = string.Empty;
+    }
+
+    public class GitHubAsset
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("browser_download_url")]
+        public string BrowserDownloadUrl { get; set; } = string.Empty;
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\ProfileConfig.cs =====
+
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class ProfileConfig
+    {
+        [YamlMember(Alias = "git")]
+        [JsonPropertyName("git")]
+        public GitConfig? Git { get; set; }
+
+        // You can add 'Apps' or 'SystemSettings' here later if you want profile-specific apps
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\RegistryTweak.cs =====
+
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class RegistryTweak
+    {
+        [YamlMember(Alias = "path")]
+        [JsonPropertyName("path")]
+        public string Path { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "name")]
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "value")]
+        [JsonPropertyName("value")]
+        public object Value { get; set; } = new();
+
+        [YamlMember(Alias = "type")]
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "string";
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\RepetitionPatternConfig.cs =====
+
+using System;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class RepetitionPatternConfig
+    {
+        [YamlMember(Alias = "interval")]
+        [JsonPropertyName("interval")]
+        public TimeSpan Interval { get; set; }
+
+        [YamlMember(Alias = "duration")]
+        [JsonPropertyName("duration")]
+        public TimeSpan Duration { get; set; }
+
+        [YamlMember(Alias = "stopAtDurationEnd")]
+        [JsonPropertyName("stopAtDurationEnd")]
+        public bool StopAtDurationEnd { get; set; }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\ScheduledTaskConfig.cs =====
+
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class ScheduledTaskConfig
+    {
+        [YamlMember(Alias = "name")]
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "path")]
+        [JsonPropertyName("path")]
+        public string Path { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "description")]
+        [JsonPropertyName("description")]
+        public string? Description { get; set; }
+
+        [YamlMember(Alias = "author")]
+        [JsonPropertyName("author")]
+        public string? Author { get; set; }
+
+        [YamlMember(Alias = "triggers")]
+        [JsonPropertyName("triggers")]
+        public List<TriggerConfig> Triggers { get; set; } = new();
+
+        [YamlMember(Alias = "actions")]
+        [JsonPropertyName("actions")]
+        public List<ActionConfig> Actions { get; set; } = new();
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\TriggerConfig.cs =====
+
+using System;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class TriggerConfig
+    {
+        [YamlMember(Alias = "type")]
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "enabled")]
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = true;
+
+        [YamlMember(Alias = "startBoundary")]
+        [JsonPropertyName("startBoundary")]
+        public DateTime? StartBoundary { get; set; }
+
+        [YamlMember(Alias = "endBoundary")]
+        [JsonPropertyName("endBoundary")]
+        public DateTime? EndBoundary { get; set; }
+
+        [YamlMember(Alias = "executionTimeLimit")]
+        [JsonPropertyName("executionTimeLimit")]
+        public TimeSpan? ExecutionTimeLimit { get; set; }
+
+        [YamlMember(Alias = "id")]
+        [JsonPropertyName("id")]
+        public string? Id { get; set; }
+
+        [YamlMember(Alias = "repetition")]
+        [JsonPropertyName("repetition")]
+        public RepetitionPatternConfig? Repetition { get; set; }
+
+        [YamlMember(Alias = "delay")]
+        [JsonPropertyName("delay")]
+        public TimeSpan? Delay { get; set; }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\WindowsServiceConfig.cs =====
+
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class WindowsServiceConfig
+    {
+        [YamlMember(Alias = "name")]
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "state")]
+        [JsonPropertyName("state")]
+        public string State { get; set; } = "running"; // running, stopped
+
+        [YamlMember(Alias = "startup")]
+        [JsonPropertyName("startup")]
+        public string? StartupType { get; set; } // automatic, manual, disabled
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\WslConfig.cs =====
+
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class WslConfig
+    {
+        [YamlMember(Alias = "defaultVersion")]
+        [JsonPropertyName("defaultVersion")]
+        public int DefaultVersion { get; set; } = 2;
+
+        [YamlMember(Alias = "defaultDistro")]
+        [JsonPropertyName("defaultDistro")]
+        public string? DefaultDistro { get; set; }
+
+        [YamlMember(Alias = "update")]
+        [JsonPropertyName("update")]
+        public bool Update { get; set; } = false;
+
+
+        [YamlMember(Alias = "distros")]
+        [JsonPropertyName("distros")]
+        public List<WslDistroConfig> Distros { get; set; } = new();
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\WslDistroConfig.cs =====
+
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models
+{
+    public class WslDistroConfig
+    {
+        [YamlMember(Alias = "name")]
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "setupScript")]
+        [JsonPropertyName("setupScript")]
+        public string? SetupScript { get; set; }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\Plugins\PluginManifest.cs =====
+
+using YamlDotNet.Serialization;
+
+namespace WinHome.Models.Plugins
+{
+    public class PluginManifest
+    {
+        [YamlMember(Alias = "name")]
+        public string Name { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "version")]
+        public string Version { get; set; } = "1.0.0";
+
+        [YamlMember(Alias = "type")]
+        public string Type { get; set; } = "executable"; // python, typescript, executable
+
+        [YamlMember(Alias = "main")]
+        public string Main { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "capabilities")]
+        public List<string> Capabilities { get; set; } = new();
+
+        // Internal path set during discovery
+        public string DirectoryPath { get; set; } = string.Empty;
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Models\Plugins\PluginMessages.cs =====
+
+using System.Text.Json.Serialization;
+
+namespace WinHome.Models.Plugins
+{
+    public class PluginRequest
+    {
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; } = Guid.NewGuid().ToString();
+
+        [JsonPropertyName("command")]
+        public string Command { get; set; } = string.Empty;
+
+        [JsonPropertyName("args")]
+        public object? Args { get; set; }
+
+        [JsonPropertyName("context")]
+        public object? Context { get; set; }
+    }
+
+    public class PluginResult
+    {
+        [JsonPropertyName("requestId")]
+        public string RequestId { get; set; } = string.Empty;
+
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("changed")]
+        public bool Changed { get; set; }
+
+        [JsonPropertyName("error")]
+        public string? Error { get; set; }
+
+        [JsonPropertyName("data")]
+        public object? Data { get; set; }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Bootstrappers\BunBootstrapper.cs =====
+
+using System.Diagnostics;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.Bootstrappers
+{
+    public class BunBootstrapper : IPackageManagerBootstrapper
+    {
+        private readonly IProcessRunner _processRunner;
+        public string Name => "bun";
+
+        public BunBootstrapper(IProcessRunner processRunner)
+        {
+            _processRunner = processRunner;
+        }
+
+        public bool IsInstalled()
+        {
+            return _processRunner.RunCommand("bun", "--version", false);
+        }
+
+        public void Install(bool dryRun)
+        {
+            if (dryRun)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[DryRun] Would install {Name} (JS/TS Runtime)");
+                Console.ResetColor();
+                return;
+            }
+
+            Console.WriteLine($"[Bootstrapper] Installing {Name} via Scoop...");
+
+            string scoopPath = "scoop.cmd";
+            string userScoop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd");
+            string globalScoop = Path.Combine(Environment.GetEnvironmentVariable("ProgramData") ?? "C:\\ProgramData", "scoop", "shims", "scoop.cmd");
+
+            if (File.Exists(userScoop)) scoopPath = userScoop;
+            else if (File.Exists(globalScoop)) scoopPath = globalScoop;
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = scoopPath,
+                Arguments = "install bun",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+
+            try
+            {
+                using var process = Process.Start(psi);
+                if (process == null) throw new Exception($"Failed to start installer for {Name}");
+
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    var error = process.StandardError.ReadToEnd();
+                    throw new Exception($"Failed to install {Name}: {error}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Bootstrapper] Error installing {Name}: {ex.Message}");
+                throw;
+            }
+
+            Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Bootstrappers\ChocolateyBootstrapper.cs =====
+
+using System.Diagnostics;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.Bootstrappers
+{
+    public class ChocolateyBootstrapper : IPackageManagerBootstrapper
+    {
+        private readonly IProcessRunner _processRunner;
+        public string Name => "Chocolatey";
+
+        public ChocolateyBootstrapper(IProcessRunner processRunner)
+        {
+            _processRunner = processRunner;
+        }
+
+        public bool IsInstalled()
+        {
+            if (_processRunner.RunCommand("choco", "--version", false)) return true;
+
+            string chocoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "chocolatey", "bin", "choco.exe");
+            return File.Exists(chocoPath);
+        }
+
+        public void Install(bool dryRun)
+        {
+            if (dryRun)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[DryRun] Would install {Name}");
+                Console.ResetColor();
+                return;
+            }
+
+            Console.WriteLine($"[Bootstrapper] Installing {Name}...");
+
+            string command = "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
+                             "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+
+            try
+            {
+                using var process = Process.Start(psi);
+                if (process == null) throw new Exception($"Failed to start installer for {Name}");
+
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    var error = process.StandardError.ReadToEnd();
+                    if (error.Contains("remote name could not be resolved") || error.Contains("Operation timed out"))
+                    {
+                        Console.WriteLine($"[Bootstrapper] Network error installing {Name}. Retrying in 10 seconds...");
+                        Thread.Sleep(10000);
+                        Install(false);
+                        return;
+                    }
+                    throw new Exception($"Failed to install {Name}: {error}");
+                }
+            }
+            catch (Exception ex) when (!ex.Message.Contains("Failed to install"))
+            {
+                Console.WriteLine($"[Bootstrapper] Unexpected error: {ex.Message}. Retrying...");
+                Thread.Sleep(5000);
+                Install(false);
+                return;
+            }
+
+            Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Bootstrappers\ScoopBootstrapper.cs =====
+
+using System.Diagnostics;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.Bootstrappers
+{
+    public class ScoopBootstrapper : IPackageManagerBootstrapper
+    {
+        private readonly IProcessRunner _processRunner;
+        public string Name => "Scoop";
+
+        public ScoopBootstrapper(IProcessRunner processRunner)
+        {
+            _processRunner = processRunner;
+        }
+
+        public bool IsInstalled()
+        {
+            if (_processRunner.RunCommand("scoop", "--version", false)) return true;
+
+            // Fallback for fresh installs where PATH isn't updated yet
+            string[] searchPaths = {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd"),
+                Path.Combine(Environment.GetEnvironmentVariable("ProgramData") ?? @"C:\ProgramData", "scoop", "shims", "scoop.cmd"),
+                Path.Combine(Environment.GetEnvironmentVariable("SCOOP") ?? "", "shims", "scoop.cmd"),
+                Path.Combine(Environment.GetEnvironmentVariable("SCOOP_GLOBAL") ?? "", "shims", "scoop.cmd")
+            };
+
+            foreach (var path in searchPaths)
+            {
+                if (!string.IsNullOrEmpty(path) && File.Exists(path)) return true;
+            }
+
+            return false;
+        }
+
+        public void Install(bool dryRun)
+        {
+            if (dryRun)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[DryRun] Would install {Name}");
+                Console.ResetColor();
+                return;
+            }
+
+            Console.WriteLine($"[Bootstrapper] Installing {Name}...");
+
+            // Set execution policy first, then install Scoop
+            // This fixes the "cannot be loaded because running scripts is disabled" error
+            string command = "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; irm get.scoop.sh -outfile install.ps1; .\\install.ps1 -RunAsAdmin; if (Test-Path .\\install.ps1) { Remove-Item .\\install.ps1 }";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -Command \"{command}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+
+            using var process = Process.Start(psi);
+            if (process == null)
+            {
+                throw new Exception($"Failed to start installer for {Name}");
+            }
+
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                var error = process.StandardError.ReadToEnd();
+                // If it's just a DNS resolution error, it might be transient or need a retry
+                if (error.Contains("remote name could not be resolved"))
+                {
+                    Console.WriteLine("[Bootstrapper] Network error resolving get.scoop.sh. Retrying in 10 seconds...");
+                    Thread.Sleep(10000);
+                    // One recursive retry
+                    Install(false);
+                    return;
+                }
+                throw new Exception($"Failed to install {Name}: {error}");
+            }
+
+            Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Bootstrappers\UvBootstrapper.cs =====
+
+using System.Diagnostics;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.Bootstrappers
+{
+    public class UvBootstrapper : IPackageManagerBootstrapper
+    {
+        private readonly IProcessRunner _processRunner;
+        public string Name => "uv";
+
+        public UvBootstrapper(IProcessRunner processRunner)
+        {
+            _processRunner = processRunner;
+        }
+
+        public bool IsInstalled()
+        {
+            return _processRunner.RunCommand("uv", "--version", false);
+        }
+
+        public void Install(bool dryRun)
+        {
+            if (dryRun)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[DryRun] Would install {Name} (Python Manager)");
+                Console.ResetColor();
+                return;
+            }
+
+            Console.WriteLine($"[Bootstrapper] Installing {Name} via Scoop...");
+
+            string scoopPath = "scoop.cmd";
+            string userScoop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd");
+            string globalScoop = Path.Combine(Environment.GetEnvironmentVariable("ProgramData") ?? "C:\\ProgramData", "scoop", "shims", "scoop.cmd");
+
+            if (File.Exists(userScoop)) scoopPath = userScoop;
+            else if (File.Exists(globalScoop)) scoopPath = globalScoop;
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = scoopPath,
+                Arguments = "install uv",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+
+            try
+            {
+                using var process = Process.Start(psi);
+                if (process == null) throw new Exception($"Failed to start installer for {Name}");
+
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    var error = process.StandardError.ReadToEnd();
+                    throw new Exception($"Failed to install {Name}: {error}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Bootstrapper] Error installing {Name}: {ex.Message}");
+                throw;
+            }
+
+            Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Bootstrappers\WingetBootstrapper.cs =====
+
+using System.IO.Compression;
+using System.Net.Http.Json;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.Bootstrappers
+{
+    public class WingetBootstrapper : IPackageManagerBootstrapper
+    {
+        private readonly IProcessRunner _processRunner;
+        private readonly ILogger _logger;
+        public string Name => "Winget";
+
+        public WingetBootstrapper(IProcessRunner processRunner, ILogger logger)
+        {
+            _processRunner = processRunner;
+            _logger = logger;
+        }
+
+        public bool IsInstalled()
+        {
+            if (_processRunner.RunCommand("winget", "--version", false)) return true;
+
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string wingetPath = Path.Combine(localAppData, "Microsoft", "WindowsApps", "winget.exe");
+            bool exists = File.Exists(wingetPath);
+            if (exists) _logger.LogInfo($"[Bootstrapper] Found winget.exe at {wingetPath} but it's not in PATH.");
+            return exists;
+        }
+
+        public void Install(bool dryRun)
+        {
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would install {Name} by downloading from GitHub.");
+                return;
+            }
+
+            _logger.LogInfo($"[Bootstrapper] Installing {Name}...");
+
+            try
+            {
+                string tempDir = Path.Combine(Path.GetTempPath(), "WinHome_WingetInstall");
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+                Directory.CreateDirectory(tempDir);
+
+                string version = GetLatestVersion();
+                _logger.LogInfo($"[Bootstrapper] Latest Winget version detected: {version}");
+
+                string dependenciesUrl = $"https://github.com/microsoft/winget-cli/releases/download/{version}/DesktopAppInstaller_Dependencies.zip";
+                string msixBundleUrl = $"https://github.com/microsoft/winget-cli/releases/download/{version}/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle";
+
+                string dependenciesZip = Path.Combine(tempDir, "dependencies.zip");
+                string msixBundle = Path.Combine(tempDir, "Microsoft.DesktopAppInstaller.msixbundle");
+
+                DownloadFile(dependenciesUrl, dependenciesZip).GetAwaiter().GetResult();
+                DownloadFile(msixBundleUrl, msixBundle).GetAwaiter().GetResult();
+
+                string extractPath = Path.Combine(tempDir, "dependencies");
+                ZipFile.ExtractToDirectory(dependenciesZip, extractPath);
+
+                _logger.LogInfo("[Bootstrapper] Installing dependencies...");
+                string arch = RuntimeInformation.ProcessArchitecture.ToString().ToLower(); // x64, arm64, x86
+
+                var files = Directory.GetFiles(extractPath, "*", SearchOption.AllDirectories);
+                foreach (string file in files)
+                {
+                    string fileName = Path.GetFileName(file).ToLower();
+                    if (fileName.EndsWith(".appx") || fileName.EndsWith(".msix") || fileName.EndsWith(".appxbundle") || fileName.EndsWith(".msixbundle"))
+                    {
+                        // Filter by architecture to avoid noise/failures
+                        if (fileName.Contains("arm64") && arch != "arm64") continue;
+                        if (fileName.Contains("x64") && arch != "x64") continue;
+                        if (fileName.Contains("x86") && arch != "x86" && arch != "x64") continue;
+
+                        _logger.LogInfo($"[Bootstrapper] Installing dependency: {Path.GetFileName(file)}");
+                        InstallAppPackage(file);
+                    }
+                }
+
+                _logger.LogInfo("[Bootstrapper] Installing Winget msixbundle...");
+                InstallAppPackage(msixBundle);
+
+                _logger.LogInfo($"[Bootstrapper] {Name} installation commands completed.");
+                _logger.LogInfo("[Bootstrapper] Waiting 5 seconds for Windows to register the App Execution Alias...");
+                Thread.Sleep(5000);
+
+                // Cleanup
+                try
+                {
+                    _logger.LogInfo("[Bootstrapper] Cleaning up temporary files...");
+                    Directory.Delete(tempDir, true);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"[Bootstrapper] Warning: Could not clean up temp directory: {ex.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to install {Name}: {ex.Message}", ex);
+            }
+        }
+
+        private string GetLatestVersion()
+        {
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromMinutes(5);
+            client.DefaultRequestHeaders.Add("User-Agent", "WinHome-Bootstrapper");
+            var response = client.GetAsync("https://api.github.com/repos/microsoft/winget-cli/releases/latest").GetAwaiter().GetResult();
+            response.EnsureSuccessStatusCode();
+            var json = JsonDocument.Parse(response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+            return json.RootElement.GetProperty("tag_name").GetString() ?? "v1.12.460"; // Fallback to provided version
+        }
+
+        private async Task DownloadFile(string url, string path)
+        {
+            _logger.LogInfo($"[Bootstrapper] Downloading {url}...");
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromMinutes(10); // Increase timeout for large files
+            var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+            await using var fs = new FileStream(path, FileMode.Create);
+            await response.Content.CopyToAsync(fs);
+        }
+
+        private void InstallAppPackage(string path)
+        {
+            // Use Add-AppxPackage via PowerShell
+            string command = $"Add-AppxPackage -Path \"{path}\"";
+            string output = "";
+            if (!_processRunner.RunCommand("powershell.exe", $"-NoProfile -NonInteractive -Command \"{command}\"", false, line => output += line + "\n"))
+            {
+                _logger.LogWarning($"[Bootstrapper] Warning: Package {Path.GetFileName(path)} failed to install.");
+                if (!string.IsNullOrWhiteSpace(output))
+                {
+                    _logger.LogWarning($"[Bootstrapper:Error] {output.Trim()}");
+                }
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Logging\ConsoleLogger.cs =====
+
+using WinHome.Interfaces;
+
+namespace WinHome.Services.Logging
+{
+    public class ConsoleLogger : ILogger
+    {
+        private readonly object _consoleLock = new();
+
+        public void Log(string message, LogLevel level)
+        {
+            lock (_consoleLock)
+            {
+                switch (level)
+                {
+                    case LogLevel.Info:
+                        LogInfo(message);
+                        break;
+                    case LogLevel.Success:
+                        LogSuccess(message);
+                        break;
+                    case LogLevel.Warning:
+                        LogWarning(message);
+                        break;
+                    case LogLevel.Error:
+                        LogError(message);
+                        break;
+                }
+            }
+        }
+
+        public void LogError(string message)
+        {
+            lock (_consoleLock)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(message);
+                Console.ResetColor();
+            }
+        }
+
+        public void LogInfo(string message)
+        {
+            lock (_consoleLock)
+            {
+                Console.WriteLine(message);
+            }
+        }
+
+        public void LogSuccess(string message)
+        {
+            lock (_consoleLock)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(message);
+                Console.ResetColor();
+            }
+        }
+
+        public void LogWarning(string message)
+        {
+            lock (_consoleLock)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(message);
+                Console.ResetColor();
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Logging\JsonLogger.cs =====
+
+using System.Text.Json;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.Logging
+{
+    public class JsonLogger : ILogger
+    {
+        private readonly List<LogEntry> _logEntries = new();
+
+        public void Log(string message, LogLevel level)
+        {
+            _logEntries.Add(new LogEntry(message, level));
+        }
+
+        public void LogError(string message)
+        {
+            Log(message, LogLevel.Error);
+        }
+
+        public void LogInfo(string message)
+        {
+            Log(message, LogLevel.Info);
+        }
+
+        public void LogSuccess(string message)
+        {
+            Log(message, LogLevel.Success);
+        }
+
+        public void LogWarning(string message)
+        {
+            Log(message, LogLevel.Warning);
+        }
+
+        public string ToJson()
+        {
+            return JsonSerializer.Serialize(_logEntries, new JsonSerializerOptions { WriteIndented = true });
+        }
+    }
+
+    public record LogEntry(string Message, LogLevel Level);
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Managers\ChocolateyService.cs =====
+
+using WinHome.Interfaces;
+using WinHome.Models;
+using WinHome.Services.Bootstrappers;
+
+namespace WinHome.Services.Managers
+{
+    public class ChocolateyService : IPackageManager
+    {
+        private readonly IProcessRunner _processRunner;
+        private readonly ILogger _logger;
+        private readonly IRuntimeResolver _resolver;
+        public IPackageManagerBootstrapper Bootstrapper { get; }
+
+        public ChocolateyService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
+        {
+            _processRunner = processRunner;
+            Bootstrapper = bootstrapper;
+            _logger = logger;
+            _resolver = resolver;
+        }
+
+        private string GetChocoExecutable()
+        {
+            return _resolver.Resolve("choco");
+        }
+
+        public bool IsAvailable()
+        {
+            return Bootstrapper.IsInstalled();
+        }
+
+        private void LogFiltered(string line, string context)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return;
+            if (line.Contains("Progress: Downloading")) return;
+            _logger.LogInfo($"[Choco:{context}] {line}");
+        }
+
+        public void Install(AppConfig app, bool dryRun)
+        {
+            string executable = GetChocoExecutable();
+            if (IsInstalled(app.Id))
+            {
+                _logger.LogInfo($"[Choco] {app.Id} is already installed.");
+                return;
+            }
+
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would install '{app.Id}' via Chocolatey");
+                return;
+            }
+
+            _logger.LogInfo($"[Choco] Installing {app.Id}...");
+
+            string args = $"install {app.Id} -y";
+
+            bool alreadyInstalled = false;
+            bool success = _processRunner.RunCommand(executable, args, false, line =>
+            {
+                LogFiltered(line, "Install");
+                // Chocolatey sometimes returns non-zero even if packages are technically present or if it just says "0/1 packages installed"
+                if (line != null && (line.Contains("already installed", StringComparison.OrdinalIgnoreCase) || line.Contains("packages installed currently", StringComparison.OrdinalIgnoreCase)))
+                {
+                    alreadyInstalled = true;
+                }
+            });
+
+            if (!success)
+            {
+                if (alreadyInstalled)
+                {
+                    _logger.LogSuccess($"[Success] {app.Id} is already installed (detected during install attempt).");
+                    return;
+                }
+                throw new Exception($"Failed to install {app.Id} using Chocolatey.");
+            }
+
+            _logger.LogSuccess($"[Success] Installed {app.Id}");
+        }
+
+        public void Uninstall(string appId, bool dryRun)
+        {
+            string executable = GetChocoExecutable();
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Chocolatey");
+                return;
+            }
+
+            _logger.LogInfo($"[Choco] Uninstalling {appId}...");
+            string args = $"uninstall {appId} -y";
+
+            if (!_processRunner.RunCommand(executable, args, false, line => LogFiltered(line, "Uninstall")))
+            {
+                throw new Exception($"Failed to uninstall {appId} using Chocolatey.");
+            }
+
+            _logger.LogSuccess($"[Success] Uninstalled {appId}");
+        }
+
+        public bool IsInstalled(string appId)
+        {
+            string executable = GetChocoExecutable();
+            string output = _processRunner.RunCommandWithOutput(executable, $"list -l -r {appId}");
+            return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Managers\ScoopService.cs =====
+
+using WinHome.Interfaces;
+using WinHome.Models;
+using WinHome.Services.Bootstrappers;
+
+namespace WinHome.Services.Managers
+{
+    public class ScoopService : IPackageManager
+    {
+        private readonly IProcessRunner _processRunner;
+        private readonly ILogger _logger;
+        private readonly IRuntimeResolver _resolver;
+        public IPackageManagerBootstrapper Bootstrapper { get; }
+
+        public ScoopService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
+        {
+            _processRunner = processRunner;
+            Bootstrapper = bootstrapper;
+            _logger = logger;
+            _resolver = resolver;
+        }
+
+        private string GetScoopExecutable()
+        {
+            return _resolver.Resolve("scoop");
+        }
+
+        public bool IsAvailable()
+        {
+            return Bootstrapper.IsInstalled();
+        }
+
+        public void Install(AppConfig app, bool dryRun)
+        {
+            string executable = GetScoopExecutable();
+            if (IsInstalled(app.Id))
+            {
+                _logger.LogInfo($"[Scoop] {app.Id} is already installed.");
+                return;
+            }
+
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would install '{app.Id}' via Scoop");
+                return;
+            }
+
+            _logger.LogInfo($"[Scoop] Installing {app.Id}...");
+            string args = $"install {app.Id}";
+
+            bool alreadyInstalled = false;
+            bool manifestNotFound = false;
+            bool success = _processRunner.RunCommand(executable, args, false, line =>
+            {
+                if (line == null) return;
+                _logger.LogInfo($"[Scoop:Install] {line}");
+                if (line.Contains($"'{app.Id}' is already installed", StringComparison.OrdinalIgnoreCase))
+                {
+                    alreadyInstalled = true;
+                }
+                if (line.Contains("Couldn't find manifest", StringComparison.OrdinalIgnoreCase))
+                {
+                    manifestNotFound = true;
+                }
+            });
+
+            if (!success || manifestNotFound)
+            {
+                if (alreadyInstalled)
+                {
+                    _logger.LogSuccess($"[Success] {app.Id} is already installed (detected during install attempt).");
+                    return;
+                }
+                throw new Exception($"Failed to install {app.Id} using Scoop.{(manifestNotFound ? " Manifest not found." : "")}");
+            }
+            _logger.LogSuccess($"[Success] Installed {app.Id}");
+        }
+
+        public void Uninstall(string appId, bool dryRun)
+        {
+            string executable = GetScoopExecutable();
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Scoop");
+                return;
+            }
+
+            _logger.LogInfo($"[Scoop] Uninstalling {appId}...");
+            string args = $"uninstall {appId}";
+
+            if (!_processRunner.RunCommand(executable, args, false, line => _logger.LogInfo($"[Scoop:Uninstall] {line}")))
+            {
+                throw new Exception($"Failed to uninstall {appId} using Scoop.");
+            }
+            _logger.LogSuccess($"[Success] Uninstalled {appId}");
+        }
+
+        public bool IsInstalled(string appId)
+        {
+            string executable = GetScoopExecutable();
+            string output = _processRunner.RunCommandWithOutput(executable, "list");
+            return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Managers\WingetService.cs =====
+
+using WinHome.Interfaces;
+using WinHome.Models;
+using WinHome.Services.Bootstrappers;
+
+namespace WinHome.Services.Managers
+{
+    public class WingetService : IPackageManager
+    {
+        private string _wingetPath = "winget";
+        private bool _pathResolved = false;
+        private bool _sourceUpdated = false;
+        private readonly IProcessRunner _processRunner;
+        private readonly ILogger _logger;
+        private readonly IRuntimeResolver _resolver;
+        public IPackageManagerBootstrapper Bootstrapper { get; }
+
+        public WingetService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
+        {
+            _processRunner = processRunner;
+            Bootstrapper = bootstrapper;
+            _logger = logger;
+            _resolver = resolver;
+        }
+
+        private void ResolveWingetPath()
+        {
+            if (_pathResolved && _wingetPath != "winget") return;
+            _wingetPath = _resolver.Resolve("winget");
+            _pathResolved = true;
+        }
+
+        private void LogFiltered(string line, string context)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return;
+
+            // Filter out spinners: - \ | /
+            string trimmed = line.Trim();
+            if (trimmed == "-" || trimmed == "\\" || trimmed == "|" || trimmed == "/") return;
+
+            // Filter out progress bar characters (Winget uses blocks)
+            // Common block characters in different encodings: â–ˆ (U+2588) often appears as Î“Ã»Ãª in some locales
+            if (line.Contains("Î“Ã»Ãª") || line.Contains("Î“Ã»Ã†") || line.Contains("â–ˆ") || line.Contains("â–‘"))
+            {
+                // Only log if it's the final 100% or similar meaningful update (optional)
+                // For now, let's just suppress the spammy progress lines
+                return;
+            }
+
+            _logger.LogInfo($"[Winget:{context}] {line}");
+        }
+
+        private void UpdateSource(bool dryRun)
+        {
+            if (_sourceUpdated || dryRun) return;
+
+            _logger.LogInfo("[Winget] Updating package sources...");
+            _processRunner.RunCommand(_wingetPath, "source update", false, line => LogFiltered(line, "SourceUpdate"));
+            _sourceUpdated = true;
+        }
+
+        public bool IsAvailable()
+        {
+            ResolveWingetPath();
+            return Bootstrapper.IsInstalled();
+        }
+
+        public void Install(AppConfig app, bool dryRun)
+        {
+            ResolveWingetPath();
+
+            if (IsInstalled(app.Id))
+            {
+                _logger.LogInfo($"[Winget] {app.Id} is already installed.");
+                return;
+            }
+
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would install '{app.Id}' via Winget");
+                return;
+            }
+
+            UpdateSource(dryRun);
+
+            _logger.LogInfo($"[Winget] Installing {app.Id}...");
+            string args = $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --no-upgrade";
+            if (!string.IsNullOrEmpty(app.Source)) args += $" --source {app.Source}";
+
+            bool alreadyInstalled = false;
+            bool success = _processRunner.RunCommand(_wingetPath, args, false, line =>
+            {
+                LogFiltered(line, "Install");
+                if (line != null && line.Contains("A package version is already installed", StringComparison.OrdinalIgnoreCase))
+                {
+                    alreadyInstalled = true;
+                }
+            });
+
+            if (!success)
+            {
+                if (alreadyInstalled)
+                {
+                    _logger.LogSuccess($"[Success] {app.Id} is already installed (detected during install attempt).");
+                    return;
+                }
+                throw new Exception($"Failed to install {app.Id} using Winget.");
+            }
+            _logger.LogSuccess($"[Success] Installed {app.Id}");
+        }
+
+        public void Uninstall(string appId, bool dryRun)
+        {
+            ResolveWingetPath();
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Winget");
+                return;
+            }
+
+            _logger.LogInfo($"[Winget] Uninstalling {appId}...");
+            string args = $"uninstall --id {appId} -e --silent --accept-source-agreements --disable-interactivity";
+
+            if (!_processRunner.RunCommand(_wingetPath, args, false, line => LogFiltered(line, "Uninstall")))
+            {
+                throw new Exception($"Failed to uninstall {appId} using Winget.");
+            }
+            _logger.LogSuccess($"[Success] Uninstalled {appId}");
+        }
+
+        public bool IsInstalled(string appId)
+        {
+            ResolveWingetPath();
+            var output = _processRunner.RunCommandWithOutput(_wingetPath, $"list -q {appId}");
+            return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Plugins\PluginManager.cs =====
+
+using System.Diagnostics;
+using WinHome.Interfaces;
+using WinHome.Models.Plugins;
+using WinHome.Services.Bootstrappers;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+
+namespace WinHome.Services.Plugins
+{
+    public class PluginManager : IPluginManager
+    {
+        private readonly UvBootstrapper _uvBootstrapper;
+        private readonly BunBootstrapper _bunBootstrapper;
+        private readonly ILogger _logger;
+        private readonly string _pluginsDir;
+        private readonly IRuntimeResolver? _runtimeResolver;
+
+        public PluginManager(
+            UvBootstrapper uvBootstrapper,
+            BunBootstrapper bunBootstrapper,
+            ILogger logger,
+            string? pluginsDirectory = null,
+            IRuntimeResolver? runtimeResolver = null)
+        {
+            _uvBootstrapper = uvBootstrapper;
+            _bunBootstrapper = bunBootstrapper;
+            _logger = logger;
+            _runtimeResolver = runtimeResolver;
+
+            _pluginsDir = pluginsDirectory ?? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "WinHome",
+                "plugins");
+        }
+
+        public IEnumerable<PluginManifest> DiscoverPlugins()
+        {
+            if (!Directory.Exists(_pluginsDir))
+            {
+                return Enumerable.Empty<PluginManifest>();
+            }
+
+            var plugins = new List<PluginManifest>();
+            var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .IgnoreUnmatchedProperties()
+                .Build();
+
+            foreach (var dir in Directory.GetDirectories(_pluginsDir))
+            {
+                var manifestPath = Path.Combine(dir, "plugin.yaml");
+                if (File.Exists(manifestPath))
+                {
+                    try
+                    {
+                        var content = File.ReadAllText(manifestPath);
+                        var manifest = deserializer.Deserialize<PluginManifest>(content);
+                        manifest.DirectoryPath = dir;
+                        plugins.Add(manifest);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"[Plugin] Failed to load manifest in {dir}: {ex.Message}");
+                    }
+                }
+            }
+
+            return plugins;
+        }
+
+        public async Task EnsureRuntimeAsync(PluginManifest plugin)
+        {
+            switch (plugin.Type.ToLower())
+            {
+                case "python":
+                    if (!_uvBootstrapper.IsInstalled())
+                    {
+                        _logger.LogInfo($"[Plugin] {plugin.Name} requires 'uv'. Installing...");
+                        await Task.Run(() => _uvBootstrapper.Install(false));
+                    }
+                    break;
+
+                case "typescript":
+                case "javascript":
+                    if (!_bunBootstrapper.IsInstalled())
+                    {
+                        _logger.LogInfo($"[Plugin] {plugin.Name} requires 'bun'. Installing...");
+                        await Task.Run(() => _bunBootstrapper.Install(false));
+                    }
+                    break;
+
+                case "powershell":
+                    string resolvedMessage = "Assuming system powershell is available.";
+                    if (_runtimeResolver != null)
+                    {
+                        try
+                        {
+                            var pwshResolved = _runtimeResolver.Resolve("pwsh");
+                            if (pwshResolved != "pwsh" && File.Exists(pwshResolved))
+                            {
+                                resolvedMessage = "Using pwsh (Core).";
+                            }
+                            else
+                            {
+                                resolvedMessage = "Falling back to Windows PowerShell.";
+                            }
+                        }
+                        catch
+                        {
+                            resolvedMessage = "Falling back to Windows PowerShell.";
+                        }
+                    }
+                    _logger.LogInfo($"[Plugin] {plugin.Name} requires 'powershell'. {resolvedMessage}");
+                    break;
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Plugins\PluginPackageManagerAdapter.cs =====
+
+using System.Diagnostics;
+using WinHome.Interfaces;
+using WinHome.Models;
+using WinHome.Models.Plugins;
+
+namespace WinHome.Services.Plugins
+{
+    public class PluginPackageManagerAdapter : IPackageManager
+    {
+        private readonly PluginManifest _plugin;
+        private readonly IPluginRunner _runner;
+        private readonly IPluginManager _manager;
+        private readonly IRuntimeResolver _resolver;
+
+        public PluginPackageManagerAdapter(PluginManifest plugin, IPluginRunner runner, IPluginManager manager, IRuntimeResolver resolver)
+        {
+            _plugin = plugin;
+            _runner = runner;
+            _manager = manager;
+            _resolver = resolver;
+        }
+
+        public string PluginType => _plugin.Type;
+
+        public IPackageManagerBootstrapper Bootstrapper => new PluginRuntimeBootstrapper(_plugin, _manager, _resolver);
+
+        public bool IsAvailable()
+        {
+            // For a plugin, "Available" means the plugin file exists and runtime is ready.
+            return Bootstrapper.IsInstalled();
+        }
+
+        public bool IsInstalled(string appId)
+        {
+            var result = _runner.ExecuteAsync(_plugin, "check_installed", new { packageId = appId }, null).Result;
+            return result.Success && result.Data?.ToString()?.ToLower() == "true";
+        }
+
+        public void Install(AppConfig app, bool dryRun)
+        {
+            // Ensure runtime is available before execution
+            _manager.EnsureRuntimeAsync(_plugin).Wait();
+
+            var args = new
+            {
+                packageId = app.Id,
+                version = app.Version,
+                @params = app.Params
+            };
+
+            var context = new { dryRun = dryRun };
+
+            var result = _runner.ExecuteAsync(_plugin, "install", args, context).Result;
+
+            if (!result.Success)
+            {
+                throw new Exception($"Plugin '{_plugin.Name}' failed to install '{app.Id}': {result.Error}");
+            }
+        }
+
+        public void Uninstall(string appId, bool dryRun)
+        {
+            // Ensure runtime is available before execution
+            _manager.EnsureRuntimeAsync(_plugin).Wait();
+
+            var context = new { dryRun = dryRun };
+            var result = _runner.ExecuteAsync(_plugin, "uninstall", new { packageId = appId }, context).Result;
+
+            if (!result.Success)
+            {
+                // Log warning? For now throw.
+                throw new Exception($"Plugin '{_plugin.Name}' failed to uninstall '{appId}': {result.Error}");
+            }
+        }
+
+        // Inner class to satisfy the Interface contract
+        private class PluginRuntimeBootstrapper : IPackageManagerBootstrapper
+        {
+            private readonly PluginManifest _p;
+            private readonly IPluginManager _m;
+            private readonly IRuntimeResolver _r;
+
+            public PluginRuntimeBootstrapper(PluginManifest p, IPluginManager m, IRuntimeResolver r)
+            {
+                _p = p;
+                _m = m;
+                _r = r;
+            }
+
+            public string Name => $"{_p.Name} Runtime";
+
+            public bool IsInstalled()
+            {
+                // We check if the required runtime is installed
+                string exe = "";
+                switch (_p.Type.ToLower())
+                {
+                    case "python":
+                        exe = _r.Resolve("uv");
+                        break;
+                    case "typescript":
+                    case "javascript":
+                        exe = _r.Resolve("bun");
+                        break;
+                    case "executable":
+                        return true;
+                    default:
+                        return true;
+                }
+
+                if (string.IsNullOrEmpty(exe)) return false;
+
+                try
+                {
+                    return Process.Start(new ProcessStartInfo { FileName = exe, Arguments = "--version", CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true })?.WaitForExit(1000) ?? false;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            public void Install(bool dryRun)
+            {
+                _m.EnsureRuntimeAsync(_p).Wait();
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\Plugins\PluginRunner.cs =====
+
+using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
+using WinHome.Interfaces;
+using WinHome.Models.Plugins;
+
+namespace WinHome.Services.Plugins
+{
+    public class PluginRunner : IPluginRunner
+    {
+        private readonly ILogger _logger;
+        private readonly IRuntimeResolver _runtimeResolver;
+
+        public PluginRunner(ILogger logger, IRuntimeResolver runtimeResolver)
+        {
+            _logger = logger;
+            _runtimeResolver = runtimeResolver;
+        }
+
+        public async Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context)
+        {
+            var (fileName, arguments) = BuildProcessStartInfo(plugin);
+
+            var request = new PluginRequest
+            {
+                Command = command,
+                Args = args,
+                Context = context
+            };
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                WorkingDirectory = plugin.DirectoryPath,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            // Inject Environment Variables if needed
+            startInfo.Environment["WINHOME_PLUGIN_NAME"] = plugin.Name;
+
+            using var process = new Process { StartInfo = startInfo };
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+            try
+            {
+                _logger.LogInfo($"[PluginRunner] Starting {plugin.Name}: {fileName} {arguments}");
+                if (!process.Start())
+                {
+                    return new PluginResult { Success = false, Error = "Failed to start plugin process." };
+                }
+
+                // Handling Stderr asynchronously to avoid deadlocks and log immediately
+                process.ErrorDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data)) _logger.LogWarning($"[{plugin.Name}][STDERR] {e.Data}");
+                };
+                process.BeginErrorReadLine();
+
+                // 1. Send Request
+                string jsonRequest = JsonSerializer.Serialize(request);
+                await process.StandardInput.WriteLineAsync(jsonRequest.AsMemory(), cts.Token);
+                process.StandardInput.Close(); // Close Stdin to signal EOF to the plugin if it reads until EOF
+
+                // 2. Read Response with Size Limit (10MB) and Timeout
+                var outputBuilder = new StringBuilder();
+                char[] buffer = new char[4096];
+                int totalRead = 0;
+                int maxBytes = 10 * 1024 * 1024; // 10 MB
+
+                while (true)
+                {
+                    int read = await process.StandardOutput.ReadAsync(buffer.AsMemory(), cts.Token);
+                    if (read == 0) break;
+
+                    totalRead += read;
+                    if (totalRead > maxBytes)
+                    {
+                        process.Kill();
+                        throw new InvalidOperationException("Plugin output exceeded size limit (10MB).");
+                    }
+
+                    outputBuilder.Append(buffer, 0, read);
+                }
+
+                await process.WaitForExitAsync(cts.Token);
+
+                if (process.ExitCode != 0)
+                {
+                    return new PluginResult { Success = false, Error = $"Plugin process exited with code {process.ExitCode}" };
+                }
+
+                string output = outputBuilder.ToString();
+
+                if (string.IsNullOrWhiteSpace(output))
+                {
+                    return new PluginResult { Success = false, Error = "Plugin returned empty response." };
+                }
+
+                try
+                {
+                    // Attempt robust parsing: Find the last line that looks like JSON
+                    var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    string jsonLine = lines.LastOrDefault(l => l.StartsWith("{") && l.EndsWith("}")) ?? output;
+
+                    var result = JsonSerializer.Deserialize<PluginResult>(jsonLine);
+                    return result ?? new PluginResult { Success = false, Error = "Deserialized null result." };
+                }
+                catch (JsonException ex)
+                {
+                    return new PluginResult { Success = false, Error = $"Invalid JSON response: {ex.Message}. Output: {output}" };
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                try { process.Kill(); } catch { }
+                return new PluginResult { Success = false, Error = "Plugin timed out after 30 seconds." };
+            }
+            catch (Exception ex)
+            {
+                try { if (!process.HasExited) process.Kill(); } catch { }
+                return new PluginResult { Success = false, Error = $"Runner Exception: {ex.Message}" };
+            }
+        }
+
+        public (string FileName, string Arguments) BuildProcessStartInfo(PluginManifest plugin)
+        {
+            string mainPath = Path.Combine(plugin.DirectoryPath, plugin.Main);
+
+            switch (plugin.Type.ToLower())
+            {
+                case "python":
+                    // uv run --quiet script.py
+                    var uvPath = _runtimeResolver.Resolve("uv");
+                    return (uvPath, $"run --quiet \"{mainPath}\"");
+
+                case "typescript":
+                case "javascript":
+                    // bun run script.ts
+                    var bunPath = _runtimeResolver.Resolve("bun");
+                    return (bunPath, $"run \"{mainPath}\"");
+
+                case "executable":
+                    return (mainPath, "");
+
+                case "powershell":
+                    string powershellPath = "powershell";
+                    try
+                    {
+                        var pwshResolved = _runtimeResolver.Resolve("pwsh");
+                        if (pwshResolved != "pwsh" && File.Exists(pwshResolved))
+                        {
+                            powershellPath = pwshResolved;
+                        }
+                        else
+                        {
+                            powershellPath = _runtimeResolver.Resolve("powershell");
+                        }
+                    }
+                    catch
+                    {
+                        powershellPath = _runtimeResolver.Resolve("powershell");
+                    }
+                    return (powershellPath, $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{mainPath}\"");
+
+                default:
+                    throw new NotSupportedException($"Plugin type '{plugin.Type}' is not supported.");
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\ConfigValidator.cs =====
+
+using System.Text.Json;
+using Json.Schema;
+using Json.Schema.Generation;
+using WinHome.Interfaces;
+using WinHome.Models;
+using YamlDotNet.Serialization;
+
+namespace WinHome.Services.System;
+
+public class ConfigValidator : IConfigValidator
+{
+    private readonly JsonSchema _schema;
+
+    public ConfigValidator()
+    {
+        _schema = new JsonSchemaBuilder()
+            .FromType<Configuration>()
+            .Build();
+    }
+
+    public (bool IsValid, List<string> Errors) Validate(string yamlText)
+    {
+        try
+        {
+            var deserializer = new DeserializerBuilder().Build();
+            var yamlObject = deserializer.Deserialize<object>(yamlText);
+
+            var serializer = new SerializerBuilder()
+                .JsonCompatible()
+                .Build();
+
+            string jsonText = serializer.Serialize(yamlObject);
+
+            using var jsonDoc = JsonDocument.Parse(jsonText);
+            var results = _schema.Evaluate(jsonDoc.RootElement, new EvaluationOptions
+            {
+                OutputFormat = OutputFormat.List
+            });
+
+            if (results.IsValid)
+            {
+                return (true, new List<string>());
+            }
+
+            var errors = (results.Details ?? Enumerable.Empty<EvaluationResults>())
+                .Where(x => !x.IsValid && x.Errors != null)
+                .SelectMany(x => x.Errors!.Values.Select(v => $"{x.InstanceLocation}: {v}"))
+                .ToList();
+
+            if (!errors.Any())
+            {
+                errors.Add("Unknown validation error.");
+            }
+
+            return (false, errors);
+        }
+        catch (Exception ex)
+        {
+            return (false, new List<string> { $"YAML Parsing Error: {ex.Message}" });
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\DefaultProcessRunner.cs =====
+
+using System.Diagnostics;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.System
+{
+    public class DefaultProcessRunner : IProcessRunner
+    {
+        public bool RunCommand(string fileName, string args, bool dryRun, Action<string>? onOutput = null)
+        {
+            if (dryRun) return true;
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = args,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            try
+            {
+                using var process = new Process { StartInfo = startInfo };
+                if (onOutput != null)
+                {
+                    process.OutputDataReceived += (s, e) => { if (e.Data != null) onOutput(e.Data); };
+                    process.ErrorDataReceived += (s, e) => { if (e.Data != null) onOutput(e.Data); };
+                }
+
+                if (!process.Start())
+                {
+                    return false;
+                }
+
+                if (onOutput != null)
+                {
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                }
+                else
+                {
+                    // Still read to avoid hanging
+                    Task.Run(() => process.StandardOutput.ReadToEnd());
+                    Task.Run(() => process.StandardError.ReadToEnd());
+                }
+
+                if (!process.WaitForExit(TimeSpan.FromMinutes(10)))
+                {
+                    process.Kill(true);
+                    return false;
+                }
+                return process.ExitCode == 0;
+            }
+            catch (Exception ex)
+            {
+                if (onOutput != null) onOutput($"[ProcessRunner] Error starting {fileName}: {ex.Message}");
+                return false;
+            }
+        }
+
+        public string RunCommandWithOutput(string fileName, string args)
+        {
+            return RunCommandWithOutput(fileName, args, null);
+        }
+
+        public string RunCommandWithOutput(string fileName, string args, string? standardInput)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = args,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = standardInput != null,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            try
+            {
+                using var process = new Process { StartInfo = startInfo };
+                process.Start();
+
+                if (standardInput != null)
+                {
+                    using var writer = process.StandardInput;
+                    writer.Write(standardInput);
+                }
+
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                var errorTask = process.StandardError.ReadToEndAsync();
+
+                if (process.WaitForExit(TimeSpan.FromMinutes(10)))
+                {
+                    // Process exited, wait for streams to finish with a short timeout
+                    Task.WaitAll(new Task[] { outputTask, errorTask }, TimeSpan.FromSeconds(5));
+                    return outputTask.Result;
+                }
+                else
+                {
+                    process.Kill(true);
+                    return string.Empty;
+                }
+            }
+            catch { return string.Empty; }
+        }
+        public string RunAndCapture(string fileName, string arguments)
+        {
+            try
+            {
+                var psi = new global::System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using var process = global::System.Diagnostics.Process.Start(psi);
+                if (process == null) return string.Empty;
+
+                string output = process.StandardOutput.ReadToEnd().Trim();
+                process.WaitForExit();
+                return output;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\DotfileService.cs =====
+
+using WinHome.Interfaces;
+using WinHome.Models;
+
+namespace WinHome.Services.System
+{
+    public class DotfileService : IDotfileService
+    {
+        private readonly ILogger _logger;
+
+        public DotfileService(ILogger logger)
+        {
+            _logger = logger;
+        }
+        public void Apply(DotfileConfig dotfile, bool dryRun)
+        {
+            try
+            {
+                string sourcePath = Path.GetFullPath(dotfile.Src);
+                string targetPath = ResolvePath(dotfile.Target);
+
+                if (!File.Exists(sourcePath))
+                {
+                    _logger.LogError($"[Dotfile] Error: Source file not found: {sourcePath}");
+                    return;
+                }
+
+                if (IsAlreadyLinked(sourcePath, targetPath))
+                {
+                    _logger.LogInfo($"[Dotfile] Already linked: {Path.GetFileName(targetPath)}");
+                    return;
+                }
+
+                if (dryRun)
+                {
+                    _logger.LogWarning($"[DryRun] Would link {sourcePath} -> {targetPath}");
+                    return;
+                }
+
+
+                if (File.Exists(targetPath))
+                {
+                    File.Move(targetPath, targetPath + ".bak", true);
+                    _logger.LogInfo($"[Dotfile] Backup created.");
+                }
+
+                string? parentDir = Path.GetDirectoryName(targetPath);
+                if (!string.IsNullOrEmpty(parentDir)) Directory.CreateDirectory(parentDir);
+
+                try
+                {
+                    File.CreateSymbolicLink(targetPath, sourcePath);
+                    _logger.LogSuccess($"[Success] Link created -> {targetPath}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"[Dotfile] Symlink failed: {ex.Message}. Falling back to copy.");
+                    File.Copy(sourcePath, targetPath, true);
+                    _logger.LogSuccess($"[Success] File copied -> {targetPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[Error] Dotfile failed: {ex.Message}");
+            }
+        }
+
+        private string ResolvePath(string path)
+        {
+            string expanded = Environment.ExpandEnvironmentVariables(path);
+            if (expanded.StartsWith("~"))
+            {
+                string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                expanded = Path.Combine(home, expanded.Substring(1).TrimStart('/', '\\'));
+            }
+            return Path.GetFullPath(expanded);
+        }
+
+        private bool IsAlreadyLinked(string source, string target)
+        {
+            if (!File.Exists(target)) return false;
+            var info = new FileInfo(target);
+            return info.LinkTarget == source;
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\EnvironmentService.cs =====
+
+using System.Runtime.Versioning;
+using WinHome.Interfaces;
+using WinHome.Models;
+
+namespace WinHome.Services.System
+{
+    [SupportedOSPlatform("windows")]
+    public class EnvironmentService : IEnvironmentService
+    {
+        private readonly ILogger _logger;
+        // We strictly target the USER scope. No Admin needed.
+        private const EnvironmentVariableTarget Target = EnvironmentVariableTarget.User;
+
+        public EnvironmentService(ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        public void Apply(EnvVarConfig env, bool dryRun)
+        {
+            if (string.IsNullOrEmpty(env.Variable)) return;
+
+            string currentValue = Environment.GetEnvironmentVariable(env.Variable, Target) ?? string.Empty;
+            string newValue = env.Value;
+
+            // Handle Path Appending
+            if (env.Action.ToLower() == "append")
+            {
+                var parts = currentValue.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
+
+                // Idempotency: Don't add if already there
+                if (parts.Contains(newValue, StringComparer.OrdinalIgnoreCase))
+                {
+                    _logger.LogInfo($"[Env] Skipped: '{newValue}' already in {env.Variable}");
+                    return;
+                }
+
+                newValue = string.IsNullOrEmpty(currentValue) ? newValue : $"{currentValue};{newValue}";
+            }
+            else
+            {
+                // Handle Set (Overwrite)
+                if (currentValue == newValue)
+                {
+                    _logger.LogInfo($"[Env] Skipped: {env.Variable} is already correct.");
+                    return;
+                }
+            }
+
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would set User Env Var '{env.Variable}' to '{newValue}'");
+                return;
+            }
+
+            try
+            {
+                Environment.SetEnvironmentVariable(env.Variable, newValue, Target);
+                _logger.LogSuccess($"[Env] Set User variable {env.Variable} = {env.Value}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[Error] Failed to set Env Var: {ex.Message}");
+            }
+        }
+
+        public void RefreshPath()
+        {
+            try
+            {
+                // Reload Machine PATH
+                string machinePath = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.Machine) ?? string.Empty;
+                // Reload User PATH
+                string userPath = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? string.Empty;
+
+                // Merge them
+                var combinedPath = string.Join(";",
+                    machinePath.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                    .Concat(userPath.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                    .Distinct(StringComparer.OrdinalIgnoreCase));
+
+                // Update CURRENT process environment
+                Environment.SetEnvironmentVariable("Path", combinedPath, EnvironmentVariableTarget.Process);
+                _logger.LogInfo("[Env] Refreshed process PATH from registry.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[Env] Failed to refresh process PATH: {ex.Message}");
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\GeneratorService.cs =====
+
+using System.Text.Json;
+using WinHome.Interfaces;
+using WinHome.Models;
+
+namespace WinHome.Services.System
+{
+    public class GeneratorService : IGeneratorService
+    {
+        private readonly IPackageManager _winget;
+        private readonly ISystemSettingsService _systemSettings;
+        private readonly ILogger _logger;
+        private readonly IProcessRunner _processRunner;
+
+        public GeneratorService(
+            Dictionary<string, IPackageManager> managers,
+            ISystemSettingsService systemSettings,
+            IProcessRunner processRunner,
+            ILogger logger)
+        {
+            _winget = managers.ContainsKey("winget") ? managers["winget"] : throw new Exception("Winget manager not available");
+            _systemSettings = systemSettings;
+            _processRunner = processRunner;
+            _logger = logger;
+        }
+
+        public async Task<Configuration> GenerateAsync()
+        {
+            var config = new Configuration
+            {
+                Version = "1.0"
+            };
+
+            // 1. Capture Apps (Winget)
+            _logger.LogInfo("[Generator] Scanning installed applications...");
+            var apps = await GetInstalledAppsAsync();
+            config.Apps.AddRange(apps);
+
+            // 2. Capture System Settings
+            _logger.LogInfo("[Generator] Scanning system settings...");
+            config.SystemSettings = await _systemSettings.GetCapturedSettingsAsync();
+
+            // 3. Capture Git Config
+            _logger.LogInfo("[Generator] Scanning git configuration...");
+            config.Git = GetGitConfig();
+
+            return config;
+        }
+
+        private async Task<List<AppConfig>> GetInstalledAppsAsync()
+        {
+            return await Task.Run(() =>
+            {
+                var apps = new List<AppConfig>();
+                string tempFile = Path.GetTempFileName();
+                try
+                {
+                    // export to temp file
+                    // winget export -o <file> --source winget --accept-source-agreements
+                    bool success = _processRunner.RunCommand("winget", $"export -o \"{tempFile}\" --source winget --accept-source-agreements", false);
+
+                    if (success && File.Exists(tempFile))
+                    {
+                        string json = File.ReadAllText(tempFile);
+                        apps = ParseWingetExport(json);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Failed to export installed apps: {ex.Message}");
+                }
+                finally
+                {
+                    if (File.Exists(tempFile))
+                    {
+                        try { File.Delete(tempFile); } catch { }
+                    }
+                }
+
+                return apps;
+            });
+        }
+
+        public static List<AppConfig> ParseWingetExport(string json)
+        {
+            var apps = new List<AppConfig>();
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                try
+                {
+                    using (JsonDocument doc = JsonDocument.Parse(json))
+                    {
+                        if (doc.RootElement.TryGetProperty("Sources", out JsonElement sources))
+                        {
+                            foreach (var source in sources.EnumerateArray())
+                            {
+                                if (source.TryGetProperty("Packages", out JsonElement packages))
+                                {
+                                    foreach (var pkg in packages.EnumerateArray())
+                                    {
+                                        if (pkg.TryGetProperty("PackageIdentifier", out JsonElement id))
+                                        {
+                                            apps.Add(new AppConfig
+                                            {
+                                                Id = id.GetString() ?? "",
+                                                Manager = "winget"
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Invalid JSON, return empty list
+                }
+            }
+            return apps;
+        }
+
+        private GitConfig? GetGitConfig()
+        {
+            try
+            {
+                string name = _processRunner.RunAndCapture("git", "config --global user.name");
+                string email = _processRunner.RunAndCapture("git", "config --global user.email");
+
+                if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(email)) return null;
+
+                return new GitConfig
+                {
+                    UserName = name,
+                    UserEmail = email
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\GitService.cs =====
+
+using WinHome.Interfaces;
+using WinHome.Models;
+
+namespace WinHome.Services.System
+{
+    public class GitService : IGitService
+    {
+        private readonly IProcessRunner _processRunner;
+        private readonly ILogger _logger;
+
+        public GitService(IProcessRunner processRunner, ILogger logger)
+        {
+            _processRunner = processRunner;
+            _logger = logger;
+        }
+
+        private string GetGitExecutable()
+        {
+            if (_processRunner.RunCommand("git", "--version", false)) return "git";
+
+            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string programData = Environment.GetEnvironmentVariable("ProgramData") ?? @"C:\ProgramData";
+
+            // Fallback for fresh Scoop installs (various possible locations)
+            string[] fallbacks = {
+                Path.Combine(userProfile, "scoop", "shims", "git.exe"),
+                Path.Combine(programData, "scoop", "shims", "git.exe"),
+                Path.Combine(userProfile, "scoop", "apps", "git", "current", "cmd", "git.exe"),
+                Path.Combine(programData, "scoop", "apps", "git", "current", "cmd", "git.exe")
+            };
+
+            foreach (var path in fallbacks)
+            {
+                if (File.Exists(path)) return path;
+            }
+
+            return "git";
+        }
+
+        public void Configure(GitConfig config, bool dryRun)
+        {
+            if (!IsInstalled())
+            {
+                _logger.LogError("[Git] Error: Git is not installed/found in PATH.");
+                return;
+            }
+
+            _logger.LogInfo("\n--- Configuring Git ---");
+            string gitExec = GetGitExecutable();
+
+            if (!string.IsNullOrEmpty(config.UserName))
+                SetGlobalConfig(gitExec, "user.name", config.UserName, dryRun);
+
+            if (!string.IsNullOrEmpty(config.UserEmail))
+                SetGlobalConfig(gitExec, "user.email", config.UserEmail, dryRun);
+
+            if (!string.IsNullOrEmpty(config.SigningKey))
+                SetGlobalConfig(gitExec, "user.signingkey", config.SigningKey, dryRun);
+
+            if (config.CommitGpgSign.HasValue)
+                SetGlobalConfig(gitExec, "commit.gpgsign", config.CommitGpgSign.Value.ToString().ToLower(), dryRun);
+
+            if (config.Settings != null)
+            {
+                foreach (var setting in config.Settings)
+                {
+                    SetGlobalConfig(gitExec, setting.Key, setting.Value, dryRun);
+                }
+            }
+        }
+
+        private void SetGlobalConfig(string gitExec, string key, string value, bool dryRun)
+        {
+            string currentValue = GetGlobalConfig(gitExec, key);
+
+            if (string.Equals(currentValue, value, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would set git config --global {key} \"{value}\"");
+                return;
+            }
+
+            _logger.LogInfo($"[Git] Setting {key} = {value}...");
+            _processRunner.RunCommand(gitExec, $"config --global {key} \"{value}\"", false);
+        }
+
+        private string GetGlobalConfig(string gitExec, string key)
+        {
+            string output = _processRunner.RunCommandWithOutput(gitExec, $"config --global --get {key}");
+            return output.Trim();
+        }
+
+        public bool IsInstalled()
+        {
+            if (_processRunner.RunCommand("git", "--version", false)) return true;
+
+            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string programData = Environment.GetEnvironmentVariable("ProgramData") ?? @"C:\ProgramData";
+
+            return File.Exists(Path.Combine(userProfile, "scoop", "shims", "git.exe")) ||
+                   File.Exists(Path.Combine(programData, "scoop", "shims", "git.exe")) ||
+                   File.Exists(Path.Combine(userProfile, "scoop", "apps", "git", "current", "cmd", "git.exe")) ||
+                   File.Exists(Path.Combine(programData, "scoop", "apps", "git", "current", "cmd", "git.exe"));
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\RegistryKeyWrapper.cs =====
+
+using Microsoft.Win32;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.System
+{
+    public class RegistryKeyWrapper : IRegistryKey
+    {
+        private readonly RegistryKey _registryKey;
+
+        public RegistryKeyWrapper(RegistryKey registryKey)
+        {
+            _registryKey = registryKey;
+        }
+
+        public void SetValue(string name, object value, RegistryValueKind kind)
+        {
+            _registryKey.SetValue(name, value, kind);
+        }
+
+        public object? GetValue(string name)
+        {
+            return _registryKey.GetValue(name);
+        }
+
+        public void DeleteValue(string name)
+        {
+            _registryKey.DeleteValue(name);
+        }
+
+        public IRegistryKey? OpenSubKey(string name, bool writable)
+        {
+            var subKey = _registryKey.OpenSubKey(name, writable);
+            return subKey == null ? null : new RegistryKeyWrapper(subKey);
+        }
+
+        public IRegistryKey? CreateSubKey(string name, bool writable)
+        {
+            var subKey = _registryKey.CreateSubKey(name, writable);
+            return subKey == null ? null : new RegistryKeyWrapper(subKey);
+        }
+
+        public void Dispose()
+        {
+            _registryKey.Dispose();
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\RegistryService.cs =====
+
+using Microsoft.Win32;
+using System.Runtime.Versioning;
+using WinHome.Interfaces;
+using WinHome.Models;
+using WinHome.Infrastructure.Helpers;
+
+namespace WinHome.Services.System
+{
+    [SupportedOSPlatform("windows")]
+    public class RegistryService : IRegistryService
+    {
+        private readonly IRegistryWrapper _registryWrapper;
+
+        public RegistryService(IRegistryWrapper registryWrapper)
+        {
+            _registryWrapper = registryWrapper;
+        }
+
+        public void Apply(RegistryTweak tweak, bool dryRun)
+        {
+            try
+            {
+                // Security Check: Prevent HKCU modification when running as SYSTEM
+                RegistryGuard.ValidateContext(tweak.Path);
+
+                IRegistryKey root = _registryWrapper.GetRootKey(tweak.Path, out string subKeyPath);
+
+                using (IRegistryKey? key = root.OpenSubKey(subKeyPath, writable: false))
+                {
+                    object? currentValue = key?.GetValue(tweak.Name);
+
+                    if (currentValue != null && currentValue.ToString() == tweak.Value?.ToString())
+                    {
+                        Console.WriteLine($"[Registry] Skipped: {tweak.Name} (Already set)");
+                        return;
+                    }
+
+                    if (dryRun)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine($"[DryRun] Would set Registry: {tweak.Path}\\{tweak.Name} = {tweak.Value}");
+                        Console.ResetColor();
+                        return;
+                    }
+                }
+
+                using (IRegistryKey? key = root.CreateSubKey(subKeyPath, writable: true))
+                {
+                    if (key == null)
+                    {
+                        Console.WriteLine($"[Error] Could not create registry subkey: {tweak.Path}");
+                        return;
+                    }
+
+                    RegistryValueKind kind = tweak.Type.ToLower() switch
+                    {
+                        "dword" => RegistryValueKind.DWord,
+                        "qword" => RegistryValueKind.QWord,
+                        "binary" => RegistryValueKind.Binary,
+                        _ => RegistryValueKind.String
+                    };
+
+                    object? valueToWrite = tweak.Value;
+                    if (valueToWrite is global::System.Text.Json.JsonElement jsonElement)
+                    {
+                        if (kind == RegistryValueKind.DWord) valueToWrite = jsonElement.GetInt32();
+                        else if (kind == RegistryValueKind.QWord) valueToWrite = jsonElement.GetInt64();
+                        else valueToWrite = jsonElement.ToString() ?? string.Empty;
+                    }
+                    else
+                    {
+                        if (kind == RegistryValueKind.DWord) valueToWrite = Convert.ToInt32(tweak.Value);
+                        else if (kind == RegistryValueKind.QWord) valueToWrite = Convert.ToInt64(tweak.Value);
+                    }
+
+                    key.SetValue(tweak.Name, valueToWrite ?? string.Empty, kind);
+                    Console.WriteLine($"[Registry] Set {tweak.Name} = {tweak.Value}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error] Registry apply failed: {ex.Message}");
+                // If it's our security exception, we rethrow it or ensure it's logged as critical.
+                if (ex is InvalidOperationException && ex.Message.StartsWith("Security Risk"))
+                {
+                    throw;
+                }
+            }
+        }
+
+        public void Revert(string path, string name, bool dryRun)
+        {
+            try
+            {
+                // Security Check
+                RegistryGuard.ValidateContext(path);
+
+                IRegistryKey root = _registryWrapper.GetRootKey(path, out string subKeyPath);
+                using (IRegistryKey? key = root.OpenSubKey(subKeyPath, writable: !dryRun))
+                {
+                    if (key == null) return;
+
+                    if (key.GetValue(name) != null)
+                    {
+                        if (dryRun)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.WriteLine($"[DryRun] Would delete Registry value: {path}\\{name}");
+                            Console.ResetColor();
+                            return;
+                        }
+
+                        key.DeleteValue(name);
+                        Console.WriteLine($"[Registry] Reverted {name}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error] Registry revert failed: {ex.Message}");
+            }
+        }
+
+        public object? Read(string path, string name)
+        {
+            try
+            {
+                IRegistryKey root = _registryWrapper.GetRootKey(path, out string subKeyPath);
+                using (IRegistryKey? key = root.OpenSubKey(subKeyPath, writable: false))
+                {
+                    return key?.GetValue(name);
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\RegistryWrapper.cs =====
+
+using Microsoft.Win32;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.System
+{
+    public class RegistryWrapper : IRegistryWrapper
+    {
+        public IRegistryKey GetRootKey(string fullPath, out string subKey)
+        {
+            string[] parts = fullPath.Split('\\', 2);
+            subKey = parts.Length > 1 ? parts[1] : string.Empty;
+
+            var rootKey = parts[0].ToUpper() switch
+            {
+                "HKCU" or "HKEY_CURRENT_USER" => Registry.CurrentUser,
+                "HKLM" or "HKEY_LOCAL_MACHINE" => Registry.LocalMachine,
+                "HKCR" or "HKEY_CLASSES_ROOT" => Registry.ClassesRoot,
+                _ => throw new ArgumentException($"Unknown Hive: {parts[0]}")
+            };
+
+            return new RegistryKeyWrapper(rootKey);
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\RuntimeResolver.cs =====
+
+using System.Diagnostics;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.System
+{
+    public class RuntimeResolver : IRuntimeResolver
+    {
+        private readonly ILogger _logger;
+
+        public RuntimeResolver(ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        public string Resolve(string runtimeName)
+        {
+            // 1. Check PATH and get full path
+            string pathMatch = GetFullPath(runtimeName);
+            if (!string.IsNullOrEmpty(pathMatch))
+            {
+                return pathMatch;
+            }
+
+            // 2. Common Windows paths (fallback)
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (runtimeName == "bun")
+            {
+                string bunPath = Path.Combine(localAppData, ".bun", "bin", "bun.exe");
+                if (File.Exists(bunPath)) return bunPath;
+            }
+            else if (runtimeName == "uv")
+            {
+                string uvPath = Path.Combine(localAppData, "uv", "uv.exe");
+                if (File.Exists(uvPath)) return uvPath;
+            }
+            else if (runtimeName == "scoop")
+            {
+                string scoopMainShim = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd");
+                if (File.Exists(scoopMainShim)) return scoopMainShim;
+            }
+            else if (runtimeName == "choco")
+            {
+                string chocoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "chocolatey", "bin", "choco.exe");
+                if (File.Exists(chocoPath)) return chocoPath;
+
+                string chocoPathAlt = @"C:\ProgramData\chocolatey\bin\choco.exe";
+                if (File.Exists(chocoPathAlt)) return chocoPathAlt;
+            }
+            else if (runtimeName == "winget")
+            {
+                string wingetPath = Path.Combine(localAppData, "Microsoft", "WindowsApps", "winget.exe");
+                if (File.Exists(wingetPath)) return wingetPath;
+            }
+
+            // 3. Scoop Shims
+            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string scoopShim = Path.Combine(userProfile, "scoop", "shims", $"{runtimeName}.exe");
+            if (File.Exists(scoopShim)) return scoopShim;
+
+            string scoopCmdShim = Path.Combine(userProfile, "scoop", "shims", $"{runtimeName}.cmd");
+            if (File.Exists(scoopCmdShim)) return scoopCmdShim;
+
+            // Return original name and hope for the best (or it will fail and trigger bootstrapping)
+            return runtimeName;
+        }
+
+        private string GetFullPath(string runtimeName)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "where.exe",
+                    Arguments = runtimeName,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using var process = Process.Start(psi);
+                if (process == null) return string.Empty;
+
+                string fullPath = string.Empty;
+                while (!process.StandardOutput.EndOfStream)
+                {
+                    string line = process.StandardOutput.ReadLine()?.Trim() ?? string.Empty;
+                    if (string.IsNullOrEmpty(line)) continue;
+
+                    // Prioritize .exe, .cmd, .bat
+                    if (line.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
+                        line.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) ||
+                        line.EndsWith(".bat", StringComparison.OrdinalIgnoreCase))
+                    {
+                        fullPath = line;
+                        break;
+                    }
+
+                    // Fallback to first found if nothing else
+                    if (string.IsNullOrEmpty(fullPath)) fullPath = line;
+                }
+
+                process.WaitForExit();
+                return process.ExitCode == 0 ? fullPath : string.Empty;
+            }
+            catch { return string.Empty; }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\ScheduledTaskService.cs =====
+
+using Microsoft.Extensions.Logging;
+using Microsoft.Win32.TaskScheduler;
+using System;
+using System.Runtime.Versioning;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using WinHome.Interfaces;
+using WinHome.Models;
+
+namespace WinHome.Services.System
+{
+    [SupportedOSPlatform("windows")]
+    public class ScheduledTaskService : IScheduledTaskService
+    {
+        private readonly ILogger<ScheduledTaskService> _logger;
+
+        public ScheduledTaskService(ILogger<ScheduledTaskService> logger)
+        {
+            _logger = logger;
+        }
+
+        public void Apply(ScheduledTaskConfig task, bool dryRun)
+        {
+            _logger.LogInformation($"Applying scheduled task '{task.Name}'...");
+
+            if (dryRun)
+            {
+                _logger.LogInformation($"[DryRun] Would create or update scheduled task '{task.Name}'.");
+                return;
+            }
+
+            using (var ts = new TaskService())
+            {
+                var taskDefinition = ts.NewTask();
+
+                taskDefinition.RegistrationInfo.Description = task.Description;
+                taskDefinition.RegistrationInfo.Author = task.Author;
+
+                foreach (var trigger in task.Triggers)
+                {
+                    var taskTrigger = CreateTrigger(trigger);
+                    taskDefinition.Triggers.Add(taskTrigger);
+                }
+
+                foreach (var action in task.Actions)
+                {
+                    var taskAction = CreateAction(action);
+                    taskDefinition.Actions.Add(taskAction);
+                }
+
+                ts.RootFolder.RegisterTaskDefinition(task.Path, taskDefinition);
+            }
+
+            _logger.LogInformation($"Scheduled task '{task.Name}' applied successfully.");
+        }
+
+        private Trigger CreateTrigger(TriggerConfig triggerConfig)
+        {
+            Trigger trigger;
+
+            switch (triggerConfig.Type.ToLower())
+            {
+                case "daily":
+                    trigger = new DailyTrigger();
+                    break;
+                case "weekly":
+                    trigger = new WeeklyTrigger();
+                    break;
+                case "monthly":
+                    trigger = new MonthlyTrigger();
+                    break;
+                case "logon":
+                    trigger = new LogonTrigger();
+                    break;
+                default:
+                    throw new NotSupportedException($"Trigger type '{triggerConfig.Type}' is not supported.");
+            }
+
+            trigger.Enabled = triggerConfig.Enabled;
+            if (triggerConfig.StartBoundary.HasValue)
+                trigger.StartBoundary = triggerConfig.StartBoundary.Value;
+            if (triggerConfig.EndBoundary.HasValue)
+                trigger.EndBoundary = triggerConfig.EndBoundary.Value;
+            if (triggerConfig.ExecutionTimeLimit.HasValue)
+                trigger.ExecutionTimeLimit = triggerConfig.ExecutionTimeLimit.Value;
+            trigger.Id = triggerConfig.Id;
+            if (triggerConfig.Repetition != null)
+            {
+                trigger.Repetition.Interval = triggerConfig.Repetition.Interval;
+                trigger.Repetition.Duration = triggerConfig.Repetition.Duration;
+                trigger.Repetition.StopAtDurationEnd = triggerConfig.Repetition.StopAtDurationEnd;
+            }
+
+
+            return trigger;
+        }
+
+        private Microsoft.Win32.TaskScheduler.Action CreateAction(ActionConfig actionConfig)
+        {
+            Microsoft.Win32.TaskScheduler.Action action;
+
+            switch (actionConfig.Type.ToLower())
+            {
+                case "exec":
+                    action = new ExecAction(actionConfig.Path, actionConfig.Arguments, actionConfig.WorkingDirectory);
+                    break;
+                default:
+                    throw new NotSupportedException($"Action type '{actionConfig.Type}' is not supported.");
+            }
+
+            return action;
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\SecretResolver.cs =====
+
+using System.Collections;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.System
+{
+    public class SecretResolver : ISecretResolver
+    {
+        private readonly ILogger _logger;
+        // Regex to match {{ provider:key }}
+        // Captures: 1=provider, 2=key
+        private static readonly Regex SecretPattern = new Regex(@"{{\s*(\w+):(.+?)\s*}}", RegexOptions.Compiled);
+
+        // P/Invoke declarations for Windows Credential Manager
+        [DllImport("advapi32.dll", EntryPoint = "CredReadW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool CredRead(string target, uint type, uint flags, out IntPtr credential);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern void CredFree(IntPtr buffer);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct CREDENTIAL
+        {
+            public uint Flags;
+            public uint Type;
+            public string TargetName;
+            public string Comment;
+            public long LastWritten;
+            public uint CredentialBlobSize;
+            public IntPtr CredentialBlob;
+            public uint Persist;
+            public uint AttributeCount;
+            public IntPtr Attributes;
+            public string TargetAlias;
+            public string UserName;
+        }
+
+        public SecretResolver(ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        public string Resolve(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return input;
+
+            return SecretPattern.Replace(input, match =>
+            {
+                string provider = match.Groups[1].Value.ToLower();
+                string key = match.Groups[2].Value.Trim();
+
+                try
+                {
+                    return provider switch
+                    {
+                        "env" => ResolveEnv(key),
+                        "file" => ResolveFile(key),
+                        "vault" => ResolveVault(key),
+                        _ => match.Value // Return original if unknown provider
+                    };
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"[Secret] Failed to resolve {match.Value}: {ex.Message}");
+                    return match.Value;
+                }
+            });
+        }
+
+        public void ResolveObject(object obj)
+        {
+            if (obj == null) return;
+
+            var type = obj.GetType();
+
+            // Handle Lists
+            if (obj is IList list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var item = list[i];
+                    if (item is string str)
+                    {
+                        list[i] = Resolve(str);
+                    }
+                    else if (item != null && !item.GetType().IsPrimitive)
+                    {
+                        ResolveObject(item);
+                    }
+                }
+                return;
+            }
+
+            // Handle Dictionaries
+            if (obj is IDictionary dict)
+            {
+                var keys = new List<object>();
+                foreach (var k in dict.Keys) keys.Add(k);
+
+                foreach (var key in keys)
+                {
+                    var value = dict[key];
+                    if (value is string strVal)
+                    {
+                        dict[key] = Resolve(strVal);
+                    }
+                    else if (value != null && !value.GetType().IsPrimitive)
+                    {
+                        ResolveObject(value);
+                    }
+                }
+                return;
+            }
+
+            // Handle Properties
+            foreach (var prop in type.GetProperties())
+            {
+                if (!prop.CanRead) continue;
+
+                // Skip indexers
+                if (prop.GetIndexParameters().Length > 0) continue;
+
+                var value = prop.GetValue(obj);
+                if (value == null) continue;
+
+                if (prop.PropertyType == typeof(string) && prop.CanWrite)
+                {
+                    var resolved = Resolve((string)value);
+                    prop.SetValue(obj, resolved);
+                }
+                else if (!prop.PropertyType.IsPrimitive && !prop.PropertyType.IsEnum && prop.PropertyType != typeof(string))
+                {
+                    ResolveObject(value);
+                }
+            }
+        }
+
+        private string ResolveEnv(string variable)
+        {
+            var val = Environment.GetEnvironmentVariable(variable);
+            if (string.IsNullOrEmpty(val))
+            {
+                _logger.LogWarning($"[Secret] Environment variable '{variable}' not found.");
+                return string.Empty;
+            }
+            return val;
+        }
+
+        private string ResolveVault(string targetName)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                _logger.LogWarning("[Secret] Vault provider is only supported on Windows.");
+                return string.Empty;
+            }
+
+            // Try CRED_TYPE_GENERIC (1) first, then CRED_TYPE_DOMAIN_PASSWORD (2) used by cmdkey
+            uint[] credTypes = { 1, 2 };
+            foreach (var credType in credTypes)
+            {
+                if (!CredRead(targetName, credType, 0, out IntPtr credPtr))
+                    continue;
+
+                try
+                {
+                    var cred = Marshal.PtrToStructure<CREDENTIAL>(credPtr);
+                    if (cred.CredentialBlobSize == 0 || cred.CredentialBlob == IntPtr.Zero)
+                        return string.Empty;
+
+                    return Marshal.PtrToStringUni(cred.CredentialBlob, (int)(cred.CredentialBlobSize / sizeof(char)));
+                }
+                finally
+                {
+                    CredFree(credPtr);
+                }
+            }
+
+            _logger.LogWarning($"[Secret] Credential '{targetName}' not found in Windows Credential Manager.");
+            return string.Empty;
+        }
+
+        private string ResolveFile(string path)
+        {
+            // Handle ~
+            if (path.StartsWith("~"))
+            {
+                path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), path.TrimStart('~', '/', '\\'));
+            }
+
+            if (!File.Exists(path))
+            {
+                _logger.LogWarning($"[Secret] File '{path}' not found.");
+                return string.Empty;
+            }
+
+            return File.ReadAllText(path).Trim();
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\ServiceControllerWrapper.cs =====
+
+using WinHome.Interfaces;
+using System.ServiceProcess;
+using System.Linq;
+
+namespace WinHome.Services.System
+{
+    public class ServiceControllerWrapper : IServiceControllerWrapper
+    {
+        public bool ServiceExists(string serviceName)
+        {
+            return ServiceController.GetServices().Any(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public ServiceControllerStatus GetServiceStatus(string serviceName)
+        {
+            using var service = new ServiceController(serviceName);
+            return service.Status;
+        }
+
+        public void StartService(string serviceName)
+        {
+            using var service = new ServiceController(serviceName);
+            if (service.Status != ServiceControllerStatus.Running)
+            {
+                service.Start();
+                service.WaitForStatus(ServiceControllerStatus.Running);
+            }
+        }
+
+        public void StopService(string serviceName)
+        {
+            using var service = new ServiceController(serviceName);
+            if (service.Status != ServiceControllerStatus.Stopped)
+            {
+                service.Stop();
+                service.WaitForStatus(ServiceControllerStatus.Stopped);
+            }
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\StateService.cs =====
+
+using System.Text.Json;
+using WinHome.Interfaces;
+
+namespace WinHome.Services.System
+{
+    public class StateService : IStateService
+    {
+        private readonly string _stateFilePath;
+        private readonly ILogger _logger;
+        private HashSet<string> _inMemoryState;
+
+        public StateService(ILogger logger)
+        {
+            _logger = logger;
+
+            var envPath = Environment.GetEnvironmentVariable("WINHOME_STATE_PATH");
+            _stateFilePath = string.IsNullOrEmpty(envPath) ? "winhome.state.json" : envPath;
+            _inMemoryState = LoadState();
+        }
+
+        public HashSet<string> LoadState()
+        {
+            if (!File.Exists(_stateFilePath)) return new HashSet<string>();
+            try
+            {
+                // Use FileShare.ReadWrite to allow reading even if we are writing (though we lock on write)
+                using var stream = File.Open(_stateFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var reader = new StreamReader(stream);
+                string json = reader.ReadToEnd();
+                return JsonSerializer.Deserialize<HashSet<string>>(json) ?? new HashSet<string>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[State] Could not load state: {ex.Message}");
+                return new HashSet<string>();
+            }
+        }
+
+        public void SaveState(HashSet<string> state)
+        {
+            _inMemoryState = state;
+            FlushToDisk();
+        }
+
+        public void MarkAsApplied(string item)
+        {
+            if (_inMemoryState.Add(item))
+            {
+                FlushToDisk();
+            }
+        }
+
+        private void FlushToDisk()
+        {
+            try
+            {
+                string json = JsonSerializer.Serialize(_inMemoryState, new JsonSerializerOptions { WriteIndented = true });
+                // Use FileShare.Read to prevent others from writing but allow reading
+                using var stream = File.Open(_stateFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                using var writer = new StreamWriter(stream);
+                writer.Write(json);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[State] Could not save state: {ex.Message}");
+            }
+        }
+
+        public void BackupState(string backupPath)
+        {
+            try
+            {
+                if (File.Exists(_stateFilePath))
+                {
+                    File.Copy(_stateFilePath, backupPath, true);
+                    _logger.LogSuccess($"[State] Backup created at: {backupPath}");
+                }
+                else
+                {
+                    _logger.LogWarning("[State] No state file found to backup.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[State] Backup failed: {ex.Message}");
+            }
+        }
+
+        public void RestoreState(string backupPath)
+        {
+            try
+            {
+                if (File.Exists(backupPath))
+                {
+                    File.Copy(backupPath, _stateFilePath, true);
+                    _logger.LogSuccess($"[State] State restored from: {backupPath}");
+                    _inMemoryState = LoadState();
+                }
+                else
+                {
+                    _logger.LogError($"[State] Backup file not found: {backupPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[State] Restore failed: {ex.Message}");
+            }
+        }
+
+        public IEnumerable<string> ListItems()
+        {
+            return _inMemoryState;
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\SystemSettingsService.cs =====
+
+using WinHome.Interfaces;
+using WinHome.Models;
+using Microsoft.Extensions.Logging;
+using System.Linq;
+using System.Collections.Generic;
+using System.Runtime.Versioning;
+
+namespace WinHome.Services.System
+{
+    [SupportedOSPlatform("windows")]
+    public class SystemSettingsService : ISystemSettingsService
+    {
+        private readonly IProcessRunner _processRunner;
+        private readonly IRegistryService _registryService;
+        private readonly ILogger<SystemSettingsService> _logger;
+        private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification" };
+
+        private const int MinVolumeOrBrightness = 0;
+        private const int MaxVolumeOrBrightness = 100;
+
+        private readonly Dictionary<string, List<RegistryTweak>> _securityPresets = new()
+        {
+            ["baseline"] = new()
+            {
+                // Enable SmartScreen for apps and files
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost", Name = "EnableWebContentEvaluation", Value = 1, Type = "dword" },
+                // Disable Autorun/Autoplay
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", Name = "NoDriveTypeAutoRun", Value = 255, Type = "dword" },
+                // Disable LLMNR (Local Link Multicast Name Resolution)
+                new RegistryTweak { Path = @"HKLM\Software\Policies\Microsoft\Windows NT\DNSClient", Name = "EnableMulticast", Value = 0, Type = "dword" }
+            },
+            ["strict"] = new()
+            {
+                // Include baseline
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost", Name = "EnableWebContentEvaluation", Value = 1, Type = "dword" },
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", Name = "NoDriveTypeAutoRun", Value = 255, Type = "dword" },
+                new RegistryTweak { Path = @"HKLM\Software\Policies\Microsoft\Windows NT\DNSClient", Name = "EnableMulticast", Value = 0, Type = "dword" },
+                
+                // Disable Windows Script Host
+                new RegistryTweak { Path = @"HKLM\Software\Microsoft\Windows Script Host\Settings", Name = "Enabled", Value = 0, Type = "dword" },
+                // Disable Remote Assistance
+                new RegistryTweak { Path = @"HKLM\System\CurrentControlSet\Control\Remote Assistance", Name = "fAllowToGetHelp", Value = 0, Type = "dword" },
+                // Disable NetBIOS over TCP/IP (prevent LLMNR/NBT-NS poisoning)
+                new RegistryTweak { Path = @"HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces", Name = "NetbiosOptions", Value = 2, Type = "dword" }
+            },
+            ["privacy"] = new()
+            {
+                // Disable Windows Telemetry data collection
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", Name = "AllowTelemetry", Value = 0, Type = "dword" },
+                // Disable Advertising ID for personalized ads
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", Name = "Enabled", Value = 0, Type = "dword" },
+                // Disable Activity History feed
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", Name = "EnableActivityFeed", Value = 0, Type = "dword" },
+                // Disable Activity History cloud upload
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", Name = "UploadUserActivities", Value = 0, Type = "dword" },
+                // Disable Tailored Experiences based on diagnostic data
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy", Name = "TailoredExperiencesWithDiagnosticDataEnabled", Value = 0, Type = "dword" },
+                // Disable Feedback Notifications
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Siuf\Rules", Name = "NumberOfSIUFInPeriod", Value = 0, Type = "dword" },
+                // Disable implicit text/ink collection for input personalization
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization", Name = "RestrictImplicitTextCollection", Value = 1, Type = "dword" },
+                // Disable contact harvesting for handwriting recognition
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization\TrainedDataStore", Name = "HarvestContacts", Value = 0, Type = "dword" }
+            }
+        };
+
+        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService, ILogger<SystemSettingsService> logger)
+        {
+            _processRunner = processRunner;
+            _registryService = registryService;
+            _logger = logger;
+        }
+
+        private record SettingDefinition(
+            string SettingKey,
+            string RegistryPath,
+            string RegistryName,
+            string RegistryType,
+            Dictionary<string, object> ValueMap
+        );
+
+        private readonly List<SettingDefinition> _catalog = new()
+        {
+
+            new("dark_mode",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("dark_mode",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+
+            new("taskbar_alignment",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarAl", "dword",
+                new() { { "left", 0 }, { "center", 1 } }),
+
+            new("taskbar_widgets",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa", "dword",
+                new() { { "hide", 0 }, { "show", 1 } }),
+
+
+            new("show_file_extensions",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("show_hidden_files",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "Hidden", "dword",
+                new() { { "true", 1 }, { "false", 2 } }),
+
+            new("seconds_in_clock",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowSecondsInSystemClock", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("explorer_launch_to",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "LaunchTo", "dword",
+                new() { { "this_pc", 1 }, { "quick_access", 2 } }),
+
+
+            new("bing_search_enabled",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("transparency",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("taskbar_autohide",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3", "Settings", "binary",
+                new()
+                {
+                    { "true", new byte[] { 0x30, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 } },
+                    { "false", new byte[] { 0x30, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 } }
+                }),
+
+            new("taskbar_task_view",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowTaskViewButton", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("taskbar_end_task",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarEndTask", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("start_show_recent",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "Start_TrackDocs", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+
+            new("snap_assist_flyout",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "EnableSnapAssistFlyout", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
+        };
+
+        public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings)
+        {
+            return await Task.Run(() =>
+            {
+                var tweaks = new List<RegistryTweak>();
+                if (settings == null) return tweaks;
+
+                foreach (var userSetting in settings)
+                {
+                    string key = userSetting.Key.ToLower();
+                    string val = userSetting.Value.ToString()?.ToLower() ?? "";
+
+                    if (key == "security_preset")
+                    {
+                        if (_securityPresets.TryGetValue(val, out var presetTweaks))
+                        {
+                            tweaks.AddRange(presetTweaks);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[Warning] Unknown security preset '{val}'. Allowed: {string.Join(", ", _securityPresets.Keys)}");
+                        }
+                        continue;
+                    }
+
+                    if (_nonRegistryKeys.Contains(key)) continue;
+
+                    var matches = _catalog.Where(d => d.SettingKey == key);
+
+                    foreach (var def in matches)
+                    {
+                        if (def.ValueMap.TryGetValue(val, out object? regValue))
+                        {
+                            tweaks.Add(new RegistryTweak
+                            {
+                                Path = def.RegistryPath,
+                                Name = def.RegistryName,
+                                Value = regValue,
+                                Type = def.RegistryType
+                            });
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[Warning] Invalid value '{val}' for setting '{key}'. Allowed: {string.Join(", ", def.ValueMap.Keys)}");
+                        }
+                    }
+                }
+                return tweaks;
+            });
+        }
+
+        public async Task<Dictionary<string, object>> GetCapturedSettingsAsync()
+        {
+            return await Task.Run(() =>
+            {
+                var captured = new Dictionary<string, object>();
+
+                foreach (var def in _catalog)
+                {
+                    try
+                    {
+                        var regValue = _registryService.Read(def.RegistryPath, def.RegistryName);
+                        if (regValue != null)
+                        {
+                            // Find corresponding user-friendly key for this value
+                            var match = def.ValueMap.FirstOrDefault(kvp =>
+                            {
+                                if (kvp.Value is byte[] kvpBytes && regValue is byte[] regBytes)
+                                {
+                                    return kvpBytes.SequenceEqual(regBytes);
+                                }
+                                return kvp.Value?.ToString() == regValue?.ToString();
+                            });
+                            if (!match.Equals(default(KeyValuePair<string, object>)))
+                            {
+                                // Handle Booleans properly
+                                object val = match.Key;
+                                if (bool.TryParse(match.Key, out bool bVal)) val = bVal;
+                                else if (int.TryParse(match.Key, out int iVal)) val = iVal;
+
+                                captured[def.SettingKey] = val;
+                            }
+                        }
+                    }
+                    catch { /* Ignore read errors */ }
+                }
+
+                return captured;
+            });
+        }
+
+        public string? GetFriendlyName(string registryPath, string registryName)
+        {
+            var match = _catalog.FirstOrDefault(d =>
+                d.RegistryPath.Equals(registryPath, StringComparison.OrdinalIgnoreCase) &&
+                d.RegistryName.Equals(registryName, StringComparison.OrdinalIgnoreCase));
+
+            return match?.SettingKey;
+        }
+
+        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun)
+        {
+            if (settings == null) return Task.CompletedTask;
+
+            foreach (var userSetting in settings.Where(s => _nonRegistryKeys.Contains(s.Key.ToLower())))
+            {
+                string key = userSetting.Key.ToLower();
+                switch (key)
+                {
+                    case "brightness":
+                        if (userSetting.Value?.ToString() is string brightnessVal && int.TryParse(brightnessVal, out int brightness))
+                        {
+                            if (brightness < MinVolumeOrBrightness || brightness > MaxVolumeOrBrightness)
+                            {
+                                _logger.LogWarning($"[Settings] Brightness value '{brightness}' is out of range. Must be between {MinVolumeOrBrightness} and {MaxVolumeOrBrightness}. Skipping.");
+                                break;
+                            }
+                            string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
+                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                        }
+                        else if (userSetting.Value != null)
+                        {
+                            _logger.LogWarning($"[Settings] Brightness value '{userSetting.Value}' is not a valid integer. Skipping.");
+                        }
+                        break;
+                    case "volume":
+                        if (userSetting.Value?.ToString() is string volumeVal && int.TryParse(volumeVal, out int volume))
+                        {
+                            if (volume < MinVolumeOrBrightness || volume > MaxVolumeOrBrightness)
+                            {
+                                _logger.LogWarning($"[Settings] Volume value '{volume}' is out of range. Must be between {MinVolumeOrBrightness} and {MaxVolumeOrBrightness}. Skipping.");
+                                break;
+                            }
+                            string command = $"Set-AudioDevice -PlaybackVolume {volume}";
+                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                        }
+                        else if (userSetting.Value != null)
+                        {
+                            _logger.LogWarning($"[Settings] Volume value '{userSetting.Value}' is not a valid integer. Skipping.");
+                        }
+                        break;
+                    case "notification":
+                        if (userSetting.Value is Dictionary<object, object> notificationConfig)
+                        {
+                            var title = notificationConfig.GetValueOrDefault((object)"title")?.ToString() ?? "";
+                            var message = notificationConfig.GetValueOrDefault((object)"message")?.ToString() ?? "";
+                            string command = $"New-BurntToastNotification -Text '{title}', '{message}'";
+                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                        }
+                        break;
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\UpdateService.cs =====
+
+using System.Diagnostics;
+using System.Text.Json;
+using WinHome.Interfaces;
+using WinHome.Models;
+
+namespace WinHome.Services.System
+{
+    public class UpdateService : IUpdateService
+    {
+        private readonly ILogger _logger;
+        private readonly HttpClient _httpClient;
+        private const string RepoOwner = "DotDev262";
+        private const string RepoName = "WinHome";
+        private const string CurrentExecutableName = "WinHome.exe";
+
+        public UpdateService(ILogger logger)
+        {
+            _logger = logger;
+            _httpClient = new HttpClient();
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("WinHome-CLI");
+        }
+
+        public async Task<bool> CheckForUpdatesAsync(string currentVersion)
+        {
+            _logger.LogInfo("[Update] Checking for updates...");
+
+            try
+            {
+                var release = await GetLatestReleaseAsync();
+                if (release == null) return false;
+
+                var latestVersion = release.TagName.TrimStart('v');
+                if (IsNewer(latestVersion, currentVersion))
+                {
+                    _logger.LogSuccess($"[Update] New version available: {release.TagName}");
+                    return true;
+                }
+
+                _logger.LogInfo("[Update] You are running the latest version.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[Update] Failed to check for updates: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task UpdateAsync()
+        {
+            try
+            {
+                var release = await GetLatestReleaseAsync();
+                if (release == null)
+                {
+                    _logger.LogError("[Update] Could not fetch release info.");
+                    return;
+                }
+
+                var asset = release.Assets.FirstOrDefault(a => a.Name.Equals(CurrentExecutableName, StringComparison.OrdinalIgnoreCase));
+                if (asset == null)
+                {
+                    _logger.LogError($"[Update] Could not find '{CurrentExecutableName}' in the latest release.");
+                    return;
+                }
+
+                string currentPath = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+                if (string.IsNullOrEmpty(currentPath))
+                {
+                    _logger.LogError("[Update] Could not determine current executable path.");
+                    return;
+                }
+
+                string tempPath = Path.Combine(Path.GetTempPath(), $"{CurrentExecutableName}.new");
+
+                _logger.LogInfo($"[Update] Downloading {release.TagName}...");
+                using (var stream = await _httpClient.GetStreamAsync(asset.BrowserDownloadUrl))
+                using (var fileStream = new FileStream(tempPath, FileMode.Create))
+                {
+                    await stream.CopyToAsync(fileStream);
+                }
+
+                _logger.LogSuccess("[Update] Download complete. Applying update...");
+
+                // Self-update dance:
+                // 1. Rename current EXE to .old
+                // 2. Move new EXE to current path
+                // 3. Start new process to delete .old and verify
+
+                string oldPath = currentPath + ".old";
+
+                if (File.Exists(oldPath)) File.Delete(oldPath);
+
+                File.Move(currentPath, oldPath);
+                File.Move(tempPath, currentPath);
+
+                _logger.LogSuccess("[Update] Update applied! Restarting...");
+
+                // Launch a cleaner process (cmd) to delete the old file after a delay
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/C timeout 2 && del \"{oldPath}\"",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                });
+
+                Environment.Exit(0);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[Update] Update failed: {ex.Message}");
+                // Try to recover?
+            }
+        }
+
+        private async Task<GitHubRelease?> GetLatestReleaseAsync()
+        {
+            string url = $"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest";
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<GitHubRelease>(json);
+        }
+
+        private bool IsNewer(string latest, string current)
+        {
+            if (Version.TryParse(latest, out var vLatest) && Version.TryParse(current, out var vCurrent))
+            {
+                return vLatest > vCurrent;
+            }
+            return string.Compare(latest, current) > 0;
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\WindowsServiceManager.cs =====
+
+using WinHome.Interfaces;
+using WinHome.Models;
+using Microsoft.Extensions.Logging;
+using System.ServiceProcess; // Required for ServiceControllerStatus
+using System.Runtime.Versioning;
+
+namespace WinHome.Services.System
+{
+    [SupportedOSPlatform("windows")]
+    public class WindowsServiceManager : IWindowsServiceManager
+    {
+        private readonly ILogger<WindowsServiceManager> _logger;
+        private readonly IProcessRunner _processRunner;
+        private readonly IServiceControllerWrapper _serviceControllerWrapper;
+
+        public WindowsServiceManager(
+            ILogger<WindowsServiceManager> logger,
+            IProcessRunner processRunner,
+            IServiceControllerWrapper serviceControllerWrapper)
+        {
+            _logger = logger;
+            _processRunner = processRunner;
+            _serviceControllerWrapper = serviceControllerWrapper;
+        }
+
+        public void Apply(WindowsServiceConfig service, bool dryRun)
+        {
+            _logger.LogInformation($"Processing service: {service.Name}");
+
+            if (!_serviceControllerWrapper.ServiceExists(service.Name))
+            {
+                _logger.LogWarning($"Service '{service.Name}' not found. Skipping.");
+                return;
+            }
+
+            if (service.StartupType != null)
+            {
+                SetStartupType(service.Name, service.StartupType, dryRun);
+            }
+
+            if (service.State != null)
+            {
+                SetServiceState(service.Name, service.State, dryRun);
+            }
+        }
+
+        private void SetStartupType(string serviceName, string startupType, bool dryRun)
+        {
+            _logger.LogInformation($"{(dryRun ? "[Dry Run] " : "")}Setting startup type of service '{serviceName}' to '{startupType}'");
+            // sc.exe config "serviceName" start= auto/demand/disabled
+            var args = $"config \"{serviceName}\" start= {startupType}";
+            if (!_processRunner.RunCommand("sc.exe", args, dryRun))
+            {
+                _logger.LogError($"Failed to set startup type for service '{serviceName}'.");
+            }
+        }
+
+        private void SetServiceState(string serviceName, string state, bool dryRun)
+        {
+            var currentStatus = _serviceControllerWrapper.GetServiceStatus(serviceName);
+            _logger.LogInformation($"Service '{serviceName}' current status: {currentStatus}");
+
+            string action = "";
+            bool shouldAct = false;
+
+            if (state.Equals("running", StringComparison.OrdinalIgnoreCase))
+            {
+                if (currentStatus != ServiceControllerStatus.Running)
+                {
+                    action = "start";
+                    shouldAct = true;
+                }
+            }
+            else if (state.Equals("stopped", StringComparison.OrdinalIgnoreCase))
+            {
+                if (currentStatus != ServiceControllerStatus.Stopped)
+                {
+                    action = "stop";
+                    shouldAct = true;
+                }
+            }
+            else
+            {
+                _logger.LogWarning($"Unknown service state '{state}' for service '{serviceName}'. Skipping state management.");
+                return;
+            }
+
+            if (!shouldAct)
+            {
+                _logger.LogInformation($"Service '{serviceName}' is already in the desired state ('{state}'). No action needed.");
+                return;
+            }
+
+            _logger.LogInformation($"{(dryRun ? "[Dry Run] " : "")}{action.Capitalize()}ing service '{serviceName}'...");
+            if (!dryRun)
+            {
+                try
+                {
+                    if (action == "start")
+                    {
+                        _serviceControllerWrapper.StartService(serviceName);
+                    }
+                    else if (action == "stop")
+                    {
+                        _serviceControllerWrapper.StopService(serviceName);
+                    }
+                    _logger.LogInformation($"Successfully {action}ed service '{serviceName}'.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Failed to {action} service '{serviceName}': {ex.Message}");
+                }
+            }
+        }
+    }
+
+    public static class StringExtensions
+    {
+        public static string Capitalize(this string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+            return char.ToUpper(input[0]) + input.Substring(1);
+        }
+    }
+}
+
+
+===== D:\DESKTOP\open source7\WinHome\src\Services\System\WSLService.cs =====
+
+using WinHome.Interfaces;
+using WinHome.Models;
+using System.Runtime.Versioning;
+
+namespace WinHome.Services.System
+{
+    [SupportedOSPlatform("windows")]
+    public class WslService : IWslService
+    {
+        private readonly IProcessRunner _processRunner;
+        private readonly ILogger _logger;
+
+        public WslService(IProcessRunner processRunner, ILogger logger)
+        {
+            _processRunner = processRunner;
+            _logger = logger;
+        }
+
+        public void Configure(WslConfig config, bool dryRun)
+        {
+            if (!IsWslInstalled())
+            {
+                if (dryRun)
+                {
+                    _logger.LogWarning("[DryRun] WSL is not detected/active. Simulating subsequent actions...");
+                }
+                else
+                {
+                    _logger.LogError("[WSL] Error: WSL is not active. Run 'wsl --install' in Admin Terminal and reboot.");
+                    return;
+                }
+            }
+
+            if (config.Update)
+            {
+                if (dryRun) _logger.LogWarning("[DryRun] Would run 'wsl --update'");
+                else _processRunner.RunCommand("wsl", "--update", false);
+            }
+
+            if (config.DefaultVersion > 0)
+            {
+                if (dryRun) _logger.LogWarning($"[DryRun] Would set WSL default version to {config.DefaultVersion}");
+                else _processRunner.RunCommand("wsl", $"--set-default-version {config.DefaultVersion}", false);
+            }
+
+            if (config.Distros.Any())
+            {
+                _logger.LogInfo("\n--- Configuring WSL Distros ---");
+                foreach (var distro in config.Distros)
+                {
+                    bool installed = EnsureDistro(distro, dryRun);
+
+                    if (!string.IsNullOrEmpty(config.DefaultDistro) && config.DefaultDistro == distro.Name)
+                    {
+                        if (dryRun) _logger.LogWarning($"[DryRun] Would set default distro to '{distro.Name}'");
+                        else _processRunner.RunCommand("wsl", $"--set-default {distro.Name}", false);
+                    }
+
+                    if (installed || dryRun)
+                    {
+                        ProvisionDistro(distro, dryRun);
+                    }
+                }
+            }
+        }
+
+        private bool EnsureDistro(WslDistroConfig distro, bool dryRun)
+        {
+            if (IsDistroInstalled(distro.Name))
+            {
+                return true;
+            }
+
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would install WSL Distro: {distro.Name}");
+                return false;
+            }
+
+            _logger.LogInfo($"[WSL] Installing {distro.Name}...");
+            _logger.LogInfo("[WSL] NOTE: A new window will open for you to create your UNIX username/password.");
+
+            if (_processRunner.RunCommand("wsl", $"--install -d {distro.Name}", false))
+            {
+                _logger.LogSuccess($"[Success] {distro.Name} installed.");
+                return true;
+            }
+            else
+            {
+                _logger.LogError($"[Error] Failed to install {distro.Name}");
+                return false;
+            }
+        }
+
+        private void ProvisionDistro(WslDistroConfig distro, bool dryRun)
+        {
+            if (string.IsNullOrEmpty(distro.SetupScript)) return;
+
+            string localScriptPath = Path.GetFullPath(distro.SetupScript);
+            if (!File.Exists(localScriptPath))
+            {
+                _logger.LogError($"[WSL] Error: Script not found {localScriptPath}");
+                return;
+            }
+
+            if (dryRun)
+            {
+                _logger.LogWarning($"[DryRun] Would execute '{Path.GetFileName(localScriptPath)}' inside {distro.Name}");
+                return;
+            }
+
+            _logger.LogInfo($"[WSL] Provisioning {distro.Name} with {Path.GetFileName(localScriptPath)}...");
+
+            try
+            {
+                string scriptContent = File.ReadAllText(localScriptPath).Replace("\r\n", "\n");
+                var output = _processRunner.RunCommandWithOutput("wsl", $"-d {distro.Name} -- bash -s", scriptContent);
+
+                if (!string.IsNullOrEmpty(output))
+                {
+                    _logger.LogInfo(output.Trim());
+                    _logger.LogSuccess($"[Success] {distro.Name} configured.");
+                }
+                else
+                {
+                    _logger.LogError($"[Error] Script failed in {distro.Name}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[Error] Failed to execute script: {ex.Message}");
+            }
+        }
+
+        private bool IsDistroInstalled(string distroName)
+        {
+            string output = _processRunner.RunCommandWithOutput("wsl", "--list --verbose");
+            return output.Contains(distroName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsWslInstalled()
+        {
+            return _processRunner.RunCommand("wsl", "--status", false);
+        }
+    }
+}

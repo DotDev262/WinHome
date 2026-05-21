@@ -5,6 +5,10 @@ using WinHome.Models.Plugins;
 
 namespace WinHome.Services.Plugins
 {
+    /// <summary>
+    /// Acts as an adapter that bridges an underlying extensibility plugin manifest execution workflow 
+    /// into a unified, system-native <see cref="IPackageManager"/> engine integration wrapper.
+    /// </summary>
     public class PluginPackageManagerAdapter : IPackageManager
     {
         private readonly PluginManifest _plugin;
@@ -12,6 +16,13 @@ namespace WinHome.Services.Plugins
         private readonly IPluginManager _manager;
         private readonly IRuntimeResolver _resolver;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PluginPackageManagerAdapter"/> class mapping specified plugin settings to system actions.
+        /// </summary>
+        /// <param name="plugin">The manifest context metadata configuration tracking information for the target adapter plugin.</param>
+        /// <param name="runner">The cross-platform script environment runner pipeline used to dispatch commands.</param>
+        /// <param name="manager">The central plugin sub-system coordinator manager used to ensure execution runtimes.</param>
+        /// <param name="resolver">The environment configuration path variable resolver wrapper instance.</param>
         public PluginPackageManagerAdapter(PluginManifest plugin, IPluginRunner runner, IPluginManager manager, IRuntimeResolver resolver)
         {
             _plugin = plugin;
@@ -20,22 +31,43 @@ namespace WinHome.Services.Plugins
             _resolver = resolver;
         }
 
+        /// <summary>
+        /// Gets the string classification specifying the targeted execution runtime environment type needed by the plugin.
+        /// </summary>
         public string PluginType => _plugin.Type;
 
+        /// <summary>
+        /// Gets an interface implementation instance dedicated to configuring, evaluating, or installing runtime dependencies for this plugin.
+        /// </summary>
         public IPackageManagerBootstrapper Bootstrapper => new PluginRuntimeBootstrapper(_plugin, _manager, _resolver);
 
+        /// <summary>
+        /// Verifies whether the targeted plugin manifest file is valid and its structural execution runtimes are ready on the host system.
+        /// </summary>
+        /// <returns><c>true</c> if the adapted plugin bootstrapper detects a validated operational status; otherwise, <c>false</c>.</returns>
         public bool IsAvailable()
         {
             // For a plugin, "Available" means the plugin file exists and runtime is ready.
             return Bootstrapper.IsInstalled();
         }
 
+        /// <summary>
+        /// Communicates with the adapted plugin execution script to query whether the specified tracking identity is present on the machine.
+        /// </summary>
+        /// <param name="appId">The unique target package string identifier profile lookup to check.</param>
+        /// <returns><c>true</c> if the plugin runner confirms a successful installation match status; otherwise, <c>false</c>.</returns>
         public bool IsInstalled(string appId)
         {
             var result = _runner.ExecuteAsync(_plugin, "check_installed", new { packageId = appId }, null).Result;
             return result.Success && result.Data?.ToString()?.ToLower() == "true";
         }
 
+        /// <summary>
+        /// Executes an automated installation request by dispatching a structured action event argument payload to the plugin runner context.
+        /// </summary>
+        /// <param name="app">The application target configuration model data container containing installation arguments.</param>
+        /// <param name="dryRun">If set to <c>true</c>, passes a simulation block state instruction flags context to the execution handler script.</param>
+        /// <exception cref="Exception">Thrown if the underlying script execution engine returns a failing response indicator or errors out.</exception>
         public void Install(AppConfig app, bool dryRun)
         {
             // Ensure runtime is available before execution
@@ -58,6 +90,12 @@ namespace WinHome.Services.Plugins
             }
         }
 
+        /// <summary>
+        /// Requests a package removal execution routine by transmitting a structured request down to the adapted plugin tracking handler.
+        /// </summary>
+        /// <param name="appId">The tracking package match string name identity to remove.</param>
+        /// <param name="dryRun">If set to <c>true</c>, forwards a simulation configuration flag context to the execution handler script.</param>
+        /// <exception cref="Exception">Thrown if the script engine process reports uninstallation structural block failures.</exception>
         public void Uninstall(string appId, bool dryRun)
         {
             // Ensure runtime is available before execution
