@@ -2,9 +2,11 @@ using WinHome.Interfaces;
 using WinHome.Models;
 using Microsoft.Extensions.Logging;
 using System.ServiceProcess; // Required for ServiceControllerStatus
+using System.Runtime.Versioning;
 
 namespace WinHome.Services.System
 {
+    [SupportedOSPlatform("windows")]
     public class WindowsServiceManager : IWindowsServiceManager
     {
         private readonly ILogger<WindowsServiceManager> _logger;
