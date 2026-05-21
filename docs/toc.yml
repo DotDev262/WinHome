@@ -3,7 +3,7 @@
 - name: 📖 API Documentation
   href: ../api/
 - name: Getting Started
-  href: getting-started.md  
+  href: getting-started.md
 - name: Overview
   href: config.md
 - name: Configuration Reference
