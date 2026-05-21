@@ -116,6 +116,8 @@ For complete, real-world setup examples (Developer, Minimalist, Gamer), see the 
 
 ## 🛡️ Security & Reliability
 
+📘 For detailed security guidance and best practices, see the [Security Guide](./docs/security.md).
+
 WinHome implements enterprise-grade security controls to prevent common infrastructure automation pitfalls.
 
 ### 🔒 Context Awareness (RegistryGuard)
