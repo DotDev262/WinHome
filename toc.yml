@@ -4,6 +4,8 @@
 - name: 📘 Documentation
   href: docs/
   topicHref: docs/config.md
+- name: Getting Started
+  href: getting-started.md  
   
 - name: 📖 API Reference
   href: api/
