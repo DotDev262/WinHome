@@ -6,8 +6,8 @@ namespace WinHome.Interfaces
 {
     public interface ISystemSettingsService
     {
-        Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object> settings);
-        Task ApplyNonRegistrySettingsAsync(Dictionary<string, object> settings, bool dryRun);
+        Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings);
+        Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun);
         Task<Dictionary<string, object>> GetCapturedSettingsAsync();
         string? GetFriendlyName(string registryPath, string registryName);
     }

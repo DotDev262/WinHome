@@ -44,6 +44,28 @@ namespace WinHome.Tests
         }
 
         [Fact]
+        public void Apply_Should_Create_SubKey_When_Key_Is_Missing()
+        {
+            // Arrange
+            var tweak = new RegistryTweak { Path = "HKCU\\Software\\TestMissing", Name = "TestValue", Value = "Test", Type = "string" };
+            var subKeyPath = "Software\\TestMissing";
+            _mockRegistryWrapper.Setup(x => x.GetRootKey(tweak.Path, out subKeyPath))
+                .Callback(new GetRootKeyCallback((string fullPath, out string s) => s = subKeyPath))
+                .Returns(_mockRegistryKey.Object);
+
+            // Simulate missing key: OpenSubKey returns null
+            _mockRegistryKey.Setup(x => x.OpenSubKey(It.IsAny<string>(), false)).Returns((IRegistryKey?)null);
+            _mockRegistryKey.Setup(x => x.CreateSubKey(It.IsAny<string>(), true)).Returns(_mockRegistryKey.Object);
+
+            // Act
+            _registryService.Apply(tweak, false);
+
+            // Assert
+            _mockRegistryKey.Verify(x => x.CreateSubKey(subKeyPath, true), Times.Once);
+            _mockRegistryKey.Verify(x => x.SetValue(tweak.Name, tweak.Value, RegistryValueKind.String), Times.Once);
+        }
+
+        [Fact]
         public void Revert_Should_Delete_Registry_Value()
         {
             // Arrange

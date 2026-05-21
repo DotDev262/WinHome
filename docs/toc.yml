@@ -16,5 +16,9 @@
   href: cross-platform-dev.md
 - name: Testing Guide
   href: testing.md
+  
 - name: Security Guide
   href: security.md
+
+- name: Troubleshooting
+  href: troubleshooting.md

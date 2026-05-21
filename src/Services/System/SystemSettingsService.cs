@@ -35,6 +35,25 @@ namespace WinHome.Services.System
                 new RegistryTweak { Path = @"HKLM\System\CurrentControlSet\Control\Remote Assistance", Name = "fAllowToGetHelp", Value = 0, Type = "dword" },
                 // Disable NetBIOS over TCP/IP (prevent LLMNR/NBT-NS poisoning)
                 new RegistryTweak { Path = @"HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces", Name = "NetbiosOptions", Value = 2, Type = "dword" }
+            },
+            ["privacy"] = new()
+            {
+                // Disable Windows Telemetry data collection
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", Name = "AllowTelemetry", Value = 0, Type = "dword" },
+                // Disable Advertising ID for personalized ads
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", Name = "Enabled", Value = 0, Type = "dword" },
+                // Disable Activity History feed
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", Name = "EnableActivityFeed", Value = 0, Type = "dword" },
+                // Disable Activity History cloud upload
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", Name = "UploadUserActivities", Value = 0, Type = "dword" },
+                // Disable Tailored Experiences based on diagnostic data
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy", Name = "TailoredExperiencesWithDiagnosticDataEnabled", Value = 0, Type = "dword" },
+                // Disable Feedback Notifications
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Siuf\Rules", Name = "NumberOfSIUFInPeriod", Value = 0, Type = "dword" },
+                // Disable implicit text/ink collection for input personalization
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization", Name = "RestrictImplicitTextCollection", Value = 1, Type = "dword" },
+                // Disable contact harvesting for handwriting recognition
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization\TrainedDataStore", Name = "HarvestContacts", Value = 0, Type = "dword" }
             }
         };
 
@@ -123,7 +142,7 @@ namespace WinHome.Services.System
                 new() { { "true", 1 }, { "false", 0 } }),
         };
 
-        public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object> settings)
+        public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings)
         {
             return await Task.Run(() =>
             {
@@ -223,7 +242,7 @@ namespace WinHome.Services.System
             return match?.SettingKey;
         }
 
-        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object> settings, bool dryRun)
+        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun)
         {
             if (settings == null) return Task.CompletedTask;
 
