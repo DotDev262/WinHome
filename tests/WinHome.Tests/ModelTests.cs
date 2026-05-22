@@ -78,6 +78,373 @@ public class ModelTests
 
     #endregion
 
+    #region ActionConfig Tests
+
+    [Fact]
+    public void ActionConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new ActionConfig();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Type);
+        Assert.Equal(string.Empty, config.Path);
+        Assert.Null(config.Arguments);
+        Assert.Null(config.WorkingDirectory);
+    }
+
+    [Fact]
+    public void ActionConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new ActionConfig
+        {
+            Type = "exec",
+            Path = "C:\\Tools\\run.ps1",
+            Arguments = "-Verbose",
+            WorkingDirectory = "C:\\Tools"
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<ActionConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Type, deserialized.Type);
+        Assert.Equal(original.Path, deserialized.Path);
+        Assert.Equal(original.Arguments, deserialized.Arguments);
+        Assert.Equal(original.WorkingDirectory, deserialized.WorkingDirectory);
+    }
+
+    [Fact]
+    public void ActionConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new ActionConfig
+        {
+            Type = "exec",
+            Path = "/usr/bin/echo",
+            Arguments = "hello",
+            WorkingDirectory = "/tmp"
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<ActionConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Type, deserialized.Type);
+        Assert.Equal(original.Path, deserialized.Path);
+        Assert.Equal(original.Arguments, deserialized.Arguments);
+        Assert.Equal(original.WorkingDirectory, deserialized.WorkingDirectory);
+    }
+
+    #endregion
+
+    #region RepetitionPatternConfig Tests
+
+    [Fact]
+    public void RepetitionPatternConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new RepetitionPatternConfig();
+
+        // Assert
+        Assert.Equal(TimeSpan.Zero, config.Interval);
+        Assert.Equal(TimeSpan.Zero, config.Duration);
+        Assert.False(config.StopAtDurationEnd);
+    }
+
+    [Fact]
+    public void RepetitionPatternConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new RepetitionPatternConfig
+        {
+            Interval = TimeSpan.FromMinutes(10),
+            Duration = TimeSpan.FromHours(2),
+            StopAtDurationEnd = true
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<RepetitionPatternConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Interval, deserialized.Interval);
+        Assert.Equal(original.Duration, deserialized.Duration);
+        Assert.Equal(original.StopAtDurationEnd, deserialized.StopAtDurationEnd);
+    }
+
+    [Fact]
+    public void RepetitionPatternConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new RepetitionPatternConfig
+        {
+            Interval = TimeSpan.FromMinutes(5),
+            Duration = TimeSpan.FromMinutes(30),
+            StopAtDurationEnd = false
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<RepetitionPatternConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Interval, deserialized.Interval);
+        Assert.Equal(original.Duration, deserialized.Duration);
+        Assert.Equal(original.StopAtDurationEnd, deserialized.StopAtDurationEnd);
+    }
+
+    #endregion
+
+    #region TriggerConfig Tests
+
+    [Fact]
+    public void TriggerConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new TriggerConfig();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Type);
+        Assert.True(config.Enabled);
+        Assert.Null(config.StartBoundary);
+        Assert.Null(config.EndBoundary);
+        Assert.Null(config.ExecutionTimeLimit);
+        Assert.Null(config.Id);
+        Assert.Null(config.Repetition);
+        Assert.Null(config.Delay);
+    }
+
+    [Fact]
+    public void TriggerConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new TriggerConfig
+        {
+            Type = "time",
+            Enabled = false,
+            StartBoundary = new DateTime(2025, 1, 1, 8, 0, 0, DateTimeKind.Utc),
+            EndBoundary = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+            ExecutionTimeLimit = TimeSpan.FromMinutes(30),
+            Id = "trigger-1",
+            Repetition = new RepetitionPatternConfig
+            {
+                Interval = TimeSpan.FromMinutes(10),
+                Duration = TimeSpan.FromHours(2),
+                StopAtDurationEnd = true
+            },
+            Delay = TimeSpan.FromMinutes(5)
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<TriggerConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Type, deserialized.Type);
+        Assert.Equal(original.Enabled, deserialized.Enabled);
+        Assert.Equal(original.StartBoundary, deserialized.StartBoundary);
+        Assert.Equal(original.EndBoundary, deserialized.EndBoundary);
+        Assert.Equal(original.ExecutionTimeLimit, deserialized.ExecutionTimeLimit);
+        Assert.Equal(original.Id, deserialized.Id);
+        Assert.NotNull(deserialized.Repetition);
+        Assert.Equal(original.Repetition.Interval, deserialized.Repetition.Interval);
+        Assert.Equal(original.Repetition.Duration, deserialized.Repetition.Duration);
+        Assert.Equal(original.Repetition.StopAtDurationEnd, deserialized.Repetition.StopAtDurationEnd);
+        Assert.Equal(original.Delay, deserialized.Delay);
+    }
+
+    [Fact]
+    public void TriggerConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new TriggerConfig
+        {
+            Type = "logon",
+            Enabled = true,
+            StartBoundary = new DateTime(2025, 2, 1, 9, 0, 0, DateTimeKind.Utc),
+            ExecutionTimeLimit = TimeSpan.FromMinutes(15),
+            Id = "trigger-2",
+            Repetition = new RepetitionPatternConfig
+            {
+                Interval = TimeSpan.FromMinutes(2),
+                Duration = TimeSpan.FromMinutes(10),
+                StopAtDurationEnd = false
+            }
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<TriggerConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Type, deserialized.Type);
+        Assert.Equal(original.Enabled, deserialized.Enabled);
+        Assert.Equal(original.StartBoundary, deserialized.StartBoundary);
+        Assert.Equal(original.ExecutionTimeLimit, deserialized.ExecutionTimeLimit);
+        Assert.Equal(original.Id, deserialized.Id);
+        Assert.NotNull(deserialized.Repetition);
+        Assert.Equal(original.Repetition.Interval, deserialized.Repetition.Interval);
+        Assert.Equal(original.Repetition.Duration, deserialized.Repetition.Duration);
+        Assert.Equal(original.Repetition.StopAtDurationEnd, deserialized.Repetition.StopAtDurationEnd);
+    }
+
+    #endregion
+
+    #region ScheduledTaskConfig Tests
+
+    [Fact]
+    public void ScheduledTaskConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new ScheduledTaskConfig();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Name);
+        Assert.Equal(string.Empty, config.Path);
+        Assert.Null(config.Description);
+        Assert.Null(config.Author);
+        Assert.NotNull(config.Triggers);
+        Assert.Empty(config.Triggers);
+        Assert.NotNull(config.Actions);
+        Assert.Empty(config.Actions);
+    }
+
+    [Fact]
+    public void ScheduledTaskConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new ScheduledTaskConfig
+        {
+            Name = "Daily Cleanup",
+            Path = "\\WinHome\\Cleanup",
+            Description = "Cleanup temp files",
+            Author = "WinHome",
+            Triggers = new List<TriggerConfig>
+            {
+                new TriggerConfig
+                {
+                    Type = "daily",
+                    Enabled = true,
+                    StartBoundary = new DateTime(2025, 3, 1, 2, 0, 0, DateTimeKind.Utc)
+                }
+            },
+            Actions = new List<ActionConfig>
+            {
+                new ActionConfig
+                {
+                    Type = "exec",
+                    Path = "C:\\Tools\\cleanup.ps1",
+                    Arguments = "-Force"
+                }
+            }
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<ScheduledTaskConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.Path, deserialized.Path);
+        Assert.Equal(original.Description, deserialized.Description);
+        Assert.Equal(original.Author, deserialized.Author);
+        Assert.NotNull(deserialized.Triggers);
+        Assert.Single(deserialized.Triggers);
+        Assert.Equal(original.Triggers[0].Type, deserialized.Triggers[0].Type);
+        Assert.Equal(original.Triggers[0].StartBoundary, deserialized.Triggers[0].StartBoundary);
+        Assert.NotNull(deserialized.Actions);
+        Assert.Single(deserialized.Actions);
+        Assert.Equal(original.Actions[0].Type, deserialized.Actions[0].Type);
+        Assert.Equal(original.Actions[0].Path, deserialized.Actions[0].Path);
+        Assert.Equal(original.Actions[0].Arguments, deserialized.Actions[0].Arguments);
+    }
+
+    [Fact]
+    public void ScheduledTaskConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new ScheduledTaskConfig
+        {
+            Name = "Weekly Report",
+            Path = "\\WinHome\\Report",
+            Description = "Generate weekly report",
+            Author = "WinHome",
+            Triggers = new List<TriggerConfig>
+            {
+                new TriggerConfig
+                {
+                    Type = "weekly",
+                    Enabled = false,
+                    StartBoundary = new DateTime(2025, 4, 7, 6, 0, 0, DateTimeKind.Utc),
+                    Repetition = new RepetitionPatternConfig
+                    {
+                        Interval = TimeSpan.FromMinutes(15),
+                        Duration = TimeSpan.FromHours(1),
+                        StopAtDurationEnd = true
+                    }
+                }
+            },
+            Actions = new List<ActionConfig>
+            {
+                new ActionConfig
+                {
+                    Type = "exec",
+                    Path = "/usr/local/bin/report",
+                    WorkingDirectory = "/var/reports"
+                }
+            }
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<ScheduledTaskConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.Path, deserialized.Path);
+        Assert.Equal(original.Description, deserialized.Description);
+        Assert.Equal(original.Author, deserialized.Author);
+        Assert.NotNull(deserialized.Triggers);
+        Assert.Single(deserialized.Triggers);
+        Assert.Equal(original.Triggers[0].Type, deserialized.Triggers[0].Type);
+        Assert.Equal(original.Triggers[0].StartBoundary, deserialized.Triggers[0].StartBoundary);
+        Assert.NotNull(deserialized.Triggers[0].Repetition);
+        Assert.Equal(original.Triggers[0].Repetition.Interval, deserialized.Triggers[0].Repetition.Interval);
+        Assert.Equal(original.Triggers[0].Repetition.Duration, deserialized.Triggers[0].Repetition.Duration);
+        Assert.Equal(original.Triggers[0].Repetition.StopAtDurationEnd, deserialized.Triggers[0].Repetition.StopAtDurationEnd);
+        Assert.NotNull(deserialized.Actions);
+        Assert.Single(deserialized.Actions);
+        Assert.Equal(original.Actions[0].Type, deserialized.Actions[0].Type);
+        Assert.Equal(original.Actions[0].Path, deserialized.Actions[0].Path);
+        Assert.Equal(original.Actions[0].WorkingDirectory, deserialized.Actions[0].WorkingDirectory);
+    }
+
+    #endregion
+
     #region RegistryTweak Tests
 
     [Fact]
