@@ -35,7 +35,7 @@ namespace WinHome.Services.System
                 new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost", Name = "EnableWebContentEvaluation", Value = 1, Type = "dword" },
                 new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", Name = "NoDriveTypeAutoRun", Value = 255, Type = "dword" },
                 new RegistryTweak { Path = @"HKLM\Software\Policies\Microsoft\Windows NT\DNSClient", Name = "EnableMulticast", Value = 0, Type = "dword" },
-                
+
                 // Disable Windows Script Host
                 new RegistryTweak { Path = @"HKLM\Software\Microsoft\Windows Script Host\Settings", Name = "Enabled", Value = 0, Type = "dword" },
                 // Disable Remote Assistance
@@ -60,9 +60,7 @@ namespace WinHome.Services.System
                 // Disable implicit text/ink collection for input personalization
                 new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization", Name = "RestrictImplicitTextCollection", Value = 1, Type = "dword" },
                 // Disable contact harvesting for handwriting recognition
-                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization\TrainedDataStore", Name = "HarvestContacts", Value = 0, Type = "dword" },
-                // Enable Clipboard History
-new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableClipboardHistory", Value = 1, Type = "dword" }
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization\TrainedDataStore", Name = "HarvestContacts", Value = 0, Type = "dword" }
             }
         };
 
@@ -70,8 +68,11 @@ new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableC
         {
             _processRunner = processRunner;
             _registryService = registryService;
+<<<<<<< HEAD
             _logger = logger;
 
+=======
+>>>>>>> 60df992 (resolve merge conflicts)
         }
 
         private record SettingDefinition(
@@ -84,7 +85,6 @@ new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableC
 
         private readonly List<SettingDefinition> _catalog = new()
         {
-
             new("dark_mode",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", "dword",
                 new() { { "true", 0 }, { "false", 1 } }),
@@ -93,7 +93,6 @@ new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableC
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", "dword",
                 new() { { "true", 0 }, { "false", 1 } }),
 
-
             new("taskbar_alignment",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarAl", "dword",
                 new() { { "left", 0 }, { "center", 1 } }),
@@ -101,7 +100,6 @@ new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableC
             new("taskbar_widgets",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa", "dword",
                 new() { { "hide", 0 }, { "show", 1 } }),
-
 
             new("show_file_extensions",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", "dword",
@@ -118,7 +116,6 @@ new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableC
             new("explorer_launch_to",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "LaunchTo", "dword",
                 new() { { "this_pc", 1 }, { "quick_access", 2 } }),
-
 
             new("bing_search_enabled",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", "dword",
@@ -151,10 +148,11 @@ new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableC
             new("snap_assist_flyout",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "EnableSnapAssistFlyout", "dword",
                 new() { { "true", 1 }, { "false", 0 } }),
-                
-                new("clipboard_history",
-    @"HKCU\Software\Microsoft\Clipboard", "EnableClipboardHistory", "dword",
-    new() { { "true", 1 }, { "false", 0 } }),
+
+            // clipboard_history
+            new("clipboard_history",
+                @"HKCU\Software\Microsoft\Clipboard", "EnableClipboardHistory", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
         };
 
         public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings)
@@ -221,7 +219,6 @@ new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableC
                         var regValue = _registryService.Read(def.RegistryPath, def.RegistryName);
                         if (regValue != null)
                         {
-                            // Find corresponding user-friendly key for this value
                             var match = def.ValueMap.FirstOrDefault(kvp =>
                             {
                                 if (kvp.Value is byte[] kvpBytes && regValue is byte[] regBytes)
@@ -232,7 +229,6 @@ new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableC
                             });
                             if (!match.Equals(default(KeyValuePair<string, object>)))
                             {
-                                // Handle Booleans properly
                                 object val = match.Key;
                                 if (bool.TryParse(match.Key, out bool bVal)) val = bVal;
                                 else if (int.TryParse(match.Key, out int iVal)) val = iVal;
