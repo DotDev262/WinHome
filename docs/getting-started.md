@@ -86,8 +86,8 @@ Check what WinHome has tracked:
 ```
 
 This shows the current state versus your desired config.
-
----
+You can also run `winhome state list` to view all currently
+tracked and managed items.
 
 ## ⚠️ Security Note
 
