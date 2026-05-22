@@ -78,6 +78,337 @@ public class ModelTests
 
     #endregion
 
+    #region RegistryTweak Tests
+
+    [Fact]
+    public void RegistryTweak_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new RegistryTweak();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Path);
+        Assert.Equal(string.Empty, config.Name);
+        Assert.NotNull(config.Value);
+        Assert.Equal("string", config.Type);
+    }
+
+    [Fact]
+    public void RegistryTweak_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new RegistryTweak
+        {
+            Path = "HKCU\\Software\\WinHome",
+            Name = "TestValue",
+            Value = 1,
+            Type = "dword"
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<RegistryTweak>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Path, deserialized.Path);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.Type, deserialized.Type);
+
+        var valueElement = Assert.IsType<JsonElement>(deserialized.Value);
+        Assert.Equal(JsonValueKind.Number, valueElement.ValueKind);
+        Assert.Equal(original.Value, valueElement.GetInt32());
+    }
+
+    [Fact]
+    public void RegistryTweak_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new RegistryTweak
+        {
+            Path = "HKLM\\Software\\WinHome",
+            Name = "TestString",
+            Value = "Enabled",
+            Type = "string"
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<RegistryTweak>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Path, deserialized.Path);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.Type, deserialized.Type);
+        Assert.Equal(original.Value, deserialized.Value);
+    }
+
+    #endregion
+
+    #region WslDistroConfig Tests
+
+    [Fact]
+    public void WslDistroConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new WslDistroConfig();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Name);
+        Assert.Null(config.SetupScript);
+    }
+
+    [Fact]
+    public void WslDistroConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new WslDistroConfig
+        {
+            Name = "Ubuntu-22.04",
+            SetupScript = "~/setup.sh"
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<WslDistroConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.SetupScript, deserialized.SetupScript);
+    }
+
+    [Fact]
+    public void WslDistroConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new WslDistroConfig
+        {
+            Name = "Debian",
+            SetupScript = "/opt/setup.sh"
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<WslDistroConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.SetupScript, deserialized.SetupScript);
+    }
+
+    #endregion
+
+    #region WindowsServiceConfig Tests
+
+    [Fact]
+    public void WindowsServiceConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new WindowsServiceConfig();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Name);
+        Assert.Equal("running", config.State);
+        Assert.Null(config.StartupType);
+    }
+
+    [Fact]
+    public void WindowsServiceConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new WindowsServiceConfig
+        {
+            Name = "Spooler",
+            State = "stopped",
+            StartupType = "manual"
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<WindowsServiceConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.State, deserialized.State);
+        Assert.Equal(original.StartupType, deserialized.StartupType);
+    }
+
+    [Fact]
+    public void WindowsServiceConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new WindowsServiceConfig
+        {
+            Name = "W32Time",
+            State = "running",
+            StartupType = "automatic"
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<WindowsServiceConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.State, deserialized.State);
+        Assert.Equal(original.StartupType, deserialized.StartupType);
+    }
+
+    #endregion
+
+    #region DotfileConfig Tests
+
+    [Fact]
+    public void DotfileConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new DotfileConfig();
+
+        // Assert
+        Assert.Equal(string.Empty, config.Src);
+        Assert.Equal(string.Empty, config.Target);
+    }
+
+    [Fact]
+    public void DotfileConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new DotfileConfig
+        {
+            Src = "./dotfiles/.gitconfig",
+            Target = "~/.gitconfig"
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<DotfileConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Src, deserialized.Src);
+        Assert.Equal(original.Target, deserialized.Target);
+    }
+
+    [Fact]
+    public void DotfileConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new DotfileConfig
+        {
+            Src = "./dotfiles/.vimrc",
+            Target = "~/.vimrc"
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<DotfileConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Src, deserialized.Src);
+        Assert.Equal(original.Target, deserialized.Target);
+    }
+
+    #endregion
+
+    #region ProfileConfig Tests
+
+    [Fact]
+    public void ProfileConfig_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var config = new ProfileConfig();
+
+        // Assert
+        Assert.Null(config.Git);
+    }
+
+    [Fact]
+    public void ProfileConfig_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new ProfileConfig
+        {
+            Git = new GitConfig
+            {
+                UserName = "Profile User",
+                UserEmail = "profile@example.com",
+                CommitGpgSign = true,
+                Settings = new Dictionary<string, string>
+                {
+                    { "core.editor", "code --wait" }
+                }
+            }
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<ProfileConfig>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.NotNull(deserialized.Git);
+        Assert.Equal(original.Git.UserName, deserialized.Git.UserName);
+        Assert.Equal(original.Git.UserEmail, deserialized.Git.UserEmail);
+        Assert.Equal(original.Git.CommitGpgSign, deserialized.Git.CommitGpgSign);
+        Assert.Equal(original.Git.Settings["core.editor"], deserialized.Git.Settings["core.editor"]);
+    }
+
+    [Fact]
+    public void ProfileConfig_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new ProfileConfig
+        {
+            Git = new GitConfig
+            {
+                UserName = "Yaml User",
+                UserEmail = "yaml@example.com",
+                SigningKey = "ABC123",
+                CommitGpgSign = false,
+                Settings = new Dictionary<string, string>
+                {
+                    { "core.autocrlf", "true" }
+                }
+            }
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+        var deserialized = deserializer.Deserialize<ProfileConfig>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.NotNull(deserialized.Git);
+        Assert.Equal(original.Git.UserName, deserialized.Git.UserName);
+        Assert.Equal(original.Git.UserEmail, deserialized.Git.UserEmail);
+        Assert.Equal(original.Git.SigningKey, deserialized.Git.SigningKey);
+        Assert.Equal(original.Git.CommitGpgSign, deserialized.Git.CommitGpgSign);
+        Assert.Equal(original.Git.Settings["core.autocrlf"], deserialized.Git.Settings["core.autocrlf"]);
+    }
+
+    #endregion
+
     #region GitConfig Tests
 
     [Fact]

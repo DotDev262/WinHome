@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32.TaskScheduler;
 using System;
+using System.Runtime.Versioning;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,7 @@ using WinHome.Models;
 
 namespace WinHome.Services.System
 {
+    [SupportedOSPlatform("windows")]
     public class ScheduledTaskService : IScheduledTaskService
     {
         private readonly ILogger<ScheduledTaskService> _logger;

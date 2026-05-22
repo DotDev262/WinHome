@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    // "allowImportingTsExtensions": true,
+    "types": ["node"],
+    "esModuleInterop": true,
+    "strict": false,
+    "skipLibCheck": true
+  },
+
+  "include": [
+    "src",
+    "test"
+  ]
+}

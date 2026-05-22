@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Moq;
 using WinHome.Interfaces;
 using WinHome.Models;
@@ -12,13 +14,18 @@ namespace WinHome.Tests
     {
         private readonly Mock<IProcessRunner> _mockProcessRunner;
         private readonly Mock<IRegistryService> _mockRegistryService;
+        private readonly Mock<ILogger<SystemSettingsService>> _mockLogger;
         private readonly SystemSettingsService _service;
 
         public SystemSettingsServiceTests()
         {
             _mockProcessRunner = new Mock<IProcessRunner>();
             _mockRegistryService = new Mock<IRegistryService>();
-            _service = new SystemSettingsService(_mockProcessRunner.Object, _mockRegistryService.Object);
+            _mockLogger = new Mock<ILogger<SystemSettingsService>>();
+            _service = new SystemSettingsService(
+                _mockProcessRunner.Object,
+                _mockRegistryService.Object,
+                _mockLogger.Object);
         }
 
         [Fact]
@@ -31,7 +38,97 @@ namespace WinHome.Tests
 
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
-            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("WmiSetBrightness(1, 80)")), false), Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("WmiSetBrightness(1, 80)")), false),
+                Times.Once);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        public async Task ApplyNonRegistrySettingsAsync_Brightness_BoundaryValues_Should_Apply(int value)
+        {
+            var settings = new Dictionary<string, object> { { "brightness", value } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockProcessRunner.Verify(
+                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains($"WmiSetBrightness(1, {value})")), false),
+                Times.Once);
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(101)]
+        [InlineData(-100)]
+        [InlineData(200)]
+        public async Task ApplyNonRegistrySettingsAsync_Brightness_OutOfRange_Should_LogWarning_And_Skip(int value)
+        {
+            var settings = new Dictionary<string, object> { { "brightness", value } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Brightness") && state.ToString()!.Contains(value.ToString())),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Theory]
+        [InlineData("abc")]
+        [InlineData("50.5")]
+        public async Task ApplyNonRegistrySettingsAsync_Brightness_InvalidFormat_Should_LogWarning_And_Skip(string value)
+        {
+            var settings = new Dictionary<string, object> { { "brightness", value } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Brightness") && state.ToString()!.Contains(value)),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_Brightness_Null_Should_SkipSilently()
+        {
+            var settings = new Dictionary<string, object> { { "brightness", null } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
         }
 
         [Fact]
@@ -44,7 +141,97 @@ namespace WinHome.Tests
 
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
-            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("Set-AudioDevice -PlaybackVolume 50")), false), Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("Set-AudioDevice -PlaybackVolume 50")), false),
+                Times.Once);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        public async Task ApplyNonRegistrySettingsAsync_Volume_BoundaryValues_Should_Apply(int value)
+        {
+            var settings = new Dictionary<string, object> { { "volume", value } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockProcessRunner.Verify(
+                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains($"Set-AudioDevice -PlaybackVolume {value}")), false),
+                Times.Once);
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(101)]
+        [InlineData(-100)]
+        [InlineData(200)]
+        public async Task ApplyNonRegistrySettingsAsync_Volume_OutOfRange_Should_LogWarning_And_Skip(int value)
+        {
+            var settings = new Dictionary<string, object> { { "volume", value } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Volume") && state.ToString()!.Contains(value.ToString())),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Theory]
+        [InlineData("abc")]
+        [InlineData("50.5")]
+        public async Task ApplyNonRegistrySettingsAsync_Volume_InvalidFormat_Should_LogWarning_And_Skip(string value)
+        {
+            var settings = new Dictionary<string, object> { { "volume", value } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Volume") && state.ToString()!.Contains(value)),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_Volume_Null_Should_SkipSilently()
+        {
+            var settings = new Dictionary<string, object> { { "volume", null } };
+
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
         }
 
         [Fact]
@@ -57,7 +244,11 @@ namespace WinHome.Tests
 
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
-            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("New-BurntToastNotification -Text 'Test Title', 'Test Message'")), false), Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand("powershell",
+                    It.Is<string>(s => s.Contains("New-BurntToastNotification -Text 'Test Title', 'Test Message'")),
+                    false),
+                Times.Once);
         }
 
         [Fact]

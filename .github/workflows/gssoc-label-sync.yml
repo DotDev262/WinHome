@@ -60,6 +60,7 @@ jobs:
               return '';
             }
 
+            gssocLabels.push('GSSOC');
             console.log(`GSSoC labels to apply: ${gssocLabels.join(', ')}`);
             return gssocLabels.join(',');
 

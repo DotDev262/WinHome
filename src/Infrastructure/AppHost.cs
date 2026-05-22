@@ -41,6 +41,7 @@ public static class AppHost
 
         // System Services
         services.AddSingleton<IProcessRunner, DefaultProcessRunner>();
+        services.AddSingleton<IFileSystem, DefaultFileSystem>();
         services.AddSingleton<IServiceControllerWrapper, ServiceControllerWrapper>();
         services.AddSingleton<IRegistryWrapper, RegistryWrapper>();
 
