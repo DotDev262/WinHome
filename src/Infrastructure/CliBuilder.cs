@@ -81,11 +81,8 @@ public static class CliBuilder
             bool quiet = result.GetValue(quietOption);
             bool json = result.GetValue(jsonOption);
 
-            if (verbose && quiet)
-            {
-                Console.Error.WriteLine("Error: --verbose and --quiet cannot be used together.");
-                return 1;
-            }
+            int conflict = RejectConflictingFlags(verbose, quiet);
+            if (conflict != 0) return conflict;
 
             return await runAction(file, dryRun, profile, debug, diff, json, update, ComputeLogLevel(quiet, verbose));
         });
@@ -106,11 +103,8 @@ public static class CliBuilder
             bool verbose = result.GetValue(verboseOption);
             bool quiet = result.GetValue(quietOption);
 
-            if (verbose && quiet)
-            {
-                Console.Error.WriteLine("Error: --verbose and --quiet cannot be used together.");
-                return 1;
-            }
+            int conflict = RejectConflictingFlags(verbose, quiet);
+            if (conflict != 0) return conflict;
 
             return await generateAction(output, ComputeLogLevel(quiet, verbose));
         });
@@ -129,11 +123,8 @@ public static class CliBuilder
         {
             bool verbose = result.GetValue(verboseOption);
             bool quiet = result.GetValue(quietOption);
-            if (verbose && quiet)
-            {
-                Console.Error.WriteLine("Error: --verbose and --quiet cannot be used together.");
-                return 1;
-            }
+            int conflict = RejectConflictingFlags(verbose, quiet);
+            if (conflict != 0) return conflict;
             return await stateAction("list", null, ComputeLogLevel(quiet, verbose));
         });
 
@@ -145,11 +136,8 @@ public static class CliBuilder
         {
             bool verbose = result.GetValue(verboseOption);
             bool quiet = result.GetValue(quietOption);
-            if (verbose && quiet)
-            {
-                Console.Error.WriteLine("Error: --verbose and --quiet cannot be used together.");
-                return 1;
-            }
+            int conflict = RejectConflictingFlags(verbose, quiet);
+            if (conflict != 0) return conflict;
             var path = result.GetValue(backupPathArgument);
             return await stateAction("backup", path, ComputeLogLevel(quiet, verbose));
         });
@@ -162,11 +150,8 @@ public static class CliBuilder
         {
             bool verbose = result.GetValue(verboseOption);
             bool quiet = result.GetValue(quietOption);
-            if (verbose && quiet)
-            {
-                Console.Error.WriteLine("Error: --verbose and --quiet cannot be used together.");
-                return 1;
-            }
+            int conflict = RejectConflictingFlags(verbose, quiet);
+            if (conflict != 0) return conflict;
             var path = result.GetValue(restorePathArgument);
             return await stateAction("restore", path, ComputeLogLevel(quiet, verbose));
         });
@@ -185,5 +170,15 @@ public static class CliBuilder
         if (quiet) return LogLevel.Warning;
         if (verbose) return LogLevel.Trace;
         return LogLevel.Info;
+    }
+
+    private static int RejectConflictingFlags(bool verbose, bool quiet)
+    {
+        if (verbose && quiet)
+        {
+            Console.Error.WriteLine("Error: --verbose and --quiet cannot be used together.");
+            return 1;
+        }
+        return 0;
     }
 }

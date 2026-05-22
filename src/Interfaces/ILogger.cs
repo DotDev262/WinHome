@@ -2,12 +2,12 @@ namespace WinHome.Interfaces
 {
     public enum LogLevel
     {
-        Trace,
-        Debug,
-        Info,
-        Success,
-        Warning,
-        Error
+        Trace = -2,
+        Debug = -1,
+        Info = 0,
+        Success = 1,
+        Warning = 2,
+        Error = 3
     }
 
     public interface ILogger
