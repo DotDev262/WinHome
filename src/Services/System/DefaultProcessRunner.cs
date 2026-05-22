@@ -131,8 +131,6 @@ namespace WinHome.Services.System
 
         public bool RunProcessWithStartInfo(ProcessStartInfo startInfo)
         {
-            try
-            {
                 using var process = Process.Start(startInfo);
 
                 if (process == null)
@@ -154,24 +152,20 @@ namespace WinHome.Services.System
                 }
 
                 if (outputTask != null)
-                    outputTask.Wait();
+                    outputTask.GetAwaiter().GetResult();
 
                 if (errorTask != null)
-                    errorTask.Wait();
+                    errorTask.GetAwaiter().GetResult();
 
                 var error = errorTask != null ? errorTask.Result : string.Empty;
 
                 if (process.ExitCode != 0)
                 {
-                    throw new Exception($"Process failed with exit code {process.ExitCode}: {error}");
+                    throw new Exception(
+                        $"Process failed with exit code {process.ExitCode}: {error}");
                 }
 
                 return true;
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
         }
     }
 }
