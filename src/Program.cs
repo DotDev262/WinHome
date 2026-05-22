@@ -46,10 +46,11 @@ class Program
                     return exitCode;
                 },
                 // Generate Action
-                async (outputFile) =>
+                async (outputFile, minLogLevel) =>
                 {
-                    var generator = host.Services.GetRequiredService<IGeneratorService>();
                     var logger = host.Services.GetRequiredService<ILogger>();
+                    logger.SetMinLevel(minLogLevel);
+                    var generator = host.Services.GetRequiredService<IGeneratorService>();
 
                     try
                     {
@@ -80,10 +81,11 @@ class Program
                     }
                 },
                 // State Action
-                async (command, path) =>
+                async (command, path, minLogLevel) =>
                 {
-                    var stateService = host.Services.GetRequiredService<IStateService>();
                     var logger = host.Services.GetRequiredService<ILogger>();
+                    logger.SetMinLevel(minLogLevel);
+                    var stateService = host.Services.GetRequiredService<IStateService>();
 
                     switch (command)
                     {

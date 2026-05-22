@@ -5,6 +5,7 @@ namespace WinHome.Services.Logging
 {
     public class JsonLogger : ILogger
     {
+        private readonly object _lock = new();
         private readonly List<LogEntry> _logEntries = new();
         private volatile LogLevel _minLevel = LogLevel.Info;
 
@@ -17,7 +18,10 @@ namespace WinHome.Services.Logging
         {
             if (level < _minLevel) return;
 
-            _logEntries.Add(new LogEntry(message, level));
+            lock (_lock)
+            {
+                _logEntries.Add(new LogEntry(message, level));
+            }
         }
 
         public void LogError(string message)
@@ -42,7 +46,10 @@ namespace WinHome.Services.Logging
 
         public string ToJson()
         {
-            return JsonSerializer.Serialize(_logEntries, new JsonSerializerOptions { WriteIndented = true });
+            lock (_lock)
+            {
+                return JsonSerializer.Serialize(_logEntries, new JsonSerializerOptions { WriteIndented = true });
+            }
         }
     }
 

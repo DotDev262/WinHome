@@ -19,7 +19,11 @@ namespace WinHome.Services.Logging
             switch (level)
             {
                 case LogLevel.Trace:
+                    WriteTrace(message);
+                    break;
                 case LogLevel.Debug:
+                    WriteDebug(message);
+                    break;
                 case LogLevel.Info:
                     WriteInfo(message);
                     break;
@@ -65,6 +69,22 @@ namespace WinHome.Services.Logging
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine(message);
                 Console.ResetColor();
+            }
+        }
+
+        private void WriteTrace(string message)
+        {
+            lock (_consoleLock)
+            {
+                Console.WriteLine($"[Trace] {message}");
+            }
+        }
+
+        private void WriteDebug(string message)
+        {
+            lock (_consoleLock)
+            {
+                Console.WriteLine($"[Debug] {message}");
             }
         }
 
