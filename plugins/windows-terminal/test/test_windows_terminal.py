@@ -59,12 +59,19 @@ def test_apply_merges_settings(tmp_path):
     assert content["fontSize"] == 14
 
 
-def test_unknown_command():
-    req = make_request("unknown_cmd")
-    response = {
-        "requestId": req["requestId"],
-        "success": False,
-        "changed": False,
-    }
-    response["error"] = f"Unknown command: {req['command']}"
+def test_unknown_command_via_main(monkeypatch, capsys):
+    import json
+    import plugin
+
+    request = json.dumps({
+        "requestId": "test-999",
+        "command": "unknown_cmd",
+        "args": {},
+        "context": {}
+    })
+    monkeypatch.setattr("sys.stdin", __import__("io").StringIO(request))
+    plugin.main()
+    out = capsys.readouterr().out
+    response = json.loads(out)
+    assert response["success"] is False
     assert "Unknown command" in response["error"]
