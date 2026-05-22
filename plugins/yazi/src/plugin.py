@@ -5,7 +5,7 @@ import shutil
 
 try:
     import tomllib
-except Exception:
+except ImportError:
     tomllib = None
 
 
@@ -96,6 +96,8 @@ def serialize_toml(data: dict) -> str:
             lines.pop()
 
     def serialize_value(value) -> str:
+        if value is None:
+            raise ValueError("None is not supported in TOML output")
         if isinstance(value, bool):
             return "true" if value else "false"
         if isinstance(value, (int, float)):
@@ -161,6 +163,8 @@ def split_config(args: dict) -> dict:
             keymap[key] = value
         elif key in THEME_KEYS:
             theme[key] = value
+        else:
+            log(f"Warning: unknown config key '{key}' was ignored")
 
     return {"yazi": yazi, "keymap": keymap, "theme": theme}
 
@@ -204,7 +208,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         return {
             "requestId": request_id,
             "success": True,
-            "changed": changed if not dry_run else False,
+            "changed": changed or would_change,
             "data": {"wouldChange": would_change} if dry_run else None,
         }
 
