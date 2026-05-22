@@ -53,7 +53,9 @@ namespace WinHome.Services.System
                 // Disable implicit text/ink collection for input personalization
                 new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization", Name = "RestrictImplicitTextCollection", Value = 1, Type = "dword" },
                 // Disable contact harvesting for handwriting recognition
-                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization\TrainedDataStore", Name = "HarvestContacts", Value = 0, Type = "dword" }
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization\TrainedDataStore", Name = "HarvestContacts", Value = 0, Type = "dword" },
+                // Enable Clipboard History
+new RegistryTweak { Path = @"HKCU\Software\Microsoft\Clipboard", Name = "EnableClipboardHistory", Value = 1, Type = "dword" }
             }
         };
 
@@ -61,6 +63,7 @@ namespace WinHome.Services.System
         {
             _processRunner = processRunner;
             _registryService = registryService;
+            
         }
 
         private record SettingDefinition(
@@ -140,6 +143,10 @@ namespace WinHome.Services.System
             new("snap_assist_flyout",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "EnableSnapAssistFlyout", "dword",
                 new() { { "true", 1 }, { "false", 0 } }),
+                
+                new("clipboard_history",
+    @"HKCU\Software\Microsoft\Clipboard", "EnableClipboardHistory", "dword",
+    new() { { "true", 1 }, { "false", 0 } }),
         };
 
         public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings)
