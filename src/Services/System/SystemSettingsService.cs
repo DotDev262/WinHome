@@ -13,7 +13,7 @@ namespace WinHome.Services.System
         private readonly IProcessRunner _processRunner;
         private readonly IRegistryService _registryService;
         private readonly ILogger<SystemSettingsService> _logger;
-        private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification" };
+        private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification", "screen_timeout_ac", "screen_timeout_dc", "sleep_timeout_ac", "sleep_timeout_dc" };
 
         private const int MinVolumeOrBrightness = 0;
         private const int MaxVolumeOrBrightness = 100;
@@ -300,10 +300,39 @@ namespace WinHome.Services.System
                             _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
                         }
                         break;
+                    case "screen_timeout_ac":
+                        ApplyPowerSetting("monitor-timeout-ac", userSetting.Value, dryRun);
+                        break;
+                    case "screen_timeout_dc":
+                        ApplyPowerSetting("monitor-timeout-dc", userSetting.Value, dryRun);
+                        break;
+                    case "sleep_timeout_ac":
+                        ApplyPowerSetting("standby-timeout-ac", userSetting.Value, dryRun);
+                        break;
+                    case "sleep_timeout_dc":
+                        ApplyPowerSetting("standby-timeout-dc", userSetting.Value, dryRun);
+                        break;
                 }
             }
 
             return Task.CompletedTask;
+        }
+
+        private void ApplyPowerSetting(string powercfgArg, object? value, bool dryRun)
+        {
+            if (value?.ToString() is string valStr && int.TryParse(valStr, out int minutes))
+            {
+                if (minutes < 0)
+                {
+                    _logger.LogWarning($"[Settings] Power setting value '{minutes}' cannot be negative. Skipping.");
+                    return;
+                }
+                _processRunner.RunCommand("powercfg", $"/change {powercfgArg} {minutes}", dryRun);
+            }
+            else if (value != null)
+            {
+                _logger.LogWarning($"[Settings] Power setting value '{value}' is not a valid integer. Skipping.");
+            }
         }
     }
 }

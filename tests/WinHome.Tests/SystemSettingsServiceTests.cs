@@ -251,6 +251,80 @@ namespace WinHome.Tests
                 Times.Once);
         }
 
+        [Theory]
+        [InlineData("screen_timeout_ac", "monitor-timeout-ac")]
+        [InlineData("screen_timeout_dc", "monitor-timeout-dc")]
+        [InlineData("sleep_timeout_ac", "standby-timeout-ac")]
+        [InlineData("sleep_timeout_dc", "standby-timeout-dc")]
+        public async Task ApplyNonRegistrySettingsAsync_PowerSettings_ValidValues_Should_Apply(string key, string powercfgArg)
+        {
+            var settings = new Dictionary<string, object> { { key, 15 } };
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand("powercfg", $"/change {powercfgArg} 15", false),
+                Times.Once);
+        }
+
+        [Theory]
+        [InlineData("screen_timeout_ac")]
+        [InlineData("screen_timeout_dc")]
+        [InlineData("sleep_timeout_ac")]
+        [InlineData("sleep_timeout_dc")]
+        public async Task ApplyNonRegistrySettingsAsync_PowerSettings_NegativeValue_Should_LogWarning_And_Skip(string key)
+        {
+            var settings = new Dictionary<string, object> { { key, -5 } };
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Power setting value") && state.ToString()!.Contains("-5")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Theory]
+        [InlineData("screen_timeout_ac")]
+        [InlineData("sleep_timeout_dc")]
+        public async Task ApplyNonRegistrySettingsAsync_PowerSettings_InvalidFormat_Should_LogWarning_And_Skip(string key)
+        {
+            var settings = new Dictionary<string, object> { { key, "abc" } };
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Power setting value") && state.ToString()!.Contains("abc")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_PowerSettings_Null_Should_SkipSilently()
+        {
+            var settings = new Dictionary<string, object> { { "screen_timeout_ac", null } };
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
         [Fact]
         public async Task GetTweaksAsync_Should_Return_Security_Presets()
         {
