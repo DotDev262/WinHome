@@ -121,6 +121,10 @@ namespace WinHome.Services.System
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", "dword",
                 new() { { "true", 1 }, { "false", 0 } }),
 
+            new("taskbar_search",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", "dword",
+                new() { { "hidden", 0 }, { "icon", 1 }, { "icon_label", 2 }, { "search_box", 3 } }),    
+
             new("transparency",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", "dword",
                 new() { { "true", 1 }, { "false", 0 } }),

@@ -363,6 +363,11 @@ namespace WinHome.Tests
         // bing_search_enabled
         [InlineData("bing_search_enabled", "true", "BingSearchEnabled", 1)]
         [InlineData("bing_search_enabled", "false", "BingSearchEnabled", 0)]
+        // taskbar_search
+        [InlineData("taskbar_search", "hidden", "SearchboxTaskbarMode", 0)]
+        [InlineData("taskbar_search", "icon", "SearchboxTaskbarMode", 1)]
+        [InlineData("taskbar_search", "icon_label", "SearchboxTaskbarMode", 2)]
+        [InlineData("taskbar_search", "search_box", "SearchboxTaskbarMode", 3)]
         // transparency
         [InlineData("transparency", "true", "EnableTransparency", 1)]
         [InlineData("transparency", "false", "EnableTransparency", 0)]
@@ -427,6 +432,12 @@ namespace WinHome.Tests
         // bing_search_enabled
         [InlineData("bing_search_enabled", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 1, true)]
         [InlineData("bing_search_enabled", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0, false)]
+        // taskbar_search
+        [InlineData("taskbar_search", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 0, "hidden")]
+        [InlineData("taskbar_search", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 1, "icon")]
+        [InlineData("taskbar_search", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 2, "icon_label")]
+        [InlineData("taskbar_search", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 3, "search_box")]
+
         // transparency
         [InlineData("transparency", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 1, true)]
         [InlineData("transparency", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 0, false)]
