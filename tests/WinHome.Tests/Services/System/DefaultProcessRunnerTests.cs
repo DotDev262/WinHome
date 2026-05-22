@@ -74,15 +74,25 @@ namespace WinHome.Tests.Services.System
         {
             // Arrange
             var runner = new DefaultProcessRunner();
-            var (exe, args) = Echo("hello-stdout");
+            string marker = "hello-stdout";
+            var (exe, args) = Echo(marker);
             var outputs = new ConcurrentBag<string>();
+            using var outputReceived = new ManualResetEventSlim(false);
 
             // Act
-            bool result = runner.RunCommand(exe, args, false, line => outputs.Add(line));
+            bool result = runner.RunCommand(exe, args, false, line =>
+            {
+                outputs.Add(line);
+                if (line.Contains(marker, StringComparison.Ordinal))
+                {
+                    outputReceived.Set();
+                }
+            });
 
             // Assert
             Assert.True(result);
-            Assert.Contains(outputs, s => s.Contains("hello-stdout", StringComparison.Ordinal));
+            Assert.True(outputReceived.Wait(TimeSpan.FromSeconds(5)), "Timed out waiting for stdout output.");
+            Assert.Contains(outputs, s => s.Contains(marker, StringComparison.Ordinal));
         }
 
         /// <summary>RunCommand forwards stderr lines to the onOutput callback.</summary>
@@ -91,15 +101,25 @@ namespace WinHome.Tests.Services.System
         {
             // Arrange
             var runner = new DefaultProcessRunner();
-            var (exe, args) = WriteToStderr("hello-stderr");
+            string marker = "hello-stderr";
+            var (exe, args) = WriteToStderr(marker);
             var outputs = new ConcurrentBag<string>();
+            using var outputReceived = new ManualResetEventSlim(false);
 
             // Act
-            bool result = runner.RunCommand(exe, args, false, line => outputs.Add(line));
+            bool result = runner.RunCommand(exe, args, false, line =>
+            {
+                outputs.Add(line);
+                if (line.Contains(marker, StringComparison.Ordinal))
+                {
+                    outputReceived.Set();
+                }
+            });
 
             // Assert
             Assert.True(result);
-            Assert.Contains(outputs, s => s.Contains("hello-stderr", StringComparison.Ordinal));
+            Assert.True(outputReceived.Wait(TimeSpan.FromSeconds(5)), "Timed out waiting for stderr output.");
+            Assert.Contains(outputs, s => s.Contains(marker, StringComparison.Ordinal));
         }
 
         /// <summary>RunCommand with null onOutput completes without throwing and returns success.</summary>
@@ -263,7 +283,8 @@ namespace WinHome.Tests.Services.System
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return ("cmd", $"/c echo {text} 1>&2");
+                // Use PowerShell to reliably write to stderr across environments
+                return ("powershell", $"-NoProfile -Command \"[Console]::Error.WriteLine('{text}')\"");
             }
 
             return ("sh", $"-c \"echo {text} >&2\"");
