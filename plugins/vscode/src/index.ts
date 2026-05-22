@@ -83,7 +83,7 @@ function getInstalledExtensions(profileName?: string): string[] {
   }
 }
 
-function checkInstalled(args: any, requestId: string): Response {
+export function checkInstalled(args: any, requestId: string): Response {
   const packageId = args.packageId.toLowerCase();
   const installed = getInstalledExtensions(args.profile);
   return {
@@ -94,7 +94,7 @@ function checkInstalled(args: any, requestId: string): Response {
   };
 }
 
-function install(args: any, context: any, requestId: string): Response {
+export function install(args: any, context: any, requestId: string): Response {
   const packageId = args.packageId;
   const profileName = args.profile;
   const installed = getInstalledExtensions(profileName);
@@ -118,7 +118,7 @@ function install(args: any, context: any, requestId: string): Response {
   }
 }
 
-function uninstall(args: any, context: any, requestId: string): Response {
+export function uninstall(args: any, context: any, requestId: string): Response {
   const packageId = args.packageId;
   const profileName = args.profile;
   const installed = getInstalledExtensions(profileName);
@@ -205,7 +205,7 @@ function applyToProfile(profileName: string | null, config: any, context: any, r
   }
 }
 
-function applyConfig(args: any, context: any, requestId: string): Response {
+export function applyConfig(args: any, context: any, requestId: string): Response {
   let overallSuccess = true;
   let overallChanged = false;
 
