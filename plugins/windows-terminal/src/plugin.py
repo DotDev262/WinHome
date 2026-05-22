@@ -96,7 +96,7 @@ def apply_config(args, context, request_id):
             return {
                 "requestId": request_id,
                 "success": True,
-                "changed": False,
+                "changed": True,
             }
 
         write_json(settings_path, current)
