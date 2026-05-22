@@ -64,16 +64,16 @@ namespace WinHome.Services.System
                         apps = ParseWingetExport(json);
                     }
                     string scoopOutput = _processRunner.RunCommandWithOutput("scoop", "list");
-if (!string.IsNullOrWhiteSpace(scoopOutput))
-{
-    apps.AddRange(ParseScoopList(scoopOutput));
-}
+                    if (!string.IsNullOrWhiteSpace(scoopOutput))
+                    {
+                        apps.AddRange(ParseScoopList(scoopOutput));
+                    }
 
-string chocoOutput = _processRunner.RunCommandWithOutput("choco", "list --local-only");
-if (!string.IsNullOrWhiteSpace(chocoOutput))
-{
-    apps.AddRange(ParseChocolateyList(chocoOutput));
-}
+                    string chocoOutput = _processRunner.RunCommandWithOutput("choco", "list --local-only");
+                    if (!string.IsNullOrWhiteSpace(chocoOutput))
+                    {
+                        apps.AddRange(ParseChocolateyList(chocoOutput));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -130,77 +130,77 @@ if (!string.IsNullOrWhiteSpace(chocoOutput))
             return apps;
         }
         public static List<AppConfig> ParseScoopList(string output)
-{
-    var apps = new List<AppConfig>();
-
-    if (string.IsNullOrWhiteSpace(output))
-        return apps;
-
-    foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-    {
-        var trimmed = line.Trim();
-
-        if (string.IsNullOrWhiteSpace(trimmed) ||
-            trimmed.StartsWith("Name", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.StartsWith("---") ||
-            trimmed.Contains("warn", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Contains("error", StringComparison.OrdinalIgnoreCase))
         {
-            continue;
-        }
+            var apps = new List<AppConfig>();
 
-        var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (string.IsNullOrWhiteSpace(output))
+                return apps;
 
-        if (parts.Length >= 1)
-        {
-            apps.Add(new AppConfig
+            foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                Id = parts[0],
-                Manager = "scoop"
-            });
-        }
-    }
+                var trimmed = line.Trim();
 
-    return apps;
-}
+                if (string.IsNullOrWhiteSpace(trimmed) ||
+                    trimmed.StartsWith("Name", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.StartsWith("---") ||
+                    trimmed.Contains("warn", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.Contains("error", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
-         public static List<AppConfig> ParseChocolateyList(string output)
-{
-    var apps = new List<AppConfig>();
+                var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-    if (string.IsNullOrWhiteSpace(output))
-        return apps;
+                if (parts.Length >= 1)
+                {
+                    apps.Add(new AppConfig
+                    {
+                        Id = parts[0],
+                        Manager = "scoop"
+                    });
+                }
+            }
 
-    foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-    {
-        var trimmed = line.Trim();
-
-        if (string.IsNullOrWhiteSpace(trimmed) ||
-            trimmed.StartsWith("Chocolatey", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.StartsWith("A newer version", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.StartsWith("Use choco upgrade", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.StartsWith("Warnings", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Contains("packages installed", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Contains("warn", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.Contains("error", StringComparison.OrdinalIgnoreCase))
-        {
-            continue;
+            return apps;
         }
 
-        var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-        if (parts.Length >= 2)
+        public static List<AppConfig> ParseChocolateyList(string output)
         {
-            apps.Add(new AppConfig
+            var apps = new List<AppConfig>();
+
+            if (string.IsNullOrWhiteSpace(output))
+                return apps;
+
+            foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                Id = parts[0],
-                Manager = "chocolatey"
-            });
-        }
-    }
+                var trimmed = line.Trim();
 
-    return apps;
-}
+                if (string.IsNullOrWhiteSpace(trimmed) ||
+                    trimmed.StartsWith("Chocolatey", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.StartsWith("A newer version", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.StartsWith("Use choco upgrade", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.StartsWith("Warnings", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.Contains("packages installed", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.Contains("warn", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.Contains("error", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                if (parts.Length >= 2)
+                {
+                    apps.Add(new AppConfig
+                    {
+                        Id = parts[0],
+                        Manager = "chocolatey"
+                    });
+                }
+            }
+
+            return apps;
+        }
         private GitConfig? GetGitConfig()
         {
             try

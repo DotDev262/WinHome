@@ -111,56 +111,56 @@ namespace WinHome.Tests
             Assert.Contains(apps, a => a.Id == "Mozilla.Firefox" && a.Manager == "winget");
         }
         [Fact]
-public void ParseScoopList_Parses_ValidPackages()
-{
-    string output = """
+        public void ParseScoopList_Parses_ValidPackages()
+        {
+            string output = """
 Name       Version Source Updated Info
 ----       ------- ------ ------- ----
 git        2.45.1  main
 nodejs     20.11.0 main
 """;
 
-    var apps = GeneratorService.ParseScoopList(output);
+            var apps = GeneratorService.ParseScoopList(output);
 
-    Assert.Equal(2, apps.Count);
-    Assert.Contains(apps, a => a.Id == "git" && a.Manager == "scoop");
-    Assert.Contains(apps, a => a.Id == "nodejs" && a.Manager == "scoop");
-}
+            Assert.Equal(2, apps.Count);
+            Assert.Contains(apps, a => a.Id == "git" && a.Manager == "scoop");
+            Assert.Contains(apps, a => a.Id == "nodejs" && a.Manager == "scoop");
+        }
 
-[Fact]
-public void ParseScoopList_Ignores_EmptyAndWarningOutput()
-{
-    string output = """
+        [Fact]
+        public void ParseScoopList_Ignores_EmptyAndWarningOutput()
+        {
+            string output = """
 WARN Scoop is not installed properly
 error something failed
 """;
 
-    var apps = GeneratorService.ParseScoopList(output);
+            var apps = GeneratorService.ParseScoopList(output);
 
-    Assert.Empty(apps);
-}
+            Assert.Empty(apps);
+        }
 
-[Fact]
-public void ParseChocolateyList_Parses_ValidPackages()
-{
-    string output = """
+        [Fact]
+        public void ParseChocolateyList_Parses_ValidPackages()
+        {
+            string output = """
 Chocolatey v2.4.3
 git 2.45.1
 nodejs 20.11.0
 2 packages installed.
 """;
 
-    var apps = GeneratorService.ParseChocolateyList(output);
+            var apps = GeneratorService.ParseChocolateyList(output);
 
-    Assert.Equal(2, apps.Count);
-    Assert.Contains(apps, a => a.Id == "git" && a.Manager == "chocolatey");
-    Assert.Contains(apps, a => a.Id == "nodejs" && a.Manager == "chocolatey");
-}
+            Assert.Equal(2, apps.Count);
+            Assert.Contains(apps, a => a.Id == "git" && a.Manager == "chocolatey");
+            Assert.Contains(apps, a => a.Id == "nodejs" && a.Manager == "chocolatey");
+        }
 
-[Fact]
-public void ParseChocolateyList_Ignores_WarningsAndUpdateMessages()
-{
-    string output = """
+        [Fact]
+        public void ParseChocolateyList_Ignores_WarningsAndUpdateMessages()
+        {
+            string output = """
 Chocolatey v2.4.3
 A newer version of Chocolatey is available.
 Use choco upgrade chocolatey to upgrade.
@@ -168,11 +168,11 @@ Warnings:
 10 packages installed.
 """;
 
-    var apps = GeneratorService.ParseChocolateyList(output);
+            var apps = GeneratorService.ParseChocolateyList(output);
 
-    Assert.Empty(apps);
-}
-        
+            Assert.Empty(apps);
+        }
+
 
     }
 }
