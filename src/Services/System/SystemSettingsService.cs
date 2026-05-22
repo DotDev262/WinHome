@@ -123,7 +123,7 @@ namespace WinHome.Services.System
 
             new("taskbar_search",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", "dword",
-                new() { { "hidden", 0 }, { "icon", 1 }, { "icon_label", 2 }, { "search_box", 3 } }),    
+                new() { { "hidden", 0 }, { "icon", 1 }, { "icon_label", 2 }, { "search_box", 3 } }),
 
             new("transparency",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", "dword",
