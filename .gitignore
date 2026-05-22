@@ -47,3 +47,4 @@ __pycache__/
 *.pyd
 .gemini/
 gha-creds-*.json
+node_modules/
