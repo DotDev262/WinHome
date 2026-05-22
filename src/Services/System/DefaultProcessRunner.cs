@@ -134,13 +134,35 @@ namespace WinHome.Services.System
             try
             {
                 using var process = Process.Start(startInfo);
-                if (process == null) throw new Exception("Failed to start process");
 
-                process.WaitForExit();
+                if (process == null)
+                    throw new Exception("Failed to start process");
+
+                Task<string>? outputTask = null;
+                Task<string>? errorTask = null;
+
+                if (startInfo.RedirectStandardOutput)
+                    outputTask = process.StandardOutput.ReadToEndAsync();
+
+                if (startInfo.RedirectStandardError)
+                    errorTask = process.StandardError.ReadToEndAsync();
+
+                if (!process.WaitForExit(TimeSpan.FromMinutes(10)))
+                {
+                    process.Kill(true);
+                    throw new TimeoutException("Process execution timed out.");
+                }
+
+                if (outputTask != null)
+                    outputTask.Wait();
+
+                if (errorTask != null)
+                    errorTask.Wait();
+
+                var error = errorTask != null ? errorTask.Result : string.Empty;
 
                 if (process.ExitCode != 0)
                 {
-                    var error = process.StandardError.ReadToEnd();
                     throw new Exception($"Process failed with exit code {process.ExitCode}: {error}");
                 }
 
