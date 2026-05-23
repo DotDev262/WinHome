@@ -330,10 +330,25 @@ def main() -> None:
         elif command == "apply":
             response = handle_apply(request_id, args, dry_run=dry_run)
         else:
-            response = {"requestId": request_id, "error": f"unknown command: {command!r}"}
+            # response = {"requestId": request_id, "error": f"unknown command: {command!r}"}
+            response = {
+    "requestId": request_id,
+    "success": False,
+    "changed": False,
+    "error": f"unknown command: {command!r}"
+}
     except Exception as exc:  # noqa: BLE001
         log(f"unhandled error: {exc}")
-        response = {"requestId": request_id, "error": str(exc)}
+        # response = {"requestId": request_id, "error": str(exc)}
+        response = {
+                "requestId": request_id,
+                "success": False,
+                "changed": False,
+                "error": str(exc)
+}
+
+
+
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
@@ -341,3 +356,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+        

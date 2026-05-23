@@ -333,3 +333,4 @@ def test_protocol_invalid_json():
             pass
         resp = json.loads(mock_stdout.getvalue().strip())
     assert "error" in resp
+    
