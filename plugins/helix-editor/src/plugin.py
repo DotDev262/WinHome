@@ -25,7 +25,6 @@ def get_helix_dir():
             raise Exception("APPDATA environment variable not found")
     
     helix_dir = os.path.join(appdata, "helix")
-    os.makedirs(helix_dir, exist_ok=True)
     
     return helix_dir
 
@@ -38,7 +37,7 @@ def read_toml(file_path: str) -> dict:
         try:
             with open(file_path, "rb") as f:
                 return tomllib.load(f)
-        except Exception as e:
+        except (tomllib.TOMLDecodeError, OSError) as e:
             log(f"Warning: could not parse {file_path} using tomllib: {e}")
             return {}
     else:
@@ -60,44 +59,33 @@ def dump_value(v):
         return json.dumps(v, ensure_ascii=False)
 
 
-def dump_toml(data: dict) -> str:
-    lines = []
-    
+def _dump_dict_recursive(d: dict, prefix: str, lines: list):
     # Primitives first
-    for k, v in data.items():
+    for k, v in d.items():
         if not isinstance(v, dict) and not (isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict)):
             lines.append(f"{k} = {dump_value(v)}")
-    
+            
     # Array of Tables
-    for k, v in data.items():
+    for k, v in d.items():
         if isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
             for item in v:
                 lines.append("")
-                lines.append(f"[[{k}]]")
-                for sub_k, sub_v in item.items():
-                    if isinstance(sub_v, dict):
-                        # E.g. [language.formatter] inside [[language]]
-                        # Actually TOML doesn't allow inline tables with JSON colon.
-                        # We can just output it as [k.sub_k] or we can just convert dict to inline TOML
-                        inline_pairs = [f'{json.dumps(ik, ensure_ascii=False)} = {dump_value(iv)}' for ik, iv in sub_v.items()]
-                        lines.append(f"{sub_k} = {{ {', '.join(inline_pairs)} }}")
-                    else:
-                        lines.append(f"{sub_k} = {dump_value(sub_v)}")
+                arr_path = f"{prefix}.{k}" if prefix else k
+                lines.append(f"[[{arr_path}]]")
+                _dump_dict_recursive(item, arr_path, lines)
 
     # Tables after
-    for k, v in data.items():
+    for k, v in d.items():
         if isinstance(v, dict):
             lines.append("")
-            lines.append(f"[{k}]")
-            for sub_k, sub_v in v.items():
-                if isinstance(sub_v, dict):
-                    # Basic nesting support up to 2 levels
-                    lines.append(f"[{k}.{sub_k}]")
-                    for sub_sub_k, sub_sub_v in sub_v.items():
-                        lines.append(f"{sub_sub_k} = {dump_value(sub_sub_v)}")
-                else:
-                    lines.append(f"{sub_k} = {dump_value(sub_v)}")
-                
+            table_path = f"{prefix}.{k}" if prefix else k
+            lines.append(f"[{table_path}]")
+            _dump_dict_recursive(v, table_path, lines)
+
+
+def dump_toml(data: dict) -> str:
+    lines = []
+    _dump_dict_recursive(data, "", lines)
     return "\n".join(lines).strip() + "\n"
 
 
@@ -135,8 +123,9 @@ def merge_settings(target: dict, source: dict) -> bool:
                         target[key].append(item)
                         changed = True
                 else:
-                    target[key].append(item)
-                    changed = True
+                    if item not in target[key]:
+                        target[key].append(item)
+                        changed = True
         else:
             if key not in target or target[key] != value:
                 target[key] = value
@@ -157,8 +146,17 @@ def check_installed(args: dict, request_id: str) -> dict:
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
     
-    config_settings = args.get("config", {})
-    language_settings = args.get("languages", {})
+    if "config" in args or "languages" in args:
+        config_settings = args.get("config", {})
+        language_settings = args.get("languages", {})
+    else:
+        config_settings = {}
+        language_settings = {}
+        for k, v in args.items():
+            if k in ("language", "language-server"):
+                language_settings[k] = v
+            else:
+                config_settings[k] = v
 
     try:
         helix_dir = get_helix_dir()
