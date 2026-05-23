@@ -119,7 +119,6 @@ When WinHome runs your plugin, it sends a single-line JSON object to your plugin
   "requestId": "550e8400-e29b-41d4-a716-446655440000",
   "success": true,
   "changed": false,
-  "error": null,
   "data": {
     "status": "nothing to do"
   }
@@ -130,8 +129,8 @@ When WinHome runs your plugin, it sends a single-line JSON object to your plugin
 |---|---|
 | `requestId` | Must match the request's `requestId` |
 | `success` | `true` if the plugin ran without errors |
-| `changed` | `true` if the plugin modified system state |
-| `error` | Error message string, or `null` on success |
+| `changed` | `true` if system state was modified (or would be modified on dry run) |
+| `error` | Error message string — only include this field if `success` is `false` |
 | `data` | Optional result data |
 
 > **Important**: Write all logs and debug messages to **stderr**, never stdout. WinHome captures stderr and pipes it to the main application log.
@@ -164,17 +163,21 @@ def main():
         "requestId": request_id,
         "success": True,
         "changed": False,
-        "error": None,
         "data": {}
     }
 
     if command == "apply":
         if dry_run:
             sys.stderr.write("[hello-world] Dry run — no changes made.\n")
+            response["changed"] = True  # changes would happen, just not applied
         else:
             sys.stderr.write("[hello-world] Applying changes...\n")
             response["changed"] = True
             response["data"] = {"status": "Hello from my first WinHome plugin!"}
+    elif command == "check_installed":
+        # Return whether the plugin's managed resource is already configured
+        response["changed"] = False
+        response["data"] = {"installed": False}
     else:
         response["success"] = False
         response["error"] = f"Unknown command: {command}"
@@ -224,18 +227,22 @@ process.stdin.on("end", () => {
         requestId,
         success: true,
         changed: false,
-        error: null,
         data: {}
     };
 
     if (command === "apply") {
         if (dryRun) {
             process.stderr.write("[hello-world-js] Dry run — no changes made.\n");
+            response.changed = true; // changes would happen, just not applied
         } else {
             process.stderr.write("[hello-world-js] Applying changes...\n");
             response.changed = true;
             response.data = { status: "Hello from my first WinHome plugin!" };
         }
+    } else if (command === "check_installed") {
+        // Return whether the plugin's managed resource is already configured
+        response.changed = false;
+        response.data = { installed: false };
     } else {
         response.success = false;
         response.error = `Unknown command: ${command}`;
@@ -286,8 +293,10 @@ def read_settings(path):
 
 def write_settings(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    temp_path = path + ".tmp"
+    with open(temp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    os.replace(temp_path, path)
 
 def apply(args, dry_run):
     settings_path = args.get("settingsPath")
@@ -307,7 +316,7 @@ def apply(args, dry_run):
 
     if dry_run:
         log(f"Would update: {list(changed_keys.keys())}")
-        return {"success": True, "changed": False}
+        return {"success": True, "changed": True}  # changes exist, just not applied
 
     current.update(changed_keys)
     write_settings(settings_path, current)
@@ -323,12 +332,17 @@ def main():
     context = request.get("context", {})
     dry_run = context.get("dryRun", False)
 
-    response = {"requestId": request_id, "success": False, "changed": False, "error": None}
+    response = {"requestId": request_id, "success": False, "changed": False}
 
     try:
         if command == "apply":
             result = apply(args, dry_run)
             response.update(result)
+        elif command == "check_installed":
+            settings_path = args.get("settingsPath")
+            installed = os.path.exists(settings_path) if settings_path else False
+            response["success"] = True
+            response["data"] = {"installed": installed}
         else:
             response["error"] = f"Unknown command: {command}"
     except Exception as e:
@@ -418,7 +432,7 @@ def test_idempotent():
 
 
 def test_dry_run():
-    """Dry run should not write any files."""
+    """Dry run should not write any files but should report changed: True."""
     with tempfile.TemporaryDirectory() as tmp:
         settings_path = os.path.join(tmp, "app", "settings.json")
         res = run_plugin({
@@ -428,8 +442,39 @@ def test_dry_run():
             "context": {"dryRun": True}
         })
         assert res["success"]
-        assert not res["changed"]
-        assert not os.path.exists(settings_path)
+        assert res["changed"]  # changes exist, just not applied
+        assert not os.path.exists(settings_path)  # file was NOT written
+
+
+def test_check_installed():
+    """check_installed should return whether the settings file exists."""
+    with tempfile.TemporaryDirectory() as tmp:
+        settings_path = os.path.join(tmp, "app", "settings.json")
+        # Before applying — file does not exist
+        res = run_plugin({
+            "requestId": "5",
+            "command": "check_installed",
+            "args": {"settingsPath": settings_path},
+            "context": {}
+        })
+        assert res["success"]
+        assert not res["data"]["installed"]
+
+        # After applying — file exists
+        run_plugin({
+            "requestId": "6",
+            "command": "apply",
+            "args": {"settingsPath": settings_path, "settings": {"theme": "dark"}},
+            "context": {"dryRun": False}
+        })
+        res = run_plugin({
+            "requestId": "7",
+            "command": "check_installed",
+            "args": {"settingsPath": settings_path},
+            "context": {}
+        })
+        assert res["success"]
+        assert res["data"]["installed"]
 
 
 def test_unknown_command():
@@ -448,6 +493,7 @@ if __name__ == "__main__":
     test_apply_settings()
     test_idempotent()
     test_dry_run()
+    test_check_installed()
     test_unknown_command()
     print("\nAll tests passed.")
 ```
@@ -458,11 +504,12 @@ Run tests with:
 pytest plugins/app-settings/test/
 ```
 
-Always write tests for at least these four cases:
+Always write tests for at least these five cases:
 - **Normal apply** — changes are made correctly
 - **Idempotent** — running twice doesn't report changed the second time
-- **Dry run** — no files or system state are modified
+- **Dry run** — no files written, but `changed: True` (changes exist, just not applied)
 - **Unknown command** — fails gracefully with an error message
+- **check_installed** — correctly reports whether the resource is already configured
 
 ---
 
@@ -470,12 +517,9 @@ Always write tests for at least these four cases:
 
 1. **Place your plugin** in the `plugins/` directory following the structure above.
 
-2. **Name your executable** following the convention from the spec:
-   ```
-   winhome-provider-<your-plugin-name>
-   ```
+2. **Ensure your `plugin.yaml`** has the correct `main` field pointing to your entry point file.
 
-3. **Ensure your plugin handles** at minimum the `apply` command and respects `dryRun`.
+3. **Ensure your plugin handles** at minimum the `apply` and `check_installed` commands, and respects `dryRun` inside `context`.
 
 4. **Run your tests** and make sure they all pass:
    ```bash
