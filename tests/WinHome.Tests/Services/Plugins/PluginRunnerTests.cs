@@ -68,7 +68,7 @@ namespace WinHome.Tests.Services.Plugins
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            var manifest = CreateCrossPlatformManifest("test-fast", 
+            var manifest = CreateCrossPlatformManifest("test-fast",
                 "echo {\"success\": true, \"changed\": false, \"data\": null}",
                 "echo '{\"success\": true, \"changed\": false, \"data\": null}'");
 
@@ -88,7 +88,7 @@ namespace WinHome.Tests.Services.Plugins
 
             // Windows ping to localhost is a common way to sleep in cmd without external tools (timeout command can be flaky in CI)
             // Or just use PowerShell for sleep inside the cmd script since PowerShell is ubiquitous on Windows
-            var manifest = CreateCrossPlatformManifest("test-slow", 
+            var manifest = CreateCrossPlatformManifest("test-slow",
                 "powershell -NoProfile -Command \"Start-Sleep -Seconds 5\"\necho {\"success\": true}",
                 "sleep 5\necho '{\"success\": true}'");
 
@@ -114,7 +114,7 @@ namespace WinHome.Tests.Services.Plugins
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            var manifest = CreateCrossPlatformManifest("test-stderr-slow", 
+            var manifest = CreateCrossPlatformManifest("test-stderr-slow",
                 "powershell -NoProfile -Command \"[Console]::Error.WriteLine('Warning: Doing some work before sleeping'); Start-Sleep -Seconds 5\"",
                 "echo 'Warning: Doing some work before sleeping' >&2\nsleep 5");
 
@@ -136,7 +136,7 @@ namespace WinHome.Tests.Services.Plugins
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            var manifest = CreateCrossPlatformManifest("test-fast-zero", 
+            var manifest = CreateCrossPlatformManifest("test-fast-zero",
                 "echo {\"success\": true, \"changed\": false, \"data\": null}",
                 "echo '{\"success\": true, \"changed\": false, \"data\": null}'");
 
