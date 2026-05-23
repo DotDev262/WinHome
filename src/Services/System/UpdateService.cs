@@ -13,11 +13,15 @@ namespace WinHome.Services.System
         private const string RepoName = "WinHome";
         private const string CurrentExecutableName = "WinHome.exe";
 
-        public UpdateService(ILogger logger)
+        public UpdateService(ILogger logger, HttpClient? httpClient = null)
         {
             _logger = logger;
-            _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("WinHome-CLI");
+            _httpClient = httpClient ?? new HttpClient();
+
+            if (!_httpClient.DefaultRequestHeaders.UserAgent.Any())
+            {
+                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("WinHome-CLI");
+            }
         }
 
         public async Task<bool> CheckForUpdatesAsync(string currentVersion)
