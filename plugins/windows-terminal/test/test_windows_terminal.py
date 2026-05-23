@@ -22,7 +22,7 @@ def test_check_installed_returns_bool():
     assert isinstance(result["data"]["installed"], bool)
 
 
-def test_apply_dry_run_no_write(tmp_path):
+def test_apply_dry_run_reports_changes(tmp_path):
     settings_file = tmp_path / "settings.json"
     settings_file.write_text(json.dumps({"theme": "light"}))
 
