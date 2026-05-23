@@ -3,7 +3,6 @@ using Microsoft.Extensions.Hosting;
 using System.CommandLine;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
-using System.Linq;
 using WinHome.Services.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -14,10 +13,10 @@ class Program
     {
         try
         {
-            if (args.Contains("--version"))
+            if (Array.IndexOf(args, "--version") >= 0)
             {
                 var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                Console.WriteLine($"WinHome v{version}");
+                Console.WriteLine($"WinHome v{version?.Major}.{version?.Minor}.{version?.Build}");
                 return 0;
             }
 
