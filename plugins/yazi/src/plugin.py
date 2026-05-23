@@ -38,7 +38,12 @@ def get_config_root() -> str:
     appdata = os.getenv("APPDATA")
 
     if not appdata:
-        raise Exception("APPDATA environment variable not found")
+        user_profile = os.getenv("USERPROFILE")
+        if user_profile:
+            appdata = os.path.join(user_profile, "AppData", "Roaming")
+
+    if not appdata:
+        raise Exception("APPDATA and USERPROFILE environment variables not found")
 
     return os.path.join(appdata, YAZI_DIR, CONFIG_DIR)
 
@@ -53,7 +58,7 @@ def read_toml(file_path: str) -> dict:
     try:
         with open(file_path, "rb") as f:
             return tomllib.load(f)
-    except Exception as e:
+    except (tomllib.TOMLDecodeError, OSError) as e:
         log(f"Warning: could not parse {file_path}: {e}")
         return {}
 
@@ -73,6 +78,9 @@ def serialize_toml(data: dict) -> str:
         nested_items = []
 
         for key, value in table.items():
+            if value is None:
+                log(f"Warning: skipping None value for key '{key}'")
+                continue
             if isinstance(value, dict):
                 nested_items.append((key, value))
             else:
@@ -97,7 +105,7 @@ def serialize_toml(data: dict) -> str:
 
     def serialize_value(value) -> str:
         if value is None:
-            raise ValueError("None is not supported in TOML output")
+            return ""
         if isinstance(value, bool):
             return "true" if value else "false"
         if isinstance(value, (int, float)):
@@ -122,7 +130,9 @@ def serialize_toml(data: dict) -> str:
 
     write_table("", data)
 
-    return "\n".join(lines) + "\n"
+    content = "\n".join(lines).strip()
+
+    return content + "\n" if content else "\n"
 
 
 def merge_settings(target: dict, source: dict) -> bool:
@@ -132,6 +142,11 @@ def merge_settings(target: dict, source: dict) -> bool:
         if isinstance(value, dict) and isinstance(target.get(key), dict):
             if merge_settings(target[key], value):
                 changed = True
+        elif isinstance(value, list) and isinstance(target.get(key), list):
+            for item in value:
+                if item not in target[key]:
+                    target[key].append(item)
+                    changed = True
         else:
             if key not in target or target[key] != value:
                 target[key] = value
