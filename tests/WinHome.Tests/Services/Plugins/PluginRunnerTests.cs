@@ -68,9 +68,9 @@ namespace WinHome.Tests.Services.Plugins
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            var manifest = CreateCrossPlatformManifest("test-fast",
-                "echo {\"success\": true, \"changed\": false, \"data\": null}",
-                "echo '{\"success\": true, \"changed\": false, \"data\": null}'");
+            var manifest = CreateCrossPlatformManifest("test-fast", 
+                "set /p dummy=\necho {\"success\": true, \"changed\": false, \"data\": null}",
+                "read dummy\necho '{\"success\": true, \"changed\": false, \"data\": null}'");
 
             // Act
             var result = await runner.ExecuteAsync(manifest, "test", null, null, TimeSpan.FromSeconds(5));
@@ -136,9 +136,9 @@ namespace WinHome.Tests.Services.Plugins
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            var manifest = CreateCrossPlatformManifest("test-fast-zero",
-                "echo {\"success\": true, \"changed\": false, \"data\": null}",
-                "echo '{\"success\": true, \"changed\": false, \"data\": null}'");
+            var manifest = CreateCrossPlatformManifest("test-fast-zero", 
+                "set /p dummy=\necho {\"success\": true, \"changed\": false, \"data\": null}",
+                "read dummy\necho '{\"success\": true, \"changed\": false, \"data\": null}'");
 
             // Act - set timeout to Zero
             var result = await runner.ExecuteAsync(manifest, "test", null, null, TimeSpan.Zero);
