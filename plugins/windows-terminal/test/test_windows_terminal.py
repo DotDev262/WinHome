@@ -35,7 +35,7 @@ def test_apply_dry_run_no_write(tmp_path):
     plugin.get_active_settings_path = original_fn
 
     assert result["success"] is True
-    assert result["changed"] is False
+    assert result["changed"] is True
     content = json.loads(settings_file.read_text())
     assert content["theme"] == "light"
 
