@@ -53,7 +53,7 @@ namespace WinHome.Tests.Services.System
             // Arrange
             var releaseJson = JsonSerializer.Serialize(new GitHubRelease { TagName = "v2.0.0" });
             var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
-            var httpClient = new HttpClient(handlerMock.Object);
+            using var httpClient = new HttpClient(handlerMock.Object);
 
             var service = new UpdateService(_mockLogger.Object, httpClient);
 
@@ -71,7 +71,7 @@ namespace WinHome.Tests.Services.System
             // Arrange
             var releaseJson = JsonSerializer.Serialize(new GitHubRelease { TagName = "v1.0.0" });
             var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
-            var httpClient = new HttpClient(handlerMock.Object);
+            using var httpClient = new HttpClient(handlerMock.Object);
 
             var service = new UpdateService(_mockLogger.Object, httpClient);
 
@@ -84,12 +84,12 @@ namespace WinHome.Tests.Services.System
         }
 
         [Fact]
-        public async Task CheckForUpdatesAsync_WhenOlderVersionAvailable_ReturnsFalse()
+        public async Task CheckForUpdatesAsync_WhenCurrentVersionIsNewer_ReturnsFalse()
         {
             // Arrange
             var releaseJson = JsonSerializer.Serialize(new GitHubRelease { TagName = "v0.9.0" });
             var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
-            var httpClient = new HttpClient(handlerMock.Object);
+            using var httpClient = new HttpClient(handlerMock.Object);
 
             var service = new UpdateService(_mockLogger.Object, httpClient);
 
@@ -99,6 +99,40 @@ namespace WinHome.Tests.Services.System
             // Assert
             Assert.False(result);
             _mockLogger.Verify(l => l.LogInfo(It.Is<string>(s => s.Contains("latest version"))), Times.Once);
+        }
+
+        [Fact]
+        public async Task CheckForUpdatesAsync_WhenApiReturnsNull_ReturnsFalse()
+        {
+            // Arrange
+            var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, "null");
+            using var httpClient = new HttpClient(handlerMock.Object);
+
+            var service = new UpdateService(_mockLogger.Object, httpClient);
+
+            // Act
+            var result = await service.CheckForUpdatesAsync("1.0.0");
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task CheckForUpdatesAsync_WhenPreReleaseVersionFallback_ReturnsTrue()
+        {
+            // Arrange
+            var releaseJson = JsonSerializer.Serialize(new GitHubRelease { TagName = "v2.0.0-rc1" });
+            var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
+            using var httpClient = new HttpClient(handlerMock.Object);
+
+            var service = new UpdateService(_mockLogger.Object, httpClient);
+
+            // Act
+            var result = await service.CheckForUpdatesAsync("1.0.0");
+
+            // Assert
+            Assert.True(result);
+            _mockLogger.Verify(l => l.LogSuccess(It.Is<string>(s => s.Contains("New version available"))), Times.Once);
         }
 
         [Fact]
@@ -106,7 +140,7 @@ namespace WinHome.Tests.Services.System
         {
             // Arrange
             var handlerMock = CreateMockHttpMessageHandlerThrows(new HttpRequestException("Network down"));
-            var httpClient = new HttpClient(handlerMock.Object);
+            using var httpClient = new HttpClient(handlerMock.Object);
 
             var service = new UpdateService(_mockLogger.Object, httpClient);
 
@@ -123,7 +157,7 @@ namespace WinHome.Tests.Services.System
         {
             // Arrange
             var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.NotFound, "");
-            var httpClient = new HttpClient(handlerMock.Object);
+            using var httpClient = new HttpClient(handlerMock.Object);
 
             var service = new UpdateService(_mockLogger.Object, httpClient);
 
@@ -145,7 +179,7 @@ namespace WinHome.Tests.Services.System
             // Arrange
             // Return empty JSON or unparseable to simulate null release
             var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, "null");
-            var httpClient = new HttpClient(handlerMock.Object);
+            using var httpClient = new HttpClient(handlerMock.Object);
 
             var service = new UpdateService(_mockLogger.Object, httpClient);
 
@@ -170,7 +204,7 @@ namespace WinHome.Tests.Services.System
             };
             var releaseJson = JsonSerializer.Serialize(release);
             var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
-            var httpClient = new HttpClient(handlerMock.Object);
+            using var httpClient = new HttpClient(handlerMock.Object);
 
             var service = new UpdateService(_mockLogger.Object, httpClient);
 
@@ -186,7 +220,7 @@ namespace WinHome.Tests.Services.System
         {
             // Arrange
             var handlerMock = CreateMockHttpMessageHandlerThrows(new HttpRequestException("Failed API call"));
-            var httpClient = new HttpClient(handlerMock.Object);
+            using var httpClient = new HttpClient(handlerMock.Object);
 
             var service = new UpdateService(_mockLogger.Object, httpClient);
 
