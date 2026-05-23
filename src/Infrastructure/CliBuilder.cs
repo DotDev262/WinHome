@@ -58,6 +58,10 @@ public static class CliBuilder
         jsonOption.Description = "Output results as JSON";
         jsonOption.DefaultValueFactory = _ => false;
 
+        var versionOption = new Option<bool>("--version");
+        versionOption.Description = "Show the application version";
+        versionOption.DefaultValueFactory = _ => false;
+
         var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
         rootCommand.Options.Add(configOption);
         rootCommand.Options.Add(updateOption);
@@ -68,9 +72,17 @@ public static class CliBuilder
         rootCommand.Options.Add(verboseOption);
         rootCommand.Options.Add(quietOption);
         rootCommand.Options.Add(jsonOption);
+        rootCommand.Options.Add(versionOption);
 
         rootCommand.SetAction(async (ParseResult result) =>
         {
+            bool showVersion = result.GetValue(versionOption);
+            if (showVersion)
+            {
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                Console.WriteLine($"WinHome v{version}");
+                Environment.Exit(0);
+            }
             FileInfo file = result.GetValue(configOption)!;
             bool update = result.GetValue(updateOption);
             bool dryRun = result.GetValue(dryRunOption);

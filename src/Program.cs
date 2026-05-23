@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using System.CommandLine;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
+using System.Linq;
 using WinHome.Services.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -13,6 +14,13 @@ class Program
     {
         try
         {
+            if (args.Contains("--version"))
+            {
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                Console.WriteLine($"WinHome v{version}");
+                return 0;
+            }
+            
             using IHost host = AppHost.CreateHost(args);
 
             var rootCommand = CliBuilder.BuildRootCommand(
