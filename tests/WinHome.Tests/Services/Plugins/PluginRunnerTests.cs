@@ -68,7 +68,7 @@ namespace WinHome.Tests.Services.Plugins
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            var manifest = CreateCrossPlatformManifest("test-fast", 
+            var manifest = CreateCrossPlatformManifest("test-fast",
                 "set /p dummy=\necho {\"success\": true, \"changed\": false, \"data\": null}",
                 "read dummy\necho '{\"success\": true, \"changed\": false, \"data\": null}'");
 
@@ -136,7 +136,7 @@ namespace WinHome.Tests.Services.Plugins
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            var manifest = CreateCrossPlatformManifest("test-fast-zero", 
+            var manifest = CreateCrossPlatformManifest("test-fast-zero",
                 "set /p dummy=\necho {\"success\": true, \"changed\": false, \"data\": null}",
                 "read dummy\necho '{\"success\": true, \"changed\": false, \"data\": null}'");
 
