@@ -68,7 +68,7 @@ public static class CliBuilder
         rootCommand.Options.Add(verboseOption);
         rootCommand.Options.Add(quietOption);
         rootCommand.Options.Add(jsonOption);
-        
+
         rootCommand.SetAction(async (ParseResult result) =>
         {
             FileInfo file = result.GetValue(configOption)!;
