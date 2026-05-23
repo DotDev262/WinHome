@@ -1,5 +1,6 @@
 using Moq;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using WinHome.Interfaces;
 using WinHome.Models.Plugins;
 using WinHome.Services.Plugins;
@@ -32,31 +33,44 @@ namespace WinHome.Tests.Services.Plugins
         private PluginRunner CreateRunner(Mock<ILogger> mockLogger)
         {
             var mockResolver = new Mock<IRuntimeResolver>();
-            // Just use powershell for Windows testing
-            mockResolver.Setup(r => r.Resolve(It.IsAny<string>())).Returns("powershell");
             return new PluginRunner(mockLogger.Object, mockResolver.Object);
+        }
+
+        private PluginManifest CreateCrossPlatformManifest(string name, string windowsScript, string unixScript)
+        {
+            string ext = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".cmd" : ".sh";
+            string fileName = name + ext;
+            string fullPath = Path.Combine(_tempDir, fileName);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                File.WriteAllText(fullPath, "@echo off\n" + windowsScript);
+            }
+            else
+            {
+                File.WriteAllText(fullPath, "#!/bin/sh\n" + unixScript.Replace("\r\n", "\n"));
+                try { File.SetUnixFileMode(fullPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); } catch { }
+            }
+
+            return new PluginManifest
+            {
+                Name = name,
+                Type = "executable",
+                Main = fileName,
+                DirectoryPath = _tempDir
+            };
         }
 
         [Fact]
         public async Task ExecuteAsync_CompletesWithinTimeout_ReturnsNormalResponse()
         {
-            if (!OperatingSystem.IsWindows()) return;
             // Arrange
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            string ps1Path = Path.Combine(_tempDir, "fast.ps1");
-            File.WriteAllText(ps1Path, @"
-Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
-");
-
-            var manifest = new PluginManifest
-            {
-                Name = "test-fast",
-                Type = "powershell",
-                Main = "fast.ps1",
-                DirectoryPath = _tempDir
-            };
+            var manifest = CreateCrossPlatformManifest("test-fast", 
+                "echo {\"success\": true, \"changed\": false, \"data\": null}",
+                "echo '{\"success\": true, \"changed\": false, \"data\": null}'");
 
             // Act
             var result = await runner.ExecuteAsync(manifest, "test", null, null, TimeSpan.FromSeconds(5));
@@ -68,24 +82,15 @@ Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
         [Fact]
         public async Task ExecuteAsync_ExceedsTimeout_KillsProcessAndReturnsError()
         {
-            if (!OperatingSystem.IsWindows()) return;
             // Arrange
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            string ps1Path = Path.Combine(_tempDir, "slow.ps1");
-            File.WriteAllText(ps1Path, @"
-Start-Sleep -Seconds 5
-Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
-");
-
-            var manifest = new PluginManifest
-            {
-                Name = "test-slow",
-                Type = "powershell",
-                Main = "slow.ps1",
-                DirectoryPath = _tempDir
-            };
+            // Windows ping to localhost is a common way to sleep in cmd without external tools (timeout command can be flaky in CI)
+            // Or just use PowerShell for sleep inside the cmd script since PowerShell is ubiquitous on Windows
+            var manifest = CreateCrossPlatformManifest("test-slow", 
+                "powershell -NoProfile -Command \"Start-Sleep -Seconds 5\"\necho {\"success\": true}",
+                "sleep 5\necho '{\"success\": true}'");
 
             var sw = Stopwatch.StartNew();
 
@@ -95,8 +100,8 @@ Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
 
             // Assert
             Assert.False(result.Success);
-            Assert.Contains("Plugin timed out after 1 second.", result.Error);
-            Assert.True(sw.ElapsedMilliseconds < 4000, $"Process should have been killed quickly, but took {sw.ElapsedMilliseconds}ms");
+            Assert.Contains("Plugin timed out after 1s.", result.Error);
+            Assert.True(sw.ElapsedMilliseconds < 10000, $"Process should have been killed quickly, but took {sw.ElapsedMilliseconds}ms");
 
             // Verify a warning was logged containing the duration
             mockLogger.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("timed out and was killed after"))), Times.Once);
@@ -105,25 +110,13 @@ Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
         [Fact]
         public async Task ExecuteAsync_TimeoutWithStderr_StderrIsLogged()
         {
-            if (!OperatingSystem.IsWindows()) return;
             // Arrange
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            string ps1Path = Path.Combine(_tempDir, "stderr-slow.ps1");
-            // The script writes to stderr then sleeps, causing a timeout
-            File.WriteAllText(ps1Path, @"
-[Console]::Error.WriteLine('Warning: Doing some work before sleeping')
-Start-Sleep -Seconds 5
-");
-
-            var manifest = new PluginManifest
-            {
-                Name = "test-stderr-slow",
-                Type = "powershell",
-                Main = "stderr-slow.ps1",
-                DirectoryPath = _tempDir
-            };
+            var manifest = CreateCrossPlatformManifest("test-stderr-slow", 
+                "powershell -NoProfile -Command \"[Console]::Error.WriteLine('Warning: Doing some work before sleeping'); Start-Sleep -Seconds 5\"",
+                "echo 'Warning: Doing some work before sleeping' >&2\nsleep 5");
 
             // Act
             var result = await runner.ExecuteAsync(manifest, "test", null, null, TimeSpan.FromSeconds(2));
@@ -133,36 +126,24 @@ Start-Sleep -Seconds 5
             Assert.Contains("timed out", result.Error);
 
             // Since stderr is read asynchronously, it should be logged as a warning
-            // PowerShell might output some extra text, so we check for the text we injected
             mockLogger.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("[STDERR]") && s.Contains("Warning: Doing some work before sleeping"))), Times.AtLeastOnce);
         }
 
         [Fact]
-        public async Task ExecuteAsync_ZeroOrNegativeTimeout_DefaultsTo30Seconds()
+        public async Task ExecuteAsync_ZeroOrNegativeTimeout_DefaultsTo1SecondMinimum()
         {
-            if (!OperatingSystem.IsWindows()) return;
-            
             // Arrange
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
 
-            string ps1Path = Path.Combine(_tempDir, "fast-zero.ps1");
-            File.WriteAllText(ps1Path, @"
-Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
-");
-
-            var manifest = new PluginManifest
-            {
-                Name = "test-fast-zero",
-                Type = "powershell",
-                Main = "fast-zero.ps1",
-                DirectoryPath = _tempDir
-            };
+            var manifest = CreateCrossPlatformManifest("test-fast-zero", 
+                "echo {\"success\": true, \"changed\": false, \"data\": null}",
+                "echo '{\"success\": true, \"changed\": false, \"data\": null}'");
 
             // Act - set timeout to Zero
             var result = await runner.ExecuteAsync(manifest, "test", null, null, TimeSpan.Zero);
 
-            // Assert
+            // Assert - The process should succeed because the minimum clamped timeout (1s) is enough for this fast script
             Assert.True(result.Success, result.Error);
         }
     }

@@ -20,7 +20,7 @@ namespace WinHome.Services.Plugins
         public async Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context, TimeSpan? timeout = null)
         {
             var actualTimeout = timeout ?? TimeSpan.FromSeconds(30);
-            if (actualTimeout <= TimeSpan.Zero) actualTimeout = TimeSpan.FromSeconds(30);
+            if (actualTimeout < TimeSpan.FromSeconds(1)) actualTimeout = TimeSpan.FromSeconds(1);
 
             var (fileName, arguments) = BuildProcessStartInfo(plugin);
 
@@ -123,11 +123,9 @@ namespace WinHome.Services.Plugins
             catch (OperationCanceledException)
             {
                 sw.Stop();
-                try { process.Kill(entireProcessTree: true); } catch { }
+                try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
                 _logger.LogWarning($"[PluginRunner] Plugin {plugin.Name} timed out and was killed after {sw.ElapsedMilliseconds}ms.");
-                string secondsStr = actualTimeout.TotalSeconds.ToString(global::System.Globalization.CultureInfo.InvariantCulture);
-                string s = actualTimeout.TotalSeconds == 1 ? "" : "s";
-                return new PluginResult { Success = false, Error = $"Plugin timed out after {secondsStr} second{s}." };
+                return new PluginResult { Success = false, Error = $"Plugin timed out after {actualTimeout.TotalSeconds:F0}s." };
             }
             catch (Exception ex)
             {
