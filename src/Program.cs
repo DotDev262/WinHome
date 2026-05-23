@@ -20,7 +20,7 @@ class Program
                 Console.WriteLine($"WinHome v{version}");
                 return 0;
             }
-            
+
             using IHost host = AppHost.CreateHost(args);
 
             var rootCommand = CliBuilder.BuildRootCommand(
