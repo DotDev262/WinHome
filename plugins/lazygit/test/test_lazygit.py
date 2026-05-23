@@ -56,7 +56,7 @@ def test_apply_config_dry_run():
         })
         
         assert res["success"]
-        assert res["changed"]
+        assert res["changed"] is False
 
         config_path = os.path.join(tmp, "lazygit", "config.yml")
         assert not os.path.exists(config_path)

@@ -1,3 +1,9 @@
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
+
 import sys
 import json
 import os
@@ -14,8 +20,6 @@ def get_config_path():
         raise Exception("APPDATA environment variable not found")
     
     config_dir = os.path.join(appdata, "lazygit")
-    os.makedirs(config_dir, exist_ok=True)
-    
     return os.path.join(config_dir, "config.yml")
 
 def read_yaml(file_path: str) -> dict:
@@ -27,8 +31,7 @@ def read_yaml(file_path: str) -> dict:
             data = yaml.safe_load(f)
             return data if isinstance(data, dict) else {}
     except Exception as e:
-        log(f"Warning: could not parse {file_path}: {e}")
-        return {}
+        raise Exception(f"Could not parse {file_path}: {e}") from e
 
 def write_yaml(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -83,7 +86,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             return {
                 "requestId": request_id,
                 "success": True,
-                "changed": True,
+                "changed": False,
             }
 
         write_yaml(config_path, current_config)
