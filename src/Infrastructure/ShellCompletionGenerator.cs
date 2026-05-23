@@ -1,11 +1,12 @@
 using System.CommandLine;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace WinHome.Infrastructure;
 
 /// <summary>
 /// Generates shell completion scripts for PowerShell and Bash.
-/// Walks the System.CommandLine tree to discover all options and subcommands.
+/// Dynamically walks the System.CommandLine tree to discover all options and subcommands.
 /// </summary>
 public static class ShellCompletionGenerator
 {
@@ -44,40 +45,49 @@ public static class ShellCompletionGenerator
         sb.AppendLine("#   # Or add to profile for persistence:");
         sb.AppendLine("#   WinHome completion powershell >> $PROFILE");
         sb.AppendLine();
-        sb.AppendLine("Register-ArgumentCompleter -Native -CommandName WinHome -ScriptBlock {");
-        sb.AppendLine("    param($wordToComplete, $commandAst, $cursorPosition)");
-        sb.AppendLine();
 
         // Collect all completions from the command tree
         var completions = CollectCompletions(rootCommand, "WinHome");
 
-        sb.AppendLine("    $commands = @(");
+        // Build the completer script block
+        var scriptBlock = new StringBuilder();
+        scriptBlock.AppendLine("    param($wordToComplete, $commandAst, $cursorPosition)");
+        scriptBlock.AppendLine();
+        scriptBlock.AppendLine("    $commands = @(");
 
         foreach (var (context, name, description) in completions)
         {
             var escapedDesc = description.Replace("'", "''");
             var escapedName = name.Replace("'", "''");
-            sb.AppendLine($"        @{{ Context = '{context}'; Name = '{escapedName}'; Description = '{escapedDesc}' }}");
+            var escapedContext = Regex.Escape(context).Replace("'", "''");
+            scriptBlock.AppendLine($"        @{{ Context = '{escapedContext}'; Name = '{escapedName}'; Description = '{escapedDesc}' }}");
         }
 
-        sb.AppendLine("    )");
-        sb.AppendLine();
-        sb.AppendLine("    $commandLine = $commandAst.ToString()");
-        sb.AppendLine();
-        sb.AppendLine("    $filteredCommands = $commands | Where-Object {");
-        sb.AppendLine("        ($commandLine -match $_.Context -or $_.Context -eq 'WinHome') -and");
-        sb.AppendLine("        $_.Name -like \"$wordToComplete*\"");
-        sb.AppendLine("    }");
-        sb.AppendLine();
-        sb.AppendLine("    $filteredCommands | ForEach-Object {");
-        sb.AppendLine("        [System.Management.Automation.CompletionResult]::new(");
-        sb.AppendLine("            $_.Name,");
-        sb.AppendLine("            $_.Name,");
-        sb.AppendLine("            'ParameterValue',");
-        sb.AppendLine("            $_.Description");
-        sb.AppendLine("        )");
-        sb.AppendLine("    }");
+        scriptBlock.AppendLine("    )");
+        scriptBlock.AppendLine();
+        scriptBlock.AppendLine("    $commandLine = $commandAst.ToString()");
+        scriptBlock.AppendLine();
+        scriptBlock.AppendLine("    $filteredCommands = $commands | Where-Object {");
+        scriptBlock.AppendLine("        ($commandLine -match $_.Context -or $_.Context -eq 'WinHome') -and");
+        scriptBlock.AppendLine("        $_.Name -like \"$wordToComplete*\"");
+        scriptBlock.AppendLine("    }");
+        scriptBlock.AppendLine();
+        scriptBlock.AppendLine("    $filteredCommands | ForEach-Object {");
+        scriptBlock.AppendLine("        [System.Management.Automation.CompletionResult]::new(");
+        scriptBlock.AppendLine("            $_.Name,");
+        scriptBlock.AppendLine("            $_.Name,");
+        scriptBlock.AppendLine("            'ParameterValue',");
+        scriptBlock.AppendLine("            $_.Description");
+        scriptBlock.AppendLine("        )");
+        scriptBlock.AppendLine("    }");
+
+        // Register for both WinHome and winhome for case-insensitive matching
+        sb.AppendLine("$_winhomeCompleter = {");
+        sb.Append(scriptBlock);
         sb.AppendLine("}");
+        sb.AppendLine();
+        sb.AppendLine("Register-ArgumentCompleter -Native -CommandName WinHome -ScriptBlock $_winhomeCompleter");
+        sb.AppendLine("Register-ArgumentCompleter -Native -CommandName winhome -ScriptBlock $_winhomeCompleter");
 
         return sb.ToString();
     }
@@ -104,7 +114,7 @@ public static class ShellCompletionGenerator
         sb.AppendLine("    _init_completion || return");
         sb.AppendLine();
 
-        // Build case statement for context-aware completion
+        // Build case statement for file path completion on options that accept file paths
         sb.AppendLine("    case \"${prev}\" in");
         sb.AppendLine("        --config)");
         sb.AppendLine("            _filedir '@(yaml|yml)'");
@@ -117,44 +127,45 @@ public static class ShellCompletionGenerator
         sb.AppendLine("    esac");
         sb.AppendLine();
 
-        // Context-aware subcommand completions
+        // Context-aware subcommand completions — dynamically generated from the command tree
         sb.AppendLine("    # Context-aware completion based on previous words");
         sb.AppendLine("    local i");
         sb.AppendLine("    for (( i=1; i < cword; i++ )); do");
         sb.AppendLine("        case \"${words[i]}\" in");
 
-        // state subcommands
-        sb.AppendLine("            state)");
-        sb.Append("                COMPREPLY=($(compgen -W \"");
-        var stateCmd = rootCommand.Subcommands.FirstOrDefault(c => c.Name == "state");
-        if (stateCmd != null)
+        // Dynamically iterate over all top-level subcommands
+        foreach (var sub in rootCommand.Subcommands)
         {
-            var stateSubs = CollectSubcommands(stateCmd);
-            var stateOpts = CollectOptions(stateCmd);
-            sb.Append(string.Join(" ", stateSubs.Concat(stateOpts)));
-        }
-        sb.AppendLine("\" -- \"${cur}\"))");
-        sb.AppendLine("                return");
-        sb.AppendLine("                ;;");
+            var subSubs = CollectSubcommands(sub);
+            var subOpts = CollectOptions(sub);
+            var allCompletions = subSubs.Concat(subOpts).ToList();
 
-        // generate subcommand options
-        sb.AppendLine("            generate)");
-        sb.Append("                COMPREPLY=($(compgen -W \"");
-        var genCmd = rootCommand.Subcommands.FirstOrDefault(c => c.Name == "generate");
-        if (genCmd != null)
-        {
-            var genOpts = CollectOptions(genCmd);
-            sb.Append(string.Join(" ", genOpts));
-        }
-        sb.AppendLine("\" -- \"${cur}\"))");
-        sb.AppendLine("                return");
-        sb.AppendLine("                ;;");
+            sb.AppendLine($"            {sub.Name})");
 
-        // state backup/restore need file path completion
-        sb.AppendLine("            backup|restore)");
-        sb.AppendLine("                _filedir");
-        sb.AppendLine("                return");
-        sb.AppendLine("                ;;");
+            if (allCompletions.Count > 0)
+            {
+                sb.Append("                COMPREPLY=($(compgen -W \"");
+                sb.Append(string.Join(" ", allCompletions));
+                sb.AppendLine("\" -- \"${cur}\"))");
+            }
+
+            sb.AppendLine("                return");
+            sb.AppendLine("                ;;");
+
+            // Also handle nested subcommands that need file path completion (e.g. backup, restore)
+            var filePathSubs = sub.Subcommands
+                .Where(s => s.Arguments.Any())
+                .Select(s => s.Name)
+                .ToList();
+
+            if (filePathSubs.Count > 0)
+            {
+                sb.AppendLine($"            {string.Join("|", filePathSubs)})");
+                sb.AppendLine("                _filedir");
+                sb.AppendLine("                return");
+                sb.AppendLine("                ;;");
+            }
+        }
 
         sb.AppendLine("        esac");
         sb.AppendLine("    done");
@@ -174,6 +185,7 @@ public static class ShellCompletionGenerator
 
     /// <summary>
     /// Collects all completions (options and subcommands) with their context path.
+    /// Context paths use regex-escaped literals for safe -match usage in PowerShell.
     /// </summary>
     private static List<(string Context, string Name, string Description)> CollectCompletions(
         Command command, string contextPath)
@@ -197,8 +209,8 @@ public static class ShellCompletionGenerator
         foreach (var sub in command.Subcommands)
         {
             results.Add((contextPath, sub.Name, sub.Description ?? sub.Name));
-            // Recurse into subcommands
-            results.AddRange(CollectCompletions(sub, $"{contextPath}.*{sub.Name}"));
+            // Recurse into subcommands with a regex-safe context separator
+            results.AddRange(CollectCompletions(sub, $@"{contextPath}\s+{Regex.Escape(sub.Name)}"));
         }
 
         return results;
