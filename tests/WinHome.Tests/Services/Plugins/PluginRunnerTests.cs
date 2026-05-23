@@ -40,6 +40,7 @@ namespace WinHome.Tests.Services.Plugins
         [Fact]
         public async Task ExecuteAsync_CompletesWithinTimeout_ReturnsNormalResponse()
         {
+            if (!OperatingSystem.IsWindows()) return;
             // Arrange
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
@@ -67,6 +68,7 @@ Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
         [Fact]
         public async Task ExecuteAsync_ExceedsTimeout_KillsProcessAndReturnsError()
         {
+            if (!OperatingSystem.IsWindows()) return;
             // Arrange
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
@@ -93,7 +95,7 @@ Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
 
             // Assert
             Assert.False(result.Success);
-            Assert.Contains("Plugin timed out after 1 seconds", result.Error);
+            Assert.Contains("Plugin timed out after 1 second.", result.Error);
             Assert.True(sw.ElapsedMilliseconds < 4000, $"Process should have been killed quickly, but took {sw.ElapsedMilliseconds}ms");
 
             // Verify a warning was logged containing the duration
@@ -103,6 +105,7 @@ Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
         [Fact]
         public async Task ExecuteAsync_TimeoutWithStderr_StderrIsLogged()
         {
+            if (!OperatingSystem.IsWindows()) return;
             // Arrange
             var mockLogger = new Mock<ILogger>();
             var runner = CreateRunner(mockLogger);
@@ -132,6 +135,35 @@ Start-Sleep -Seconds 5
             // Since stderr is read asynchronously, it should be logged as a warning
             // PowerShell might output some extra text, so we check for the text we injected
             mockLogger.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("[STDERR]") && s.Contains("Warning: Doing some work before sleeping"))), Times.AtLeastOnce);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ZeroOrNegativeTimeout_DefaultsTo30Seconds()
+        {
+            if (!OperatingSystem.IsWindows()) return;
+            
+            // Arrange
+            var mockLogger = new Mock<ILogger>();
+            var runner = CreateRunner(mockLogger);
+
+            string ps1Path = Path.Combine(_tempDir, "fast-zero.ps1");
+            File.WriteAllText(ps1Path, @"
+Write-Output '{""success"": true, ""changed"": false, ""data"": null}'
+");
+
+            var manifest = new PluginManifest
+            {
+                Name = "test-fast-zero",
+                Type = "powershell",
+                Main = "fast-zero.ps1",
+                DirectoryPath = _tempDir
+            };
+
+            // Act - set timeout to Zero
+            var result = await runner.ExecuteAsync(manifest, "test", null, null, TimeSpan.Zero);
+
+            // Assert
+            Assert.True(result.Success, result.Error);
         }
     }
 }

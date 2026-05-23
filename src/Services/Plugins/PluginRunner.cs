@@ -123,14 +123,16 @@ namespace WinHome.Services.Plugins
             catch (OperationCanceledException)
             {
                 sw.Stop();
-                try { process.Kill(); } catch { }
+                try { process.Kill(entireProcessTree: true); } catch { }
                 _logger.LogWarning($"[PluginRunner] Plugin {plugin.Name} timed out and was killed after {sw.ElapsedMilliseconds}ms.");
-                return new PluginResult { Success = false, Error = $"Plugin timed out after {actualTimeout.TotalSeconds} seconds." };
+                string secondsStr = actualTimeout.TotalSeconds.ToString(global::System.Globalization.CultureInfo.InvariantCulture);
+                string s = actualTimeout.TotalSeconds == 1 ? "" : "s";
+                return new PluginResult { Success = false, Error = $"Plugin timed out after {secondsStr} second{s}." };
             }
             catch (Exception ex)
             {
                 sw.Stop();
-                try { if (!process.HasExited) process.Kill(); } catch { }
+                try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
                 return new PluginResult { Success = false, Error = $"Runner Exception: {ex.Message}" };
             }
         }
