@@ -49,6 +49,15 @@ namespace WinHome.Services.System
                     process.Kill(true);
                     return false;
                 }
+
+                if (onOutput != null)
+                {
+                    // Ensure async event handlers (BeginOutputReadLine/BeginErrorReadLine) 
+                    // have finished processing streams before we dispose the process.
+                    // completed in pr.no 134
+                    process.WaitForExit();
+                }
+
                 return process.ExitCode == 0;
             }
             catch (Exception ex)
@@ -127,6 +136,45 @@ namespace WinHome.Services.System
             {
                 return string.Empty;
             }
+        }
+
+        public bool RunProcessWithStartInfo(ProcessStartInfo startInfo)
+        {
+            using var process = Process.Start(startInfo);
+
+            if (process == null)
+                throw new Exception("Failed to start process");
+
+            Task<string>? outputTask = null;
+            Task<string>? errorTask = null;
+
+            if (startInfo.RedirectStandardOutput)
+                outputTask = process.StandardOutput.ReadToEndAsync();
+
+            if (startInfo.RedirectStandardError)
+                errorTask = process.StandardError.ReadToEndAsync();
+
+            if (!process.WaitForExit(TimeSpan.FromMinutes(10)))
+            {
+                process.Kill(true);
+                throw new TimeoutException("Process execution timed out.");
+            }
+
+            if (outputTask != null)
+                outputTask.GetAwaiter().GetResult();
+
+            if (errorTask != null)
+                errorTask.GetAwaiter().GetResult();
+
+            var error = errorTask != null ? errorTask.Result : string.Empty;
+
+            if (process.ExitCode != 0)
+            {
+                throw new Exception(
+                    $"Process failed with exit code {process.ExitCode}: {error}");
+            }
+
+            return true;
         }
     }
 }

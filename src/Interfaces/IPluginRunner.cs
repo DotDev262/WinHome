@@ -4,6 +4,6 @@ namespace WinHome.Interfaces
 {
     public interface IPluginRunner
     {
-        Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context);
+        Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context, TimeSpan? timeout = null);
     }
 }

@@ -2,6 +2,8 @@
   href: ../index.md
 - name: 📖 API Documentation
   href: ../api/
+- name: Getting Started
+  href: getting-started.md
 - name: Overview
   href: config.md
 - name: Configuration Reference
@@ -19,6 +21,9 @@
   
 - name: Security Guide
   href: security.md
+
+- name: Shell Completion
+  href: shell-completion.md
 
 - name: Troubleshooting
   href: troubleshooting.md

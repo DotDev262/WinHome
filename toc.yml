@@ -1,16 +1,14 @@
 - name: 🏠 Home
-  href: index.md
-  
+  href: index.md 
 - name: 📘 Documentation
   href: docs/
   topicHref: docs/config.md
-  
+- name: Getting Started
+  href: docs/getting-started.md
 - name: 📖 API Reference
   href: api/
   topicHref: api/index.md
-  
 - name: Security Guide
   href: docs/security.md
-
 - name: Troubleshooting
-  href: troubleshooting.md
+  href: docs/troubleshooting.md

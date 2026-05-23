@@ -30,12 +30,7 @@ namespace WinHome.Services.Bootstrappers
 
             Console.WriteLine($"[Bootstrapper] Installing {Name} via Scoop...");
 
-            string scoopPath = "scoop.cmd";
-            string userScoop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd");
-            string globalScoop = Path.Combine(Environment.GetEnvironmentVariable("ProgramData") ?? "C:\\ProgramData", "scoop", "shims", "scoop.cmd");
-
-            if (File.Exists(userScoop)) scoopPath = userScoop;
-            else if (File.Exists(globalScoop)) scoopPath = globalScoop;
+            string scoopPath = GetScoopPath();
 
             var psi = new ProcessStartInfo
             {
@@ -49,16 +44,7 @@ namespace WinHome.Services.Bootstrappers
 
             try
             {
-                using var process = Process.Start(psi);
-                if (process == null) throw new Exception($"Failed to start installer for {Name}");
-
-                process.WaitForExit();
-
-                if (process.ExitCode != 0)
-                {
-                    var error = process.StandardError.ReadToEnd();
-                    throw new Exception($"Failed to install {Name}: {error}");
-                }
+                _processRunner.RunProcessWithStartInfo(psi);
             }
             catch (Exception ex)
             {
@@ -67,6 +53,18 @@ namespace WinHome.Services.Bootstrappers
             }
 
             Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
+        }
+
+        private string GetScoopPath()
+        {
+            string scoopPath = "scoop.cmd";
+            string userScoop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd");
+            string globalScoop = Path.Combine(Environment.GetEnvironmentVariable("ProgramData") ?? "C:\\ProgramData", "scoop", "shims", "scoop.cmd");
+
+            if (File.Exists(userScoop)) scoopPath = userScoop;
+            else if (File.Exists(globalScoop)) scoopPath = globalScoop;
+
+            return scoopPath;
         }
     }
 }

@@ -114,7 +114,7 @@ namespace WinHome.Tests
         [Fact]
         public async Task ApplyNonRegistrySettingsAsync_Brightness_Null_Should_SkipSilently()
         {
-            var settings = new Dictionary<string, object> { { "brightness", null } };
+            var settings = new Dictionary<string, object> { { "brightness", null! } };
 
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
@@ -217,7 +217,7 @@ namespace WinHome.Tests
         [Fact]
         public async Task ApplyNonRegistrySettingsAsync_Volume_Null_Should_SkipSilently()
         {
-            var settings = new Dictionary<string, object> { { "volume", null } };
+            var settings = new Dictionary<string, object> { { "volume", null! } };
 
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
@@ -249,6 +249,80 @@ namespace WinHome.Tests
                     It.Is<string>(s => s.Contains("New-BurntToastNotification -Text 'Test Title', 'Test Message'")),
                     false),
                 Times.Once);
+        }
+
+        [Theory]
+        [InlineData("screen_timeout_ac", "monitor-timeout-ac")]
+        [InlineData("screen_timeout_dc", "monitor-timeout-dc")]
+        [InlineData("sleep_timeout_ac", "standby-timeout-ac")]
+        [InlineData("sleep_timeout_dc", "standby-timeout-dc")]
+        public async Task ApplyNonRegistrySettingsAsync_PowerSettings_ValidValues_Should_Apply(string key, string powercfgArg)
+        {
+            var settings = new Dictionary<string, object> { { key, 15 } };
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand("powercfg", $"/change {powercfgArg} 15", false),
+                Times.Once);
+        }
+
+        [Theory]
+        [InlineData("screen_timeout_ac")]
+        [InlineData("screen_timeout_dc")]
+        [InlineData("sleep_timeout_ac")]
+        [InlineData("sleep_timeout_dc")]
+        public async Task ApplyNonRegistrySettingsAsync_PowerSettings_NegativeValue_Should_LogWarning_And_Skip(string key)
+        {
+            var settings = new Dictionary<string, object> { { key, -5 } };
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Power setting value") && state.ToString()!.Contains("-5")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Theory]
+        [InlineData("screen_timeout_ac")]
+        [InlineData("sleep_timeout_dc")]
+        public async Task ApplyNonRegistrySettingsAsync_PowerSettings_InvalidFormat_Should_LogWarning_And_Skip(string key)
+        {
+            var settings = new Dictionary<string, object> { { key, "abc" } };
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => state.ToString()!.Contains("Power setting value") && state.ToString()!.Contains("abc")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task ApplyNonRegistrySettingsAsync_PowerSettings_Null_Should_SkipSilently()
+        {
+            var settings = new Dictionary<string, object> { { "screen_timeout_ac", null! } };
+            await _service.ApplyNonRegistrySettingsAsync(settings, false);
+            _mockLogger.Verify(
+                l => l.Log(
+                    Microsoft.Extensions.Logging.LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((state, t) => true),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
+            _mockProcessRunner.Verify(
+                r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never);
         }
 
         [Fact]
@@ -363,6 +437,11 @@ namespace WinHome.Tests
         // bing_search_enabled
         [InlineData("bing_search_enabled", "true", "BingSearchEnabled", 1)]
         [InlineData("bing_search_enabled", "false", "BingSearchEnabled", 0)]
+        // taskbar_search
+        [InlineData("taskbar_search", "hidden", "SearchboxTaskbarMode", 0)]
+        [InlineData("taskbar_search", "icon", "SearchboxTaskbarMode", 1)]
+        [InlineData("taskbar_search", "icon_label", "SearchboxTaskbarMode", 2)]
+        [InlineData("taskbar_search", "search_box", "SearchboxTaskbarMode", 3)]
         // transparency
         [InlineData("transparency", "true", "EnableTransparency", 1)]
         [InlineData("transparency", "false", "EnableTransparency", 0)]
@@ -378,6 +457,9 @@ namespace WinHome.Tests
         // snap_assist_flyout
         [InlineData("snap_assist_flyout", "true", "EnableSnapAssistFlyout", 1)]
         [InlineData("snap_assist_flyout", "false", "EnableSnapAssistFlyout", 0)]
+        // clipboard_history
+        [InlineData("clipboard_history", "true", "EnableClipboardHistory", 1)]
+        [InlineData("clipboard_history", "false", "EnableClipboardHistory", 0)]
         public async Task GetTweaksAsync_Should_Return_Expected_Tweak(string key, string value, string expectedTweakName, object expectedValue)
         {
             var settings = new Dictionary<string, object> { { key, value } };
@@ -427,6 +509,12 @@ namespace WinHome.Tests
         // bing_search_enabled
         [InlineData("bing_search_enabled", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 1, true)]
         [InlineData("bing_search_enabled", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0, false)]
+        // taskbar_search
+        [InlineData("taskbar_search", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 0, "hidden")]
+        [InlineData("taskbar_search", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 1, "icon")]
+        [InlineData("taskbar_search", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 2, "icon_label")]
+        [InlineData("taskbar_search", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 3, "search_box")]
+
         // transparency
         [InlineData("transparency", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 1, true)]
         [InlineData("transparency", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 0, false)]
@@ -442,6 +530,9 @@ namespace WinHome.Tests
         // snap_assist_flyout
         [InlineData("snap_assist_flyout", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "EnableSnapAssistFlyout", 1, true)]
         [InlineData("snap_assist_flyout", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "EnableSnapAssistFlyout", 0, false)]
+        // clipboard_history
+        [InlineData("clipboard_history", @"HKCU\Software\Microsoft\Clipboard", "EnableClipboardHistory", 1, true)]
+        [InlineData("clipboard_history", @"HKCU\Software\Microsoft\Clipboard", "EnableClipboardHistory", 0, false)]
         public async Task GetCapturedSettingsAsync_Should_Capture_Setting(string key, string path, string name, object registryValue, object expectedCapturedValue)
         {
             _mockRegistryService.Setup(r => r.Read(path, name)).Returns(registryValue);
@@ -535,6 +626,9 @@ namespace WinHome.Tests
 
             var key2 = _service.GetFriendlyName(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarAl");
             Assert.Equal("taskbar_alignment", key2);
+
+            var key3 = _service.GetFriendlyName(@"HKCU\Software\Microsoft\Clipboard", "EnableClipboardHistory");
+            Assert.Equal("clipboard_history", key3);
         }
 
         [Fact]

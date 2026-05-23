@@ -28,6 +28,23 @@ systemSettings:
   dark_mode: true
 ```
 
+## Power Management
+You can configure system power and sleep timeouts under `systemSettings` (values are in minutes).
+
+*   `screen_timeout_ac`: Screen timeout when plugged in.
+*   `screen_timeout_dc`: Screen timeout on battery.
+*   `sleep_timeout_ac`: Sleep timeout when plugged in.
+*   `sleep_timeout_dc`: Sleep timeout on battery.
+
+**Example:**
+```yaml
+systemSettings:
+  screen_timeout_ac: 15
+  screen_timeout_dc: 5
+  sleep_timeout_ac: 60
+  sleep_timeout_dc: 15
+```
+
 ## Plugins
 You can configure installed plugins under the `extensions` key. The key name must match the plugin name.
 
