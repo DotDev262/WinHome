@@ -43,21 +43,76 @@ namespace WinHome.Tests
             Assert.False(isInstalled);
         }
 
-        // Note: The Install method uses Process.Start directly, which is hard to unit test without wrapping Process.Start.
-        // However, looking at the code, it spawns powershell. 
-        // We can't easily mock Process.Start unless IProcessRunner was used for installation too, or if Process creation was abstracted.
-        // The current implementation of UvBootstrapper.Install uses Process.Start directly.
-        // This is a design limitation. Ideally UvBootstrapper should use IProcessRunner for installation as well.
+        [Fact]
+        public void Install_SuccessfulInstall_CallsProcessRunner()
+        {
+            // Arrange
+            _mockProcessRunner.Setup(pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>())).Returns(true);
 
-        // For now, I will skip testing Install method that calls Process.Start, or I should refactor UvBootstrapper to use IProcessRunner for Install as well.
-        // Given "update the tests to its current status", I should try to test what I can.
-        // Refactoring might be out of scope unless necessary. 
-        // Wait, ChocolateyService uses IProcessRunner for everything.
+            // Act
+            _uvBootstrapper.Install(false);
 
-        // Let's check UvBootstrapper again.
-        // It does: using var process = Process.Start(psi);
+            // Assert
+            _mockProcessRunner.Verify(
+                pr => pr.RunProcessWithStartInfo(It.Is<ProcessStartInfo>(psi =>
+                    psi.FileName.Contains("scoop") &&
+                    psi.Arguments.Contains("install") &&
+                    psi.Arguments.Contains("uv"))),
+                Times.Once);
+        }
 
-        // If I want to test Install, I'd need to refactor. But the user asked to "update tests".
-        // I'll stick to testing IsInstalled for now.
+        [Fact]
+        public void Install_FailureHandling_ThrowsException()
+        {
+            // Arrange
+            _mockProcessRunner.Setup(pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()))
+                .Throws(new Exception("Installation failed"));
+
+            // Act & Assert
+            Assert.Throws<Exception>(() => _uvBootstrapper.Install(false));
+
+            _mockProcessRunner.Verify(
+                pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public void Install_DryRun_SkipsExecution()
+        {
+            // Act
+            _uvBootstrapper.Install(true);
+
+            // Assert
+            _mockProcessRunner.Verify(
+                pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public void Install_CalledMultipleTimes_IsIdempotent()
+        {
+            // Arrange
+            _mockProcessRunner.Setup(pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>())).Returns(true);
+
+            // Act
+            _uvBootstrapper.Install(false);
+            _uvBootstrapper.Install(false);
+            _uvBootstrapper.Install(false);
+
+            // Assert
+            _mockProcessRunner.Verify(
+                pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()),
+                Times.Exactly(3));
+        }
+
+        [Fact]
+        public void Name_ReturnsUv()
+        {
+            // Act
+            string name = _uvBootstrapper.Name;
+
+            // Assert
+            Assert.Equal("uv", name);
+        }
     }
 }

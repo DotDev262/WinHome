@@ -6,6 +6,7 @@ Provides a simplified way to apply common system settings (backed by registry tw
 
 **Available Settings:**
 -   `dark_mode`: `true` or `false`.
+-   `clipboard_history`: `true` or `false`. Enable or disable Windows clipboard history.
 -   `taskbar_alignment`: `left` or `center`.
 -   `taskbar_widgets`: `hide` or `show`.
 -   `show_file_extensions`: `true` or `false`.
@@ -13,6 +14,7 @@ Provides a simplified way to apply common system settings (backed by registry tw
 -   `seconds_in_clock`: `true` or `false`.
 -   `explorer_launch_to`: `this_pc` or `quick_access`.
 -   `bing_search_enabled`: `true` or `false`.
+-   `taskbar_search`: `hidden`, `icon`, `icon_label`, or `search_box`.
 -   `brightness`: `0-100`. Sets the screen brightness.
 -   `volume`: `0-100`. Sets the system volume.
 -   `notification`: A dictionary with `title` and `message` to send a notification.
@@ -21,7 +23,9 @@ Provides a simplified way to apply common system settings (backed by registry tw
 ```yaml
 system_settings:
   dark_mode: true
+  clipboard_history: true
   taskbar_alignment: center
+  taskbar_search: icon
   show_file_extensions: true
   brightness: 80
   volume: 50
