@@ -433,9 +433,9 @@ public class ModelTests
         Assert.Equal(original.Triggers[0].Type, deserialized.Triggers[0].Type);
         Assert.Equal(original.Triggers[0].StartBoundary, deserialized.Triggers[0].StartBoundary);
         Assert.NotNull(deserialized.Triggers[0].Repetition);
-        Assert.Equal(original.Triggers[0].Repetition.Interval, deserialized.Triggers[0].Repetition.Interval);
-        Assert.Equal(original.Triggers[0].Repetition.Duration, deserialized.Triggers[0].Repetition.Duration);
-        Assert.Equal(original.Triggers[0].Repetition.StopAtDurationEnd, deserialized.Triggers[0].Repetition.StopAtDurationEnd);
+        Assert.Equal(original.Triggers[0].Repetition!.Interval, deserialized.Triggers[0].Repetition!.Interval);
+        Assert.Equal(original.Triggers[0].Repetition!.Duration, deserialized.Triggers[0].Repetition!.Duration);
+        Assert.Equal(original.Triggers[0].Repetition!.StopAtDurationEnd, deserialized.Triggers[0].Repetition!.StopAtDurationEnd);
         Assert.NotNull(deserialized.Actions);
         Assert.Single(deserialized.Actions);
         Assert.Equal(original.Actions[0].Type, deserialized.Actions[0].Type);

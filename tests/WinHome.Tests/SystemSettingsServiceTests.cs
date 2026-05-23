@@ -114,7 +114,7 @@ namespace WinHome.Tests
         [Fact]
         public async Task ApplyNonRegistrySettingsAsync_Brightness_Null_Should_SkipSilently()
         {
-            var settings = new Dictionary<string, object> { { "brightness", null } };
+            var settings = new Dictionary<string, object> { { "brightness", null! } };
 
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
@@ -217,7 +217,7 @@ namespace WinHome.Tests
         [Fact]
         public async Task ApplyNonRegistrySettingsAsync_Volume_Null_Should_SkipSilently()
         {
-            var settings = new Dictionary<string, object> { { "volume", null } };
+            var settings = new Dictionary<string, object> { { "volume", null! } };
 
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
@@ -310,7 +310,7 @@ namespace WinHome.Tests
         [Fact]
         public async Task ApplyNonRegistrySettingsAsync_PowerSettings_Null_Should_SkipSilently()
         {
-            var settings = new Dictionary<string, object> { { "screen_timeout_ac", null } };
+            var settings = new Dictionary<string, object> { { "screen_timeout_ac", null! } };
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
             _mockLogger.Verify(
                 l => l.Log(

@@ -283,8 +283,8 @@ namespace WinHome.Tests.Services.System
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                // Use PowerShell to reliably write to stderr across environments
-                return ("powershell", $"-NoProfile -Command \"[Console]::Error.WriteLine('{text}')\"");
+                // Use cmd to reliably and quickly write to stderr across environments
+                return ("cmd", $"/c echo {text} 1>&2");
             }
 
             return ("sh", $"-c \"echo {text} >&2\"");
