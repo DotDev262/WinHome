@@ -434,6 +434,21 @@ namespace WinHome.Tests
         // explorer_launch_to
         [InlineData("explorer_launch_to", "this_pc", "LaunchTo", 1)]
         [InlineData("explorer_launch_to", "quick_access", "LaunchTo", 2)]
+        // desktop_icons_this_pc
+        [InlineData("desktop_icons_this_pc", "true", "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", 0)]
+        [InlineData("desktop_icons_this_pc", "false", "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", 1)]
+        // desktop_icons_user_folder
+        [InlineData("desktop_icons_user_folder", "true", "{59031A47-3F72-44A7-89C5-5595FE6B30EE}", 0)]
+        [InlineData("desktop_icons_user_folder", "false", "{59031A47-3F72-44A7-89C5-5595FE6B30EE}", 1)]
+        // desktop_icons_network
+        [InlineData("desktop_icons_network", "true", "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", 0)]
+        [InlineData("desktop_icons_network", "false", "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", 1)]
+        // desktop_icons_recycle_bin
+        [InlineData("desktop_icons_recycle_bin", "true", "{645FF040-5081-101B-9F08-00AA002F954E}", 0)]
+        [InlineData("desktop_icons_recycle_bin", "false", "{645FF040-5081-101B-9F08-00AA002F954E}", 1)]
+        // desktop_icons_control_panel
+        [InlineData("desktop_icons_control_panel", "true", "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", 0)]
+        [InlineData("desktop_icons_control_panel", "false", "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", 1)]
         // bing_search_enabled
         [InlineData("bing_search_enabled", "true", "BingSearchEnabled", 1)]
         [InlineData("bing_search_enabled", "false", "BingSearchEnabled", 0)]
@@ -506,6 +521,21 @@ namespace WinHome.Tests
         // explorer_launch_to
         [InlineData("explorer_launch_to", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "LaunchTo", 1, "this_pc")]
         [InlineData("explorer_launch_to", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "LaunchTo", 2, "quick_access")]
+        // desktop_icons_this_pc
+        [InlineData("desktop_icons_this_pc", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", 0, true)]
+        [InlineData("desktop_icons_this_pc", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", 1, false)]
+        // desktop_icons_user_folder
+        [InlineData("desktop_icons_user_folder", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{59031A47-3F72-44A7-89C5-5595FE6B30EE}", 0, true)]
+        [InlineData("desktop_icons_user_folder", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{59031A47-3F72-44A7-89C5-5595FE6B30EE}", 1, false)]
+        // desktop_icons_network
+        [InlineData("desktop_icons_network", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", 0, true)]
+        [InlineData("desktop_icons_network", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", 1, false)]
+        // desktop_icons_recycle_bin
+        [InlineData("desktop_icons_recycle_bin", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{645FF040-5081-101B-9F08-00AA002F954E}", 0, true)]
+        [InlineData("desktop_icons_recycle_bin", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{645FF040-5081-101B-9F08-00AA002F954E}", 1, false)]
+        // desktop_icons_control_panel
+        [InlineData("desktop_icons_control_panel", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", 0, true)]
+        [InlineData("desktop_icons_control_panel", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", 1, false)]
         // bing_search_enabled
         [InlineData("bing_search_enabled", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 1, true)]
         [InlineData("bing_search_enabled", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0, false)]
@@ -629,6 +659,9 @@ namespace WinHome.Tests
 
             var key3 = _service.GetFriendlyName(@"HKCU\Software\Microsoft\Clipboard", "EnableClipboardHistory");
             Assert.Equal("clipboard_history", key3);
+
+            var key4 = _service.GetFriendlyName(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{20D04FE0-3AEA-1069-A2D8-08002B30309D}");
+            Assert.Equal("desktop_icons_this_pc", key4);
         }
 
         [Fact]

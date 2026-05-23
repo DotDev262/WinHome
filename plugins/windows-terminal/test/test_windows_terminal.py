@@ -22,7 +22,7 @@ def test_check_installed_returns_bool():
     assert isinstance(result["data"]["installed"], bool)
 
 
-def test_apply_dry_run_no_write(tmp_path):
+def test_apply_dry_run_reports_changes(tmp_path):
     settings_file = tmp_path / "settings.json"
     settings_file.write_text(json.dumps({"theme": "light"}))
 
@@ -35,7 +35,7 @@ def test_apply_dry_run_no_write(tmp_path):
     plugin.get_active_settings_path = original_fn
 
     assert result["success"] is True
-    assert result["changed"] is False
+    assert result["changed"] is True
     content = json.loads(settings_file.read_text())
     assert content["theme"] == "light"
 
