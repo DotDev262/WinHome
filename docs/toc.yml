@@ -22,5 +22,8 @@
 - name: Security Guide
   href: security.md
 
+- name: Shell Completion
+  href: shell-completion.md
+
 - name: Troubleshooting
   href: troubleshooting.md
