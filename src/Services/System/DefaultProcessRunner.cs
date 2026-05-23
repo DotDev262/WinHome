@@ -54,6 +54,7 @@ namespace WinHome.Services.System
                 {
                     // Ensure async event handlers (BeginOutputReadLine/BeginErrorReadLine) 
                     // have finished processing streams before we dispose the process.
+                    // completed in pr.no 134
                     process.WaitForExit();
                 }
 
