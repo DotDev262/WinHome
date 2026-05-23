@@ -49,6 +49,14 @@ namespace WinHome.Services.System
                     process.Kill(true);
                     return false;
                 }
+
+                if (onOutput != null)
+                {
+                    // Ensure async event handlers (BeginOutputReadLine/BeginErrorReadLine) 
+                    // have finished processing streams before we dispose the process.
+                    process.WaitForExit();
+                }
+
                 return process.ExitCode == 0;
             }
             catch (Exception ex)
