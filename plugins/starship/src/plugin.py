@@ -82,13 +82,13 @@ def merge_settings(target: dict, source: dict) -> bool:
     changed = False
     for key, value in source.items():
         if isinstance(value, dict):
-            if key not in target or not isinstance(target[key], dict):
+            if key not in target or not isinstance(target.get(key), dict):
                 target[key] = {}
                 changed = True
-            for sub_k, sub_v in value.items():
-                if sub_k not in target[key] or target[key][sub_k] != sub_v:
-                    target[key][sub_k] = sub_v
-                    changed = True
+            
+            # Recursive merge for deep dictionaries
+            if merge_settings(target[key], value):
+                changed = True
         else:
             if key not in target or target[key] != value:
                 target[key] = value
