@@ -12,10 +12,14 @@ To enable tab completion for the current session:
 WinHome completion powershell | Out-String | Invoke-Expression
 ```
 
-To enable it permanently, add it to your PowerShell profile:
+To enable it permanently, save the script to a file and source it in your PowerShell profile:
 
 ```powershell
-WinHome completion powershell >> $PROFILE
+# 1. Save the completion script
+WinHome completion powershell > ~/winhome-completion.ps1
+
+# 2. Add to your profile
+Add-Content -Path $PROFILE -Value '. ~/winhome-completion.ps1'
 ```
 
 > **Note:** You may need to restart your PowerShell session or run `. $PROFILE` to reload the profile.
@@ -28,10 +32,16 @@ To enable tab completion for the current session:
 eval "$(WinHome completion bash)"
 ```
 
-To enable it permanently, add it to your `~/.bashrc`:
+To enable it permanently, save the script and source it in your `~/.bashrc`:
 
 ```bash
-WinHome completion bash >> ~/.bashrc
+# 1. Save the completion script
+WinHome completion bash > ~/.winhome-completion.bash
+
+# 2. Add to your bashrc
+echo "source ~/.winhome-completion.bash" >> ~/.bashrc
+
+# 3. Reload
 source ~/.bashrc
 ```
 

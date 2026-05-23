@@ -19,6 +19,8 @@ public static class ShellCompletionGenerator
     /// <exception cref="ArgumentException">Thrown when shell is not supported.</exception>
     public static string Generate(RootCommand rootCommand, string shell)
     {
+        if (rootCommand == null) throw new ArgumentNullException(nameof(rootCommand));
+
         return shell.ToLowerInvariant() switch
         {
             "powershell" or "pwsh" => GeneratePowerShell(rootCommand),
@@ -32,7 +34,9 @@ public static class ShellCompletionGenerator
     /// <summary>
     /// Returns the list of supported shell names.
     /// </summary>
-    public static IReadOnlyList<string> SupportedShells => new[] { "powershell", "bash" };
+    public static IReadOnlyList<string> SupportedShells => _supportedShells;
+
+    private static readonly string[] _supportedShells = new[] { "powershell", "pwsh", "bash" };
 
     private static string GeneratePowerShell(RootCommand rootCommand)
     {
@@ -42,12 +46,13 @@ public static class ShellCompletionGenerator
         sb.AppendLine("#");
         sb.AppendLine("# Usage:");
         sb.AppendLine("#   WinHome completion powershell | Out-String | Invoke-Expression");
-        sb.AppendLine("#   # Or add to profile for persistence:");
-        sb.AppendLine("#   WinHome completion powershell >> $PROFILE");
+        sb.AppendLine("#   # Or save to a file for persistence:");
+        sb.AppendLine("#   WinHome completion powershell > ~/winhome-completion.ps1");
+        sb.AppendLine("#   # and dot-source it in your profile: . ~/winhome-completion.ps1");
         sb.AppendLine();
 
         // Collect all completions from the command tree
-        var completions = CollectCompletions(rootCommand, "WinHome");
+        var completions = CollectCompletions(rootCommand, Regex.Escape("WinHome"));
 
         // Build the completer script block
         var scriptBlock = new StringBuilder();
@@ -59,7 +64,7 @@ public static class ShellCompletionGenerator
         {
             var escapedDesc = description.Replace("'", "''");
             var escapedName = name.Replace("'", "''");
-            var escapedContext = Regex.Escape(context).Replace("'", "''");
+            var escapedContext = context.Replace("'", "''"); // context is already regex-escaped, just escape quotes
             scriptBlock.AppendLine($"        @{{ Context = '{escapedContext}'; Name = '{escapedName}'; Description = '{escapedDesc}' }}");
         }
 
@@ -101,8 +106,9 @@ public static class ShellCompletionGenerator
         sb.AppendLine("#");
         sb.AppendLine("# Usage:");
         sb.AppendLine("#   eval \"$(WinHome completion bash)\"");
-        sb.AppendLine("#   # Or add to profile for persistence:");
-        sb.AppendLine("#   WinHome completion bash >> ~/.bashrc");
+        sb.AppendLine("#   # Or save to a file for persistence:");
+        sb.AppendLine("#   WinHome completion bash > ~/.winhome-completion.bash");
+        sb.AppendLine("#   echo \"source ~/.winhome-completion.bash\" >> ~/.bashrc");
         sb.AppendLine();
 
         // Collect all top-level options and subcommands

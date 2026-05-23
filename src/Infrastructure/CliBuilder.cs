@@ -170,12 +170,18 @@ public static class CliBuilder
         {
             Description = "Target shell (powershell or bash)"
         };
-        shellArgument.AcceptOnlyFromAmong("powershell", "pwsh", "bash");
         completionCommand.Arguments.Add(shellArgument);
 
         completionCommand.SetAction((ParseResult result) =>
         {
             var shell = result.GetValue(shellArgument)!;
+
+            if (!ShellCompletionGenerator.SupportedShells.Contains(shell.ToLowerInvariant()))
+            {
+                Console.Error.WriteLine($"Argument '{shell}' not recognized. Must be one of: {string.Join(", ", ShellCompletionGenerator.SupportedShells)}");
+                return 1;
+            }
+
             try
             {
                 var script = ShellCompletionGenerator.Generate(rootCommand, shell);
