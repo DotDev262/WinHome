@@ -17,8 +17,11 @@ namespace WinHome.Services.Plugins
             _runtimeResolver = runtimeResolver;
         }
 
-        public async Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context)
+        public async Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context, TimeSpan? timeout = null)
         {
+            var actualTimeout = timeout ?? TimeSpan.FromSeconds(30);
+            if (actualTimeout <= TimeSpan.Zero) actualTimeout = TimeSpan.FromSeconds(30);
+
             var (fileName, arguments) = BuildProcessStartInfo(plugin);
 
             var request = new PluginRequest
@@ -44,7 +47,8 @@ namespace WinHome.Services.Plugins
             startInfo.Environment["WINHOME_PLUGIN_NAME"] = plugin.Name;
 
             using var process = new Process { StartInfo = startInfo };
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var cts = new CancellationTokenSource(actualTimeout);
+            var sw = Stopwatch.StartNew();
 
             try
             {
@@ -88,6 +92,7 @@ namespace WinHome.Services.Plugins
                 }
 
                 await process.WaitForExitAsync(cts.Token);
+                sw.Stop();
 
                 if (process.ExitCode != 0)
                 {
@@ -117,11 +122,14 @@ namespace WinHome.Services.Plugins
             }
             catch (OperationCanceledException)
             {
+                sw.Stop();
                 try { process.Kill(); } catch { }
-                return new PluginResult { Success = false, Error = "Plugin timed out after 30 seconds." };
+                _logger.LogWarning($"[PluginRunner] Plugin {plugin.Name} timed out and was killed after {sw.ElapsedMilliseconds}ms.");
+                return new PluginResult { Success = false, Error = $"Plugin timed out after {actualTimeout.TotalSeconds} seconds." };
             }
             catch (Exception ex)
             {
+                sw.Stop();
                 try { if (!process.HasExited) process.Kill(); } catch { }
                 return new PluginResult { Success = false, Error = $"Runner Exception: {ex.Message}" };
             }
