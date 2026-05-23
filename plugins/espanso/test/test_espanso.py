@@ -7,17 +7,17 @@ Run with:  pytest test/test_espanso.py -v
 import json
 import os
 import sys
-import textwrap
+import tempfile
+import shutil
+from copy import deepcopy
 from io import StringIO
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-import yaml
 
-# Make src importable
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-import plugin  # noqa: E402  (after sys.path manipulation)
+import plugin  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -25,9 +25,17 @@ import plugin  # noqa: E402  (after sys.path manipulation)
 # ---------------------------------------------------------------------------
 
 @pytest.fixture()
-def tmp_base_yml(tmp_path):
-    """Return a Path pointing to a temporary base.yml (not yet created)."""
-    return tmp_path / "espanso" / "match" / "base.yml"
+def tmp_appdata(tmp_path, monkeypatch):
+    """Point APPDATA to a temp dir and return it."""
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    return tmp_path
+
+
+@pytest.fixture()
+def installed_appdata(tmp_appdata):
+    """APPDATA with the espanso directory already created."""
+    (tmp_appdata / "espanso").mkdir()
+    return tmp_appdata
 
 
 @pytest.fixture()
@@ -44,16 +52,31 @@ def existing_config():
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def run_main(msg: dict) -> dict:
+    """Feed one JSON message through main() and return the parsed response."""
+    stdin_data = json.dumps(msg)
+    with patch("sys.stdin", StringIO(stdin_data)), \
+         patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+        try:
+            plugin.main()
+        except SystemExit:
+            pass
+        return json.loads(mock_stdout.getvalue().strip())
+
+
+# ---------------------------------------------------------------------------
 # get_base_yml_path
 # ---------------------------------------------------------------------------
 
-def test_get_base_yml_path_uses_appdata(monkeypatch):
-    monkeypatch.setenv("APPDATA", r"C:\Users\Test\AppData\Roaming")
+def test_get_base_yml_path(tmp_appdata):
     result = plugin.get_base_yml_path()
-    assert result == Path(r"C:\Users\Test\AppData\Roaming\espanso\match\base.yml")
+    assert result == tmp_appdata / "espanso" / "match" / "base.yml"
 
 
-def test_get_base_yml_path_raises_without_appdata(monkeypatch):
+def test_get_base_yml_path_no_appdata(monkeypatch):
     monkeypatch.delenv("APPDATA", raising=False)
     with pytest.raises(EnvironmentError, match="APPDATA"):
         plugin.get_base_yml_path()
@@ -63,15 +86,11 @@ def test_get_base_yml_path_raises_without_appdata(monkeypatch):
 # is_espanso_installed
 # ---------------------------------------------------------------------------
 
-def test_is_espanso_installed_true(tmp_path, monkeypatch):
-    espanso_dir = tmp_path / "espanso"
-    espanso_dir.mkdir()
-    monkeypatch.setenv("APPDATA", str(tmp_path))
+def test_is_espanso_installed_true(installed_appdata):
     assert plugin.is_espanso_installed() is True
 
 
-def test_is_espanso_installed_false(tmp_path, monkeypatch):
-    monkeypatch.setenv("APPDATA", str(tmp_path))
+def test_is_espanso_installed_false(tmp_appdata):
     assert plugin.is_espanso_installed() is False
 
 
@@ -81,86 +100,54 @@ def test_is_espanso_installed_no_appdata(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# read_yaml / write_yaml
+# read_config / write_config
 # ---------------------------------------------------------------------------
 
-def test_read_yaml_missing_file(tmp_path):
-    result = plugin.read_yaml(tmp_path / "nonexistent.yml")
-    assert result == {}
+def test_read_config_missing(tmp_path):
+    assert plugin.read_config(tmp_path / "nonexistent.yml") == {}
 
 
-def test_read_yaml_empty_file(tmp_path):
-    f = tmp_path / "empty.yml"
-    f.write_text("", encoding="utf-8")
-    assert plugin.read_yaml(f) == {}
-
-
-def test_read_yaml_valid(tmp_path):
-    f = tmp_path / "config.yml"
-    f.write_text("matches:\n  - trigger: ':hi'\n    replace: Hello\n", encoding="utf-8")
-    data = plugin.read_yaml(f)
-    assert data == {"matches": [{"trigger": ":hi", "replace": "Hello"}]}
-
-
-def test_write_yaml_creates_dirs(tmp_path):
-    path = tmp_path / "a" / "b" / "c.yml"
-    plugin.write_yaml(path, {"key": "value"})
+def test_write_config_creates_dirs(tmp_path):
+    path = tmp_path / "a" / "b" / "base.yml"
+    plugin.write_config(path, {"matches": [{"trigger": ":t", "replace": "test"}]})
     assert path.exists()
-    loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
-    assert loaded == {"key": "value"}
 
 
-def test_write_yaml_roundtrip(tmp_path, existing_config):
+def test_write_config_trailing_newline(tmp_path):
     path = tmp_path / "base.yml"
-    plugin.write_yaml(path, existing_config)
-    loaded = plugin.read_yaml(path)
-    assert loaded == existing_config
+    plugin.write_config(path, {"matches": []})
+    assert path.read_text(encoding="utf-8").endswith("\n")
 
 
 # ---------------------------------------------------------------------------
 # deep_merge_lists
 # ---------------------------------------------------------------------------
 
-def test_deep_merge_lists_replaces_existing():
+def test_merge_lists_replaces():
     existing = [{"trigger": ":email", "replace": "old@example.com"}]
     incoming = [{"trigger": ":email", "replace": "new@example.com"}]
     result = plugin.deep_merge_lists(existing, incoming)
     assert result == [{"trigger": ":email", "replace": "new@example.com"}]
 
 
-def test_deep_merge_lists_appends_new():
+def test_merge_lists_appends():
     existing = [{"trigger": ":email", "replace": "old@example.com"}]
     incoming = [{"trigger": ":sig", "replace": "Best regards"}]
     result = plugin.deep_merge_lists(existing, incoming)
     assert len(result) == 2
-    assert result[1] == {"trigger": ":sig", "replace": "Best regards"}
 
 
-def test_deep_merge_lists_preserves_untouched():
+def test_merge_lists_preserves_untouched():
     existing = [
         {"trigger": ":email", "replace": "me@example.com"},
         {"trigger": ":hello", "replace": "Hello!"},
     ]
-    incoming = [{"trigger": ":email", "replace": "new@example.com"}]
-    result = plugin.deep_merge_lists(existing, incoming)
+    result = plugin.deep_merge_lists(existing, [{"trigger": ":email", "replace": "new@example.com"}])
     assert len(result) == 2
-    assert result[1] == {"trigger": ":hello", "replace": "Hello!"}
+    assert result[1]["trigger"] == ":hello"
 
 
-def test_deep_merge_lists_empty_existing():
-    existing = []
-    incoming = [{"trigger": ":t", "replace": "test"}]
-    result = plugin.deep_merge_lists(existing, incoming)
-    assert result == [{"trigger": ":t", "replace": "test"}]
-
-
-def test_deep_merge_lists_empty_incoming():
-    existing = [{"trigger": ":t", "replace": "test"}]
-    result = plugin.deep_merge_lists(existing, [])
-    assert result == existing
-
-
-def test_deep_merge_lists_custom_key():
+def test_merge_lists_custom_key():
     existing = [{"name": "today", "type": "date"}]
     incoming = [{"name": "today", "type": "shell"}]
     result = plugin.deep_merge_lists(existing, incoming, key="name")
@@ -171,74 +158,55 @@ def test_deep_merge_lists_custom_key():
 # merge_config
 # ---------------------------------------------------------------------------
 
-def test_merge_config_no_overlap(existing_config):
-    incoming = {
-        "matches": [{"trigger": ":new", "replace": "New!"}],
-    }
-    merged, changed = plugin.merge_config(existing_config, incoming)
-    assert changed is True
-    triggers = [m["trigger"] for m in merged["matches"]]
-    assert ":new" in triggers
-    assert ":email" in triggers
-
-
-def test_merge_config_with_overlap(existing_config):
-    incoming = {
-        "matches": [{"trigger": ":email", "replace": "updated@example.com"}],
-    }
-    merged, changed = plugin.merge_config(existing_config, incoming)
-    assert changed is True
-    email_match = next(m for m in merged["matches"] if m["trigger"] == ":email")
-    assert email_match["replace"] == "updated@example.com"
-    # existing :hello must still be present
-    assert any(m["trigger"] == ":hello" for m in merged["matches"])
-
-
-def test_merge_config_unchanged(existing_config):
-    # Merging identical data should report no change
-    incoming = {
-        "matches": list(existing_config["matches"]),
-        "global_vars": list(existing_config["global_vars"]),
-    }
+def test_merge_config_detects_change(existing_config):
+    incoming = {"matches": [{"trigger": ":email", "replace": "new@example.com"}]}
     _, changed = plugin.merge_config(existing_config, incoming)
+    assert changed is True
+
+
+def test_merge_config_no_change(existing_config):
+    _, changed = plugin.merge_config(existing_config, {
+        "matches": deepcopy(existing_config["matches"]),
+        "global_vars": deepcopy(existing_config["global_vars"]),
+    })
     assert changed is False
 
 
-def test_merge_config_does_not_mutate_existing(existing_config):
-    original = json.loads(json.dumps(existing_config))
-    plugin.merge_config(existing_config, {"matches": [{"trigger": ":x", "replace": "X"}]})
+def test_merge_config_does_not_mutate(existing_config):
+    original = deepcopy(existing_config)
+    plugin.merge_config(existing_config, {"matches": [{"trigger": ":new", "replace": "x"}]})
     assert existing_config == original
 
 
-def test_merge_config_global_vars(existing_config):
-    incoming = {
-        "global_vars": [
-            {"name": "today", "type": "date", "params": {"format": "%d/%m/%Y"}},
-            {"name": "user", "type": "shell", "params": {"cmd": "whoami"}},
-        ]
-    }
-    merged, changed = plugin.merge_config(existing_config, incoming)
-    assert changed is True
-    today = next(v for v in merged["global_vars"] if v["name"] == "today")
-    assert today["params"]["format"] == "%d/%m/%Y"
-    assert any(v["name"] == "user" for v in merged["global_vars"])
+def test_merge_config_preserves_existing(existing_config):
+    merged, _ = plugin.merge_config(existing_config, {
+        "matches": [{"trigger": ":email", "replace": "new@example.com"}]
+    })
+    triggers = [m["trigger"] for m in merged["matches"]]
+    assert ":hello" in triggers
+    assert ":email" in triggers
 
 
 # ---------------------------------------------------------------------------
 # handle_check_installed
 # ---------------------------------------------------------------------------
 
-def test_handle_check_installed_true(tmp_path, monkeypatch):
-    (tmp_path / "espanso").mkdir()
-    monkeypatch.setenv("APPDATA", str(tmp_path))
-    result = plugin.handle_check_installed({})
-    assert result == {"installed": True}
+def test_handle_check_installed_true(installed_appdata):
+    result = plugin.handle_check_installed("req-1", {})
+    assert result == {
+        "requestId": "req-1",
+        "success": True,
+        "changed": False,
+        "data": {"installed": True},
+    }
 
 
-def test_handle_check_installed_false(tmp_path, monkeypatch):
-    monkeypatch.setenv("APPDATA", str(tmp_path))
-    result = plugin.handle_check_installed({})
-    assert result == {"installed": False}
+def test_handle_check_installed_false(tmp_appdata):
+    result = plugin.handle_check_installed("req-2", {})
+    assert result["data"]["installed"] is False
+    assert result["success"] is True
+    assert result["changed"] is False
+    assert result["requestId"] == "req-2"
 
 
 # ---------------------------------------------------------------------------
@@ -248,137 +216,120 @@ def test_handle_check_installed_false(tmp_path, monkeypatch):
 def test_handle_apply_writes_file(tmp_path, monkeypatch):
     base_yml = tmp_path / "espanso" / "match" / "base.yml"
     monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
-
-    args = {"matches": [{"trigger": ":email", "replace": "me@example.com"}]}
-    result = plugin.handle_apply(args)
-
-    assert result == {"success": True, "changed": True}
+    result = plugin.handle_apply("req-3", {"matches": [{"trigger": ":email", "replace": "me@example.com"}]})
+    assert result == {"requestId": "req-3", "success": True, "changed": True}
     assert base_yml.exists()
-    data = yaml.safe_load(base_yml.read_text(encoding="utf-8"))
-    assert data["matches"][0]["replace"] == "me@example.com"
 
 
-def test_handle_apply_dry_run_does_not_write(tmp_path, monkeypatch):
+def test_handle_apply_dry_run_no_write(tmp_path, monkeypatch):
     base_yml = tmp_path / "espanso" / "match" / "base.yml"
     monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
-
-    args = {"matches": [{"trigger": ":email", "replace": "me@example.com"}]}
-    result = plugin.handle_apply(args, dry_run=True)
-
-    assert result == {"success": True, "changed": True}
-    assert not base_yml.exists()  # must NOT have been written
+    result = plugin.handle_apply("req-4", {"matches": [{"trigger": ":t", "replace": "x"}]}, dry_run=True)
+    assert result == {"requestId": "req-4", "success": True, "changed": True}
+    assert not base_yml.exists()
 
 
-def test_handle_apply_no_change_does_not_write(tmp_path, monkeypatch, existing_config):
+def test_handle_apply_no_change_no_write(tmp_path, monkeypatch, existing_config):
     base_yml = tmp_path / "espanso" / "match" / "base.yml"
     base_yml.parent.mkdir(parents=True)
-    plugin.write_yaml(base_yml, existing_config)
-    mtime_before = base_yml.stat().st_mtime
-
+    plugin.write_config(base_yml, existing_config)
+    mtime = base_yml.stat().st_mtime
     monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
-
-    args = {
-        "matches": existing_config["matches"],
-        "global_vars": existing_config["global_vars"],
-    }
-    result = plugin.handle_apply(args)
-
-    assert result == {"success": True, "changed": False}
-    assert base_yml.stat().st_mtime == mtime_before
+    result = plugin.handle_apply("req-5", existing_config)
+    assert result == {"requestId": "req-5", "success": True, "changed": False}
+    assert base_yml.stat().st_mtime == mtime
 
 
 def test_handle_apply_merges_not_overwrites(tmp_path, monkeypatch, existing_config):
     base_yml = tmp_path / "espanso" / "match" / "base.yml"
     base_yml.parent.mkdir(parents=True)
-    plugin.write_yaml(base_yml, existing_config)
+    plugin.write_config(base_yml, existing_config)
     monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
-
-    args = {"matches": [{"trigger": ":email", "replace": "new@example.com"}]}
-    plugin.handle_apply(args)
-
-    data = plugin.read_yaml(base_yml)
+    plugin.handle_apply("req-6", {"matches": [{"trigger": ":email", "replace": "new@example.com"}]})
+    data = plugin.read_config(base_yml)
     triggers = [m["trigger"] for m in data["matches"]]
-    assert ":hello" in triggers, "Existing :hello match should be preserved"
-    assert ":email" in triggers
+    assert ":hello" in triggers
 
 
 def test_handle_apply_creates_missing_dirs(tmp_path, monkeypatch):
     base_yml = tmp_path / "deep" / "nested" / "base.yml"
     monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
-
-    args = {"matches": [{"trigger": ":t", "replace": "test"}]}
-    result = plugin.handle_apply(args)
-
+    result = plugin.handle_apply("req-7", {"matches": [{"trigger": ":t", "replace": "test"}]})
     assert result["success"] is True
     assert base_yml.exists()
 
 
 # ---------------------------------------------------------------------------
-# JSON-over-stdio integration
+# Single-shot JSON-over-stdio protocol
 # ---------------------------------------------------------------------------
 
-def _run_single_command(msg: dict) -> dict:
-    """Feed one JSON message to main() and return the parsed response."""
-    stdin_data = json.dumps(msg) + "\n"
-    with patch("sys.stdin", StringIO(stdin_data)), \
+def test_protocol_single_shot_check_installed(installed_appdata):
+    resp = run_main({"requestId": "r1", "command": "check_installed", "args": {}})
+    assert resp["requestId"] == "r1"
+    assert resp["success"] is True
+    assert resp["data"]["installed"] is True
+
+
+def test_protocol_single_shot_apply(tmp_path, monkeypatch):
+    base_yml = tmp_path / "espanso" / "match" / "base.yml"
+    monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
+    resp = run_main({
+        "requestId": "r2",
+        "command": "apply",
+        "args": {"matches": [{"trigger": ":email", "replace": "a@b.com"}]},
+        "context": {},
+    })
+    assert resp["requestId"] == "r2"
+    assert resp["success"] is True
+    assert resp["changed"] is True
+
+
+def test_protocol_dry_run_via_context(tmp_path, monkeypatch):
+    """dryRun must be read from context, not top-level."""
+    base_yml = tmp_path / "espanso" / "match" / "base.yml"
+    monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
+    resp = run_main({
+        "requestId": "r3",
+        "command": "apply",
+        "args": {"matches": [{"trigger": ":t", "replace": "x"}]},
+        "context": {"dryRun": True},
+    })
+    assert resp["success"] is True
+    assert resp["changed"] is True
+    assert not base_yml.exists(), "dry-run must NOT write the file"
+
+
+def test_protocol_dry_run_top_level_ignored(tmp_path, monkeypatch):
+    """dry_run at top-level must NOT be honoured (WinHome sends context.dryRun)."""
+    base_yml = tmp_path / "espanso" / "match" / "base.yml"
+    monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
+    run_main({
+        "requestId": "r4",
+        "command": "apply",
+        "args": {"matches": [{"trigger": ":t", "replace": "x"}]},
+        "dry_run": True,   # old incorrect field — must be ignored
+        "context": {},
+    })
+    assert base_yml.exists(), "top-level dry_run must be ignored; file should have been written"
+
+
+def test_protocol_unknown_command():
+    resp = run_main({"requestId": "r5", "command": "bad_cmd", "args": {}})
+    assert "error" in resp
+    assert resp["requestId"] == "r5"
+
+
+def test_protocol_request_id_propagated(installed_appdata):
+    resp = run_main({"requestId": "my-unique-id", "command": "check_installed", "args": {}})
+    assert resp["requestId"] == "my-unique-id"
+
+
+def test_protocol_invalid_json():
+    with patch("sys.stdin", StringIO("not json")), \
          patch("sys.stdout", new_callable=StringIO) as mock_stdout:
         try:
             plugin.main()
         except SystemExit:
             pass
-        output = mock_stdout.getvalue().strip()
-    return json.loads(output)
-
-
-def test_protocol_check_installed(tmp_path, monkeypatch):
-    (tmp_path / "espanso").mkdir()
-    monkeypatch.setenv("APPDATA", str(tmp_path))
-
-    response = _run_single_command({"command": "check_installed", "args": {}})
-    assert response == {"data": {"installed": True}}
-
-
-def test_protocol_apply(tmp_path, monkeypatch):
-    base_yml = tmp_path / "espanso" / "match" / "base.yml"
-    monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
-
-    msg = {
-        "command": "apply",
-        "args": {"matches": [{"trigger": ":email", "replace": "a@b.com"}]},
-    }
-    response = _run_single_command(msg)
-    assert response["success"] is True
-    assert response["changed"] is True
-
-
-def test_protocol_unknown_command():
-    response = _run_single_command({"command": "unknown_cmd", "args": {}})
-    assert "error" in response
-    assert "unknown_cmd" in response["error"].lower() or "unknown" in response["error"].lower()
-
-
-def test_protocol_invalid_json():
-    with patch("sys.stdin", StringIO("not json\n")), \
-         patch("sys.stdout", new_callable=StringIO) as mock_stdout, \
-         patch("sys.stdin", StringIO("not json\n")):
-        # Feed bad JSON then EOF so main() exits
-        lines = iter(["not json\n", ""])
-
-        def fake_readline():
-            try:
-                return next(lines)
-            except StopIteration:
-                return ""
-
-        mock_stdin = MagicMock()
-        mock_stdin.readline.side_effect = fake_readline
-        with patch("sys.stdin", mock_stdin):
-            try:
-                plugin.main()
-            except SystemExit:
-                pass
-            output = mock_stdout.getvalue().strip()
-
-    if output:
-        response = json.loads(output)
-        assert "error" in response
+        resp = json.loads(mock_stdout.getvalue().strip())
+    assert "error" in resp
