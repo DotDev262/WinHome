@@ -108,6 +108,26 @@ namespace WinHome.Services.System
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "LaunchTo", "dword",
                 new() { { "this_pc", 1 }, { "quick_access", 2 } }),
 
+            new("desktop_icons_this_pc",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("desktop_icons_user_folder",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{59031A47-3F72-44A7-89C5-5595FE6B30EE}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("desktop_icons_network",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("desktop_icons_recycle_bin",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{645FF040-5081-101B-9F08-00AA002F954E}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("desktop_icons_control_panel",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
             new("bing_search_enabled",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", "dword",
                 new() { { "true", 1 }, { "false", 0 } }),
