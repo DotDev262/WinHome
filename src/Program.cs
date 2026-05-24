@@ -13,6 +13,16 @@ class Program
     {
         try
         {
+            if (Array.IndexOf(args, "--version") >= 0)
+            {
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                string versionString = version is not null
+                    ? $"WinHome v{version.Major}.{version.Minor}.{version.Build}"
+                    : "WinHome v1.0.0";
+                Console.WriteLine(versionString);
+                return 0;
+            }
+
             using IHost host = AppHost.CreateHost(args);
 
             var rootCommand = CliBuilder.BuildRootCommand(
