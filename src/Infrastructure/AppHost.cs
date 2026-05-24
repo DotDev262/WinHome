@@ -7,6 +7,7 @@ using WinHome.Services.Logging;
 using WinHome.Services.Managers;
 using WinHome.Services.Plugins;
 using WinHome.Services.System;
+using WinHome.Services;
 
 namespace WinHome.Infrastructure;
 
@@ -59,6 +60,8 @@ public static class AppHost
         services.AddSingleton<IUpdateService, UpdateService>();
         services.AddSingleton<ISecretResolver, SecretResolver>();
         services.AddSingleton<IStateService, StateService>();
+        // New apply state writer for resumable applies
+        services.AddSingleton<StateWriter>();
         services.AddSingleton<IPluginManager>(sp => new PluginManager(
             sp.GetRequiredService<UvBootstrapper>(),
             sp.GetRequiredService<BunBootstrapper>(),
@@ -117,7 +120,8 @@ public static class AppHost
             sp.GetRequiredService<IPluginRunner>(),
             sp.GetRequiredService<IStateService>(),
             sp.GetRequiredService<ILogger>(),
-            sp.GetRequiredService<IRuntimeResolver>()
+            sp.GetRequiredService<IRuntimeResolver>(),
+            sp.GetRequiredService<StateWriter>()
         ));
         services.AddSingleton<AppRunner>(sp => new AppRunner(
             sp.GetRequiredService<Engine>(),

@@ -9,7 +9,7 @@ namespace WinHome.Infrastructure;
 public static class CliBuilder
 {
     public static RootCommand BuildRootCommand(
-        Func<FileInfo, bool, string?, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
+        Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
         Func<FileInfo?, LogLevel, Task<int>> generateAction,
         Func<string, string?, LogLevel, Task<int>> stateAction)
     {
@@ -58,6 +58,12 @@ public static class CliBuilder
         jsonOption.Description = "Output results as JSON";
         jsonOption.DefaultValueFactory = _ => false;
 
+        var forceOption = new Option<bool>("--force") { Description = "Force reapply steps even if previously succeeded" };
+        forceOption.DefaultValueFactory = _ => false;
+
+        var continueOnErrorOption = new Option<bool>("--continue-on-error") { Description = "Continue applying remaining steps when a step fails" };
+        continueOnErrorOption.DefaultValueFactory = _ => false;
+
         var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
         rootCommand.Options.Add(configOption);
         rootCommand.Options.Add(updateOption);
@@ -68,6 +74,8 @@ public static class CliBuilder
         rootCommand.Options.Add(verboseOption);
         rootCommand.Options.Add(quietOption);
         rootCommand.Options.Add(jsonOption);
+        rootCommand.Options.Add(forceOption);
+        rootCommand.Options.Add(continueOnErrorOption);
 
         rootCommand.SetAction(async (ParseResult result) =>
         {
@@ -80,11 +88,13 @@ public static class CliBuilder
             bool verbose = result.GetValue(verboseOption);
             bool quiet = result.GetValue(quietOption);
             bool json = result.GetValue(jsonOption);
+            bool force = result.GetValue(forceOption);
+            bool continueOnError = result.GetValue(continueOnErrorOption);
 
             int conflict = RejectConflictingFlags(verbose, quiet);
             if (conflict != 0) return conflict;
 
-            return await runAction(file, dryRun, profile, debug, diff, json, update, ComputeLogLevel(quiet, verbose));
+            return await runAction(file, dryRun, profile, debug, diff, json, update, force, continueOnError, ComputeLogLevel(quiet, verbose));
         });
 
         // Generate Command
