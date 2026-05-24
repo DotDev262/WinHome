@@ -53,7 +53,7 @@ namespace WinHome.Services.Managers
 
             _logger.LogInfo($"[Choco] Installing {app.Id}...");
 
-            string args = $"install {app.Id} -y";
+            var args = new[] { "install", app.Id, "-y" };
 
             bool alreadyInstalled = false;
             bool success = _processRunner.RunCommand(executable, args, false, line =>
@@ -89,7 +89,7 @@ namespace WinHome.Services.Managers
             }
 
             _logger.LogInfo($"[Choco] Uninstalling {appId}...");
-            string args = $"uninstall {appId} -y";
+            var args = new[] { "uninstall", appId, "-y" };
 
             if (!_processRunner.RunCommand(executable, args, false, line => LogFiltered(line, "Uninstall")))
             {
@@ -102,7 +102,7 @@ namespace WinHome.Services.Managers
         public bool IsInstalled(string appId)
         {
             string executable = GetChocoExecutable();
-            string output = _processRunner.RunCommandWithOutput(executable, $"list -l -r {appId}");
+            string output = _processRunner.RunCommandWithOutput(executable, new[] { "list", "-l", "-r", appId });
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
     }

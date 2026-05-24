@@ -45,7 +45,7 @@ namespace WinHome.Services.Managers
             }
 
             _logger.LogInfo($"[Scoop] Installing {app.Id}...");
-            string args = $"install {app.Id}";
+            var args = new[] { "install", app.Id };
 
             bool alreadyInstalled = false;
             bool manifestNotFound = false;
@@ -85,7 +85,7 @@ namespace WinHome.Services.Managers
             }
 
             _logger.LogInfo($"[Scoop] Uninstalling {appId}...");
-            string args = $"uninstall {appId}";
+            var args = new[] { "uninstall", appId };
 
             if (!_processRunner.RunCommand(executable, args, false, line => _logger.LogInfo($"[Scoop:Uninstall] {line}")))
             {
@@ -97,7 +97,7 @@ namespace WinHome.Services.Managers
         public bool IsInstalled(string appId)
         {
             string executable = GetScoopExecutable();
-            string output = _processRunner.RunCommandWithOutput(executable, "list");
+            string output = _processRunner.RunCommandWithOutput(executable, new[] { "list" });
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
     }

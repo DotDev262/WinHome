@@ -18,6 +18,32 @@ namespace WinHome.Services.System
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
+            return RunProcessInternal(startInfo, fileName, onOutput);
+        }
+
+        public bool RunCommand(string fileName, IEnumerable<string> args, bool dryRun, Action<string>? onOutput = null)
+        {
+            if (dryRun) return true;
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            foreach (var arg in args)
+            {
+                startInfo.ArgumentList.Add(arg);
+            }
+            return RunProcessInternal(startInfo, fileName, onOutput);
+        }
+
+        private bool RunProcessInternal(ProcessStartInfo startInfo, string fileName, Action<string>? onOutput)
+        {
+
+
             try
             {
                 using var process = new Process { StartInfo = startInfo };
@@ -72,6 +98,24 @@ namespace WinHome.Services.System
             return RunCommandWithOutput(fileName, args, null);
         }
 
+        public string RunCommandWithOutput(string fileName, IEnumerable<string> args)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = false,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            foreach (var arg in args)
+            {
+                startInfo.ArgumentList.Add(arg);
+            }
+            return RunProcessWithOutputInternal(startInfo, null);
+        }
+
         public string RunCommandWithOutput(string fileName, string args, string? standardInput)
         {
             var startInfo = new ProcessStartInfo
@@ -84,6 +128,12 @@ namespace WinHome.Services.System
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            return RunProcessWithOutputInternal(startInfo, standardInput);
+        }
+
+        private string RunProcessWithOutputInternal(ProcessStartInfo startInfo, string? standardInput)
+        {
+
 
             try
             {
