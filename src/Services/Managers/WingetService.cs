@@ -54,7 +54,7 @@ namespace WinHome.Services.Managers
             if (_sourceUpdated || dryRun) return;
 
             _logger.LogInfo("[Winget] Updating package sources...");
-            _processRunner.RunCommand(_wingetPath, "source update", false, line => LogFiltered(line, "SourceUpdate"));
+            _processRunner.RunCommand(_wingetPath, "source update --accept-source-agreements", false, line => LogFiltered(line, "SourceUpdate"));
             _sourceUpdated = true;
         }
 
