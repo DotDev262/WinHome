@@ -83,7 +83,7 @@ namespace WinHome.Services.Managers
             UpdateSource(dryRun);
 
             _logger.LogInfo($"[Winget] Installing {app.Id}...");
-            var args = new System.Collections.Generic.List<string> { "install", "--id", app.Id, "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity", "--no-upgrade" };
+            var args = new global::System.Collections.Generic.List<string> { "install", "--id", app.Id, "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity", "--no-upgrade" };
             if (!string.IsNullOrEmpty(app.Source))
             {
                 args.Add("--source");
