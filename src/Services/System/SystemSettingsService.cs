@@ -358,7 +358,7 @@ namespace WinHome.Services.System
             });
         }
 
-        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object> settings, bool dryRun)
+        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun)
         {
             if (settings == null) return Task.CompletedTask;
 

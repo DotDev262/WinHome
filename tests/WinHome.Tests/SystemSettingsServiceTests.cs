@@ -5,6 +5,7 @@ using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Services.System;
 using Xunit;
+using Microsoft.Extensions.Logging;
 
 namespace WinHome.Tests
 {
@@ -13,12 +14,14 @@ namespace WinHome.Tests
         private readonly Mock<IProcessRunner> _mockProcessRunner;
         private readonly Mock<IRegistryService> _mockRegistryService;
         private readonly SystemSettingsService _service;
+        private readonly Mock<ILogger<SystemSettingsService>> _mockLogger;
 
         public SystemSettingsServiceTests()
         {
             _mockProcessRunner = new Mock<IProcessRunner>();
             _mockRegistryService = new Mock<IRegistryService>();
-            _service = new SystemSettingsService(_mockProcessRunner.Object, _mockRegistryService.Object);
+            _mockLogger = new Mock<ILogger<SystemSettingsService>>();
+            _service = new SystemSettingsService(_mockProcessRunner.Object, _mockRegistryService.Object, _mockLogger.Object);
         }
 
         [Fact]
