@@ -28,8 +28,10 @@ def read_json(file_path: str) -> dict:
 
 def write_json(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "w", encoding="utf-8") as f:
+    temp_path = file_path + ".tmp"
+    with open(temp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    os.replace(temp_path, file_path)
 
 def merge_settings(target: dict, source: dict) -> bool:
     changed = False
@@ -55,7 +57,7 @@ def check_installed(args: dict, request_id: str) -> dict:
         "requestId": request_id,
         "success": True,
         "changed": False,
-        "data": {"installed": installed},
+        "data": installed,
     }
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
@@ -80,7 +82,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             return {
                 "requestId": request_id,
                 "success": True,
-                "changed": False,
+                "changed": changed,
             }
 
         write_json(config_path, current_config)
