@@ -109,7 +109,7 @@ Host dev-server
         # Dry run
         response = plugin.apply_config(args, {"dryRun": True}, "req-2")
         self.assertTrue(response["success"])
-        self.assertFalse(response["changed"])
+        self.assertTrue(response["changed"])
         
         # Verify file was NOT changed
         with open(self.config_path, "r", encoding="utf-8") as f:

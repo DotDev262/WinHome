@@ -28,9 +28,12 @@ def read_text(file_path: str) -> str:
         raise Exception(f"Could not read {file_path}: {e}") from e
 
 def write_text(file_path: str, data: str) -> None:
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(file_path), mode=0o700, exist_ok=True)
+    tmp_path = file_path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
         f.write(data)
+    os.chmod(tmp_path, 0o600)
+    os.replace(tmp_path, file_path)
 
 def parse_ssh_config(text: str) -> list:
     blocks = []
@@ -177,15 +180,16 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
                 "changed": False,
             }
 
+        new_text = serialize_ssh_config(blocks)
+
         if dry_run:
             log(f"Would update {config_path} with new settings")
             return {
                 "requestId": request_id,
                 "success": True,
-                "changed": False,
+                "changed": True,
             }
 
-        new_text = serialize_ssh_config(blocks)
         write_text(config_path, new_text)
         log(f"Updated SSH config: {config_path}")
 
