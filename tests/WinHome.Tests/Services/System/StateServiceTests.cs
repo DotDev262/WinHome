@@ -149,7 +149,7 @@ namespace WinHome.Tests.Services.System
         public void LoadState_BackupFails_LogsWarningAndReturnsEmpty()
         {
             File.WriteAllText(_stateFilePath, "{ invalid json");
-            
+
             // Lock the file to force File.Move to throw an exception
             using var lockStream = new FileStream(_stateFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
