@@ -22,17 +22,21 @@ class TestGhPlugin(unittest.TestCase):
 
     def test_check_installed_returns_true_when_gh_is_found(self):
         with patch("plugin.shutil.which", side_effect=lambda name: "C:/Program Files/gh/gh.exe" if name in {"gh", "gh.exe"} else None):
-            response = self.run_main({"command": "check_installed", "args": {}})
+            response = self.run_main({"requestId": "req-1", "command": "check_installed", "args": {}})
 
+        self.assertEqual(response["requestId"], "req-1")
         self.assertTrue(response["success"])
-        self.assertTrue(response["data"]["installed"])
+        self.assertFalse(response["changed"])
+        self.assertTrue(response["data"])
 
     def test_check_installed_returns_false_when_gh_is_missing(self):
         with patch("plugin.shutil.which", return_value=None):
-            response = self.run_main({"command": "check_installed", "args": {}})
+            response = self.run_main({"requestId": "req-2", "command": "check_installed", "args": {}})
 
+        self.assertEqual(response["requestId"], "req-2")
         self.assertTrue(response["success"])
-        self.assertFalse(response["data"]["installed"])
+        self.assertFalse(response["changed"])
+        self.assertFalse(response["data"])
 
     def test_apply_writes_merged_config_and_returns_changed_true(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -44,6 +48,7 @@ class TestGhPlugin(unittest.TestCase):
 
             with patch("plugin.get_config_path", return_value=config_path):
                 response = self.run_main({
+                    "requestId": "req-3",
                     "command": "apply",
                     "args": {
                         "git_protocol": "https",
@@ -52,9 +57,13 @@ class TestGhPlugin(unittest.TestCase):
                         "pager": "less",
                         "http_unix_socket": "",
                         "browser": ""
+                    },
+                    "context": {
+                        "dryRun": False
                     }
                 })
 
+            self.assertEqual(response["requestId"], "req-3")
             self.assertTrue(response["success"])
             self.assertTrue(response["changed"])
 
@@ -85,6 +94,7 @@ class TestGhPlugin(unittest.TestCase):
 
             with patch("plugin.get_config_path", return_value=config_path):
                 response = self.run_main({
+                    "requestId": "req-4",
                     "command": "apply",
                     "args": {
                         "git_protocol": "https",
@@ -93,9 +103,13 @@ class TestGhPlugin(unittest.TestCase):
                         "pager": "less",
                         "http_unix_socket": "",
                         "browser": ""
+                    },
+                    "context": {
+                        "dryRun": False
                     }
                 })
 
+            self.assertEqual(response["requestId"], "req-4")
             self.assertTrue(response["success"])
             self.assertFalse(response["changed"])
 
@@ -110,13 +124,18 @@ class TestGhPlugin(unittest.TestCase):
 
             with patch("plugin.get_config_path", return_value=config_path):
                 response = self.run_main({
+                    "requestId": "req-5",
                     "command": "apply",
                     "args": {
                         "git_protocol": "https",
                         "dry_run": True
+                    },
+                    "context": {
+                        "dryRun": True
                     }
                 })
 
+            self.assertEqual(response["requestId"], "req-5")
             self.assertTrue(response["success"])
             self.assertTrue(response["changed"])
             self.assertFalse(os.path.exists(config_path))
@@ -128,20 +147,45 @@ class TestGhPlugin(unittest.TestCase):
 
             with patch("plugin.get_config_path", return_value=config_path):
                 response = self.run_main({
+                    "requestId": "req-6",
                     "command": "apply",
                     "args": {
                         "git_protocol": "https"
+                    },
+                    "context": {
+                        "dryRun": False
                     }
                 })
 
+            self.assertEqual(response["requestId"], "req-6")
             self.assertTrue(response["success"])
             self.assertTrue(response["changed"])
             self.assertTrue(os.path.isdir(os.path.dirname(config_path)))
             self.assertTrue(os.path.exists(config_path))
 
-    def test_unknown_command_returns_error(self):
-        response = self.run_main({"command": "explode", "args": {}})
+    def test_apply_returns_error_when_pyyaml_is_missing(self):
+        with patch.object(plugin, "yaml", None):
+            response = self.run_main({
+                "requestId": "req-7",
+                "command": "apply",
+                "args": {
+                    "git_protocol": "https"
+                },
+                "context": {
+                    "dryRun": False
+                }
+            })
+
+        self.assertEqual(response["requestId"], "req-7")
         self.assertFalse(response["success"])
+        self.assertFalse(response["changed"])
+        self.assertIn("PyYAML", response["error"])
+
+    def test_unknown_command_returns_error(self):
+        response = self.run_main({"requestId": "req-8", "command": "explode", "args": {}, "context": {}})
+        self.assertEqual(response["requestId"], "req-8")
+        self.assertFalse(response["success"])
+        self.assertFalse(response["changed"])
         self.assertIn("Unknown command", response["error"])
 
 
