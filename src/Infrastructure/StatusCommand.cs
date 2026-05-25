@@ -5,6 +5,7 @@ using WinHome.Services;
 using WinHome.Models;
 using WinHome.Interfaces;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 
 namespace WinHome.Infrastructure
 {
@@ -14,7 +15,7 @@ namespace WinHome.Infrastructure
         {
             var cmd = new Command("status") { Description = "Show apply status from .winhome-state.json" };
 
-            cmd.SetAction(() =>
+            cmd.SetAction((ParseResult result) =>
             {
                 var logger = services.GetService<ILogger>();
                 var writer = services.GetService<StateWriter>();
@@ -58,7 +59,7 @@ namespace WinHome.Infrastructure
                 return 0;
             });
 
-            root.AddCommand(cmd);
+            root.Add(cmd);
         }
     }
 }
