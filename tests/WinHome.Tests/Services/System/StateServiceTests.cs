@@ -41,7 +41,7 @@ namespace WinHome.Tests.Services.System
         // ── Valid state ────────────────────────────────────────────────────────────
 
         [Fact]
-        public void LoadState_ValidJson_ReturnsExpectedItems()
+        public void LoadState_LegacyJson_ReturnsExpectedItems()
         {
             var expected = new HashSet<string> { "packageA", "packageB" };
             File.WriteAllText(_stateFilePath, JsonSerializer.Serialize(expected));
@@ -50,6 +50,24 @@ namespace WinHome.Tests.Services.System
             var state = svc.LoadState();
 
             Assert.Equal(expected, state.AppliedItems);
+            _mockLogger.Verify(l => l.LogWarning(It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public void LoadState_StateDataJson_ReturnsExpectedItems()
+        {
+            var expectedState = new StateData
+            {
+                AppliedItems = new HashSet<string> { "pkg1" },
+                SystemSettingOriginals = new Dictionary<string, object> { { "setting1", "val1" } }
+            };
+            File.WriteAllText(_stateFilePath, JsonSerializer.Serialize(expectedState));
+
+            var svc = CreateService();
+            var state = svc.LoadState();
+
+            Assert.Equal(expectedState.AppliedItems, state.AppliedItems);
+            Assert.Equal("val1", state.SystemSettingOriginals["setting1"]?.ToString());
             _mockLogger.Verify(l => l.LogWarning(It.IsAny<string>()), Times.Never);
         }
 
@@ -125,6 +143,21 @@ namespace WinHome.Tests.Services.System
             // The original file should have been renamed to a .corrupted.<timestamp> file
             var backups = Directory.GetFiles(_testDir, "winhome.state.json.corrupted.*");
             Assert.Single(backups);
+        }
+
+        [Fact]
+        public void LoadState_BackupFails_LogsWarningAndReturnsEmpty()
+        {
+            File.WriteAllText(_stateFilePath, "{ invalid json");
+            
+            // Lock the file to force File.Move to throw an exception
+            using var lockStream = new FileStream(_stateFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+            var svc = CreateService();
+            var state = svc.LoadState();
+
+            Assert.Empty(state.AppliedItems);
+            _mockLogger.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("Could not back up corrupted state file"))), Times.AtLeastOnce);
         }
 
         [Fact]
