@@ -13,8 +13,11 @@ namespace WinHome.Tests.Services.System
         private readonly string _stateFilePath;
         private readonly Mock<ILogger> _mockLogger;
 
+        private readonly string? _originalEnvPath;
+
         public StateServiceTests()
         {
+            _originalEnvPath = Environment.GetEnvironmentVariable("WINHOME_STATE_PATH");
             _testDir = Path.Combine(Path.GetTempPath(), $"WinHomeStateTests_{Guid.NewGuid()}");
             Directory.CreateDirectory(_testDir);
             _stateFilePath = Path.Combine(_testDir, "winhome.state.json");
@@ -23,6 +26,7 @@ namespace WinHome.Tests.Services.System
 
         public void Dispose()
         {
+            Environment.SetEnvironmentVariable("WINHOME_STATE_PATH", _originalEnvPath);
             if (Directory.Exists(_testDir))
                 Directory.Delete(_testDir, recursive: true);
         }
@@ -99,8 +103,8 @@ namespace WinHome.Tests.Services.System
         [Fact]
         public void LoadState_WrongJsonType_ReturnsEmptyState()
         {
-            // A valid JSON object instead of an array — wrong type, will deserialize to null → empty set
-            File.WriteAllText(_stateFilePath, "{\"key\": \"value\"}");
+            // A valid JSON primitive instead of an object/array — wrong type, will fail both format deserializations and trigger corruption backup
+            File.WriteAllText(_stateFilePath, "\"a string, not an object\"");
 
             var svc = CreateService();
             var state = svc.LoadState();

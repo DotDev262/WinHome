@@ -79,7 +79,7 @@ namespace WinHome.Services.System
                 {
                     File.Move(_stateFilePath, backupPath);
                 }
-                catch (IOException moveEx)
+                catch (Exception moveEx)
                 {
                     _logger.LogWarning($"[State] Could not back up corrupted state file: {moveEx.Message}");
                 }
