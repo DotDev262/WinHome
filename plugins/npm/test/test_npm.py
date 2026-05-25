@@ -1,6 +1,5 @@
 import os
 import json
-import tempfile
 import sys
 from unittest.mock import patch
 from io import StringIO
@@ -103,12 +102,29 @@ def test_apply_dry_run(mock_get_path, tmp_path):
     assert "registry=https://registry.npmjs.org/" in content
     assert "save-exact" not in content
 
-def test_check_installed():
+@patch('shutil.which')
+def test_check_installed(mock_which):
+    mock_which.return_value = "/usr/local/bin/npm"
     request = {
         "requestId": "test-req-3",
         "command": "check_installed"
     }
-    # It might or might not be installed on test env, just check structure
     response = run_plugin(request)
     assert response["success"] is True
-    assert "installed" in response["data"]
+    assert response["data"] is True
+
+    # Test when npm is not installed
+    mock_which.return_value = None
+    response = run_plugin(request)
+    assert response["success"] is True
+    assert response["data"] is False
+
+def test_unknown_command():
+    request = {
+        "requestId": "test-req-4",
+        "command": "unknown_cmd"
+    }
+    response = run_plugin(request)
+    assert response["success"] is False
+    assert "error" in response
+    assert response["error"] == "Unknown command: unknown_cmd"
