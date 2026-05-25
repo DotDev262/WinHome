@@ -142,7 +142,7 @@ namespace WinHome.Tests
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
             _mockProcessRunner.Verify(
-                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("Set-AudioDevice -PlaybackVolume 50")), false),
+                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar")), false),
                 Times.Once);
         }
 
@@ -156,8 +156,9 @@ namespace WinHome.Tests
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
             _mockProcessRunner.Verify(
-                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains($"Set-AudioDevice -PlaybackVolume {value}")), false),
+                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar")), false),
                 Times.Once);
+
             _mockLogger.Verify(
                 l => l.Log(
                     Microsoft.Extensions.Logging.LogLevel.Warning,
