@@ -1,0 +1,123 @@
+import os
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+import json
+
+# Add src directory to path to import plugin
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+import plugin
+
+class TestDockerPlugin(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.config_path = os.path.join(self.temp_dir.name, "settings.json")
+        
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    @patch('plugin.shutil.which')
+    def test_check_installed(self, mock_which):
+        mock_which.return_value = "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe"
+        
+        response = plugin.check_installed({}, "req-1")
+        
+        self.assertTrue(response["success"])
+        self.assertTrue(response["data"]["installed"])
+        mock_which.assert_called_once()
+
+    def test_merge_settings(self):
+        target = {
+            "wslEngineEnabled": False,
+            "proxies": {
+                "httpProxy": "http://oldproxy:80"
+            },
+            "registryMirrors": ["https://old.mirror"]
+        }
+        
+        source = {
+            "wslEngineEnabled": True,
+            "experimental": True,
+            "proxies": {
+                "httpsProxy": "http://newproxy:443"
+            },
+            "registryMirrors": ["https://new.mirror"]
+        }
+        
+        changed = plugin.merge_settings(target, source)
+        
+        self.assertTrue(changed)
+        self.assertTrue(target["wslEngineEnabled"])
+        self.assertTrue(target["experimental"])
+        
+        # Nested dicts should merge
+        self.assertEqual(target["proxies"]["httpProxy"], "http://oldproxy:80")
+        self.assertEqual(target["proxies"]["httpsProxy"], "http://newproxy:443")
+        
+        # Arrays should overwrite
+        self.assertEqual(target["registryMirrors"], ["https://new.mirror"])
+
+    @patch('plugin.get_config_path')
+    def test_apply_config_dry_run(self, mock_get_path):
+        mock_get_path.return_value = self.config_path
+        
+        # Write initial config
+        with open(self.config_path, "w", encoding="utf-8") as f:
+            json.dump({"wslEngineEnabled": False}, f)
+            
+        args = {
+            "wslEngineEnabled": True
+        }
+        
+        # Dry run
+        response = plugin.apply_config(args, {"dryRun": True}, "req-2")
+        self.assertTrue(response["success"])
+        self.assertFalse(response["changed"])
+        
+        # Verify file was NOT changed
+        with open(self.config_path, "r", encoding="utf-8") as f:
+            content = json.load(f)
+        self.assertFalse(content["wslEngineEnabled"])
+
+    @patch('plugin.get_config_path')
+    def test_apply_config_real_run(self, mock_get_path):
+        mock_get_path.return_value = self.config_path
+        
+        args = {
+            "kubernetes": {
+                "enabled": True
+            }
+        }
+        
+        # Real run on missing file (should create it)
+        response = plugin.apply_config(args, {"dryRun": False}, "req-3")
+        self.assertTrue(response["success"])
+        self.assertTrue(response["changed"])
+        
+        # Verify file WAS created and changed
+        with open(self.config_path, "r", encoding="utf-8") as f:
+            content = json.load(f)
+        self.assertTrue(content["kubernetes"]["enabled"])
+        
+    @patch('plugin.get_config_path')
+    def test_apply_config_no_changes(self, mock_get_path):
+        mock_get_path.return_value = self.config_path
+        
+        # Write initial config
+        with open(self.config_path, "w", encoding="utf-8") as f:
+            json.dump({"kubernetes": {"enabled": True}}, f)
+            
+        args = {
+            "kubernetes": {
+                "enabled": True
+            }
+        }
+        
+        # Real run but no actual differences
+        response = plugin.apply_config(args, {"dryRun": False}, "req-4")
+        self.assertTrue(response["success"])
+        self.assertFalse(response["changed"])
+
+if __name__ == "__main__":
+    unittest.main()
