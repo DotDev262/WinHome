@@ -119,6 +119,8 @@ public static class CliBuilder
 
         var listSubCommand = new Command("list");
         listSubCommand.Description = "List all items currently managed by WinHome";
+        listSubCommand.Options.Add(verboseOption);
+        listSubCommand.Options.Add(quietOption);
         listSubCommand.SetAction(async (ParseResult result) =>
         {
             bool verbose = result.GetValue(verboseOption);
@@ -132,6 +134,8 @@ public static class CliBuilder
         backupSubCommand.Description = "Backup the current state file";
         var backupPathArgument = new Argument<string>("path") { Description = "Path to save the backup" };
         backupSubCommand.Arguments.Add(backupPathArgument);
+        backupSubCommand.Options.Add(verboseOption);
+        backupSubCommand.Options.Add(quietOption);
         backupSubCommand.SetAction(async (ParseResult result) =>
         {
             bool verbose = result.GetValue(verboseOption);
@@ -146,6 +150,8 @@ public static class CliBuilder
         restoreSubCommand.Description = "Restore the state file from a backup";
         var restorePathArgument = new Argument<string>("path") { Description = "Path to the backup file to restore" };
         restoreSubCommand.Arguments.Add(restorePathArgument);
+        restoreSubCommand.Options.Add(verboseOption);
+        restoreSubCommand.Options.Add(quietOption);
         restoreSubCommand.SetAction(async (ParseResult result) =>
         {
             bool verbose = result.GetValue(verboseOption);
