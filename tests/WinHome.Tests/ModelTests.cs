@@ -138,6 +138,33 @@ public class ModelTests
         Assert.Equal(original.DirectoryPath, deserialized.DirectoryPath);
     }
 
+    [Fact]
+    public void PluginManifest_ShouldDeserialize_FromPartialYaml()
+    {
+        // Arrange
+        var yaml = @"name: test-plugin
+main: src/plugin.py
+type: python
+capabilities:
+  - config_provider
+";
+
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var manifest = deserializer.Deserialize<PluginManifest>(yaml);
+
+        // Assert
+        Assert.NotNull(manifest);
+        Assert.Equal("test-plugin", manifest.Name);
+        Assert.Equal("src/plugin.py", manifest.Main);
+        Assert.Equal("python", manifest.Type);
+        Assert.Equal("1.0.0", manifest.Version);
+        Assert.Equal(string.Empty, manifest.DirectoryPath);
+        Assert.Single(manifest.Capabilities);
+        Assert.Equal("config_provider", manifest.Capabilities[0]);
+    }
+
     #endregion
 
     #region PluginRequest Tests
@@ -194,6 +221,29 @@ public class ModelTests
 
         var deserializedContext = Assert.IsType<JsonElement>(deserialized.Context);
         Assert.Equal("default", deserializedContext.GetProperty("profile").GetString());
+    }
+
+    [Theory]
+    [InlineData("{\"args\": [\"a\", \"b\"]}", JsonValueKind.Array)]
+    [InlineData("{\"args\": \"hello\"}", JsonValueKind.String)]
+    [InlineData("{\"args\": 42}", JsonValueKind.Number)]
+    [InlineData("{\"args\": null}", JsonValueKind.Null)]
+    public void PluginRequest_ShouldDeserialize_WithVariousArgTypes(string json, JsonValueKind expectedKind)
+    {
+        // Act
+        var request = JsonSerializer.Deserialize<PluginRequest>(json);
+
+        // Assert
+        Assert.NotNull(request);
+
+        if (expectedKind == JsonValueKind.Null)
+        {
+            Assert.Null(request.Args);
+            return;
+        }
+
+        var argsElement = Assert.IsType<JsonElement>(request.Args);
+        Assert.Equal(expectedKind, argsElement.ValueKind);
     }
 
     #endregion
@@ -255,6 +305,44 @@ public class ModelTests
 
         var deserializedData = Assert.IsType<JsonElement>(deserialized.Data);
         Assert.Equal("ok", deserializedData.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public void PluginResult_ShouldSerialize_WithErrorMessage()
+    {
+        // Arrange
+        var result = new PluginResult
+        {
+            RequestId = "req-err",
+            Success = false,
+            Changed = false,
+            Error = "Something went wrong"
+        };
+
+        // Act
+        var json = JsonSerializer.Serialize(result);
+
+        // Assert
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("Something went wrong", doc.RootElement.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public void PluginResult_ShouldDeserialize_MissingOptionalFields()
+    {
+        // Arrange
+        var json = "{\"requestId\":\"r1\",\"success\":true,\"changed\":true}";
+
+        // Act
+        var result = JsonSerializer.Deserialize<PluginResult>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("r1", result.RequestId);
+        Assert.True(result.Success);
+        Assert.True(result.Changed);
+        Assert.Null(result.Error);
+        Assert.Null(result.Data);
     }
 
     #endregion
