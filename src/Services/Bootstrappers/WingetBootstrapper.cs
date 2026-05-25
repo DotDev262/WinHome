@@ -41,9 +41,18 @@ namespace WinHome.Services.Bootstrappers
 
             try
             {
-                string tempDir = Path.Combine(Path.GetTempPath(), "WinHome_WingetInstall");
-                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
-                Directory.CreateDirectory(tempDir);
+                // Use a cryptographically secure random name to prevent path prediction
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+Directory.CreateDirectory(tempDir);
+
+// Restrict ACLs so only the current user can access this directory
+var security = new System.Security.AccessControl.DirectorySecurity();
+var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+    currentUser, 
+    System.Security.AccessControl.FileSystemRights.FullControl, 
+    System.Security.AccessControl.AccessControlType.Allow));
+Directory.SetAccessControl(tempDir, security);
 
                 string version = GetLatestVersion();
                 _logger.LogInfo($"[Bootstrapper] Latest Winget version detected: {version}");
