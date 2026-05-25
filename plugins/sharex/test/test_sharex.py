@@ -3,9 +3,11 @@ import sys
 import unittest
 from unittest.mock import patch, mock_open
 
-# Add src to sys.path so we can import plugin
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+# Append src to sys.path and remove it after import to avoid side effects
+_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(_src_path)
 import plugin
+sys.path.remove(_src_path)
 
 class TestShareXPlugin(unittest.TestCase):
     def test_deep_merge(self):
@@ -111,6 +113,21 @@ class TestShareXPlugin(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertFalse(res["changed"])
         mock_write.assert_not_called()
+
+    @patch('plugin.os.makedirs')
+    @patch('plugin.os.replace')
+    def test_write_json(self, mock_replace, mock_makedirs):
+        file_path = "dummy/path.json"
+        data = {"a": 1}
+        m_open = mock_open()
+        with patch('plugin.open', m_open):
+            plugin.write_json(file_path, data)
+        
+        mock_makedirs.assert_called_once_with("dummy", exist_ok=True)
+        m_open.assert_called_once_with(file_path + ".tmp", "w", encoding="utf-8")
+        handle = m_open()
+        handle.write.assert_called_with("\n")
+        mock_replace.assert_called_once_with(file_path + ".tmp", file_path)
 
 if __name__ == '__main__':
     unittest.main()

@@ -19,8 +19,10 @@ def read_json(file_path: str) -> dict:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception as e:
-        raise Exception(f"Could not read {file_path}: {e}") from e
+    except json.JSONDecodeError as e:
+        raise json.JSONDecodeError(f"Could not parse JSON in {file_path}: {e.msg}", e.doc, e.pos) from e
+    except OSError as e:
+        raise OSError(f"Could not read {file_path}: {e}") from e
 
 def write_json(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
