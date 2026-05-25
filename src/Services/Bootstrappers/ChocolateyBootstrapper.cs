@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
@@ -51,11 +52,17 @@ namespace WinHome.Services.Bootstrappers
                 using var process = Process.Start(psi);
                 if (process == null) throw new Exception($"Failed to start installer for {Name}");
 
+                var errorBuilder = new StringBuilder();
+                process.ErrorDataReceived += (s, e) => { if (e.Data != null) errorBuilder.AppendLine(e.Data); };
+                process.OutputDataReceived += (s, e) => { }; // Drain stdout to prevent pipe deadlock
+                process.BeginErrorReadLine();
+                process.BeginOutputReadLine();
+
                 process.WaitForExit();
 
                 if (process.ExitCode != 0)
                 {
-                    var error = process.StandardError.ReadToEnd();
+                    var error = errorBuilder.ToString();
                     if (error.Contains("remote name could not be resolved") || error.Contains("Operation timed out"))
                     {
                         Console.WriteLine($"[Bootstrapper] Network error installing {Name}. Retrying in 10 seconds...");

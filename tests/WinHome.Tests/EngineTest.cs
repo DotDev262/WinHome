@@ -46,7 +46,13 @@ namespace WinHome.Tests
             _mockSystemSettings.Setup(x => x.GetTweaksAsync(It.IsAny<Dictionary<string, object>>()))
                                .Returns(Task.FromResult<IEnumerable<RegistryTweak>>(new List<RegistryTweak>()));
             _mockPluginManager.Setup(m => m.DiscoverPlugins()).Returns(new List<PluginManifest>());
-            _mockStateService.Setup(s => s.LoadState()).Returns(new HashSet<string>());
+            _mockStateService.Setup(s => s.LoadState()).Returns(new StateData());
+            _mockSystemSettings
+                .Setup(s => s.ApplyNonRegistrySettingsAsync(It.IsAny<Dictionary<string, object>>(), It.IsAny<bool>()))
+                .Returns(Task.CompletedTask);
+            _mockSystemSettings
+                .Setup(s => s.CaptureOriginalSettingsAsync(It.IsAny<Dictionary<string, object>>()))
+                .ReturnsAsync(new Dictionary<string, object>());
 
             // 2. Setup Manager Dictionary
             _managers = new Dictionary<string, IPackageManager>
@@ -62,23 +68,7 @@ namespace WinHome.Tests
             var config = new Configuration();
             config.Apps.Add(new AppConfig { Id = "TestApp", Manager = "winget" });
             var mockLogger = new Mock<ILogger>();
-
-            var engine = new Engine(
-                _managers,
-                _mockDotfiles.Object,
-                _mockRegistry.Object,
-                _mockSystemSettings.Object,
-                _mockWsl.Object,
-                _mockGit.Object,
-                _mockEnv.Object,
-                _mockServiceManager.Object,
-                _mockScheduledTaskService.Object,
-                _mockPluginManager.Object,
-                _mockPluginRunner.Object,
-                _mockStateService.Object,
-                mockLogger.Object,
-                _mockRuntimeResolver.Object
-            );
+            var engine = CreateEngine(mockLogger);
 
             // Act
             // dryRun = false
@@ -99,23 +89,7 @@ namespace WinHome.Tests
             var config = new Configuration();
             config.Apps.Add(new AppConfig { Id = "DryRunApp", Manager = "winget" });
             var mockLogger = new Mock<ILogger>();
-
-            var engine = new Engine(
-                _managers,
-                _mockDotfiles.Object,
-                _mockRegistry.Object,
-                _mockSystemSettings.Object,
-                _mockWsl.Object,
-                _mockGit.Object,
-                _mockEnv.Object,
-                _mockServiceManager.Object,
-                _mockScheduledTaskService.Object,
-                _mockPluginManager.Object,
-                _mockPluginRunner.Object,
-                _mockStateService.Object,
-                mockLogger.Object,
-                _mockRuntimeResolver.Object
-            );
+            var engine = CreateEngine(mockLogger);
 
             // Act
             // dryRun = TRUE
@@ -128,6 +102,7 @@ namespace WinHome.Tests
                 true),
                 Times.Once);
         }
+
         [Fact]
         public async Task PrintDiffAsync_ShouldPrintCorrectDiff()
         {
@@ -136,25 +111,11 @@ namespace WinHome.Tests
             config.Apps.Add(new AppConfig { Id = "UnchangedApp", Manager = "winget" });
             config.Apps.Add(new AppConfig { Id = "NewApp", Manager = "winget" });
             var mockLogger = new Mock<ILogger>();
+            var engine = CreateEngine(mockLogger);
 
-            var engine = new Engine(
-                _managers,
-                _mockDotfiles.Object,
-                _mockRegistry.Object,
-                _mockSystemSettings.Object,
-                _mockWsl.Object,
-                _mockGit.Object,
-                _mockEnv.Object,
-                _mockServiceManager.Object,
-                _mockScheduledTaskService.Object,
-                _mockPluginManager.Object,
-                _mockPluginRunner.Object,
-                _mockStateService.Object,
-                mockLogger.Object,
-                _mockRuntimeResolver.Object
-            );
-
-            var previousState = new HashSet<string> { "winget:UnchangedApp", "winget:OldApp" };
+            var previousState = new StateData();
+            previousState.AppliedItems.Add("winget:UnchangedApp");
+            previousState.AppliedItems.Add("winget:OldApp");
             _mockStateService.Setup(s => s.LoadState()).Returns(previousState);
 
             // Act
@@ -338,12 +299,14 @@ namespace WinHome.Tests
             _mockSystemSettings
                 .Setup(s => s.GetTweaksAsync(It.IsAny<Dictionary<string, object>>()))
                 .ReturnsAsync(new List<RegistryTweak> { presetTweak });
-            _mockSystemSettings.Setup(s => s.GetFriendlyName("HKCU\\Software\\Preset", "PresetSetting")).Returns("system.preset");
+            _mockSystemSettings
+                .Setup(s => s.GetFriendlyName("HKCU\\Software\\Preset", "PresetSetting"))
+                .Returns("system.preset");
 
             var mockLogger = new Mock<ILogger>();
             var engine = CreateEngine(mockLogger);
 
-            _mockStateService.Setup(s => s.LoadState()).Returns(new HashSet<string>());
+            _mockStateService.Setup(s => s.LoadState()).Returns(new StateData());
 
             // Act
             await engine.PrintDiffAsync(config);
@@ -359,11 +322,10 @@ namespace WinHome.Tests
         {
             // Arrange
             var config = new Configuration();
-            var previousState = new HashSet<string>
-            {
-                "winget:OldApp",
-                "reg:HKCU\\Software\\Old|OldSetting"
-            };
+
+            var previousState = new StateData();
+            previousState.AppliedItems.Add("winget:OldApp");
+            previousState.AppliedItems.Add("reg:HKCU\\Software\\Old|OldSetting");
 
             _mockStateService.Setup(s => s.LoadState()).Returns(previousState);
             var mockLogger = new Mock<ILogger>();
@@ -375,7 +337,43 @@ namespace WinHome.Tests
             // Assert
             _mockWinget.Verify(m => m.Uninstall("OldApp", false), Times.Once);
             _mockRegistry.Verify(r => r.Revert("HKCU\\Software\\Old", "OldSetting", false), Times.Once);
-            _mockStateService.Verify(s => s.SaveState(It.Is<HashSet<string>>(set => set.Count == 0)), Times.Once);
+            _mockStateService.Verify(s => s.SaveState(It.Is<StateData>(sd => sd.AppliedItems.Count == 0)), Times.Once);
+        }
+
+        [Fact]
+        public async Task RunAsync_ShouldNotCaptureOriginals_WhenDryRun()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.SystemSettings["brightness"] = 80;
+            var mockLogger = new Mock<ILogger>();
+            var engine = CreateEngine(mockLogger);
+
+            // Act
+            await engine.RunAsync(config, true);
+
+            // Assert
+            _mockSystemSettings.Verify(s => s.CaptureOriginalSettingsAsync(It.IsAny<Dictionary<string, object>>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task PrintDiffAsync_ShouldShowSystemSettingsReverts()
+        {
+            // Arrange
+            var previousState = new StateData();
+            previousState.SystemSettingOriginals["brightness"] = 45;
+            _mockStateService.Setup(s => s.LoadState()).Returns(previousState);
+
+            var config = new Configuration();
+            var mockLogger = new Mock<ILogger>();
+            var engine = CreateEngine(mockLogger);
+
+            // Act
+            await engine.PrintDiffAsync(config);
+
+            // Assert
+            mockLogger.Verify(l => l.LogError(It.Is<string>(s => s.Contains("System Settings to Revert"))), Times.Once);
+            mockLogger.Verify(l => l.LogError(It.Is<string>(s => s.Contains("brightness"))), Times.Once);
         }
 
         private Engine CreateEngine(Mock<ILogger> logger)

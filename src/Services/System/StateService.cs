@@ -1,5 +1,6 @@
 using System.Text.Json;
 using WinHome.Interfaces;
+using WinHome.Models;
 
 namespace WinHome.Services.System
 {
@@ -7,7 +8,7 @@ namespace WinHome.Services.System
     {
         private readonly string _stateFilePath;
         private readonly ILogger _logger;
-        private HashSet<string> _inMemoryState;
+        private StateData _inMemoryState;
 
         public StateService(ILogger logger)
         {
@@ -18,36 +19,85 @@ namespace WinHome.Services.System
             _inMemoryState = LoadState();
         }
 
-        public HashSet<string> LoadState()
+        public StateData LoadState()
         {
-            if (!File.Exists(_stateFilePath)) return new HashSet<string>();
+            if (!File.Exists(_stateFilePath)) return new StateData();
             try
             {
                 // Use FileShare.ReadWrite to allow reading even if we are writing (though we lock on write)
                 using var stream = File.Open(_stateFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using var reader = new StreamReader(stream);
                 string json = reader.ReadToEnd();
-                return JsonSerializer.Deserialize<HashSet<string>>(json) ?? new HashSet<string>();
+
+                // Try to deserialize as new StateData format
+                try
+                {
+                    var stateData = JsonSerializer.Deserialize<StateData>(json);
+                    if (stateData != null) return stateData;
+                }
+                catch
+                {
+                    // Fall through to backward compatibility
+                }
+
+                // Backward compatibility: try to deserialize as old HashSet<string> format
+                try
+                {
+                    var legacyState = JsonSerializer.Deserialize<HashSet<string>>(json);
+                    if (legacyState != null)
+                    {
+                        return new StateData { AppliedItems = legacyState };
+                    }
+                }
+                catch
+                {
+                    // Fall through
+                }
+
+                return new StateData();
             }
             catch (Exception ex)
             {
                 _logger.LogWarning($"[State] Could not load state: {ex.Message}");
-                return new HashSet<string>();
+                return new StateData();
             }
         }
 
-        public void SaveState(HashSet<string> state)
+        public void SaveState(StateData state)
         {
-            _inMemoryState = state;
+            _inMemoryState = new StateData
+            {
+                AppliedItems = new HashSet<string>(state.AppliedItems),
+                SystemSettingOriginals = new Dictionary<string, object>(state.SystemSettingOriginals)
+            };
             FlushToDisk();
         }
 
         public void MarkAsApplied(string item)
         {
-            if (_inMemoryState.Add(item))
+            if (_inMemoryState.AppliedItems.Add(item))
             {
                 FlushToDisk();
             }
+        }
+
+        public void TrackSystemSettingOriginal(string settingKey, object originalValue)
+        {
+            _inMemoryState.SystemSettingOriginals[settingKey] = originalValue;
+            FlushToDisk();
+        }
+
+        public void RemoveSystemSettingOriginal(string settingKey)
+        {
+            if (_inMemoryState.SystemSettingOriginals.Remove(settingKey))
+            {
+                FlushToDisk();
+            }
+        }
+
+        public object? GetSystemSettingOriginal(string settingKey)
+        {
+            return _inMemoryState.SystemSettingOriginals.TryGetValue(settingKey, out var value) ? value : null;
         }
 
         private void FlushToDisk()
@@ -109,7 +159,7 @@ namespace WinHome.Services.System
 
         public IEnumerable<string> ListItems()
         {
-            return _inMemoryState;
+            return _inMemoryState.AppliedItems;
         }
     }
 }

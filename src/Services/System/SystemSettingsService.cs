@@ -266,6 +266,98 @@ namespace WinHome.Services.System
             return match?.SettingKey;
         }
 
+        public async Task<Dictionary<string, object>> CaptureOriginalSettingsAsync(Dictionary<string, object> settings)
+        {
+            return await Task.Run(() =>
+            {
+                var originals = new Dictionary<string, object>();
+                if (settings == null) return originals;
+
+                foreach (var setting in settings.Where(s => _nonRegistryKeys.Contains(s.Key.ToLower())))
+                {
+                    string key = setting.Key.ToLower();
+                    try
+                    {
+                        switch (key)
+                        {
+                            case "brightness":
+                                string brightCommand = "(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness";
+                                var brightResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", brightCommand });
+                                if (int.TryParse(brightResult?.Trim(), out int currentBrightness))
+                                    originals["brightness"] = currentBrightness;
+                                break;
+
+                            case "volume":
+                                string volCommand = @"[Math]::Round((New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar * 100)";
+                                var volResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", volCommand });
+                                if (int.TryParse(volResult?.Trim(), out int currentVolume))
+                                    originals["volume"] = currentVolume;
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Warning] Could not capture original value for '{key}': {ex.Message}");
+                    }
+                }
+
+                return originals;
+            });
+        }
+
+        public async Task RevertSystemSettingAsync(string settingKey, object originalValue, bool dryRun)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    string key = settingKey.ToLower();
+                    switch (key)
+                    {
+                        case "brightness":
+                            if (int.TryParse(originalValue?.ToString(), out int brightness))
+                            {
+                                string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
+                                if (dryRun)
+                                {
+                                    Console.ForegroundColor = ConsoleColor.Yellow;
+                                    Console.WriteLine($"[DryRun] Would revert brightness to {brightness}");
+                                    Console.ResetColor();
+                                }
+                                else
+                                {
+                                    _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
+                                    Console.WriteLine($"[System Settings] Reverted brightness to {brightness}");
+                                }
+                            }
+                            break;
+
+                        case "volume":
+                            if (int.TryParse(originalValue?.ToString(), out int volume))
+                            {
+                                string command = $@"$vol = [Math]::Round({volume} / 100.0, 2); (New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar = $vol";
+                                if (dryRun)
+                                {
+                                    Console.ForegroundColor = ConsoleColor.Yellow;
+                                    Console.WriteLine($"[DryRun] Would revert volume to {volume}");
+                                    Console.ResetColor();
+                                }
+                                else
+                                {
+                                    _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
+                                    Console.WriteLine($"[System Settings] Reverted volume to {volume}");
+                                }
+                            }
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Error] Failed to revert {settingKey}: {ex.Message}");
+                }
+            });
+        }
+
         public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun)
         {
             if (settings == null) return Task.CompletedTask;
@@ -302,9 +394,9 @@ namespace WinHome.Services.System
                             _logger.LogWarning("Volume value '{Value}' is out of range (0-100).", volume);
                             break;
                         }
-                        _processRunner.RunCommand("powershell", $"-Command \"Set-AudioDevice -PlaybackVolume {volume}\"", dryRun);
+                        string volCommand = $@"$vol = [Math]::Round({volume} / 100.0, 2); (New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar = $vol";
+                        _processRunner.RunCommand("powershell", $"-Command \"{volCommand}\"", dryRun);
                         break;
-
                     case "notification":
                         if (userSetting.Value is Dictionary<object, object> notificationConfig)
                         {

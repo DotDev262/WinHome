@@ -1,14 +1,18 @@
 using System.Collections.Generic;
+using WinHome.Models;
 
 namespace WinHome.Interfaces
 {
     public interface IStateService
     {
-        HashSet<string> LoadState();
-        void SaveState(HashSet<string> state);
+        StateData LoadState();      // returns StateData
+        void SaveState(StateData state);    // saves StateData
         void MarkAsApplied(string item);
-        void BackupState(string backupPath);
-        void RestoreState(string backupPath);
-        IEnumerable<string> ListItems();
+        void TrackSystemSettingOriginal(string settingKey, object originalValue); // store original settings before applying
+        void RemoveSystemSettingOriginal(string settingKey);    // clean up when settings are removed
+        object? GetSystemSettingOriginal(string settingKey);    // retrieve original for reverting
+        void BackupState(string backupPath);    //  backup copy of state file
+        void RestoreState(string backupPath);   //  restores state from a backup file
+        IEnumerable<string> ListItems();        // returns all currently applied items
     }
 }

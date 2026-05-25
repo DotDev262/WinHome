@@ -142,7 +142,7 @@ namespace WinHome.Tests
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
             _mockProcessRunner.Verify(
-                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("Set-AudioDevice -PlaybackVolume 50")), false),
+                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar")), false),
                 Times.Once);
         }
 
@@ -156,8 +156,9 @@ namespace WinHome.Tests
             await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
             _mockProcessRunner.Verify(
-                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains($"Set-AudioDevice -PlaybackVolume {value}")), false),
+                r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar")), false),
                 Times.Once);
+
             _mockLogger.Verify(
                 l => l.Log(
                     Microsoft.Extensions.Logging.LogLevel.Warning,
@@ -670,5 +671,119 @@ namespace WinHome.Tests
             var key = _service.GetFriendlyName(@"HKCU\Unknown\Path", "UnknownName");
             Assert.Null(key);
         }
+
+        [Fact]
+        public async Task CaptureOriginalSettingsAsync_Should_Capture_Brightness()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "brightness", 80 }
+            };
+
+            _mockProcessRunner
+                .Setup(r => r.RunCommandWithOutput("powershell",
+                    It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("CurrentBrightness"))))
+                .Returns("50");
+
+            var originals = await _service.CaptureOriginalSettingsAsync(settings);
+
+            Assert.True(originals.ContainsKey("brightness"));
+            Assert.Equal(50, originals["brightness"]);
+        }
+
+        [Fact]
+        public async Task CaptureOriginalSettingsAsync_Should_Capture_Volume()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "volume", 70 }
+            };
+
+            // _mockProcessRunner
+            //     .Setup(r => r.RunCommandWithOutput("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar"))))
+            //     .Returns("60");
+
+            _mockProcessRunner
+                .Setup(r => r.RunCommandWithOutput("powershell",
+                    It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("MasterVolumeLevelScalar"))))
+                .Returns("60");
+
+            var originals = await _service.CaptureOriginalSettingsAsync(settings);
+
+            Assert.True(originals.ContainsKey("volume"));
+            Assert.Equal(60, originals["volume"]);
+        }
+
+        [Fact]
+        public async Task RevertSystemSettingAsync_Should_Revert_Brightness()
+        {
+            const int originalBrightness = 50;
+
+            await _service.RevertSystemSettingAsync("brightness", originalBrightness, false);
+
+            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("WmiSetBrightness(1, 50)")), false), Times.Once);
+        }
+
+        [Fact]
+        public async Task RevertSystemSettingAsync_Should_Revert_Volume()
+        {
+            const int originalVolume = 60;
+
+            await _service.RevertSystemSettingAsync("volume", originalVolume, false);
+
+            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("MasterVolumeLevelScalar")), false), Times.Once);
+        }
+
+        [Fact]
+        public async Task RevertSystemSettingAsync_DryRun_Should_Not_Execute_Command()
+        {
+            const int originalBrightness = 50;
+
+            await _service.RevertSystemSettingAsync("brightness", originalBrightness, true);
+
+            _mockProcessRunner.Verify(r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task RevertSystemSettingAsync_DryRun_Should_Not_Execute_Command_Volume()
+        {
+            const int originalVolume = 60;
+
+            await _service.RevertSystemSettingAsync("volume", originalVolume, true);
+
+            _mockProcessRunner.Verify(r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CaptureOriginalSettingsAsync_Should_Skip_Notifications()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "notification", new Dictionary<object, object> { { "title", "Test" }, { "message", "Message" } } }
+            };
+
+            var originals = await _service.CaptureOriginalSettingsAsync(settings);
+
+            Assert.Empty(originals);
+        }
+
+        [Fact]
+        public async Task CaptureOriginalSettingsAsync_Should_Handle_Invalid_Output()
+        {
+            var settings = new Dictionary<string, object>
+            {
+                { "brightness", 80 }
+            };
+
+            _mockProcessRunner
+                .Setup(r => r.RunCommandWithOutput("powershell",
+                    It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("CurrentBrightness"))))
+                .Returns((string?)null);
+
+            var originals = await _service.CaptureOriginalSettingsAsync(settings);
+
+            Assert.Empty(originals);
+        }
+
     }
 }

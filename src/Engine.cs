@@ -109,7 +109,7 @@ namespace WinHome
             var previousState = _stateService.LoadState();
 
             // Cleanup
-            var itemsToRemove = previousState.Except(currentState).ToList();
+            var itemsToRemove = previousState.AppliedItems.Except(currentState.AppliedItems).ToList();
             if (itemsToRemove.Any())
             {
                 _logger.LogInfo("\n--- Cleaning Up ---");
@@ -129,6 +129,28 @@ namespace WinHome
                         }
                     }
                 }));
+            }
+
+            // Revert system settings that are no longer in config
+            if (OperatingSystem.IsWindows() && previousState.SystemSettingOriginals.Any())
+            {
+                var removedSystemSettings = previousState.SystemSettingOriginals.Keys
+                    .Where(k => !config.SystemSettings.ContainsKey(k))
+                    .ToList();
+
+                if (removedSystemSettings.Any())
+                {
+                    _logger.LogInfo("\n--- Reverting Removed System Settings ---");
+                    foreach (var settingKey in removedSystemSettings)
+                    {
+                        var originalValue = previousState.SystemSettingOriginals[settingKey];
+                        await _systemSettings.RevertSystemSettingAsync(settingKey, originalValue, dryRun);
+                        if (!dryRun)
+                        {
+                            _stateService.RemoveSystemSettingOriginal(settingKey);
+                        }
+                    }
+                }
             }
 
             // 1. Ensure System Managers (Scoop) are ready if needed by plugins
@@ -288,6 +310,17 @@ namespace WinHome
             if (config.SystemSettings.Any() && OperatingSystem.IsWindows())
             {
                 _logger.LogInfo("\n--- Applying System Settings ---");
+
+                // Capture original values before applying new settings
+                if (!dryRun)
+                {
+                    var originals = await _systemSettings.CaptureOriginalSettingsAsync(config.SystemSettings);
+                    foreach (var kvp in originals)
+                    {
+                        _stateService.TrackSystemSettingOriginal(kvp.Key, kvp.Value);
+                    }
+                }
+
                 await _systemSettings.ApplyNonRegistrySettingsAsync(config.SystemSettings, dryRun);
             }
 
@@ -327,11 +360,16 @@ namespace WinHome
             var previousState = _stateService.LoadState();
             var currentState = await BuildStateFromConfig(config);
 
-            var itemsToRemove = previousState.Except(currentState).ToList();
-            var itemsToAdd = currentState.Except(previousState).ToList();
-            var unchangedItems = previousState.Intersect(currentState).ToList();
+            var itemsToRemove = previousState.AppliedItems.Except(currentState.AppliedItems).ToList();
+            var itemsToAdd = currentState.AppliedItems.Except(previousState.AppliedItems).ToList();
+            var unchangedItems = previousState.AppliedItems.Intersect(currentState.AppliedItems).ToList();
 
-            if (!itemsToRemove.Any() && !itemsToAdd.Any())
+            // System settings reverts
+            var systemSettingsReverts = previousState.SystemSettingOriginals.Keys
+                .Where(k => !config.SystemSettings.ContainsKey(k))
+                .ToList();
+
+            if (!itemsToRemove.Any() && !itemsToAdd.Any() && !systemSettingsReverts.Any())
             {
                 _logger.LogSuccess("No changes detected. System is up to date.");
                 return;
@@ -343,6 +381,16 @@ namespace WinHome
                 foreach (var item in itemsToRemove)
                 {
                     _logger.LogError($"  - {FormatFriendlyName(item)}");
+                }
+            }
+
+            if (systemSettingsReverts.Any())
+            {
+                _logger.LogError("\n[-] System Settings to Revert:");
+                foreach (var setting in systemSettingsReverts)
+                {
+                    var originalValue = previousState.SystemSettingOriginals[setting];
+                    _logger.LogError($"  - {setting} → {originalValue}");
                 }
             }
 
@@ -393,14 +441,14 @@ namespace WinHome
             return item;
         }
 
-        private async Task<HashSet<string>> BuildStateFromConfig(Configuration config)
+        private async Task<StateData> BuildStateFromConfig(Configuration config)
         {
-            var state = new HashSet<string>();
+            var state = new StateData();
 
             // App managers
             foreach (var app in config.Apps)
             {
-                state.Add($"{app.Manager}:{app.Id}");
+                state.AppliedItems.Add($"{app.Manager}:{app.Id}");
             }
 
             // Registry tweaks
@@ -408,7 +456,7 @@ namespace WinHome
             var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
             foreach (var reg in allTweaks)
             {
-                state.Add($"reg:{reg.Path}|{reg.Name}");
+                state.AppliedItems.Add($"reg:{reg.Path}|{reg.Name}");
             }
 
             return state;
