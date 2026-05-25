@@ -229,14 +229,16 @@ namespace WinHome
                     {
                         _logger.LogInfo($"[Engine] Skipping previously applied {stepId}.");
                         // Record skipped if not present or different
-                        _stateWriter.RecordStep(new StepResult
+                        var skippedResult = new StepResult
                         {
                             StepId = stepId,
                             StepType = "app",
                             StepName = app.Id,
                             Status = StepStatus.Skipped,
                             AppliedAt = previous.AppliedAt
-                        });
+                        };
+                        _stateWriter.RecordStep(skippedResult);
+                        applyState[stepId] = skippedResult;
                         continue;
                     }
 
@@ -267,14 +269,16 @@ namespace WinHome
 
                             if (!dryRun)
                             {
-                                _stateWriter.RecordStep(new StepResult
+                                var successResult = new StepResult
                                 {
                                     StepId = stepId,
                                     StepType = "app",
                                     StepName = app.Id,
                                     Status = StepStatus.Succeeded,
                                     AppliedAt = DateTime.UtcNow
-                                });
+                                };
+                                _stateWriter.RecordStep(successResult);
+                                applyState[stepId] = successResult;
 
                                 _stateService.MarkAsApplied(stepId);
                             }
@@ -283,7 +287,8 @@ namespace WinHome
                         }
                         catch (Exception ex)
                         {
-                            _stateWriter.RecordStep(new StepResult
+                            var original = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex);
+                            var failedResult = new StepResult
                             {
                                 StepId = stepId,
                                 StepType = "app",
@@ -291,10 +296,13 @@ namespace WinHome
                                 Status = StepStatus.Failed,
                                 ErrorMessage = ex.Message,
                                 AppliedAt = DateTime.UtcNow
-                            });
+                            };
+
+                            try { _stateWriter.RecordStep(failedResult); } catch { }
+                            applyState[stepId] = failedResult;
 
                             _logger.LogError($"[Error] Failed applying {stepId}: {ex.Message}");
-                            if (!continueOnError) throw;
+                            if (!continueOnError) original.Throw();
                         }
                     }
                     else
@@ -378,14 +386,16 @@ namespace WinHome
                     if (!forceReapply && !dryRun && applyState.TryGetValue(stepId, out var previous) && previous.Status == StepStatus.Succeeded)
                     {
                         _logger.LogInfo($"[Engine] Skipping previously applied registry tweak {tweak.Path}|{tweak.Name}.");
-                        _stateWriter.RecordStep(new StepResult
+                        var skippedResult = new StepResult
                         {
                             StepId = stepId,
                             StepType = "registry",
                             StepName = tweak.Name,
                             Status = StepStatus.Skipped,
                             AppliedAt = previous.AppliedAt
-                        });
+                        };
+                        _stateWriter.RecordStep(skippedResult);
+                        applyState[stepId] = skippedResult;
                         continue;
                     }
 
@@ -395,21 +405,24 @@ namespace WinHome
 
                         if (!dryRun)
                         {
-                            _stateWriter.RecordStep(new StepResult
+                            var successResult = new StepResult
                             {
                                 StepId = stepId,
                                 StepType = "registry",
                                 StepName = tweak.Name,
                                 Status = StepStatus.Succeeded,
                                 AppliedAt = DateTime.UtcNow
-                            });
+                            };
+                            _stateWriter.RecordStep(successResult);
+                            applyState[stepId] = successResult;
 
                             _stateService.MarkAsApplied(stepId);
                         }
                     }
                     catch (Exception ex)
                     {
-                        _stateWriter.RecordStep(new StepResult
+                        var original = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex);
+                        var failedResult = new StepResult
                         {
                             StepId = stepId,
                             StepType = "registry",
@@ -417,10 +430,13 @@ namespace WinHome
                             Status = StepStatus.Failed,
                             ErrorMessage = ex.Message,
                             AppliedAt = DateTime.UtcNow
-                        });
+                        };
+
+                        try { _stateWriter.RecordStep(failedResult); } catch { }
+                        applyState[stepId] = failedResult;
 
                         _logger.LogError($"[Error] Registry tweak failed: {ex.Message}");
-                        if (!continueOnError) throw;
+                        if (!continueOnError) original.Throw();
                     }
                 }
             }

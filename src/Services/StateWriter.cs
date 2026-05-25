@@ -12,12 +12,12 @@ namespace WinHome.Services
         private readonly string _path;
         private readonly object _lock = new();
         private readonly JsonSerializerOptions _opts = new() { WriteIndented = true };
+        private Dictionary<string, StepResult>? _cache;
 
         public StateWriter(string? path = null)
         {
             var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var winHomeDir = Path.Combine(appData, "WinHome");
-            if (!Directory.Exists(winHomeDir)) Directory.CreateDirectory(winHomeDir);
 
             _path = path ?? Path.Combine(winHomeDir, ".winhome-state.json");
             _opts.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
@@ -27,20 +27,32 @@ namespace WinHome.Services
         {
             lock (_lock)
             {
-                if (!File.Exists(_path)) return new Dictionary<string, StepResult>();
+                if (_cache != null) return new Dictionary<string, StepResult>(_cache);
+
+                if (!File.Exists(_path))
+                {
+                    _cache = new Dictionary<string, StepResult>();
+                    return new Dictionary<string, StepResult>(_cache);
+                }
 
                 try
                 {
                     var text = File.ReadAllText(_path);
-                    if (string.IsNullOrWhiteSpace(text)) return new Dictionary<string, StepResult>();
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        _cache = new Dictionary<string, StepResult>();
+                        return new Dictionary<string, StepResult>(_cache);
+                    }
 
                     var data = JsonSerializer.Deserialize<Dictionary<string, StepResult>>(text, _opts);
-                    return data ?? new Dictionary<string, StepResult>();
+                    _cache = data ?? new Dictionary<string, StepResult>();
+                    return new Dictionary<string, StepResult>(_cache);
                 }
                 catch
                 {
                     // Do not throw on corrupted/invalid JSON; return empty state to allow recovery
-                    return new Dictionary<string, StepResult>();
+                    _cache = new Dictionary<string, StepResult>();
+                    return new Dictionary<string, StepResult>(_cache);
                 }
             }
         }
@@ -49,17 +61,24 @@ namespace WinHome.Services
         {
             lock (_lock)
             {
-                var state = Load();
-                state[result.StepId] = result;
+                if (_cache == null) Load();
+                if (_cache != null) _cache[result.StepId] = result;
+
+                var dir = Path.GetDirectoryName(_path);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
 
                 var tmp = _path + ".tmp";
-                var serialized = JsonSerializer.Serialize(state, _opts);
+                var serialized = JsonSerializer.Serialize(_cache, _opts);
                 File.WriteAllText(tmp, serialized);
-                if (File.Exists(_path))
+
+                try
                 {
                     File.Replace(tmp, _path, null);
                 }
-                else
+                catch (FileNotFoundException)
                 {
                     File.Move(tmp, _path);
                 }

@@ -376,6 +376,115 @@ namespace WinHome.Tests
             mockLogger.Verify(l => l.LogError(It.Is<string>(s => s.Contains("brightness"))), Times.Once);
         }
 
+        [Fact]
+        public async Task RunAsync_ShouldThrow_WhenStepFails_AndContinueOnErrorIsFalse()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.Apps.Add(new AppConfig { Id = "FailApp", Manager = "winget" });
+            var mockLogger = new Mock<ILogger>();
+            _mockWinget.Setup(x => x.Install(It.IsAny<AppConfig>(), It.IsAny<bool>())).Throws(new Exception("Install failed"));
+            var engine = CreateEngine(mockLogger);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() => engine.RunAsync(config, false, continueOnError: false));
+        }
+
+        [Fact]
+        public async Task RunAsync_ShouldNotThrow_WhenStepFails_AndContinueOnErrorIsTrue()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.Apps.Add(new AppConfig { Id = "FailApp", Manager = "winget" });
+            config.Apps.Add(new AppConfig { Id = "NextApp", Manager = "winget" });
+            var mockLogger = new Mock<ILogger>();
+            _mockWinget.Setup(x => x.Install(It.Is<AppConfig>(a => a.Id == "FailApp"), It.IsAny<bool>())).Throws(new Exception("Install failed"));
+            var engine = CreateEngine(mockLogger);
+
+            // Act
+            await engine.RunAsync(config, false, continueOnError: true);
+
+            // Assert
+            _mockWinget.Verify(x => x.Install(It.Is<AppConfig>(a => a.Id == "NextApp"), It.IsAny<bool>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RunAsync_ShouldSkipPreviouslyAppliedSteps()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.Apps.Add(new AppConfig { Id = "SkipApp", Manager = "winget" });
+            var mockLogger = new Mock<ILogger>();
+            var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
+            try
+            {
+                var stateWriter = new WinHome.Services.StateWriter(tmp);
+                stateWriter.RecordStep(new StepResult
+                {
+                    StepId = "winget:SkipApp",
+                    StepType = "app",
+                    StepName = "SkipApp",
+                    Status = StepStatus.Succeeded,
+                    AppliedAt = DateTime.UtcNow
+                });
+
+                var engine = new Engine(
+                    _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
+                    _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
+                    _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
+                    _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
+
+                // Act
+                await engine.RunAsync(config, false, forceReapply: false);
+
+                // Assert
+                _mockWinget.Verify(x => x.Install(It.IsAny<AppConfig>(), It.IsAny<bool>()), Times.Never);
+            }
+            finally
+            {
+                if (File.Exists(tmp)) File.Delete(tmp);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ShouldForceReapply_WhenFlagIsSet()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.Apps.Add(new AppConfig { Id = "ReapplyApp", Manager = "winget" });
+            var mockLogger = new Mock<ILogger>();
+            var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
+            try
+            {
+                var stateWriter = new WinHome.Services.StateWriter(tmp);
+                stateWriter.RecordStep(new StepResult
+                {
+                    StepId = "winget:ReapplyApp",
+                    StepType = "app",
+                    StepName = "ReapplyApp",
+                    Status = StepStatus.Succeeded,
+                    AppliedAt = DateTime.UtcNow
+                });
+
+                var engine = new Engine(
+                    _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
+                    _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
+                    _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
+                    _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
+
+                // Act
+                await engine.RunAsync(config, false, forceReapply: true);
+
+                // Assert
+                _mockWinget.Verify(x => x.Install(It.IsAny<AppConfig>(), It.IsAny<bool>()), Times.Once);
+            }
+            finally
+            {
+                if (File.Exists(tmp)) File.Delete(tmp);
+                if (File.Exists(tmp + ".tmp")) File.Delete(tmp + ".tmp");
+            }
+        }
+
         private Engine CreateEngine(Mock<ILogger> logger)
         {
             return new Engine(
