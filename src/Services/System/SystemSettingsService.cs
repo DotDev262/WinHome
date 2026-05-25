@@ -282,14 +282,14 @@ namespace WinHome.Services.System
                         {
                             case "brightness":
                                 string brightCommand = "(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness";
-                                var brightResult = _processRunner.RunCommandWithOutput("powershell", $"-Command \"{brightCommand}\"");
+                                var brightResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", brightCommand });
                                 if (int.TryParse(brightResult?.Trim(), out int currentBrightness))
                                     originals["brightness"] = currentBrightness;
                                 break;
 
                             case "volume":
                                 string volCommand = @"[Math]::Round((New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar * 100)";
-                                var volResult = _processRunner.RunCommandWithOutput("powershell", $"-Command \"{volCommand}\"");
+                                var volResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", volCommand });
                                 if (int.TryParse(volResult?.Trim(), out int currentVolume))
                                     originals["volume"] = currentVolume;
                                 break;
@@ -326,7 +326,7 @@ namespace WinHome.Services.System
                                 }
                                 else
                                 {
-                                    _processRunner.RunCommand("powershell", $"-Command \"{command}\"", false);
+                                    _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
                                     Console.WriteLine($"[System Settings] Reverted brightness to {brightness}");
                                 }
                             }
@@ -344,7 +344,7 @@ namespace WinHome.Services.System
                                 }
                                 else
                                 {
-                                    _processRunner.RunCommand("powershell", $"-Command \"{command}\"", false);
+                                    _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
                                     Console.WriteLine($"[System Settings] Reverted volume to {volume}");
                                 }
                             }

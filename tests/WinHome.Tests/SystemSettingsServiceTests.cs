@@ -681,7 +681,8 @@ namespace WinHome.Tests
             };
 
             _mockProcessRunner
-                .Setup(r => r.RunCommandWithOutput("powershell", It.Is<string>(s => s.Contains("CurrentBrightness"))))
+                .Setup(r => r.RunCommandWithOutput("powershell",
+                    It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("CurrentBrightness"))))
                 .Returns("50");
 
             var originals = await _service.CaptureOriginalSettingsAsync(settings);
@@ -698,8 +699,13 @@ namespace WinHome.Tests
                 { "volume", 70 }
             };
 
+            // _mockProcessRunner
+            //     .Setup(r => r.RunCommandWithOutput("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar"))))
+            //     .Returns("60");
+
             _mockProcessRunner
-                .Setup(r => r.RunCommandWithOutput("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar"))))
+                .Setup(r => r.RunCommandWithOutput("powershell",
+                    It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("MasterVolumeLevelScalar"))))
                 .Returns("60");
 
             var originals = await _service.CaptureOriginalSettingsAsync(settings);
@@ -715,7 +721,7 @@ namespace WinHome.Tests
 
             await _service.RevertSystemSettingAsync("brightness", originalBrightness, false);
 
-            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("WmiSetBrightness(1, 50)")), false), Times.Once);
+            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("WmiSetBrightness(1, 50)")), false), Times.Once);
         }
 
         [Fact]
@@ -725,7 +731,7 @@ namespace WinHome.Tests
 
             await _service.RevertSystemSettingAsync("volume", originalVolume, false);
 
-            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar")), false), Times.Once);
+            _mockProcessRunner.Verify(r => r.RunCommand("powershell", It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("MasterVolumeLevelScalar")), false), Times.Once);
         }
 
         [Fact]
@@ -770,7 +776,8 @@ namespace WinHome.Tests
             };
 
             _mockProcessRunner
-                .Setup(r => r.RunCommandWithOutput("powershell", It.Is<string>(s => s.Contains("CurrentBrightness"))))
+                .Setup(r => r.RunCommandWithOutput("powershell",
+                    It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("CurrentBrightness"))))
                 .Returns((string?)null);
 
             var originals = await _service.CaptureOriginalSettingsAsync(settings);
