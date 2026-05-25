@@ -33,12 +33,16 @@ def write_text(file_path: str, data: str) -> None:
     with open(tmp_path, "w", encoding="utf-8") as f:
         f.write(data)
     os.chmod(tmp_path, 0o600)
+    # Note: On Windows, os.chmod and mode=0o700 are largely no-ops for ACLs.
+    # We rely on the user's home directory inheriting secure default ACLs.
+    # For full Windows ACL enforcement, icacls or pywin32 would be required.
     os.replace(tmp_path, file_path)
 
-def parse_ssh_config(text: str) -> list:
+def parse_ssh_config(text: str) -> tuple:
     blocks = []
     current_block = {'name': None, 'lines': []}
     blocks.append(current_block)
+    has_trailing_newline = text.endswith('\n')
     
     for line in text.splitlines():
         stripped = line.strip()
@@ -62,14 +66,17 @@ def parse_ssh_config(text: str) -> list:
         else:
             current_block['lines'].append({'type': 'unknown', 'raw': line})
             
-    return blocks
+    return blocks, has_trailing_newline
 
-def serialize_ssh_config(blocks: list) -> str:
+def serialize_ssh_config(blocks: list, has_trailing_newline: bool) -> str:
     lines = []
     for b in blocks:
         for l in b['lines']:
             lines.append(l['raw'])
-    return "\n".join(lines) + ("\n" if lines else "")
+    res = "\n".join(lines)
+    if has_trailing_newline and res and not res.endswith('\n'):
+        res += '\n'
+    return res
 
 def merge_kv(block: dict, key: str, val: str) -> bool:
     changed = False
@@ -121,36 +128,46 @@ def merge_settings(blocks: list, args: dict) -> bool:
             
     # 2. Merge hosts
     for host_name, host_settings in hosts_args.items():
-        # find host block (case-insensitive) while preserving original casing in output
+        # find host blocks (case-insensitive) while preserving original casing in output
         normalized_host_name = str(host_name).casefold()
-        host_block = next(
-            (
-                b for b in blocks
-                if b['name'] is not None and str(b['name']).casefold() == normalized_host_name
-            ),
-            None
-        )
-        if not host_block:
+        matching_blocks = [
+            b for b in blocks 
+            if b['name'] is not None and str(b['name']).casefold() == normalized_host_name
+        ]
+        
+        if not matching_blocks:
             # create new host block
-            host_block = {'name': host_name, 'lines': []}
+            new_block = {'name': host_name, 'lines': []}
             
             # ensure previous block ends with empty line for spacing
             if blocks and blocks[-1]['lines'] and blocks[-1]['lines'][-1]['type'] != 'empty':
                 blocks[-1]['lines'].append({'type': 'empty', 'raw': ''})
                 
-            host_block['lines'].append({
+            new_block['lines'].append({
                 'type': 'kv', 
                 'raw': f"Host {host_name}", 
                 'key': 'Host', 
                 'val': host_name
             })
-            blocks.append(host_block)
+            blocks.append(new_block)
+            matching_blocks = [new_block]
             changed = True
             
         for k, v in host_settings.items():
             if k.lower() == 'host': continue
-            if merge_kv(host_block, k, v):
-                changed = True
+            
+            # Update key in all blocks where it exists
+            key_found = False
+            for b in matching_blocks:
+                if any(l['type'] == 'kv' and l['key'].lower() == k.lower() for l in b['lines']):
+                    if merge_kv(b, k, v):
+                        changed = True
+                    key_found = True
+            
+            # If key didn't exist in any matching block, append to the first one
+            if not key_found:
+                if merge_kv(matching_blocks[0], k, v):
+                    changed = True
                 
     return changed
 
@@ -170,7 +187,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         config_path = get_config_path()
         current_text = read_text(config_path)
         
-        blocks = parse_ssh_config(current_text)
+        blocks, has_trailing_newline = parse_ssh_config(current_text)
         changed = merge_settings(blocks, args)
 
         if not changed:
@@ -180,7 +197,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
                 "changed": False,
             }
 
-        new_text = serialize_ssh_config(blocks)
+        new_text = serialize_ssh_config(blocks, has_trailing_newline)
 
         if dry_run:
             log(f"Would update {config_path} with new settings")
