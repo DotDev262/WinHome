@@ -2,12 +2,38 @@ import os
 import json
 import tempfile
 import sys
+import subprocess
 from unittest import mock
 import pytest
 
-# Add src to sys.path to import the plugin script
+# Add src to sys.path to import the plugin script for direct function tests
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 import plugin
+
+PLUGIN_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/plugin.py'))
+
+def run_plugin(request_data, appdata_path):
+    """Helper to run the plugin via subprocess for full JSON protocol testing."""
+    env = os.environ.copy()
+    env["APPDATA"] = appdata_path
+    
+    result = subprocess.run(
+        [sys.executable, PLUGIN_SCRIPT],
+        input=json.dumps(request_data),
+        capture_output=True,
+        text=True,
+        env=env
+    )
+    
+    try:
+        return json.loads(result.stdout)
+    except Exception as e:
+        print(f"Failed to parse stdout: {result.stdout}")
+        print(f"Stderr: {result.stderr}")
+        raise e
+
+
+# --- Pure function tests (direct imports) ---
 
 def test_merge_settings():
     target = {"theme": "Light", "pluginSearchPaths": []}
@@ -39,42 +65,47 @@ def test_check_installed_true(mock_isdir, mock_getenv):
     assert response["success"] is True
     assert response["data"]["installed"] is True
 
+
+# --- Protocol tests (subprocess integration) ---
+
 def test_apply_config_dry_run():
     with tempfile.TemporaryDirectory() as tmpdir:
-        with mock.patch("plugin.get_settings_path") as mock_get_path:
-            settings_file = os.path.join(tmpdir, "Settings.json")
-            mock_get_path.return_value = settings_file
-            
-            args = {"theme": "Dark", "builtinPlugins": {"Calculator": {"enabled": True}}}
-            context = {"dryRun": True}
-            
-            # Application with a dry-run
-            response = plugin.apply_config(args, context, "req-2")
-            
-            assert response["success"] is True
-            assert response["changed"] is True
-            
-            # Settings.json should NOT be created
-            assert not os.path.exists(settings_file)
+        request = {
+            "requestId": "req-2",
+            "command": "apply",
+            "args": {"theme": "Dark", "builtinPlugins": {"Calculator": {"enabled": True}}},
+            "context": {"dryRun": True}
+        }
+        
+        response = run_plugin(request, tmpdir)
+        
+        assert response["success"] is True
+        assert response["changed"] is True
+        assert response["requestId"] == "req-2"
+        
+        # Settings.json should NOT be created
+        settings_file = os.path.join(tmpdir, "FlowLauncher", "Settings.json")
+        assert not os.path.exists(settings_file)
 
 def test_apply_config_real_run():
     with tempfile.TemporaryDirectory() as tmpdir:
-        with mock.patch("plugin.get_settings_path") as mock_get_path:
-            settings_file = os.path.join(tmpdir, "Settings.json")
-            mock_get_path.return_value = settings_file
-            
-            args = {"theme": "Dark", "hotkey": "Alt+Space"}
-            context = {"dryRun": False}
-            
-            # Application with dryRun = false
-            response = plugin.apply_config(args, context, "req-3")
-            
-            assert response["success"] is True
-            assert response["changed"] is True
-            
-            # Verify directories and Settings.json was physically created/written
-            assert os.path.exists(settings_file)
-            with open(settings_file, "r") as f:
-                data = json.load(f)
-                assert data["theme"] == "Dark"
-                assert data["hotkey"] == "Alt+Space"
+        request = {
+            "requestId": "req-3",
+            "command": "apply",
+            "args": {"theme": "Dark", "hotkey": "Alt+Space"},
+            "context": {"dryRun": False}
+        }
+        
+        response = run_plugin(request, tmpdir)
+        
+        assert response["success"] is True
+        assert response["changed"] is True
+        assert response["requestId"] == "req-3"
+        
+        # Verify directories and Settings.json was physically created/written
+        settings_file = os.path.join(tmpdir, "FlowLauncher", "Settings.json")
+        assert os.path.exists(settings_file)
+        with open(settings_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            assert data["theme"] == "Dark"
+            assert data["hotkey"] == "Alt+Space"

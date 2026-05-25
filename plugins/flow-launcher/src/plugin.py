@@ -127,7 +127,15 @@ def main():
         request = json.loads(input_data)
     except Exception as e:
         log(f"Failed to parse request: {e}")
-        sys.exit(1)
+        response = {
+            "requestId": "unknown", 
+            "success": False, 
+            "changed": False, 
+            "error": f"Failed to parse request: {str(e)}"
+        }
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
+        return
 
     request_id = request.get("requestId", "unknown")
     command = request.get("command")
