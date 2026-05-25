@@ -9,11 +9,13 @@ def log(msg):
     sys.stderr.flush()
 
 def get_config_path():
-    userprofile = os.getenv("USERPROFILE")
-    if not userprofile:
-        raise Exception("USERPROFILE environment variable not found")
+    home_dir = os.path.expanduser("~")
+    if not home_dir or home_dir == "~":
+        home_dir = os.getenv("HOME") or os.getenv("USERPROFILE")
+    if not home_dir:
+        raise Exception("Could not determine the user's home directory")
     
-    config_dir = os.path.join(userprofile, ".ssh")
+    config_dir = os.path.join(home_dir, ".ssh")
     return os.path.join(config_dir, "config")
 
 def read_text(file_path: str) -> str:
@@ -80,8 +82,9 @@ def merge_kv(block: dict, key: str, val: str) -> bool:
                 if not indent and block['name'] is not None:
                     indent = "    "
                     
-                line['val'] = val
-                line['raw'] = f"{indent}{key} {val}"
+                str_val = str(val)
+                line['val'] = str_val
+                line['raw'] = f"{indent}{key} {str_val}"
                 return True
             return False
             
@@ -115,8 +118,15 @@ def merge_settings(blocks: list, args: dict) -> bool:
             
     # 2. Merge hosts
     for host_name, host_settings in hosts_args.items():
-        # find host block
-        host_block = next((b for b in blocks if b['name'] == host_name), None)
+        # find host block (case-insensitive) while preserving original casing in output
+        normalized_host_name = str(host_name).casefold()
+        host_block = next(
+            (
+                b for b in blocks
+                if b['name'] is not None and str(b['name']).casefold() == normalized_host_name
+            ),
+            None
+        )
         if not host_block:
             # create new host block
             host_block = {'name': host_name, 'lines': []}
@@ -203,7 +213,15 @@ def main():
         request = json.loads(input_data)
     except Exception as e:
         log(f"Failed to parse request: {e}")
-        sys.exit(1)
+        response = {
+            "requestId": "unknown",
+            "success": False,
+            "changed": False,
+            "error": f"Failed to parse request: {str(e)}",
+        }
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
+        return
 
     request_id = request.get("requestId", "unknown")
     command = request.get("command")
