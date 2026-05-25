@@ -114,16 +114,17 @@ def run_setx(var_name: str, value: str) -> None:
         raise RuntimeError(f"setx {var_name} failed: {stderr}")
 
 
-def check_installed(_args: dict) -> dict:
-    installed = shutil.which("zoxide.exe") is not None
+def check_installed(_args: dict, request_id: str) -> dict:
+    installed = shutil.which("zoxide.exe") is not None or shutil.which("zoxide") is not None
     return {
+        "requestId": request_id,
         "success": True,
         "changed": False,
         "data": {"installed": installed},
     }
 
 
-def apply_config(args: dict, dry_run: bool) -> dict:
+def apply_config(args: dict, dry_run: bool, request_id: str) -> dict:
     changed = False
 
     env_vars = args.get("env_vars", {})
@@ -157,12 +158,14 @@ def apply_config(args: dict, dry_run: bool) -> dict:
         changed = True
 
     return {
+        "requestId": request_id,
         "success": True,
         "changed": changed,
     }
 
 
 def process_request(request: dict) -> dict:
+    request_id = request.get("requestId", "unknown")
     command = request.get("command")
     args = request.get("args", {})
     context = request.get("context", {})
@@ -170,10 +173,11 @@ def process_request(request: dict) -> dict:
 
     try:
         if command == "check_installed":
-            return check_installed(args)
+            return check_installed(args, request_id)
         if command == "apply":
-            return apply_config(args, dry_run)
+            return apply_config(args, dry_run, request_id)
         return {
+            "requestId": request_id,
             "success": False,
             "changed": False,
             "error": f"Unknown command: {command}",
@@ -181,6 +185,7 @@ def process_request(request: dict) -> dict:
     except Exception as exc:
         log(f"Failed to handle command '{command}': {exc}")
         return {
+            "requestId": request_id,
             "success": False,
             "changed": False,
             "error": str(exc),
@@ -188,27 +193,27 @@ def process_request(request: dict) -> dict:
 
 
 def main() -> None:
-    for raw_line in sys.stdin:
-        line = raw_line.strip()
-        if not line:
-            continue
+    input_data = sys.stdin.read()
+    if not input_data:
+        return
 
-        try:
-            request = json.loads(line)
-        except Exception as exc:
-            log(f"Failed to parse request: {exc}")
-            response = {
-                "success": False,
-                "changed": False,
-                "error": f"Invalid JSON: {exc}",
-            }
-            sys.stdout.write(json.dumps(response) + "\n")
-            sys.stdout.flush()
-            continue
-
-        response = process_request(request)
+    try:
+        request = json.loads(input_data)
+    except Exception as exc:
+        log(f"Failed to parse request: {exc}")
+        response = {
+            "requestId": "unknown",
+            "success": False,
+            "changed": False,
+            "error": f"Invalid JSON: {exc}",
+        }
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
+        return
+
+    response = process_request(request)
+    sys.stdout.write(json.dumps(response) + "\n")
+    sys.stdout.flush()
 
 
 if __name__ == "__main__":

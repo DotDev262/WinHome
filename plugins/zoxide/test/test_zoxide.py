@@ -12,17 +12,19 @@ spec.loader.exec_module(plugin)
 
 
 def test_check_installed_returns_true_when_zoxide_is_found():
-    with patch.object(plugin.shutil, "which", return_value="C:/Tools/zoxide.exe"):
-        result = plugin.check_installed({})
+    with patch.object(plugin.shutil, "which", side_effect=[None, "C:/Tools/zoxide"]):
+        result = plugin.check_installed({}, "req-1")
 
+    assert result["requestId"] == "req-1"
     assert result["success"] is True
     assert result["data"] == {"installed": True}
 
 
 def test_check_installed_returns_false_when_zoxide_is_missing():
     with patch.object(plugin.shutil, "which", return_value=None):
-        result = plugin.check_installed({})
+        result = plugin.check_installed({}, "req-2")
 
+    assert result["requestId"] == "req-2"
     assert result["success"] is True
     assert result["data"] == {"installed": False}
 
@@ -52,8 +54,10 @@ def test_apply_sets_env_vars_via_setx_when_values_differ():
                 "init": {},
             },
             dry_run=False,
+            request_id="req-3",
         )
 
+    assert result["requestId"] == "req-3"
     assert result["success"] is True
     assert result["changed"] is True
     assert mock_run.call_count == 1
@@ -87,8 +91,10 @@ def test_apply_skips_setx_when_env_vars_match():
                 "init": {},
             },
             dry_run=False,
+            request_id="req-4",
         )
 
+    assert result["requestId"] == "req-4"
     assert result["success"] is True
     assert result["changed"] is False
 
@@ -150,8 +156,10 @@ def test_apply_dry_run_does_not_write_files_or_run_setx():
                 "init": {"cmd": "z", "hook": "pwd", "no_cmd": False},
             },
             dry_run=True,
+            request_id="req-5",
         )
 
+    assert result["requestId"] == "req-5"
     assert result["success"] is True
     assert result["changed"] is True
     mock_run.assert_not_called()
@@ -190,8 +198,10 @@ def test_apply_returns_changed_false_when_nothing_needs_updating():
                 "init": {},
             },
             dry_run=False,
+            request_id="req-6",
         )
 
+    assert result["requestId"] == "req-6"
     assert result["success"] is True
     assert result["changed"] is False
     mock_run.assert_not_called()
@@ -226,7 +236,8 @@ def test_apply_handles_missing_profile_file_by_creating_it():
 
 
 def test_process_request_returns_error_for_unknown_command():
-    result = plugin.process_request({"command": "explode", "args": {}})
+    result = plugin.process_request({"requestId": "req-7", "command": "explode", "args": {}})
 
+    assert result["requestId"] == "req-7"
     assert result["success"] is False
     assert "Unknown command" in result["error"]
