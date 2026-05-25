@@ -317,7 +317,7 @@ def main() -> None:
             "error": f"Invalid JSON: {exc}",
         }) + "\n")
         sys.stdout.flush()
-        sys.exit(1)
+        return
 
     request_id = msg.get("requestId", "")
     command = msg.get("command", "")
@@ -353,6 +353,8 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
