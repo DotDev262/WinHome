@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
@@ -65,11 +66,17 @@ namespace WinHome.Services.Bootstrappers
                 throw new Exception($"Failed to start installer for {Name}");
             }
 
+            var errorBuilder = new StringBuilder();
+            process.ErrorDataReceived += (s, e) => { if (e.Data != null) errorBuilder.AppendLine(e.Data); };
+            process.OutputDataReceived += (s, e) => { }; // Drain stdout to prevent pipe deadlock
+            process.BeginErrorReadLine();
+            process.BeginOutputReadLine();
+
             process.WaitForExit();
 
             if (process.ExitCode != 0)
             {
-                var error = process.StandardError.ReadToEnd();
+                var error = errorBuilder.ToString();
                 // If it's just a DNS resolution error, it might be transient or need a retry
                 if (error.Contains("remote name could not be resolved"))
                 {
