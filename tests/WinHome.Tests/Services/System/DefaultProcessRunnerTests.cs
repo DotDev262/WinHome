@@ -269,6 +269,64 @@ namespace WinHome.Tests.Services.System
             Assert.True(string.IsNullOrWhiteSpace(output));
         }
 
+        /// <summary>RunAndCapture with IEnumerable arguments returns trimmed stdout for dotnet --version.</summary>
+        [Fact]
+        public void RunAndCapture_EnumerableArgs_ReturnsTrimmedStdout()
+        {
+            // Arrange
+            var runner = new DefaultProcessRunner();
+
+            // Act
+            string output = runner.RunAndCapture("dotnet", new[] { "--version" });
+
+            // Assert
+            Assert.False(string.IsNullOrWhiteSpace(output));
+            Assert.True(char.IsDigit(output[0]));
+            Assert.Equal(output.Trim(), output);
+        }
+
+        /// <summary>RunAndCapture with IEnumerable arguments returns empty string for a non-existent executable.</summary>
+        [Fact]
+        public void RunAndCapture_EnumerableArgs_NonExistentExecutable_ReturnsEmpty()
+        {
+            // Arrange
+            var runner = new DefaultProcessRunner();
+            string exe = "zzz-no-such-exe-" + Guid.NewGuid().ToString("N");
+
+            // Act
+            string output = runner.RunAndCapture(exe, new[] { "--version" });
+
+            // Assert
+            Assert.Equal(string.Empty, output);
+        }
+
+        /// <summary>RunAndCapture with IEnumerable arguments does not capture stderr output.</summary>
+        [Fact]
+        public void RunAndCapture_EnumerableArgs_StderrOnly_ReturnsEmptyOrWhitespace()
+        {
+            // Arrange
+            var runner = new DefaultProcessRunner();
+            string exe;
+            string[] args;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                exe = "cmd";
+                args = new[] { "/c", "echo stderr-only 1>&2" };
+            }
+            else
+            {
+                exe = "sh";
+                args = new[] { "-c", "echo stderr-only >&2" };
+            }
+
+            // Act
+            string output = runner.RunAndCapture(exe, args);
+
+            // Assert
+            Assert.True(string.IsNullOrWhiteSpace(output));
+        }
+
+
         private static (string exe, string args) Echo(string text)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

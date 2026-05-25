@@ -5,6 +5,7 @@ namespace WinHome.Services.System
 {
     public class DefaultProcessRunner : IProcessRunner
     {
+        [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
         public bool RunCommand(string fileName, string args, bool dryRun, Action<string>? onOutput = null)
         {
             if (dryRun) return true;
@@ -93,6 +94,7 @@ namespace WinHome.Services.System
             }
         }
 
+        [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
         public string RunCommandWithOutput(string fileName, string args)
         {
             return RunCommandWithOutput(fileName, args, null);
@@ -116,6 +118,7 @@ namespace WinHome.Services.System
             return RunProcessWithOutputInternal(startInfo, null);
         }
 
+        [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
         public string RunCommandWithOutput(string fileName, string args, string? standardInput)
         {
             var startInfo = new ProcessStartInfo
@@ -163,6 +166,7 @@ namespace WinHome.Services.System
             }
             catch { return string.Empty; }
         }
+        [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
         public string RunAndCapture(string fileName, string arguments)
         {
             try
@@ -175,6 +179,34 @@ namespace WinHome.Services.System
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
+                using var process = global::System.Diagnostics.Process.Start(psi);
+                if (process == null) return string.Empty;
+
+                string output = process.StandardOutput.ReadToEnd().Trim();
+                process.WaitForExit();
+                return output;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        public string RunAndCapture(string fileName, IEnumerable<string> arguments)
+        {
+            try
+            {
+                var psi = new global::System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = fileName,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                foreach (var arg in arguments)
+                {
+                    psi.ArgumentList.Add(arg);
+                }
                 using var process = global::System.Diagnostics.Process.Start(psi);
                 if (process == null) return string.Empty;
 

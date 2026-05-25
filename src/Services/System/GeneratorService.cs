@@ -205,8 +205,8 @@ namespace WinHome.Services.System
         {
             try
             {
-                string name = _processRunner.RunAndCapture("git", "config --global user.name");
-                string email = _processRunner.RunAndCapture("git", "config --global user.email");
+                string name = _processRunner.RunAndCapture("git", new[] { "config", "--global", "user.name" });
+                string email = _processRunner.RunAndCapture("git", new[] { "config", "--global", "user.email" });
 
                 if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(email)) return null;
 

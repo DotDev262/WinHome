@@ -60,9 +60,9 @@ namespace WinHome.Tests
             _mockSettings.Setup(s => s.GetCapturedSettingsAsync())
                          .ReturnsAsync(new Dictionary<string, object>());
 
-            _mockProcessRunner.Setup(r => r.RunAndCapture("git", "config --global user.name"))
+            _mockProcessRunner.Setup(r => r.RunAndCapture("git", It.Is<IEnumerable<string>>(args => string.Join(" ", args) == "config --global user.name")))
                               .Returns("Test User");
-            _mockProcessRunner.Setup(r => r.RunAndCapture("git", "config --global user.email"))
+            _mockProcessRunner.Setup(r => r.RunAndCapture("git", It.Is<IEnumerable<string>>(args => string.Join(" ", args) == "config --global user.email")))
                               .Returns("test@example.com");
 
             // Act
