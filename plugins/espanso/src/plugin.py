@@ -35,7 +35,7 @@ def _yaml_value(v) -> str:
     if isinstance(v, (int, float)):
         return str(v)
     s = str(v)
-    if any(c in s for c in (':',  '#', '[', ']', '{', '}', ',', '&', '*',
+    if any(c in s for c in (':', '#', '[', ']', '{', '}', ',', '&', '*',
                              '?', '|', '-', '<', '>', '=', '!', '%', '@',
                              '`', '"', "'")):
         escaped = s.replace('"', '\\"')
@@ -147,12 +147,9 @@ def _parse_yaml(text: str) -> dict:
             k, _, v = stripped.partition(":")
             k = k.strip()
             v = v.strip()
-            # Nested dict (e.g. params:)
             if not v:
                 current_item[k] = {}
-                _last_nested_key = k
             else:
-                # Try to attach to last nested dict if indented enough
                 last_val = list(current_item.values())[-1] if current_item else None
                 if isinstance(last_val, dict) and depth >= 6:
                     last_val[k] = _cast(v)
@@ -313,7 +310,12 @@ def main() -> None:
     try:
         msg = json.loads(sys.stdin.read())
     except json.JSONDecodeError as exc:
-        sys.stdout.write(json.dumps({"requestId": None, "error": f"Invalid JSON: {exc}"}) + "\n")
+        sys.stdout.write(json.dumps({
+            "requestId": None,
+            "success": False,
+            "changed": False,
+            "error": f"Invalid JSON: {exc}",
+        }) + "\n")
         sys.stdout.flush()
         sys.exit(1)
 
@@ -330,25 +332,20 @@ def main() -> None:
         elif command == "apply":
             response = handle_apply(request_id, args, dry_run=dry_run)
         else:
-            # response = {"requestId": request_id, "error": f"unknown command: {command!r}"}
             response = {
-    "requestId": request_id,
-    "success": False,
-    "changed": False,
-    "error": f"unknown command: {command!r}"
-}
-    except Exception as exc:  # noqa: BLE001
-        log(f"unhandled error: {exc}")
-        # response = {"requestId": request_id, "error": str(exc)}
-        response = {
                 "requestId": request_id,
                 "success": False,
                 "changed": False,
-                "error": str(exc)
-}
-
-
-
+                "error": f"unknown command: {command!r}",
+            }
+    except Exception as exc:  # noqa: BLE001
+        log(f"unhandled error: {exc}")
+        response = {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": str(exc),
+        }
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
@@ -356,3 +353,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    
