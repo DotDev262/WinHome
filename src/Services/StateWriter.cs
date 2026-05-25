@@ -15,7 +15,11 @@ namespace WinHome.Services
 
         public StateWriter(string? path = null)
         {
-            _path = path ?? Path.Combine(Environment.CurrentDirectory, ".winhome-state.json");
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var winHomeDir = Path.Combine(appData, "WinHome");
+            if (!Directory.Exists(winHomeDir)) Directory.CreateDirectory(winHomeDir);
+
+            _path = path ?? Path.Combine(winHomeDir, ".winhome-state.json");
             _opts.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         }
 
@@ -51,9 +55,16 @@ namespace WinHome.Services
                 var tmp = _path + ".tmp";
                 var serialized = JsonSerializer.Serialize(state, _opts);
                 File.WriteAllText(tmp, serialized);
-                File.Copy(tmp, _path, true);
-                File.Delete(tmp);
+                if (File.Exists(_path))
+                {
+                    File.Replace(tmp, _path, null);
+                }
+                else
+                {
+                    File.Move(tmp, _path);
+                }
             }
         }
     }
 }
+

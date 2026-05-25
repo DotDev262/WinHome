@@ -37,10 +37,10 @@ namespace WinHome.Infrastructure
                     var r = kv.Value;
                     var icon = r.Status switch
                     {
-                        StepStatus.Succeeded => "✅",
-                        StepStatus.Failed => "❌",
-                        StepStatus.Skipped => "⏭",
-                        _ => "?"
+                        StepStatus.Succeeded => "[OK]",
+                        StepStatus.Failed => "[FAIL]",
+                        StepStatus.Skipped => "[SKIP]",
+                        _ => "[?]"
                     };
 
                     string label = r.StepName ?? kv.Key;
@@ -62,3 +62,4 @@ namespace WinHome.Infrastructure
         }
     }
 }
+

@@ -51,7 +51,7 @@ public class AppRunner
             // Resolve Secrets
             _secretResolver.ResolveObject(config);
 
-            await _engine.RunAsync(config, dryRun, profile, debug, diff, json, force, continueOnError);
+            await _engine.RunAsync(config, dryRun, profile, debug, diff, force, continueOnError);
             return 0;
         }
         catch (Exception ex)
