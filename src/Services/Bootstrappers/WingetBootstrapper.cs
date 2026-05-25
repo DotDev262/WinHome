@@ -41,18 +41,21 @@ namespace WinHome.Services.Bootstrappers
 
             try
             {
-                // Use a cryptographically secure random name to prevent path prediction
-            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-Directory.CreateDirectory(tempDir);
+                // FIX: Use a randomized name with a "WinHome_" prefix for debuggability
+                string tempDir = Path.Combine(Path.GetTempPath(), "WinHome_" + Path.GetRandomFileName());
+                Directory.CreateDirectory(tempDir);
 
-// Restrict ACLs so only the current user can access this directory
-var security = new System.Security.AccessControl.DirectorySecurity();
-var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
-security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
-    currentUser, 
-    System.Security.AccessControl.FileSystemRights.FullControl, 
-    System.Security.AccessControl.AccessControlType.Allow));
-Directory.SetAccessControl(tempDir, security);
+                // FIX: Platform guard for Windows-only ACL APIs to prevent crashes on Linux CI
+                if (OperatingSystem.IsWindows())
+                {
+                    var security = new System.Security.AccessControl.DirectorySecurity();
+                    var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+                    security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+                        currentUser,
+                        System.Security.AccessControl.FileSystemRights.FullControl,
+                        System.Security.AccessControl.AccessControlType.Allow));
+                    Directory.SetAccessControl(tempDir, security);
+                }
 
                 string version = GetLatestVersion();
                 _logger.LogInfo($"[Bootstrapper] Latest Winget version detected: {version}");
