@@ -310,7 +310,7 @@ namespace WinHome
             if (config.SystemSettings.Any() && OperatingSystem.IsWindows())
             {
                 _logger.LogInfo("\n--- Applying System Settings ---");
-                
+
                 // Capture original values before applying new settings
                 if (!dryRun)
                 {
