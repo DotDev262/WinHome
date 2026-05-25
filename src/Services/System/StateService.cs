@@ -68,7 +68,7 @@ namespace WinHome.Services.System
             _inMemoryState = new StateData
             {
                 AppliedItems = new HashSet<string>(state.AppliedItems),
-                SystemSettingOriginals = new Dictionary<string, object>(_inMemoryState.SystemSettingOriginals)
+                SystemSettingOriginals = new Dictionary<string, object>(state.SystemSettingOriginals)
             };
             FlushToDisk();
         }

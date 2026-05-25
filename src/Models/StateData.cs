@@ -9,11 +9,9 @@ namespace WinHome.Models
     /// </summary>
     public class StateData
     {
-        [YamlMember(Alias = "applied_items")]
         [JsonPropertyName("applied_items")]
         public HashSet<string> AppliedItems { get; set; } = new();
 
-        [YamlMember(Alias = "system_setting_originals")]
         [JsonPropertyName("system_setting_originals")]
         public Dictionary<string, object> SystemSettingOriginals { get; set; } = new();
     }
