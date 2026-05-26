@@ -1,0 +1,15 @@
+name: rainmeter
+version: 0.1.0
+type: plugin
+description: >-
+  WinHome plugin to manage Rainmeter desktop customization settings.
+entry: src/plugin.py
+commands:
+  - name: check_installed
+    description: Detect whether Rainmeter is installed on the system.
+  - name: apply
+    description: Apply or preview settings to the Rainmeter INI config.
+author: WinHome Contributor
+license: MIT
+platforms:
+  - windows
