@@ -1,0 +1,185 @@
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
+
+import json
+import os
+import shutil
+import sys
+import copy 
+import yaml
+
+
+PLUGIN_NAME = "yasb"
+
+
+def log(message: str) -> None:
+    sys.stderr.write(f"[{PLUGIN_NAME}-plugin] {message}\n")
+    sys.stderr.flush()
+
+
+def get_user_profile() -> str:
+    user_profile = os.getenv("USERPROFILE") or os.getenv("HOME")
+
+    if not user_profile:
+        raise Exception("USERPROFILE environment variable not found")
+
+    return user_profile
+
+
+def get_config_dir() -> str:
+    return os.path.join(get_user_profile(), ".config", "yasb")
+
+
+def get_config_path() -> str:
+    return os.path.join(get_config_dir(), "config.yaml")
+
+
+def read_yaml(file_path: str) -> dict:
+    if not os.path.exists(file_path):
+        return {}
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as file_handle:
+            data = yaml.safe_load(file_handle)
+            return data if isinstance(data, dict) else {}
+    except Exception as error:
+        raise Exception(f"Could not parse {file_path}: {error}") from error
+
+
+def write_yaml(file_path: str, data: dict) -> None:
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    with open(file_path, "w", encoding="utf-8") as file_handle:
+        yaml.safe_dump(data, file_handle, default_flow_style=False, sort_keys=False)
+
+
+
+
+def merge_settings(target: dict, source: dict, depth: int = 0) -> bool:
+    """Deep-merge `source` into `target`.
+
+    Behavior:
+    - Dict values are merged recursively.
+    - At the top level (depth==0), existing scalar values in `target` are preserved
+      and will not be overwritten by `source`.
+    - Nested scalar values (depth>0) are overwritten when different or missing.
+
+    Returns True if `target` was modified.
+    """
+    changed = False
+
+    for key, value in source.items():
+        if isinstance(value, dict):
+            if key not in target or not isinstance(target[key], dict):
+                target[key] = {}
+                changed = True
+
+            if merge_settings(target[key], value, depth + 1):
+                changed = True
+        else:
+            # At the top level, do not overwrite existing scalar values
+            if depth == 0 and key in target:
+                # preserve existing top-level scalar
+                continue
+
+            if key not in target or target[key] != value:
+                target[key] = value
+                changed = True
+
+    return changed
+
+
+
+
+
+def check_installed(request_id: str) -> dict:
+    installed = (
+        shutil.which("yasb") is not None
+        or shutil.which("yasb.exe") is not None
+        or os.path.isdir(get_config_dir())
+    )
+
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": False,
+        "data": {"installed": installed},
+    }
+
+
+def apply_config(request_id: str, args: dict, context: dict) -> dict:
+    dry_run = bool(context.get("dryRun", False))
+
+    if not isinstance(args, dict):
+        raise ValueError("args must be an object")
+
+    config_path = get_config_path()
+    current_config = read_yaml(config_path)
+    
+    # Securely create a deep copy to evaluate alterations cleanly
+    updated_config = copy.deepcopy(current_config)
+    changed = merge_settings(updated_config, args)
+
+    if dry_run:
+        log(f"Would update {config_path}" if changed else f"No changes for {config_path}")
+        return {
+            "requestId": request_id,
+            "success": True,
+            "changed": False,
+            "data": {"wouldChange": changed},
+        }
+
+    if changed:
+        # Write the mutated copy
+        write_yaml(config_path, updated_config)
+        log(f"Updated yasb config: {config_path}")
+
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": changed,
+    }
+
+
+def main() -> None:
+    input_data = sys.stdin.read()
+
+    if not input_data:
+        return
+
+    try:
+        request = json.loads(input_data)
+    except Exception as error:
+        log(f"Failed to parse request: {error}")
+        sys.exit(1)
+
+    request_id = request.get("requestId", "unknown")
+    command = request.get("command")
+    args = request.get("args", {})
+    context = request.get("context", {})
+
+    response = {
+        "requestId": request_id,
+        "success": False,
+        "changed": False,
+    }
+
+    try:
+        if command == "check_installed":
+            response = check_installed(request_id)
+        elif command == "apply":
+            response = apply_config(request_id, args, context)
+        else:
+            response["error"] = f"Unknown command: {command}"
+    except Exception as fatal_error:
+        response["error"] = f"Internal Script Error: {str(fatal_error)}"
+
+    sys.stdout.write(json.dumps(response) + "\n")
+    sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()
