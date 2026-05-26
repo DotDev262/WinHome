@@ -57,7 +57,7 @@ class TestShareXPlugin(unittest.TestCase):
         mock_which.return_value = "C:\\path\\ShareX.exe"
         res = plugin.check_installed({}, "req-1")
         self.assertTrue(res["success"])
-        self.assertTrue(res["data"]["installed"])
+        self.assertTrue(res["data"])
 
     @patch('plugin.shutil.which')
     @patch('plugin.os.path.exists')
@@ -66,7 +66,7 @@ class TestShareXPlugin(unittest.TestCase):
         mock_exists.return_value = True
         res = plugin.check_installed({}, "req-2")
         self.assertTrue(res["success"])
-        self.assertTrue(res["data"]["installed"])
+        self.assertTrue(res["data"])
 
     @patch('plugin.get_config_path')
     @patch('plugin.read_json')
@@ -123,7 +123,7 @@ class TestShareXPlugin(unittest.TestCase):
         with patch('plugin.open', m_open):
             plugin.write_json(file_path, data)
         
-        mock_makedirs.assert_called_once_with("dummy", exist_ok=True)
+        mock_makedirs.assert_called_once_with("dummy", mode=0o700, exist_ok=True)
         m_open.assert_called_once_with(file_path + ".tmp", "w", encoding="utf-8")
         handle = m_open()
         handle.write.assert_called_with("\n")

@@ -25,7 +25,7 @@ def read_json(file_path: str) -> dict:
         raise OSError(f"Could not read {file_path}: {e}") from e
 
 def write_json(file_path: str, data: dict) -> None:
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    os.makedirs(os.path.dirname(file_path), mode=0o700, exist_ok=True)
     tmp_path = file_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
@@ -57,7 +57,7 @@ def check_installed(args: dict, request_id: str) -> dict:
         "requestId": request_id,
         "success": True,
         "changed": False,
-        "data": {"installed": installed},
+        "data": installed,
     }
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
