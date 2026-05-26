@@ -130,13 +130,13 @@ namespace WinHome.Services.System
             {
                 string json = JsonSerializer.Serialize(_inMemoryState, new JsonSerializerOptions { WriteIndented = true });
                 string tmpPath = _stateFilePath + ".tmp";
-                
+
                 using (var stream = File.Open(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None))
                 using (var writer = new StreamWriter(stream))
                 {
                     writer.Write(json);
                 }
-                
+
                 File.Move(tmpPath, _stateFilePath, overwrite: true);
             }
             catch (Exception ex)

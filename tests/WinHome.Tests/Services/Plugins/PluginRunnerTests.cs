@@ -115,7 +115,7 @@ namespace WinHome.Tests.Services.Plugins
             var runner = CreateRunner(mockLogger);
 
             var manifest = CreateCrossPlatformManifest("test-stderr-slow",
-                "powershell -NoProfile -Command \"[Console]::Error.WriteLine('Warning: Doing some work before sleeping'); Start-Sleep -Seconds 5\"",
+                "powershell -NoProfile -Command \"[Console]::Error.WriteLine('Warning: Doing some work before sleeping'); [Console]::Error.Flush(); Start-Sleep -Seconds 5\"",
                 "echo 'Warning: Doing some work before sleeping' >&2\nsleep 5");
 
             // Act
