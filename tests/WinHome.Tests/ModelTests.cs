@@ -1,6 +1,7 @@
 using System.Text.Json;
 using YamlDotNet.Serialization;
 using WinHome.Models;
+using WinHome.Models.Plugins;
 
 namespace WinHome.Tests;
 
@@ -74,6 +75,274 @@ public class ModelTests
         Assert.Equal(original.Manager, deserialized.Manager);
         Assert.Equal(original.Version, deserialized.Version);
         Assert.Equal(original.Params, deserialized.Params);
+    }
+
+    #endregion
+
+    #region PluginManifest Tests
+
+    [Fact]
+    public void PluginManifest_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var manifest = new PluginManifest();
+
+        // Assert
+        Assert.Equal(string.Empty, manifest.Name);
+        Assert.Equal("1.0.0", manifest.Version);
+        Assert.Equal("executable", manifest.Type);
+        Assert.Equal(string.Empty, manifest.Main);
+        Assert.NotNull(manifest.Capabilities);
+        Assert.Empty(manifest.Capabilities);
+        Assert.Equal(string.Empty, manifest.DirectoryPath);
+    }
+
+    [Fact]
+    public void PluginManifest_ShouldRoundTrip_YamlSerialization()
+    {
+        // Arrange
+        var original = new PluginManifest
+        {
+            Name = "sample-plugin",
+            Version = "2.0.0",
+            Type = "typescript",
+            Main = "dist/index.js",
+            Capabilities = new List<string> { "config", "validate" },
+            DirectoryPath = "/plugins/sample"
+        };
+
+        var serializer = new SerializerBuilder().Build();
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var yamlString = serializer.Serialize(original);
+
+        // Assert serialized contract (YAML keys and list values)
+        Assert.Contains("name: sample-plugin", yamlString);
+        Assert.Contains("version: 2.0.0", yamlString);
+        Assert.Contains("type: typescript", yamlString);
+        Assert.Contains("main: dist/index.js", yamlString);
+        Assert.Contains("capabilities:", yamlString);
+        Assert.Contains("- config", yamlString);
+        Assert.Contains("- validate", yamlString);
+
+        var deserialized = deserializer.Deserialize<PluginManifest>(yamlString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.Name, deserialized.Name);
+        Assert.Equal(original.Version, deserialized.Version);
+        Assert.Equal(original.Type, deserialized.Type);
+        Assert.Equal(original.Main, deserialized.Main);
+        Assert.Equal(original.Capabilities, deserialized.Capabilities);
+        Assert.Equal(original.DirectoryPath, deserialized.DirectoryPath);
+    }
+
+    [Fact]
+    public void PluginManifest_ShouldDeserialize_FromPartialYaml()
+    {
+        // Arrange
+        var yaml = @"name: test-plugin
+main: src/plugin.py
+type: python
+capabilities:
+  - config_provider
+";
+
+        var deserializer = new DeserializerBuilder().Build();
+
+        // Act
+        var manifest = deserializer.Deserialize<PluginManifest>(yaml);
+
+        // Assert
+        Assert.NotNull(manifest);
+        Assert.Equal("test-plugin", manifest.Name);
+        Assert.Equal("src/plugin.py", manifest.Main);
+        Assert.Equal("python", manifest.Type);
+        Assert.Equal("1.0.0", manifest.Version);
+        Assert.Equal(string.Empty, manifest.DirectoryPath);
+        Assert.Single(manifest.Capabilities);
+        Assert.Equal("config_provider", manifest.Capabilities[0]);
+    }
+
+    #endregion
+
+    #region PluginRequest Tests
+
+    [Fact]
+    public void PluginRequest_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var request = new PluginRequest();
+
+        // Assert
+        Assert.False(string.IsNullOrWhiteSpace(request.RequestId));
+        Assert.Equal(string.Empty, request.Command);
+        Assert.Null(request.Args);
+        Assert.Null(request.Context);
+    }
+
+    [Fact]
+    public void PluginRequest_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new PluginRequest
+        {
+            RequestId = "req-123",
+            Command = "apply",
+            Args = new { name = "demo" },
+            Context = new { profile = "default" }
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+
+        // Assert serialized contract (JSON property casing)
+        using var jsonDoc = JsonDocument.Parse(jsonString);
+        var root = jsonDoc.RootElement;
+        Assert.True(root.TryGetProperty("requestId", out var requestIdElement));
+        Assert.Equal("req-123", requestIdElement.GetString());
+        Assert.True(root.TryGetProperty("command", out var commandElement));
+        Assert.Equal("apply", commandElement.GetString());
+        Assert.True(root.TryGetProperty("args", out var argsElement));
+        Assert.Equal(JsonValueKind.Object, argsElement.ValueKind);
+        Assert.True(root.TryGetProperty("context", out var contextElement));
+        Assert.Equal(JsonValueKind.Object, contextElement.ValueKind);
+
+        var deserialized = JsonSerializer.Deserialize<PluginRequest>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.RequestId, deserialized.RequestId);
+        Assert.Equal(original.Command, deserialized.Command);
+
+        var deserializedArgs = Assert.IsType<JsonElement>(deserialized.Args);
+        Assert.Equal("demo", deserializedArgs.GetProperty("name").GetString());
+
+        var deserializedContext = Assert.IsType<JsonElement>(deserialized.Context);
+        Assert.Equal("default", deserializedContext.GetProperty("profile").GetString());
+    }
+
+    [Theory]
+    [InlineData("{\"args\": [\"a\", \"b\"]}", JsonValueKind.Array)]
+    [InlineData("{\"args\": \"hello\"}", JsonValueKind.String)]
+    [InlineData("{\"args\": 42}", JsonValueKind.Number)]
+    [InlineData("{\"args\": null}", JsonValueKind.Null)]
+    public void PluginRequest_ShouldDeserialize_WithVariousArgTypes(string json, JsonValueKind expectedKind)
+    {
+        // Act
+        var request = JsonSerializer.Deserialize<PluginRequest>(json);
+
+        // Assert
+        Assert.NotNull(request);
+
+        if (expectedKind == JsonValueKind.Null)
+        {
+            Assert.Null(request.Args);
+            return;
+        }
+
+        var argsElement = Assert.IsType<JsonElement>(request.Args);
+        Assert.Equal(expectedKind, argsElement.ValueKind);
+    }
+
+    #endregion
+
+    #region PluginResult Tests
+
+    [Fact]
+    public void PluginResult_ShouldInitializeWithDefaults()
+    {
+        // Arrange & Act
+        var result = new PluginResult();
+
+        // Assert
+        Assert.Equal(string.Empty, result.RequestId);
+        Assert.False(result.Success);
+        Assert.False(result.Changed);
+        Assert.Null(result.Error);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
+    public void PluginResult_ShouldRoundTrip_JsonSerialization()
+    {
+        // Arrange
+        var original = new PluginResult
+        {
+            RequestId = "req-123",
+            Success = true,
+            Changed = true,
+            Error = null,
+            Data = new { message = "ok" }
+        };
+
+        // Act
+        var jsonString = JsonSerializer.Serialize(original);
+
+        // Assert serialized contract (JSON property casing)
+        using var jsonDoc = JsonDocument.Parse(jsonString);
+        var root = jsonDoc.RootElement;
+        Assert.True(root.TryGetProperty("requestId", out var requestIdElement));
+        Assert.Equal("req-123", requestIdElement.GetString());
+        Assert.True(root.TryGetProperty("success", out var successElement));
+        Assert.True(successElement.GetBoolean());
+        Assert.True(root.TryGetProperty("changed", out var changedElement));
+        Assert.True(changedElement.GetBoolean());
+        Assert.True(root.TryGetProperty("error", out var errorElement));
+        Assert.Equal(JsonValueKind.Null, errorElement.ValueKind);
+        Assert.True(root.TryGetProperty("data", out var dataElement));
+        Assert.Equal(JsonValueKind.Object, dataElement.ValueKind);
+
+        var deserialized = JsonSerializer.Deserialize<PluginResult>(jsonString);
+
+        // Assert
+        Assert.NotNull(deserialized);
+        Assert.Equal(original.RequestId, deserialized.RequestId);
+        Assert.Equal(original.Success, deserialized.Success);
+        Assert.Equal(original.Changed, deserialized.Changed);
+        Assert.Null(deserialized.Error);
+
+        var deserializedData = Assert.IsType<JsonElement>(deserialized.Data);
+        Assert.Equal("ok", deserializedData.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public void PluginResult_ShouldSerialize_WithErrorMessage()
+    {
+        // Arrange
+        var result = new PluginResult
+        {
+            RequestId = "req-err",
+            Success = false,
+            Changed = false,
+            Error = "Something went wrong"
+        };
+
+        // Act
+        var json = JsonSerializer.Serialize(result);
+
+        // Assert
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("Something went wrong", doc.RootElement.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public void PluginResult_ShouldDeserialize_MissingOptionalFields()
+    {
+        // Arrange
+        var json = "{\"requestId\":\"r1\",\"success\":true,\"changed\":true}";
+
+        // Act
+        var result = JsonSerializer.Deserialize<PluginResult>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("r1", result.RequestId);
+        Assert.True(result.Success);
+        Assert.True(result.Changed);
+        Assert.Null(result.Error);
+        Assert.Null(result.Data);
     }
 
     #endregion
