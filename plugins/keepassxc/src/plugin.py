@@ -3,6 +3,8 @@ import json
 import os
 import shutil
 import re
+import datetime
+import uuid
 
 def log(msg):
     sys.stderr.write(f"[keepassxc-plugin] {msg}\n")
@@ -20,8 +22,16 @@ def read_text(file_path: str) -> str:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
-    except OSError as e:
-        raise OSError(f"Could not read {file_path}: {e}") from e
+    except (OSError, UnicodeDecodeError) as e:
+        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+        suffix_str = uuid.uuid4().hex[:8]
+        backup_path = f"{file_path}.corrupted.{timestamp}.{suffix_str}"
+        log(f"Config corrupted. Backing up to {backup_path} and starting fresh. Error: {e}")
+        try:
+            shutil.move(file_path, backup_path)
+        except Exception as backup_e:
+            log(f"Failed to backup corrupted config: {backup_e}")
+        return ""
 
 def write_text(file_path: str, data: str) -> None:
     dir_path = os.path.dirname(file_path)
@@ -78,6 +88,8 @@ def serialize_ini(blocks: list, has_trailing_newline: bool, is_crlf: bool) -> st
     return res
 
 def format_val(val) -> str:
+    if val is None:
+        return ""
     if isinstance(val, bool):
         return "true" if val else "false"
     return str(val)
