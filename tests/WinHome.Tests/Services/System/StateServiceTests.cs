@@ -7,6 +7,7 @@ using Xunit;
 
 namespace WinHome.Tests.Services.System
 {
+    [Collection("StateService")]
     public class StateServiceTests : IDisposable
     {
         private readonly string _testDir;
