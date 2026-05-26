@@ -119,5 +119,32 @@ class TestDockerPlugin(unittest.TestCase):
         self.assertTrue(response["success"])
         self.assertFalse(response["changed"])
 
+    @patch('plugin.get_config_path')
+    def test_read_corrupted_config(self, mock_get_path):
+        mock_get_path.return_value = self.config_path
+        
+        # Write corrupted config
+        with open(self.config_path, "w", encoding="utf-8") as f:
+            f.write("{ invalid json")
+            
+        args = {
+            "wslEngineEnabled": True
+        }
+        
+        # Should back up corrupted and apply new
+        response = plugin.apply_config(args, {"dryRun": False}, "req-5")
+        self.assertTrue(response["success"])
+        self.assertTrue(response["changed"])
+        
+        # Verify file WAS reset and written
+        with open(self.config_path, "r", encoding="utf-8") as f:
+            content = json.load(f)
+        self.assertTrue(content["wslEngineEnabled"])
+        
+        # Verify backup was created
+        dir_name = os.path.dirname(self.config_path)
+        backups = [f for f in os.listdir(dir_name) if f.startswith("settings.json.corrupted.")]
+        self.assertEqual(len(backups), 1)
+
 if __name__ == "__main__":
     unittest.main()

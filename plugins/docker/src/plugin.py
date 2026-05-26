@@ -2,6 +2,7 @@ import sys
 import json
 import os
 import shutil
+import datetime
 
 def log(msg):
     sys.stderr.write(f"[docker-plugin] {msg}\n")
@@ -23,8 +24,17 @@ def read_json(file_path: str) -> dict:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             return data if isinstance(data, dict) else {}
-    except Exception as e:
-        raise Exception(f"Could not parse {file_path}: {e}") from e
+    except json.JSONDecodeError as e:
+        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+        backup_path = f"{file_path}.corrupted.{timestamp}"
+        log(f"Config corrupted. Backing up to {backup_path} and starting fresh.")
+        try:
+            shutil.move(file_path, backup_path)
+        except Exception as backup_e:
+            log(f"Failed to backup corrupted config: {backup_e}")
+        return {}
+    except OSError as e:
+        raise OSError(f"Could not read {file_path}: {e}") from e
 
 def write_json(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
