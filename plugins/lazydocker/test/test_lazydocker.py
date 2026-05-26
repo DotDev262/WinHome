@@ -54,7 +54,7 @@ class TestLazyDockerPlugin(unittest.TestCase):
         mock_which.return_value = "/usr/bin/lazydocker"
         response = plugin.check_installed({}, "req-1")
         self.assertTrue(response["success"])
-        self.assertTrue(response["data"]["installed"])
+        self.assertTrue(response["data"])
         self.assertEqual(response["requestId"], "req-1")
 
     @patch.object(plugin.shutil, "which")
@@ -62,7 +62,7 @@ class TestLazyDockerPlugin(unittest.TestCase):
         mock_which.return_value = None
         response = plugin.check_installed({}, "req-2")
         self.assertTrue(response["success"])
-        self.assertFalse(response["data"]["installed"])
+        self.assertFalse(response["data"])
 
     @patch.object(plugin, "get_config_path")
     @unittest.skipIf(yaml is None, "PyYAML not installed")

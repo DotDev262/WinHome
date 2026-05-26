@@ -11,6 +11,7 @@ import json
 import shutil
 import time
 import copy
+import uuid
 
 try:
     import yaml
@@ -56,7 +57,7 @@ def check_installed(args, request_id):
         "requestId": request_id,
         "success": True,
         "changed": False,
-        "data": {"installed": installed}
+        "data": installed
     }
 
 def apply_config(args, context, request_id):
@@ -83,7 +84,7 @@ def apply_config(args, context, request_id):
             sys.stderr.write(f"[lazydocker-plugin] Warning: Failed to parse existing config ({str(e)}). Backing up and starting fresh.\n")
             
             # Backup corrupted config
-            backup_path = f"{config_path}.{int(time.time())}.bak"
+            backup_path = f"{config_path}.{uuid.uuid4().hex[:8]}.bak"
             try:
                 shutil.copy2(config_path, backup_path)
             except Exception as backup_e:
@@ -105,9 +106,11 @@ def apply_config(args, context, request_id):
             if not os.path.exists(config_dir):
                 os.makedirs(config_dir, mode=0o700, exist_ok=True)
                 
-            with open(config_path, "w", encoding="utf-8") as f:
+            temp_path = config_path + ".tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
                 # Use default_flow_style=False for block style
                 yaml.dump(merged_config, f, default_flow_style=False, sort_keys=False)
+            os.replace(temp_path, config_path)
             sys.stderr.write(f"[lazydocker-plugin] Updated config at {config_path}\n")
         except Exception as e:
             return {
@@ -137,16 +140,25 @@ def main():
         context = request.get("context", {})
         request_id = request.get("requestId", "unknown")
         
-        if command == "check_installed":
-            response = check_installed(args, request_id)
-        elif command == "apply":
-            response = apply_config(args, context, request_id)
-        else:
+        try:
+            if command == "check_installed":
+                response = check_installed(args, request_id)
+            elif command == "apply":
+                response = apply_config(args, context, request_id)
+            else:
+                response = {
+                    "requestId": request_id,
+                    "success": False,
+                    "changed": False,
+                    "error": f"Unknown command: {command}"
+                }
+        except Exception as inner_e:
+            sys.stderr.write(f"[lazydocker-plugin] Command Error: {str(inner_e)}\n")
             response = {
                 "requestId": request_id,
                 "success": False,
                 "changed": False,
-                "error": f"Unknown command: {command}"
+                "error": f"Internal Script Error: {str(inner_e)}"
             }
             
         print(json.dumps(response))
