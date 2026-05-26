@@ -27,7 +27,14 @@ def read_xml(file_path):
     try:
         return ET.parse(file_path)
     except Exception as e:
-        log(f"Warning: could not parse {file_path}: {e}. Starting with default.")
+        import time
+        timestamp = int(time.time())
+        backup_path = f"{file_path}.corrupted.{timestamp}.bak"
+        try:
+            shutil.copy2(file_path, backup_path)
+            log(f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}. Starting with default.")
+        except Exception:
+            log(f"Warning: could not parse {file_path}: {e}. Starting with default.")
         root = ET.Element(f"{{{CHOCO_NS}}}chocolatey")
         ET.SubElement(root, f"{{{CHOCO_NS}}}config")
         ET.SubElement(root, f"{{{CHOCO_NS}}}features")

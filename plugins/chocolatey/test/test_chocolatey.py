@@ -3,8 +3,10 @@ import sys
 import os
 import xml.etree.ElementTree as ET
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+src_path = os.path.join(os.path.dirname(__file__), "..", "src")
+sys.path.append(src_path)
 import plugin
+sys.path.remove(src_path)
 
 def make_request(command, args=None, dry_run=False):
     return {
