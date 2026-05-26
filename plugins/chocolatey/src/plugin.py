@@ -2,6 +2,8 @@ import sys
 import json
 import os
 import shutil
+import time
+import uuid
 import xml.etree.ElementTree as ET
 
 CHOCO_NS = "http://chocolatey.org/schema/chocolatey-configuration"
@@ -27,9 +29,7 @@ def read_xml(file_path):
     try:
         return ET.parse(file_path)
     except Exception as e:
-        import time
-        timestamp = int(time.time())
-        backup_path = f"{file_path}.corrupted.{timestamp}.bak"
+        backup_path = f"{file_path}.corrupted.{uuid.uuid4().hex[:8]}.bak"
         try:
             shutil.copy2(file_path, backup_path)
             log(f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}. Starting with default.")
@@ -53,6 +53,9 @@ def merge_settings(tree, source):
     if "config" in source and isinstance(source["config"], dict):
         config_el = root.find(f"{{{CHOCO_NS}}}config")
         for key, value in source["config"].items():
+            if value is None:
+                continue
+
             str_val = str(value) if not isinstance(value, bool) else ("true" if value else "false")
             
             if config_el is None:
@@ -76,6 +79,9 @@ def merge_settings(tree, source):
     if "features" in source and isinstance(source["features"], dict):
         features_el = root.find(f"{{{CHOCO_NS}}}features")
         for name, enabled in source["features"].items():
+            if enabled is None:
+                continue
+
             str_enabled = "true" if enabled else "false"
             
             if features_el is None:

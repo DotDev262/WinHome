@@ -141,3 +141,75 @@ def test_unknown_command_via_main(monkeypatch, capsys):
     
     assert response["success"] is False
     assert "Unknown command" in response["error"]
+
+def test_corrupted_xml_recovery(tmp_path, monkeypatch):
+    config_file = tmp_path / "chocolatey.config"
+    config_file.write_text("<<<<< INVALID XML >>>>", encoding="utf-8")
+
+    monkeypatch.setattr(plugin, "get_config_path", lambda: str(config_file))
+
+    args = {"settings": {"config": {"cacheLocation": "recovered_cache"}}}
+    req = make_request("apply", args, dry_run=False)
+    result = plugin.apply_config(req["args"], req["context"], req["requestId"])
+
+    assert result["success"] is True
+    assert result["changed"] is True
+    
+    # Assert new valid XML
+    parsed = ET.parse(config_file).getroot()
+    add_els = parsed.findall(f".//{{{plugin.CHOCO_NS}}}add")
+    cache_val = next(el.get("value") for el in add_els if el.get("key") == "cacheLocation")
+    assert cache_val == "recovered_cache"
+    
+    # Assert backup exists
+    backups = list(tmp_path.glob("*.bak"))
+    assert len(backups) == 1
+    assert "corrupted" in backups[0].name
+
+def test_feature_enabled_false(tmp_path, monkeypatch):
+    config_file = tmp_path / "chocolatey.config"
+    # Create empty base XML
+    root = ET.Element(f"{{{plugin.CHOCO_NS}}}chocolatey")
+    tree = ET.ElementTree(root)
+    tree.write(config_file, encoding="utf-8")
+
+    monkeypatch.setattr(plugin, "get_config_path", lambda: str(config_file))
+
+    args = {
+        "settings": {
+            "features": {"checksumFiles": False}
+        }
+    }
+    req = make_request("apply", args, dry_run=False)
+    result = plugin.apply_config(req["args"], req["context"], req["requestId"])
+
+    assert result["success"] is True
+    assert result["changed"] is True
+
+    parsed = ET.parse(config_file).getroot()
+    feat_els = parsed.findall(f".//{{{plugin.CHOCO_NS}}}feature")
+    feat_val = next(el.get("enabled") for el in feat_els if el.get("name") == "checksumFiles")
+    assert feat_val == "false"
+
+def test_empty_args_handled(tmp_path, monkeypatch):
+    config_file = tmp_path / "chocolatey.config"
+    # Create empty base XML
+    root = ET.Element(f"{{{plugin.CHOCO_NS}}}chocolatey")
+    tree = ET.ElementTree(root)
+    tree.write(config_file, encoding="utf-8")
+
+    monkeypatch.setattr(plugin, "get_config_path", lambda: str(config_file))
+
+    # args missing 'settings'
+    req = make_request("apply", {}, dry_run=False)
+    result = plugin.apply_config(req["args"], req["context"], req["requestId"])
+
+    assert result["success"] is True
+    assert result["changed"] is False
+
+    # args with empty 'settings'
+    req = make_request("apply", {"settings": {}}, dry_run=False)
+    result = plugin.apply_config(req["args"], req["context"], req["requestId"])
+
+    assert result["success"] is True
+    assert result["changed"] is False
