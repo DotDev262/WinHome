@@ -25,8 +25,10 @@ def read_ini(path):
 
 def write_ini(path, config):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    temp_path = path + ".tmp"
+    with open(temp_path, "w", encoding="utf-8") as f:
         config.write(f)
+    os.replace(temp_path, path)
 
 
 def read_json(path):
@@ -42,8 +44,10 @@ def read_json(path):
 
 def write_json(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    temp_path = path + ".tmp"
+    with open(temp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    os.replace(temp_path, path)
 
 
 def merge_ini_section(config, section, values):
@@ -73,7 +77,7 @@ def check_installed(args, request_id):
         "requestId": request_id,
         "success": True,
         "changed": False,
-        "data": {"installed": installed},
+        "data": installed,
     }
 
 
@@ -94,6 +98,7 @@ def apply_global_ini(obs_dir, general, dry_run):
         if mapped:
             if dry_run:
                 log(f"Would update {global_ini_path} [General] with: {mapped}")
+                changed = merge_ini_section(config, "General", mapped)
             else:
                 changed = merge_ini_section(config, "General", mapped)
                 if changed:
@@ -137,6 +142,7 @@ def apply_profile_ini(obs_dir, profile_name, args, dry_run):
         mapped = {VIDEO_KEY_MAP[k]: v for k, v in video.items() if k in VIDEO_KEY_MAP}
         if dry_run:
             log(f"Would update {basic_ini_path} [Video] with: {mapped}")
+            changed = merge_ini_section(config, "Video", mapped) or changed
         else:
             changed = merge_ini_section(config, "Video", mapped) or changed
 
@@ -145,6 +151,7 @@ def apply_profile_ini(obs_dir, profile_name, args, dry_run):
         mapped = {AUDIO_KEY_MAP[k]: v for k, v in audio.items() if k in AUDIO_KEY_MAP}
         if dry_run:
             log(f"Would update {basic_ini_path} [Audio] with: {mapped}")
+            changed = merge_ini_section(config, "Audio", mapped) or changed
         else:
             changed = merge_ini_section(config, "Audio", mapped) or changed
 
@@ -169,6 +176,10 @@ def apply_profile_ini(obs_dir, profile_name, args, dry_run):
         if dry_run:
             log(f"Would update {basic_ini_path} [Output] with: {output_section}")
             log(f"Would update {basic_ini_path} [SimpleOutput] with: {simple_output}")
+            if output_section:
+                changed = merge_ini_section(config, "Output", output_section) or changed
+            if simple_output:
+                changed = merge_ini_section(config, "SimpleOutput", simple_output) or changed
         else:
             if output_section:
                 changed = merge_ini_section(config, "Output", output_section) or changed
@@ -179,6 +190,7 @@ def apply_profile_ini(obs_dir, profile_name, args, dry_run):
     if hotkeys:
         if dry_run:
             log(f"Would update {basic_ini_path} [Hotkeys] with: {hotkeys}")
+            changed = merge_ini_section(config, "Hotkeys", hotkeys) or changed
         else:
             changed = merge_ini_section(config, "Hotkeys", hotkeys) or changed
 
@@ -265,7 +277,9 @@ def main():
         request = json.loads(input_data)
     except Exception as e:
         log(f"Failed to parse request: {e}")
-        sys.exit(1)
+        sys.stdout.write(json.dumps({"requestId": "unknown", "success": False, "changed": False, "error": f"Failed to parse request: {e}"}) + "\n")
+        sys.stdout.flush()
+        return
 
     request_id = request.get("requestId", "unknown")
     command = request.get("command")

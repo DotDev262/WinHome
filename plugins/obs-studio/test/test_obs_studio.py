@@ -42,7 +42,7 @@ def test_check_installed_false():
             env={"OBS_INSTALL_DIR": tmp},
         )
         assert res["success"]
-        assert res["data"]["installed"] is False
+        assert res["data"] is False
         print("PASS: check_installed_false")
 
 
@@ -57,7 +57,7 @@ def test_check_installed_true():
             env={"OBS_INSTALL_DIR": tmp},
         )
         assert res["success"]
-        assert res["data"]["installed"] is True
+        assert res["data"] is True
         print("PASS: check_installed_true")
 
 
@@ -165,7 +165,7 @@ def test_apply_dry_run_no_files_written():
         )
 
         assert res["success"]
-        assert not res["changed"]
+        assert res["changed"]
         assert not os.path.exists(os.path.join(obs_dir, "global.ini"))
         print("PASS: apply_dry_run_no_files_written")
 
