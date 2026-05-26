@@ -41,7 +41,7 @@ public class ShellCompletionGeneratorTests
     private static RootCommand BuildRealRootCommand()
     {
         return CliBuilder.BuildRootCommand(
-            runAction: (file, dryRun, profile, debug, diff, json, update, force, continueOnError, logLevel) => Task.FromResult(0),
+            runAction: (file, dryRun, profile, debug, diff, json, update, forceReapply, continueOnError, logLevel) => Task.FromResult(0),
             generateAction: (output, logLevel) => Task.FromResult(0),
             stateAction: (command, path, logLevel) => Task.FromResult(0)
         );
