@@ -15,7 +15,7 @@ def get_settings_path():
     return None
 
 def read_json(file_path):
-    """Reads the JSON config if it exists."""
+    """Reads the JSON config if it exists. Backs up corrupted files."""
     if not os.path.exists(file_path):
         return {}
     try:
@@ -23,6 +23,12 @@ def read_json(file_path):
             return json.load(f)
     except Exception as e:
         log(f"Warning: could not parse {file_path}: {e}")
+        try:
+            backup_path = file_path + ".bak"
+            shutil.copy2(file_path, backup_path)
+            log(f"Backed up corrupted config to {backup_path}")
+        except Exception as backup_error:
+            log(f"Failed to backup corrupted file: {backup_error}")
         return {}
 
 def write_json(file_path, data):
@@ -67,6 +73,9 @@ def check_installed(args, request_id):
 def apply_config(args, context, request_id):
     """Applies new config properties to Settings.json."""
     dry_run = context.get("dryRun", False)
+    
+    # Extract settings per the JSON protocol
+    settings_to_apply = args.get("settings", {})
 
     try:
         settings_path = get_settings_path()
@@ -82,7 +91,7 @@ def apply_config(args, context, request_id):
             log(f"No existing Settings.json found. Will create at: {settings_path}")
 
         current = read_json(settings_path)
-        changed = merge_settings(current, args)
+        changed = merge_settings(current, settings_to_apply)
 
         if not changed:
             return {
@@ -92,7 +101,7 @@ def apply_config(args, context, request_id):
             }
 
         if dry_run:
-            log(f"Would update {settings_path} with: {json.dumps(args)}")
+            log(f"Would update {settings_path} with: {json.dumps(settings_to_apply)}")
             return {
                 "requestId": request_id,
                 "success": True,

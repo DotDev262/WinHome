@@ -3,14 +3,15 @@ import json
 import tempfile
 import sys
 import subprocess
+import importlib.util
 from unittest import mock
-import pytest
-
-# Add src to sys.path to import the plugin script for direct function tests
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-import plugin
 
 PLUGIN_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/plugin.py'))
+
+# Dynamically load the plugin module cleanly without modifying sys.path
+spec = importlib.util.spec_from_file_location("plugin", PLUGIN_SCRIPT)
+plugin = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(plugin)
 
 def run_plugin(request_data, appdata_path):
     """Helper to run the plugin via subprocess for full JSON protocol testing."""
@@ -33,7 +34,7 @@ def run_plugin(request_data, appdata_path):
         raise e
 
 
-# --- Pure function tests (direct imports) ---
+# --- Pure function tests (direct module calls) ---
 
 def test_merge_settings():
     target = {"theme": "Light", "pluginSearchPaths": []}
@@ -73,7 +74,7 @@ def test_apply_config_dry_run():
         request = {
             "requestId": "req-2",
             "command": "apply",
-            "args": {"theme": "Dark", "builtinPlugins": {"Calculator": {"enabled": True}}},
+            "args": {"settings": {"theme": "Dark", "builtinPlugins": {"Calculator": {"enabled": True}}}},
             "context": {"dryRun": True}
         }
         
@@ -92,7 +93,7 @@ def test_apply_config_real_run():
         request = {
             "requestId": "req-3",
             "command": "apply",
-            "args": {"theme": "Dark", "hotkey": "Alt+Space"},
+            "args": {"settings": {"theme": "Dark", "hotkey": "Alt+Space"}},
             "context": {"dryRun": False}
         }
         
