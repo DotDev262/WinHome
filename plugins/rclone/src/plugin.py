@@ -24,7 +24,7 @@ def read_text(file_path: str) -> str:
         raise OSError(f"Could not read {file_path}: {e}") from e
 
 def write_text(file_path: str, data: str) -> None:
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    os.makedirs(os.path.dirname(file_path), mode=0o700, exist_ok=True)
     tmp_path = file_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         f.write(data)
@@ -35,6 +35,7 @@ def parse_ini(text: str) -> tuple:
     current_block = {'name': None, 'lines': []}
     blocks.append(current_block)
     has_trailing_newline = text.endswith('\n')
+    is_crlf = '\r\n' in text
     
     for line in text.splitlines():
         stripped = line.strip()
@@ -63,16 +64,17 @@ def parse_ini(text: str) -> tuple:
         else:
             current_block['lines'].append({'type': 'unknown', 'raw': line})
             
-    return blocks, has_trailing_newline
+    return blocks, has_trailing_newline, is_crlf
 
-def serialize_ini(blocks: list, has_trailing_newline: bool) -> str:
+def serialize_ini(blocks: list, has_trailing_newline: bool, is_crlf: bool) -> str:
     lines = []
     for b in blocks:
         for l in b['lines']:
             lines.append(l['raw'])
-    res = "\n".join(lines)
-    if has_trailing_newline and res and not res.endswith('\n'):
-        res += '\n'
+    newline = "\r\n" if is_crlf else "\n"
+    res = newline.join(lines)
+    if has_trailing_newline and res and not res.endswith(newline):
+        res += newline
     return res
 
 def merge_kv(block: dict, key: str, val: str) -> bool:
@@ -89,7 +91,8 @@ def merge_kv(block: dict, key: str, val: str) -> bool:
                 
                 str_val = str(val)
                 line['val'] = str_val
-                line['raw'] = f"{indent}{key}{eq_str}{str_val}"
+                original_key = line.get('key', key)
+                line['raw'] = f"{indent}{original_key}{eq_str}{str_val}"
                 return True
             return False
             
@@ -166,7 +169,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         config_path = get_config_path()
         current_text = read_text(config_path)
         
-        blocks, has_trailing_newline = parse_ini(current_text)
+        blocks, has_trailing_newline, is_crlf = parse_ini(current_text)
         changed = merge_settings(blocks, args)
 
         if not changed:
@@ -176,7 +179,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
                 "changed": False,
             }
 
-        new_text = serialize_ini(blocks, has_trailing_newline)
+        new_text = serialize_ini(blocks, has_trailing_newline, is_crlf)
 
         if dry_run:
             log(f"Would update {config_path} with new settings")

@@ -12,17 +12,17 @@ class TestRclonePlugin(unittest.TestCase):
 
     def test_parse_and_serialize_ini(self):
         text = "tpslimit = 10\n\n[drive]\ntype = drive\n# comment\nscope = drive.file\n"
-        blocks, has_newline = plugin.parse_ini(text)
+        blocks, has_newline, is_crlf = plugin.parse_ini(text)
         self.assertEqual(len(blocks), 2)
         self.assertIsNone(blocks[0]['name'])
         self.assertEqual(blocks[1]['name'], 'drive')
         
-        output = plugin.serialize_ini(blocks, has_newline)
+        output = plugin.serialize_ini(blocks, has_newline, is_crlf)
         self.assertEqual(output, text)
 
     def test_merge_settings(self):
         text = "[drive]\ntype = drive\n"
-        blocks, has_newline = plugin.parse_ini(text)
+        blocks, has_newline, is_crlf = plugin.parse_ini(text)
         
         args = {
             "remotes": {
@@ -42,7 +42,7 @@ class TestRclonePlugin(unittest.TestCase):
         changed = plugin.merge_settings(blocks, args)
         self.assertTrue(changed)
         
-        output = plugin.serialize_ini(blocks, has_newline)
+        output = plugin.serialize_ini(blocks, has_newline, is_crlf)
         
         # Expect settings at the top, existing drive remote updated, and new s3 remote added.
         expected = "tpslimit = 20\n[drive]\ntype = drive\nscope = drive.file\n\n[s3]\ntype = s3\n"
@@ -50,7 +50,7 @@ class TestRclonePlugin(unittest.TestCase):
 
     def test_merge_no_change(self):
         text = "tpslimit = 10\n\n[drive]\ntype = drive\n"
-        blocks, has_newline = plugin.parse_ini(text)
+        blocks, has_newline, is_crlf = plugin.parse_ini(text)
         
         args = {
             "remotes": {
@@ -123,7 +123,7 @@ class TestRclonePlugin(unittest.TestCase):
         with patch('plugin.open', m_open):
             plugin.write_text(file_path, data)
         
-        mock_makedirs.assert_called_once_with("dummy", exist_ok=True)
+        mock_makedirs.assert_called_once_with("dummy", mode=0o700, exist_ok=True)
         m_open.assert_called_once_with(file_path + ".tmp", "w", encoding="utf-8")
         handle = m_open()
         handle.write.assert_called_with(data)
