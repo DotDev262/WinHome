@@ -249,19 +249,27 @@ class TestGhDashPlugin(unittest.TestCase):
             self.assertEqual(content["defaultLimit"], 40)
             self.assertEqual(content["prSections"][0]["title"], "Wrapped")
 
-    def test_apply_pyyaml_missing_returns_error(self):
-        with patch.object(plugin, "yaml", None):
-            response = self.run_main({
-                "requestId": "req-13",
-                "command": "apply",
-                "args": {"defaultLimit": 30},
-                "context": {"dryRun": False},
-            })
+    def test_apply_works_without_pyyaml(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = os.path.join(tmp_dir, "config.yml")
+            with patch("plugin.get_config_path", return_value=config_path), \
+                 patch("plugin._HAS_PYYAML", False), \
+                 patch("plugin._yaml", None):
+                response = self.run_main({
+                    "requestId": "req-13",
+                    "command": "apply",
+                    "args": {"defaultLimit": 30, "prSections": [{"title": "My PRs", "filters": "is:open author:@me"}]},
+                    "context": {"dryRun": False},
+                })
 
-        self.assertEqual(response["requestId"], "req-13")
-        self.assertFalse(response["success"])
-        self.assertFalse(response["changed"])
-        self.assertIn("PyYAML", response["error"])
+            self.assertEqual(response["requestId"], "req-13")
+            self.assertTrue(response["success"])
+            self.assertTrue(response["changed"])
+
+            with open(config_path, "r", encoding="utf-8") as fh:
+                content = yaml.safe_load(fh)
+            self.assertEqual(content["defaultLimit"], 30)
+            self.assertEqual(content["prSections"][0]["title"], "My PRs")
 
     def test_unknown_command_returns_error(self):
         response = self.run_main({"requestId": "req-14", "command": "explode", "args": {}, "context": {}})
