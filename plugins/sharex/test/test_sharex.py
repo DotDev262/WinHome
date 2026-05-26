@@ -129,5 +129,35 @@ class TestShareXPlugin(unittest.TestCase):
         handle.write.assert_called_with("\n")
         mock_replace.assert_called_once_with(file_path + ".tmp", file_path)
 
+    @patch('plugin.get_config_path')
+    def test_read_corrupted_config(self, mock_get_path):
+        import tempfile
+        import json
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = os.path.join(temp_dir, "ShareX.json")
+            mock_get_path.return_value = config_path
+            
+            # Write corrupted config
+            with open(config_path, "w", encoding="utf-8") as f:
+                f.write("{ invalid json")
+                
+            args = {"settings": {"a": 2}}
+            context = {"dryRun": False}
+            
+            # Should back up corrupted and apply new
+            res = plugin.apply_config(args, context, "req-5")
+            self.assertTrue(res["success"])
+            self.assertTrue(res["changed"])
+            
+            # Verify file WAS reset and written
+            with open(config_path, "r", encoding="utf-8") as f:
+                content = json.load(f)
+            self.assertEqual(content["a"], 2)
+            
+            # Verify backup was created
+            backups = [f for f in os.listdir(temp_dir) if f.startswith("ShareX.json.corrupted.")]
+            self.assertEqual(len(backups), 1)
+
 if __name__ == '__main__':
     unittest.main()

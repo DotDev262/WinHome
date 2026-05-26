@@ -2,6 +2,8 @@ import sys
 import json
 import os
 import shutil
+import datetime
+import uuid
 
 def log(msg):
     sys.stderr.write(f"[sharex-plugin] {msg}\n")
@@ -20,7 +22,15 @@ def read_json(file_path: str) -> dict:
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except json.JSONDecodeError as e:
-        raise json.JSONDecodeError(f"Could not parse JSON in {file_path}: {e.msg}", e.doc, e.pos) from e
+        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+        suffix = uuid.uuid4().hex[:8]
+        backup_path = f"{file_path}.corrupted.{timestamp}.{suffix}"
+        try:
+            shutil.move(file_path, backup_path)
+            log(f"Config corrupted. Backing up to {backup_path} and starting fresh.")
+        except Exception as backup_e:
+            log(f"Failed to backup corrupted config: {backup_e}")
+        return {}
     except OSError as e:
         raise OSError(f"Could not read {file_path}: {e}") from e
 
