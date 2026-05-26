@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import datetime
+import uuid
 
 def log(msg):
     sys.stderr.write(f"[docker-plugin] {msg}\n")
@@ -26,7 +27,8 @@ def read_json(file_path: str) -> dict:
             return data if isinstance(data, dict) else {}
     except json.JSONDecodeError as e:
         timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
-        backup_path = f"{file_path}.corrupted.{timestamp}"
+        suffix = uuid.uuid4().hex[:8]
+        backup_path = f"{file_path}.corrupted.{timestamp}.{suffix}"
         log(f"Config corrupted. Backing up to {backup_path} and starting fresh.")
         try:
             shutil.move(file_path, backup_path)
@@ -72,7 +74,7 @@ def check_installed(args: dict, request_id: str) -> dict:
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
-    settings = args
+    settings = args.get("settings", {})
 
     try:
         config_path = get_config_path()

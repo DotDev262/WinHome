@@ -6,8 +6,10 @@ from unittest.mock import patch
 import json
 
 # Add src directory to path to import plugin
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src'))
+sys.path.append(_src_path)
 import plugin
+sys.path.remove(_src_path)
 
 class TestDockerPlugin(unittest.TestCase):
     def setUp(self):
@@ -67,7 +69,9 @@ class TestDockerPlugin(unittest.TestCase):
             json.dump({"wslEngineEnabled": False}, f)
             
         args = {
-            "wslEngineEnabled": True
+            "settings": {
+                "wslEngineEnabled": True
+            }
         }
         
         # Dry run
@@ -85,8 +89,10 @@ class TestDockerPlugin(unittest.TestCase):
         mock_get_path.return_value = self.config_path
         
         args = {
-            "kubernetes": {
-                "enabled": True
+            "settings": {
+                "kubernetes": {
+                    "enabled": True
+                }
             }
         }
         
@@ -109,8 +115,10 @@ class TestDockerPlugin(unittest.TestCase):
             json.dump({"kubernetes": {"enabled": True}}, f)
             
         args = {
-            "kubernetes": {
-                "enabled": True
+            "settings": {
+                "kubernetes": {
+                    "enabled": True
+                }
             }
         }
         
@@ -128,7 +136,9 @@ class TestDockerPlugin(unittest.TestCase):
             f.write("{ invalid json")
             
         args = {
-            "wslEngineEnabled": True
+            "settings": {
+                "wslEngineEnabled": True
+            }
         }
         
         # Should back up corrupted and apply new
