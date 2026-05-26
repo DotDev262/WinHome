@@ -45,7 +45,7 @@ class TestPipPlugin(unittest.TestCase):
     def test_apply_config_creates_new(self, mock_get_path):
         mock_get_path.return_value = self.pip_ini_path
         
-        args = {"index-url": "https://pypi.org/simple", "timeout": 60}
+        args = {"settings": {"index-url": "https://pypi.org/simple", "timeout": 60}}
         response = plugin.apply_config(args, {}, "req-3")
         
         self.assertTrue(response["success"])
@@ -63,7 +63,7 @@ class TestPipPlugin(unittest.TestCase):
         mock_get_path.return_value = self.pip_ini_path
         
         # First run
-        args = {"timeout": 120}
+        args = {"settings": {"timeout": 120}}
         plugin.apply_config(args, {}, "req-4a")
         
         # Second run with exact same args
@@ -76,7 +76,7 @@ class TestPipPlugin(unittest.TestCase):
     def test_apply_config_dry_run(self, mock_get_path):
         mock_get_path.return_value = self.pip_ini_path
         
-        args = {"timeout": 30}
+        args = {"settings": {"timeout": 30}}
         context = {"dryRun": True}
         response = plugin.apply_config(args, context, "req-5")
         
@@ -108,14 +108,15 @@ class TestPipPlugin(unittest.TestCase):
         with open(self.pip_ini_path, "w", encoding="utf-8") as f:
             f.write("[global\ninvalid format")
             
-        args = {"timeout": "100"}
+        args = {"settings": {"timeout": "100"}}
         response = plugin.apply_config(args, {}, "req-corr")
         
         self.assertTrue(response["success"])
         self.assertTrue(response["changed"])
         
         # Verify it backed up the file
-        self.assertTrue(os.path.exists(self.pip_ini_path + ".bak"))
+        backups = [f for f in os.listdir(os.path.dirname(self.pip_ini_path)) if f.endswith(".bak")]
+        self.assertTrue(len(backups) > 0)
         
         # Verify new config
         config = configparser.ConfigParser()
