@@ -1,4 +1,8 @@
-- name: ⬅️ Back to Overview
+- name: Back to Overview
   href: ../config.md
+- name: Plugin Directory
+  href: README.md
+- name: Tutorial
+  href: tutorial.md
 - name: Development Guide
   href: development-guide.md
