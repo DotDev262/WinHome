@@ -28,7 +28,7 @@ class TestGhDashPlugin(unittest.TestCase):
 
         self.assertTrue(response["success"])
         self.assertFalse(response["changed"])
-        self.assertTrue(response["data"]["installed"])
+        self.assertTrue(response["data"])
 
     def test_check_installed_true_via_gh_ext(self):
         mock_result = MagicMock()
@@ -39,7 +39,7 @@ class TestGhDashPlugin(unittest.TestCase):
             response = self.run_main({"requestId": "req-2", "command": "check_installed", "args": {}, "context": {}})
 
         self.assertTrue(response["success"])
-        self.assertTrue(response["data"]["installed"])
+        self.assertTrue(response["data"])
 
     def test_check_installed_false(self):
         mock_result = MagicMock()
@@ -50,7 +50,7 @@ class TestGhDashPlugin(unittest.TestCase):
             response = self.run_main({"requestId": "req-3", "command": "check_installed", "args": {}, "context": {}})
 
         self.assertTrue(response["success"])
-        self.assertFalse(response["data"]["installed"])
+        self.assertFalse(response["data"])
 
     # --- apply ---
 

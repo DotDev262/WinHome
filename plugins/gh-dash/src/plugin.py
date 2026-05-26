@@ -258,7 +258,7 @@ def get_settings_from_args(args: dict) -> dict:
 
 def check_installed(request_id: str) -> dict:
     if shutil.which("gh-dash") is not None or shutil.which("gh-dash.exe") is not None:
-        return {"requestId": request_id, "success": True, "changed": False, "data": {"installed": True}}
+        return {"requestId": request_id, "success": True, "changed": False, "data": True}
 
     try:
         result = subprocess.run(
@@ -268,11 +268,11 @@ def check_installed(request_id: str) -> dict:
             timeout=5,
         )
         if "dlvhdr/gh-dash" in result.stdout:
-            return {"requestId": request_id, "success": True, "changed": False, "data": {"installed": True}}
+            return {"requestId": request_id, "success": True, "changed": False, "data": True}
     except Exception:
         pass
 
-    return {"requestId": request_id, "success": True, "changed": False, "data": {"installed": False}}
+    return {"requestId": request_id, "success": True, "changed": False, "data": False}
 
 
 def apply_config(request_id: str, args: dict, context: dict) -> dict:
