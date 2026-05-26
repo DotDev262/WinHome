@@ -516,6 +516,8 @@ namespace WinHome.Tests
 
         private Engine CreateEngine(Mock<ILogger> logger)
         {
+            var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
+            var stateWriter = new WinHome.Services.StateWriter(tmp);
             return new Engine(
                 _managers,
                 _mockDotfiles.Object,
@@ -530,7 +532,8 @@ namespace WinHome.Tests
                 _mockPluginRunner.Object,
                 _mockStateService.Object,
                 logger.Object,
-                _mockRuntimeResolver.Object
+                _mockRuntimeResolver.Object,
+                stateWriter
             );
         }
     }

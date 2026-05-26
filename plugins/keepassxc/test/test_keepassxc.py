@@ -5,8 +5,10 @@ from unittest.mock import patch, mock_open
 
 _src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
 sys.path.append(_src_path)
-import plugin
-sys.path.remove(_src_path)
+try:
+    import plugin
+finally:
+    sys.path.remove(_src_path)
 
 class TestKeePassXCPlugin(unittest.TestCase):
 
@@ -106,6 +108,21 @@ class TestKeePassXCPlugin(unittest.TestCase):
         res = plugin.apply_config(args, context, "req-4")
         self.assertTrue(res["success"])
         self.assertTrue(res["changed"])
+        mock_write.assert_not_called()
+
+    @patch('plugin.get_config_path')
+    @patch('plugin.read_text')
+    @patch('plugin.write_text')
+    def test_apply_config_no_change(self, mock_write, mock_read, mock_get_path):
+        mock_get_path.return_value = "dummy.ini"
+        mock_read.return_value = "[General]\nAutoSaveOnExit=true\n"
+        
+        args = {"settings": {"General": {"AutoSaveOnExit": True}}}
+        context = {"dryRun": False}
+        
+        res = plugin.apply_config(args, context, "req-5")
+        self.assertTrue(res["success"])
+        self.assertFalse(res["changed"])
         mock_write.assert_not_called()
 
     @patch('plugin.os.makedirs')

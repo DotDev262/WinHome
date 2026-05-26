@@ -3,8 +3,6 @@ import json
 import os
 import shutil
 import re
-import datetime
-import uuid
 
 def log(msg):
     sys.stderr.write(f"[keepassxc-plugin] {msg}\n")
@@ -26,7 +24,9 @@ def read_text(file_path: str) -> str:
         raise OSError(f"Could not read {file_path}: {e}") from e
 
 def write_text(file_path: str, data: str) -> None:
-    os.makedirs(os.path.dirname(file_path), mode=0o700, exist_ok=True)
+    dir_path = os.path.dirname(file_path)
+    if dir_path:
+        os.makedirs(dir_path, mode=0o700, exist_ok=True)
     tmp_path = file_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         f.write(data)
@@ -95,9 +95,16 @@ def merge_kv(block: dict, key: str, val) -> bool:
                 eq_match = re.search(r'(\s*=\s*)', line['raw'])
                 eq_str = eq_match.group(1) if eq_match else "="
                 
+                old_val_str = str(line.get('val', ''))
+                suffix = ""
+                if eq_match:
+                    remainder = line['raw'][eq_match.end():]
+                    if remainder.startswith(old_val_str):
+                        suffix = remainder[len(old_val_str):]
+                
                 line['val'] = target_val_str
                 original_key = line.get('key', key)
-                line['raw'] = f"{indent}{original_key}{eq_str}{target_val_str}"
+                line['raw'] = f"{indent}{original_key}{eq_str}{target_val_str}{suffix}"
                 return True
             return False
             
