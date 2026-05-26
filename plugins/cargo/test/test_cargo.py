@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 import plugin
 
 
@@ -14,14 +14,14 @@ class TestCheckInstalled(unittest.TestCase):
         with patch("shutil.which", side_effect=lambda x: "/usr/bin/cargo" if x == "cargo" else None):
             result = plugin.check_installed({}, "req-1")
         self.assertTrue(result["success"])
-        self.assertTrue(result["data"]["installed"])
+        self.assertTrue(result["data"])
 
     def test_cargo_not_found(self):
         with patch("shutil.which", return_value=None):
             with patch.dict(os.environ, {"CARGO_HOME": ""}, clear=False):
                 result = plugin.check_installed({}, "req-2")
         self.assertTrue(result["success"])
-        self.assertFalse(result["data"]["installed"])
+        self.assertFalse(result["data"])
 
     def test_cargo_via_cargo_home(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -33,7 +33,7 @@ class TestCheckInstalled(unittest.TestCase):
                 with patch.dict(os.environ, {"CARGO_HOME": tmpdir}):
                     result = plugin.check_installed({}, "req-3")
         self.assertTrue(result["success"])
-        self.assertTrue(result["data"]["installed"])
+        self.assertTrue(result["data"])
 
 
 class TestTomlValue(unittest.TestCase):
@@ -161,3 +161,4 @@ class TestProtocol(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    

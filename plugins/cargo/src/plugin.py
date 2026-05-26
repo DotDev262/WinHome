@@ -35,11 +35,9 @@ def read_toml(file_path: str) -> dict:
 def write_toml(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     lines = []
-    # Write top-level non-table keys first (not needed for cargo but safe)
     for key, value in data.items():
         if not isinstance(value, dict):
             lines.append(f"{key} = {toml_value(value)}")
-    # Write sections
     for section, contents in data.items():
         if isinstance(contents, dict):
             lines.append(f"\n[{section}]")
@@ -94,7 +92,7 @@ def check_installed(args: dict, request_id: str) -> dict:
         "requestId": request_id,
         "success": True,
         "changed": False,
-        "data": {"installed": installed},
+        "data": installed,
     }
 
 
@@ -186,3 +184,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    
