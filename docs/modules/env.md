@@ -2,7 +2,7 @@
 
 Manages user-level environment variables.
 
-**YAML Key:** `env`
+**YAML Key:** `envVars`
 
 **Properties:**
 -   `variable`: The name of the environment variable.
@@ -11,7 +11,7 @@ Manages user-level environment variables.
 
 **Example:**
 ```yaml
-env:
+envVars:
   - variable: GOPATH
     value: "%USERPROFILE%\go"
   - variable: Path
@@ -19,3 +19,22 @@ env:
     action: append
 ```
 
+Profile-specific environment variables can be declared under `profiles.<name>.envVars`.
+When that profile is selected with `--profile`, `set` entries replace matching top-level variables, while `append` entries add profile-only path segments.
+
+```yaml
+envVars:
+  - variable: EDITOR
+    value: nvim
+    action: set
+
+profiles:
+  work:
+    envVars:
+      - variable: EDITOR
+        value: code
+        action: set
+      - variable: Path
+        value: "%USERPROFILE%\work\bin"
+        action: append
+```

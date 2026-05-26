@@ -225,6 +225,35 @@ namespace WinHome.Tests
         }
 
         [Fact]
+        public async Task RunAsync_ShouldApplyProfileEnvironmentOverrides_WhenProfileSelected()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.EnvVars.Add(new EnvVarConfig { Variable = "EDITOR", Value = "nvim", Action = "set" });
+            config.EnvVars.Add(new EnvVarConfig { Variable = "Path", Value = "C:\\GlobalTools", Action = "append" });
+            config.Profiles["work"] = new ProfileConfig
+            {
+                EnvVars = new List<EnvVarConfig>
+                {
+                    new EnvVarConfig { Variable = "EDITOR", Value = "code", Action = "set" },
+                    new EnvVarConfig { Variable = "Path", Value = "C:\\WorkTools", Action = "append" }
+                }
+            };
+
+            var mockLogger = new Mock<ILogger>();
+            var engine = CreateEngine(mockLogger);
+
+            // Act
+            await engine.RunAsync(config, false, "work");
+
+            // Assert
+            _mockEnv.Verify(e => e.Apply(It.Is<EnvVarConfig>(v => v.Variable == "EDITOR" && v.Value == "nvim"), false), Times.Never);
+            _mockEnv.Verify(e => e.Apply(It.Is<EnvVarConfig>(v => v.Variable == "EDITOR" && v.Value == "code"), false), Times.Once);
+            _mockEnv.Verify(e => e.Apply(It.Is<EnvVarConfig>(v => v.Variable == "Path" && v.Value == "C:\\GlobalTools"), false), Times.Once);
+            _mockEnv.Verify(e => e.Apply(It.Is<EnvVarConfig>(v => v.Variable == "Path" && v.Value == "C:\\WorkTools"), false), Times.Once);
+        }
+
+        [Fact]
         public async Task RunAsync_ShouldManageServicesAndScheduledTasks_WhenConfigured()
         {
             // Arrange

@@ -106,6 +106,7 @@ namespace WinHome
                 {
                     _logger.LogInfo($"\n[Profile] Activating '{profileName}'...");
                     if (profile.Git != null) config.Git = profile.Git;
+                    ApplyProfileEnvironmentOverrides(config, profile);
                 }
                 else
                 {
@@ -323,7 +324,10 @@ namespace WinHome
             if (config.EnvVars.Any())
             {
                 _logger.LogInfo("\n--- Configuring Environment Variables ---");
-                await Task.Run(() => Parallel.ForEach(config.EnvVars, env => _env.Apply(env, dryRun)));
+                foreach (var env in config.EnvVars)
+                {
+                    _env.Apply(env, dryRun);
+                }
             }
 
             // Plugin Extensions
@@ -572,6 +576,36 @@ namespace WinHome
                 }
             }
             return item;
+        }
+
+        private static void ApplyProfileEnvironmentOverrides(Configuration config, ProfileConfig profile)
+        {
+            if (!profile.EnvVars.Any())
+            {
+                return;
+            }
+
+            foreach (var profileEnv in profile.EnvVars.Where(env => !string.IsNullOrWhiteSpace(env.Variable)))
+            {
+                if (string.Equals(profileEnv.Action, "set", StringComparison.OrdinalIgnoreCase))
+                {
+                    config.EnvVars = config.EnvVars
+                        .Where(env => !string.Equals(env.Variable, profileEnv.Variable, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    config.EnvVars.Add(profileEnv);
+                    continue;
+                }
+
+                var alreadyConfigured = config.EnvVars.Any(env =>
+                    string.Equals(env.Variable, profileEnv.Variable, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(env.Action, profileEnv.Action, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(env.Value, profileEnv.Value, StringComparison.OrdinalIgnoreCase));
+
+                if (!alreadyConfigured)
+                {
+                    config.EnvVars.Add(profileEnv);
+                }
+            }
         }
 
         private async Task<StateData> BuildStateFromConfig(Configuration config)
