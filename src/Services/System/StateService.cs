@@ -1,7 +1,4 @@
 using System.Text.Json;
-using System.IO;
-using System.Collections.Generic;
-using System;
 using WinHome.Interfaces;
 using WinHome.Models;
 
@@ -132,10 +129,15 @@ namespace WinHome.Services.System
             try
             {
                 string json = JsonSerializer.Serialize(_inMemoryState, new JsonSerializerOptions { WriteIndented = true });
-                // Use FileShare.Read to prevent others from writing but allow reading
-                using var stream = File.Open(_stateFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-                using var writer = new StreamWriter(stream);
-                writer.Write(json);
+                string tmpPath = _stateFilePath + ".tmp";
+                
+                using (var stream = File.Open(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var writer = new StreamWriter(stream))
+                {
+                    writer.Write(json);
+                }
+                
+                File.Move(tmpPath, _stateFilePath, overwrite: true);
             }
             catch (Exception ex)
             {
