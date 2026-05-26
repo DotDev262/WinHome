@@ -35,7 +35,9 @@ def read_xml(file_path):
 
 def write_xml(file_path, tree):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    tree.write(file_path, encoding="utf-8", xml_declaration=True)
+    tmp = file_path + ".tmp"
+    tree.write(tmp, encoding="utf-8", xml_declaration=True)
+    os.replace(tmp, file_path)
 
 def merge_settings(tree, source):
     changed = False
@@ -149,8 +151,15 @@ def main():
     try:
         request = json.loads(input_data)
     except Exception as e:
-        log(f"Failed to parse request: {e}")
-        sys.exit(1)
+        response = {
+            "requestId": "unknown",
+            "success": False,
+            "changed": False,
+            "error": f"Failed to parse request: {e}"
+        }
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
+        return
 
     request_id = request.get("requestId", "unknown")
     command = request.get("command")
