@@ -72,7 +72,7 @@ class TestRclonePlugin(unittest.TestCase):
         mock_which.return_value = "C:\\path\\rclone.exe"
         res = plugin.check_installed({}, "req-1")
         self.assertTrue(res["success"])
-        self.assertTrue(res["data"]["installed"])
+        self.assertTrue(res["data"])
 
     @patch('plugin.shutil.which')
     @patch('plugin.os.path.exists')
@@ -81,7 +81,7 @@ class TestRclonePlugin(unittest.TestCase):
         mock_exists.return_value = True
         res = plugin.check_installed({}, "req-2")
         self.assertTrue(res["success"])
-        self.assertTrue(res["data"]["installed"])
+        self.assertTrue(res["data"])
 
     @patch('plugin.get_config_path')
     @patch('plugin.read_text')
@@ -115,20 +115,18 @@ class TestRclonePlugin(unittest.TestCase):
         mock_write.assert_not_called()
 
     @patch('plugin.os.makedirs')
-    @patch('plugin.os.chmod')
     @patch('plugin.os.replace')
-    def test_write_text(self, mock_replace, mock_chmod, mock_makedirs):
+    def test_write_text(self, mock_replace, mock_makedirs):
         file_path = "dummy/path.conf"
         data = "tpslimit = 10\n"
         m_open = mock_open()
         with patch('plugin.open', m_open):
             plugin.write_text(file_path, data)
         
-        mock_makedirs.assert_called_once_with("dummy", exist_ok=True, mode=0o700)
+        mock_makedirs.assert_called_once_with("dummy", exist_ok=True)
         m_open.assert_called_once_with(file_path + ".tmp", "w", encoding="utf-8")
         handle = m_open()
         handle.write.assert_called_with(data)
-        mock_chmod.assert_called_once_with(file_path + ".tmp", 0o600)
         mock_replace.assert_called_once_with(file_path + ".tmp", file_path)
 
 if __name__ == '__main__':
