@@ -97,7 +97,7 @@ def check_installed(args, request_id):
         "requestId": request_id,
         "success": True,
         "changed": False,
-        "data": {"installed": installed},
+        "data": installed,
     }
 
 def apply_config(args, context, request_id):

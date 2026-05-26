@@ -20,7 +20,7 @@ def test_check_installed_returns_bool(monkeypatch):
     req = make_request("check_installed")
     result = plugin.check_installed(req["args"], req["requestId"])
     assert result["success"] is True
-    assert result["data"]["installed"] is True
+    assert result["data"] is True
 
 def test_apply_dry_run_no_write(tmp_path, monkeypatch):
     config_file = tmp_path / "chocolatey.config"
