@@ -156,7 +156,7 @@ This roadmap is a living document that outlines the project's future direction. 
 - [ ] **Advanced State Management**: Add CLI commands to view, backup, and restore system state.
 - [ ] **Structured Output**: Add a `--json` flag for machine-readable output of run results.
 - [ ] **GUI Mode**: Develop a simple graphical user interface for non-technical users.
-- [ ] **Profile-based PATH Overrides**: Allow different profiles to have unique PATH environment variables.
+- [x] **Profile-based PATH Overrides**: Allow different profiles to have unique PATH environment variables.
 - [ ] **"Generate" Function**: Add a command to generate a `config.yaml` file from the current state of a live system.
 - [ ] **DSL**: Evolve the configuration into a more powerful Domain-Specific Language (similar to Nix).
 
@@ -307,6 +307,13 @@ profiles:
     git:
       userName: "John Doe (Work)"
       userEmail: "john.doe@work.com"
+    envVars:
+      - variable: "EDITOR"
+        value: "code"
+        action: "set"
+      - variable: "Path"
+        value: "%USERPROFILE%\work\bin"
+        action: "append"
 ```
 
 ---

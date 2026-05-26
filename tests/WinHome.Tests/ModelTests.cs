@@ -705,6 +705,8 @@ public class ModelTests
 
         // Assert
         Assert.Null(config.Git);
+        Assert.NotNull(config.EnvVars);
+        Assert.Empty(config.EnvVars);
     }
 
     [Fact]
@@ -722,6 +724,10 @@ public class ModelTests
                 {
                     { "core.editor", "code --wait" }
                 }
+            },
+            EnvVars = new List<EnvVarConfig>
+            {
+                new EnvVarConfig { Variable = "Path", Value = "%USERPROFILE%\\work\\bin", Action = "append" }
             }
         };
 
@@ -736,6 +742,10 @@ public class ModelTests
         Assert.Equal(original.Git.UserEmail, deserialized.Git.UserEmail);
         Assert.Equal(original.Git.CommitGpgSign, deserialized.Git.CommitGpgSign);
         Assert.Equal(original.Git.Settings["core.editor"], deserialized.Git.Settings["core.editor"]);
+        Assert.Single(deserialized.EnvVars);
+        Assert.Equal(original.EnvVars[0].Variable, deserialized.EnvVars[0].Variable);
+        Assert.Equal(original.EnvVars[0].Value, deserialized.EnvVars[0].Value);
+        Assert.Equal(original.EnvVars[0].Action, deserialized.EnvVars[0].Action);
     }
 
     [Fact]
@@ -754,6 +764,10 @@ public class ModelTests
                 {
                     { "core.autocrlf", "true" }
                 }
+            },
+            EnvVars = new List<EnvVarConfig>
+            {
+                new EnvVarConfig { Variable = "EDITOR", Value = "code", Action = "set" }
             }
         };
 
@@ -772,6 +786,10 @@ public class ModelTests
         Assert.Equal(original.Git.SigningKey, deserialized.Git.SigningKey);
         Assert.Equal(original.Git.CommitGpgSign, deserialized.Git.CommitGpgSign);
         Assert.Equal(original.Git.Settings["core.autocrlf"], deserialized.Git.Settings["core.autocrlf"]);
+        Assert.Single(deserialized.EnvVars);
+        Assert.Equal(original.EnvVars[0].Variable, deserialized.EnvVars[0].Variable);
+        Assert.Equal(original.EnvVars[0].Value, deserialized.EnvVars[0].Value);
+        Assert.Equal(original.EnvVars[0].Action, deserialized.EnvVars[0].Action);
     }
 
     #endregion

@@ -115,3 +115,27 @@ apps:
     manager: "vim"
 ```
 
+## Profiles
+Profiles can override selected top-level settings when `--profile <name>` is used.
+
+```yaml
+envVars:
+  - variable: "EDITOR"
+    value: "nvim"
+    action: "set"
+
+profiles:
+  work:
+    git:
+      userName: "Work User"
+      userEmail: "work@example.com"
+    envVars:
+      - variable: "EDITOR"
+        value: "code"
+        action: "set"
+      - variable: "Path"
+        value: "%USERPROFILE%\work\bin"
+        action: "append"
+```
+
+For `profiles.<name>.envVars`, `action: set` replaces any matching top-level variable for that profile. `action: append` keeps the base variable entries and adds the profile-specific value.

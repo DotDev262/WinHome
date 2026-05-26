@@ -9,6 +9,8 @@ namespace WinHome.Models
         [JsonPropertyName("git")]
         public GitConfig? Git { get; set; }
 
-        // You can add 'Apps' or 'SystemSettings' here later if you want profile-specific apps
+        [YamlMember(Alias = "envVars")]
+        [JsonPropertyName("envVars")]
+        public List<EnvVarConfig> EnvVars { get; set; } = new();
     }
 }
