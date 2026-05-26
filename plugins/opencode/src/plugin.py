@@ -100,10 +100,13 @@ def read_jsonc(file_path: str) -> dict:
 
 def write_json(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    tmp_path = f"{file_path}.tmp"
 
-    with open(file_path, "w", encoding="utf-8") as config_file:
+    with open(tmp_path, "w", encoding="utf-8") as config_file:
         json.dump(data, config_file, indent=2)
         config_file.write("\n")
+
+    os.replace(tmp_path, file_path)
 
 
 def user_home() -> str:
@@ -174,7 +177,7 @@ def check_installed(args: dict, request_id: str) -> dict:
         request_id,
         success=True,
         changed=False,
-        data={"installed": installed},
+        data=installed,
     )
 
 

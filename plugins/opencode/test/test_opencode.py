@@ -50,7 +50,7 @@ def apply_payload(args: dict, dry_run: bool = False) -> dict:
     }
 
 
-def test_check_installed_returns_installed_object():
+def test_check_installed_returns_bare_installed_boolean():
     response = run_plugin({
         "requestId": "check-1",
         "command": "check_installed",
@@ -61,7 +61,7 @@ def test_check_installed_returns_installed_object():
     assert response["requestId"] == "check-1"
     assert response["success"] is True
     assert response["changed"] is False
-    assert isinstance(response["data"]["installed"], bool)
+    assert isinstance(response["data"], bool)
 
 
 def test_apply_creates_missing_global_config_directory():
@@ -79,6 +79,7 @@ def test_apply_creates_missing_global_config_directory():
         assert response["success"] is True
         assert response["changed"] is True
         assert os.path.exists(config_path)
+        assert not os.path.exists(f"{config_path}.tmp")
 
         with open(config_path, "r", encoding="utf-8") as config_file:
             saved = json.load(config_file)
@@ -257,7 +258,7 @@ def test_unknown_command():
 
 
 if __name__ == "__main__":
-    test_check_installed_returns_installed_object()
+    test_check_installed_returns_bare_installed_boolean()
     test_apply_creates_missing_global_config_directory()
     test_apply_reads_jsonc_and_preserves_existing_keys()
     test_apply_dry_run_reports_change_without_writing()
