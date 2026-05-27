@@ -229,6 +229,63 @@ namespace WinHome.Tests.Services.System
             Assert.Single(backups);
         }
 
+        // ── Timestamped backups ────────────────────────────────────────────────────
+
+        [Fact]
+        public void MarkAsApplied_CreatesTimestampedBackup()
+        {
+            // Create initial state file
+            File.WriteAllText(_stateFilePath, JsonSerializer.Serialize(new StateData { AppliedItems = new HashSet<string> { "existing" } }));
+
+            var svc = CreateService();
+            svc.MarkAsApplied("newItem");
+
+            // Find timestamped backup files (format: filename.YYYY-MM-DD-HHMMSS.{uuid}.bak)
+            var backupFiles = Directory.GetFiles(_testDir, "winhome.state.json.????-??-??-??????.*.bak");
+            Assert.NotEmpty(backupFiles);
+            Assert.True(File.Exists(backupFiles[0]));
+
+            // Verify backup contains original data
+            var backupContent = File.ReadAllText(backupFiles[0]);
+            var backupState = JsonSerializer.Deserialize<StateData>(backupContent);
+            Assert.Contains("existing", backupState?.AppliedItems!);
+        }
+
+        [Fact]
+        public void SaveState_CreatesTimestampedBackup()
+        {
+            // Create initial state file
+            File.WriteAllText(_stateFilePath, JsonSerializer.Serialize(new StateData { AppliedItems = new HashSet<string> { "old" } }));
+
+            var svc = CreateService();
+            svc.SaveState(new StateData { AppliedItems = new HashSet<string> { "new" } });
+
+            // Find timestamped backup files
+            var backupFiles = Directory.GetFiles(_testDir, "winhome.state.json.????-??-??-??????.*.bak");
+            Assert.NotEmpty(backupFiles);
+
+            // Cleanup backups
+            foreach (var backup in backupFiles)
+            {
+                File.Delete(backup);
+            }
+        }
+
+        [Fact]
+        public void SaveState_NoBackupForNewFile()
+        {
+            // Don't create initial state file
+            if (File.Exists(_stateFilePath))
+                File.Delete(_stateFilePath);
+
+            var svc = CreateService();
+            svc.SaveState(new StateData { AppliedItems = new HashSet<string> { "item1" } });
+
+            // No backup should be created for new files
+            var backupFiles = Directory.GetFiles(_testDir, "winhome.state.json.????-??-??-??????.*.bak");
+            Assert.Empty(backupFiles);
+        }
+
         // ── Round-trip: recover then continue working ─────────────────────────────
 
         [Fact]

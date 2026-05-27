@@ -9,6 +9,7 @@ namespace WinHome.Services.System
         private readonly string _stateFilePath;
         private readonly ILogger _logger;
         private StateData _inMemoryState;
+        private readonly FileBackupService _backupService;
 
         public StateService(ILogger logger)
         {
@@ -17,6 +18,7 @@ namespace WinHome.Services.System
             var envPath = Environment.GetEnvironmentVariable("WINHOME_STATE_PATH");
             _stateFilePath = string.IsNullOrEmpty(envPath) ? "winhome.state.json" : envPath;
             _inMemoryState = LoadState();
+            _backupService = new FileBackupService(logger);
         }
 
         public StateData LoadState()
@@ -128,6 +130,9 @@ namespace WinHome.Services.System
         {
             try
             {
+                // Create timestamped backup before overwriting
+                _backupService.CreateBackup(_stateFilePath);
+
                 string json = JsonSerializer.Serialize(_inMemoryState, new JsonSerializerOptions { WriteIndented = true });
                 string tmpPath = _stateFilePath + ".tmp";
 
