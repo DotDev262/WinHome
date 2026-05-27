@@ -244,6 +244,18 @@ def test_strip_jsonc_comments_keeps_comment_like_text_in_strings():
     }
 
 
+def test_strip_jsonc_comments_handles_block_comments():
+    plugin = load_plugin()
+    cleaned = plugin.strip_jsonc_comments(
+        '{"url": "https://example.com//ok", /* remove\n me */ "value": 1}'
+    )
+
+    assert json.loads(cleaned) == {
+        "url": "https://example.com//ok",
+        "value": 1,
+    }
+
+
 def test_unknown_command():
     response = run_plugin({
         "requestId": "unknown-1",
@@ -266,6 +278,7 @@ if __name__ == "__main__":
     test_apply_supports_project_level_config()
     test_apply_supports_legacy_config_and_top_level_dry_run()
     test_strip_jsonc_comments_keeps_comment_like_text_in_strings()
+    test_strip_jsonc_comments_handles_block_comments()
     test_unknown_command()
 
     print("\nAll tests passed.")

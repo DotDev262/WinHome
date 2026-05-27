@@ -70,6 +70,15 @@ def strip_jsonc_comments(text: str) -> str:
                 index += 1
             continue
 
+        if char == "/" and next_char == "*":
+            index += 2
+            while index < len(text):
+                if text[index] == "*" and index + 1 < len(text) and text[index + 1] == "/":
+                    index += 2
+                    break
+                index += 1
+            continue
+
         output.append(char)
         index += 1
 
@@ -239,6 +248,9 @@ def main() -> None:
     input_data = sys.stdin.read()
 
     if not input_data:
+        result = response("unknown", success=False, changed=False, error="Empty input")
+        sys.stdout.write(json.dumps(result) + "\n")
+        sys.stdout.flush()
         return
 
     try:
