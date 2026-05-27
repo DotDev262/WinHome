@@ -36,29 +36,6 @@ def write_ini(path, config):
         raise
 
 
-def read_json(path):
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        log(f"Warning: could not parse {path}: {e}")
-        return {}
-
-
-def write_json(path, data):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd, temp_path = tempfile.mkstemp(prefix="obs-studio-", dir=os.path.dirname(path))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-        os.replace(temp_path, path)
-    except Exception:
-        os.unlink(temp_path)
-        raise
-
-
 def merge_ini_section(config, section, values):
     changed = False
     if not config.has_section(section):
@@ -280,6 +257,8 @@ def apply_config(args, context, request_id):
 def main():
     input_data = sys.stdin.read()
     if not input_data:
+        sys.stdout.write(json.dumps({"requestId": "unknown", "success": False, "changed": False, "error": "No input"}) + "\n")
+        sys.stdout.flush()
         return
 
     try:
