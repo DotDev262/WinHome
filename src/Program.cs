@@ -4,6 +4,7 @@ using System.CommandLine;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
 using WinHome.Services.Logging;
+using WinHome.Services.System;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -61,6 +62,7 @@ class Program
                     var logger = host.Services.GetRequiredService<ILogger>();
                     logger.SetMinLevel(minLogLevel);
                     var generator = host.Services.GetRequiredService<IGeneratorService>();
+                    var backupService = new FileBackupService(logger);
 
                     try
                     {
@@ -75,6 +77,9 @@ class Program
 
                         if (outputFile != null)
                         {
+                            // Create timestamped backup before overwriting
+                            backupService.CreateBackup(outputFile.FullName);
+
                             await File.WriteAllTextAsync(outputFile.FullName, yaml);
                             logger.LogSuccess($"[Generator] Configuration saved to {outputFile.FullName}");
                         }

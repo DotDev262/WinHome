@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using WinHome.Interfaces;
 using WinHome.Models;
+using WinHome.Services.System;
+using WinHome.Services.Logging;
 
 namespace WinHome.Services
 {
@@ -13,6 +16,7 @@ namespace WinHome.Services
         private readonly object _lock = new();
         private readonly JsonSerializerOptions _opts = new() { WriteIndented = true };
         private Dictionary<string, StepResult>? _cache;
+        private readonly FileBackupService _backupService;
 
         public StateWriter(string? path = null)
         {
@@ -21,6 +25,15 @@ namespace WinHome.Services
 
             _path = path ?? Path.Combine(winHomeDir, ".winhome-state.json");
             _opts.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            
+            // Initialize backup service with a no-op logger since StateWriter is internal
+            _backupService = new FileBackupService(new NullLogger());
+        }
+
+        public StateWriter(string? path, ILogger logger) : this(path)
+        {
+            // Allow injection of logger for testing
+            _backupService = new FileBackupService(logger);
         }
 
         public Dictionary<string, StepResult> Load()
@@ -69,6 +82,9 @@ namespace WinHome.Services
                 {
                     Directory.CreateDirectory(dir);
                 }
+
+                // Create timestamped backup before overwriting
+                _backupService.CreateBackup(_path);
 
                 var tmp = _path + ".tmp";
                 var serialized = JsonSerializer.Serialize(_cache, _opts);

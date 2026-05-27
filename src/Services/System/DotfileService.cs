@@ -6,10 +6,12 @@ namespace WinHome.Services.System
     public class DotfileService : IDotfileService
     {
         private readonly ILogger _logger;
+        private readonly FileBackupService _backupService;
 
         public DotfileService(ILogger logger)
         {
             _logger = logger;
+            _backupService = new FileBackupService(logger);
         }
         public void Apply(DotfileConfig dotfile, bool dryRun)
         {
@@ -36,11 +38,14 @@ namespace WinHome.Services.System
                     return;
                 }
 
-
+                // Create timestamped backup before overwriting
+                _backupService.CreateBackup(targetPath);
+                
+                // Remove the original target file if it exists (restore move semantics)
+                // This ensures the symlink/copy can be created without conflicts
                 if (File.Exists(targetPath))
                 {
-                    File.Move(targetPath, targetPath + ".bak", true);
-                    _logger.LogInfo($"[Dotfile] Backup created.");
+                    File.Delete(targetPath);
                 }
 
                 string? parentDir = Path.GetDirectoryName(targetPath);
