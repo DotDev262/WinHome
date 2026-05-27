@@ -27,6 +27,9 @@ jobs:
     - name: Check formatting
       run: dotnet format --verify-no-changes --verbosity diagnostic WinHome.sln
 
+    - name: Check prettier formatting
+      run: npx prettier --check .
+
     - name: Build
       run: dotnet build WinHome.sln
 
