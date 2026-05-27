@@ -1,163 +1,51 @@
-# PowerShell Plugin
+## Overview
 
-## Description
+The PowerShell plugin modifies the PowerShell profile to inject aliases, modules, and functions.
 
-The PowerShell plugin manages PowerShell profile configuration by updating the user's PowerShell profile script.
+## Prerequisites
 
-The plugin can:
-- Configure aliases
-- Import PowerShell modules
-- Configure prompts such as Oh My Posh
-- Configure PSReadLine options
-- Add custom PowerShell functions
-- Preserve existing profile content outside managed sections
+- PowerShell installed (`pwsh` or `powershell.exe`)
+- Profile file access
 
-Managed configuration blocks are automatically wrapped between markers:
+## Configuration Schema
 
-```powershell
-# --- WinHome managed start ---
-# --- WinHome managed end ---
-```
-
-## Supported OS
-
-- Windows
-- Linux
-- macOS
-
-## PowerShell Profile Locations
-
-### Windows PowerShell 7
-
-```text
-%USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
-```
-
-### Windows PowerShell 5
-
-```text
-%USERPROFILE%\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
-```
-
-### Linux/macOS
-
-```text
-~/.config/powershell/profile.ps1
-```
-
-## Configuration
-
-Basic example:
-
-```yaml
-plugins:
-  - name: powershell
-    settings:
-      aliases:
-        ll: "Get-ChildItem"
-```
-
-## Supported Settings
-
-| Setting | Description |
-|----------|-------------|
-| aliases | Configure PowerShell aliases |
-| modules | Import PowerShell modules |
-| prompt | Configure shell prompt |
-| psreadline | Configure PSReadLine options |
-| functions | Add custom PowerShell functions |
-
----
+| Key | Type | Description |
+|-----|------|-------------|
+| aliases | object | Command aliases |
+| modules | object | PowerShell modules |
+| functions | object | Custom functions |
+| prompt | object | Prompt config |
 
 ## Usage Examples
 
-### Example 1 — Configure Aliases
-
+### Aliases
 ```yaml
 plugins:
   - name: powershell
-    settings:
-      aliases:
-        ll: "Get-ChildItem"
-        gs: "git status"
+    aliases:
+      ll: "Get-ChildItem"
 ```
 
-### Example 2 — Configure Oh My Posh Prompt
-
+### Modules
 ```yaml
 plugins:
   - name: powershell
-    settings:
-      prompt:
-        type: "oh-my-posh"
-        theme: "~/themes/jandedobbeleer.omp.json"
+    modules:
+      posh-git: {}
 ```
 
-### Example 3 — Configure PSReadLine
-
-```yaml
-plugins:
-  - name: powershell
-    settings:
-      psreadline:
-        prediction_source: "History"
-```
-
-### Example 4 — Import Modules
-
-```yaml
-plugins:
-  - name: powershell
-    settings:
-      modules:
-        zoxide: {}
-```
-
-### Example 5 — Add Custom Functions
-
-```yaml
-plugins:
-  - name: powershell
-    settings:
-      functions:
-        greet: |
-          Write-Host "Hello from WinHome"
-```
-
----
-
-## Verification
-
-Verify PowerShell installation:
-
-```powershell
-$PSVersionTable
-```
-
-Verify aliases:
-
-```powershell
-Get-Alias ll
-```
-
-Verify imported modules:
-
-```powershell
-Get-Module
-```
-
-Verify profile location:
+## Verification Steps
 
 ```powershell
 $PROFILE
 ```
 
----
+```powershell
+Get-Alias
+```
 
-## Notes
+## Notes / Caveats
 
-- Existing profile content outside WinHome managed markers is preserved.
-- The plugin automatically creates profile directories if they do not exist.
-- The plugin supports dry-run mode.
-- PowerShell modules are imported with `ErrorAction SilentlyContinue`.
-- Managed sections are automatically updated without overwriting unrelated profile content.
+- Edits PowerShell profile directly
+- Uses markers to avoid duplicate injection
+```

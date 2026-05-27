@@ -1,135 +1,49 @@
-# GitHub CLI Plugin
+## Overview
 
-## Description
+The GitHub CLI plugin manages configuration for `gh` using YAML config file.
 
-The GitHub CLI plugin manages GitHub CLI (`gh`) configuration by updating the GitHub CLI YAML configuration file.
+## Prerequisites
 
-The plugin can:
-- Configure GitHub CLI settings
-- Merge new configuration into existing settings
-- Automatically create configuration directories
-- Detect whether GitHub CLI is installed
-- Support dry-run configuration updates
+- GitHub CLI installed (`gh`)
+- PyYAML installed
 
-## Supported OS
+## Configuration Schema
 
-- Windows
-- Linux
-- macOS
-
-## Configuration File Location
-
-### Windows
-
-```text
-%APPDATA%\GitHub CLI\config.yml
-```
-
-## Configuration Format
-
-The plugin stores settings in YAML format.
-
-Basic example:
-
-```yaml
-plugins:
-  - name: gh
-    git_protocol: ssh
-```
-
----
-
-## Supported Settings
-
-The plugin supports GitHub CLI configuration keys.
-
-Example settings include:
-
-| Setting | Description |
-|----------|-------------|
-| git_protocol | Preferred Git protocol |
-| editor | Default editor |
-| browser | Default browser |
-| prompt | Interactive prompt behavior |
-| aliases | GitHub CLI aliases |
-
-Nested configuration objects are also supported.
-
----
+| Key | Type | Description |
+|-----|------|-------------|
+| git_protocol | string | SSH or HTTPS |
+| editor | string | Default editor |
+| aliases | object | Command aliases |
 
 ## Usage Examples
 
-### Example 1 — Configure Git Protocol
-
+### Git protocol
 ```yaml
 plugins:
   - name: gh
     git_protocol: ssh
 ```
 
-### Example 2 — Configure Default Editor
-
-```yaml
-plugins:
-  - name: gh
-    editor: vscode
-```
-
-### Example 3 — Configure Aliases
-
+### Aliases
 ```yaml
 plugins:
   - name: gh
     aliases:
-      co: "pr checkout"
-      pv: "pr view"
+      co: pr checkout
 ```
 
-### Example 4 — Configure Browser
-
-```yaml
-plugins:
-  - name: gh
-    browser: chrome
-```
-
-### Example 5 — Nested Configuration
-
-```yaml
-plugins:
-  - name: gh
-    prompt: enabled
-```
-
----
-
-## Verification
-
-Verify GitHub CLI installation:
+## Verification Steps
 
 ```bash
 gh --version
 ```
 
-Verify current configuration:
-
 ```bash
 gh config list
 ```
 
-Verify the configuration file exists:
+## Notes / Caveats
 
-```text
-%APPDATA%\GitHub CLI\config.yml
+- YAML is auto-merged
+- Empty values ignored
 ```
-
----
-
-## Notes
-
-- Existing YAML configuration is preserved and merged automatically.
-- Empty values are ignored during updates.
-- The plugin automatically creates missing configuration directories.
-- Dry-run mode is supported.
-- PyYAML is required for reading and writing configuration files.
-- Nested YAML configuration objects are supported.

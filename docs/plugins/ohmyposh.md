@@ -1,124 +1,43 @@
-# Oh My Posh Plugin
+## Overview
 
-## Description
+The Oh My Posh plugin configures terminal themes using Oh My Posh prompt engine.
 
-The Oh My Posh plugin manages Oh My Posh initialization inside the PowerShell profile.
+## Prerequisites
 
-The plugin can:
-- Configure Oh My Posh themes
-- Automatically update PowerShell profile files
-- Replace existing Oh My Posh managed blocks
-- Detect whether Oh My Posh configuration is already installed
+- Oh My Posh installed
+- PowerShell or supported shell
 
-Managed blocks are wrapped between:
+## Configuration Schema
 
-```powershell
-# OH-MY-POSH-PLUGIN BEGIN
-# OH-MY-POSH-PLUGIN END
-```
-
-## Supported OS
-
-- Windows
-
-## PowerShell Profile Locations
-
-### PowerShell 7
-
-```text
-%USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
-```
-
-### Windows PowerShell 5
-
-```text
-%USERPROFILE%\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
-```
-
-The plugin automatically selects the available profile path.
-
-## Configuration
-
-Basic configuration example:
-
-```yaml
-plugins:
-  - name: ohmyposh
-    settings:
-      theme: "~/themes/jandedobbeleer.omp.json"
-```
-
-## Supported Settings
-
-| Setting | Description |
-|----------|-------------|
-| theme | Path to Oh My Posh theme file |
-| profile | Optional custom PowerShell profile path |
-
----
+| Key | Type | Description |
+|-----|------|-------------|
+| theme | string | Path to theme file |
+| profile | string | Optional profile path |
 
 ## Usage Examples
 
-### Example 1 — Basic Theme Configuration
-
+### Basic theme
 ```yaml
 plugins:
   - name: ohmyposh
-    settings:
-      theme: "~/themes/jandedobbeleer.omp.json"
+    theme: "atomic.omp.json"
 ```
 
-### Example 2 — Custom Profile Path
-
+### Custom profile
 ```yaml
 plugins:
   - name: ohmyposh
-    settings:
-      theme: "~/themes/paradox.omp.json"
-      profile: "~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1"
+    profile: "custom.ps1"
 ```
 
-### Example 3 — Minimal Theme Setup
+## Verification Steps
 
-```yaml
-plugins:
-  - name: ohmyposh
-    settings:
-      theme: "~/themes/atomic.omp.json"
+```bash
+oh-my-posh --version
 ```
 
----
+## Notes / Caveats
 
-## Verification
-
-Verify Oh My Posh installation:
-
-```powershell
-oh-my-posh version
-```
-
-Verify the profile contains the plugin block:
-
-```powershell
-Get-Content $PROFILE
-```
-
-Verify the theme is active:
-
-```powershell
-oh-my-posh init pwsh
-```
-
----
-
-## Notes
-
-- Existing Oh My Posh blocks are automatically replaced during updates.
-- The plugin preserves unrelated PowerShell profile content.
-- Dry-run mode is supported.
-- If no profile path is specified, the plugin automatically detects the correct PowerShell profile location.
-- The plugin inserts initialization using:
-
-```powershell
-oh-my-posh init pwsh --config "<theme>" | Invoke-Expression
+- Only modifies prompt initialization block
+- Safe overwrite using markers
 ```

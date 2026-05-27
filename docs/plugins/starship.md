@@ -1,113 +1,52 @@
-# Starship Plugin
+## Overview
 
-## Description
+The Starship plugin configures the Starship shell prompt by updating the `starship.toml` configuration file.
 
-The Starship plugin manages the Starship prompt configuration by updating the `starship.toml` file inside the user's configuration directory.
+It helps customize terminal prompts with themes, symbols, and performance indicators.
 
-The plugin can:
-- Check whether Starship is installed
-- Apply and merge Starship configuration settings
-- Create the config file automatically if it does not exist
+## Prerequisites
 
-## Supported OS
+- Starship installed (`starship.exe` or `starship`)
+- Windows environment variable support
 
-- Windows
-- Linux
-- macOS
+## Configuration Schema
 
-## Configuration File Location
-
-```text
-~/.config/starship.toml
-```
-
-On Windows:
-
-```text
-%USERPROFILE%\.config\starship.toml
-```
-
-## Configuration
-
-Example configuration:
-
-```yaml
-plugins:
-  - name: starship
-    settings:
-      add_newline: false
-```
-
-## Supported Settings
-
-The plugin supports Starship TOML configuration settings.
-
-Example:
-
-```yaml
-plugins:
-  - name: starship
-    settings:
-      add_newline: false
-      command_timeout: 1000
-```
-
-Nested TOML tables are also supported:
-
-```yaml
-plugins:
-  - name: starship
-    settings:
-      character:
-        success_symbol: "[➜](bold green)"
-```
+| Key | Type | Description |
+|-----|------|-------------|
+| Any TOML key | object/string | Starship configuration values |
 
 ## Usage Examples
 
-### Example 1 — Disable Newline
-
+### Basic setup
 ```yaml
 plugins:
   - name: starship
-    settings:
-      add_newline: false
+    prompt: true
 ```
 
-### Example 2 — Configure Prompt Symbol
-
+### Enable custom sections
 ```yaml
 plugins:
   - name: starship
-    settings:
-      character:
-        success_symbol: "[➜](bold green)"
+    prompt:
+      add_newline: true
 ```
 
-### Example 3 — Set Command Timeout
-
-```yaml
-plugins:
-  - name: starship
-    settings:
-      command_timeout: 1000
-```
-
-## Verification
-
-Verify Starship installation:
+## Verification Steps
 
 ```bash
 starship --version
 ```
 
-Verify the configuration file exists:
+Check config:
 
 ```bash
 cat ~/.config/starship.toml
 ```
 
-## Notes
+## Notes / Caveats
 
-- Existing configuration values are preserved and merged with new settings.
-- The plugin automatically creates the configuration directory if it does not exist.
-- Python 3.11+ is recommended for TOML parsing support.
+- Requires `starship` binary installed
+- Config is automatically merged
+- Runs on Windows via USERPROFILE
+```
