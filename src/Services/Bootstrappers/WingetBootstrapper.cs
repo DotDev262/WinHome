@@ -46,15 +46,33 @@ namespace WinHome.Services.Bootstrappers
                 Directory.CreateDirectory(tempDir);
 
                 // FIX: Platform guard for Windows-only ACL APIs to prevent crashes on Linux CI
+                // FIX: Platform guard for Windows-only ACL APIs
                 if (OperatingSystem.IsWindows())
                 {
-                    var security = new System.Security.AccessControl.DirectorySecurity();
-                    var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
-                    security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
-                        currentUser,
-                        System.Security.AccessControl.FileSystemRights.FullControl,
-                        System.Security.AccessControl.AccessControlType.Allow));
-                    Directory.SetAccessControl(tempDir, security);
+                    try
+                    {
+                        var security = new global::System.Security.AccessControl.DirectorySecurity();
+                        var currentUser = global::System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+
+                        // Grant FullControl to the current user
+                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(
+                            currentUser,
+                            global::System.Security.AccessControl.FileSystemRights.FullControl,
+                            global::System.Security.AccessControl.AccessControlType.Allow));
+
+                        // Grant FullControl to SYSTEM and Administrators using SIDs
+                        var systemSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.LocalSystemSid, null);
+                        var adminSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
+
+                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(systemSid, global::System.Security.AccessControl.FileSystemRights.FullControl, global::System.Security.AccessControl.AccessControlType.Allow));
+                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(adminSid, global::System.Security.AccessControl.FileSystemRights.FullControl, global::System.Security.AccessControl.AccessControlType.Allow));
+
+                        global::System.IO.Directory.SetAccessControl(tempDir, security);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"[Bootstrapper] Could not set ACL: {ex.Message}.");
+                    }
                 }
 
                 string version = GetLatestVersion();
