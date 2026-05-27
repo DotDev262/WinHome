@@ -107,6 +107,7 @@ namespace WinHome
             var currentState = await BuildStateFromConfig(config);
 
             var previousState = _stateService.LoadState();
+            currentState.SystemSettingOriginals = new Dictionary<string, object>(previousState.SystemSettingOriginals);
 
             // Cleanup
             var itemsToRemove = previousState.AppliedItems.Except(currentState.AppliedItems).ToList();
@@ -148,6 +149,7 @@ namespace WinHome
                         if (!dryRun)
                         {
                             _stateService.RemoveSystemSettingOriginal(settingKey);
+                            currentState.SystemSettingOriginals.Remove(settingKey);
                         }
                     }
                 }
@@ -317,7 +319,11 @@ namespace WinHome
                     var originals = await _systemSettings.CaptureOriginalSettingsAsync(config.SystemSettings);
                     foreach (var kvp in originals)
                     {
-                        _stateService.TrackSystemSettingOriginal(kvp.Key, kvp.Value);
+                        if (!currentState.SystemSettingOriginals.ContainsKey(kvp.Key))
+                        {
+                            currentState.SystemSettingOriginals[kvp.Key] = kvp.Value;
+                            _stateService.TrackSystemSettingOriginal(kvp.Key, kvp.Value);
+                        }
                     }
                 }
 

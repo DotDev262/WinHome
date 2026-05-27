@@ -357,6 +357,61 @@ namespace WinHome.Tests
         }
 
         [Fact]
+        public async Task RunAsync_ShouldPersistCapturedSystemSettingOriginals()
+        {
+            if (!OperatingSystem.IsWindows()) return;
+
+            // Arrange
+            var config = new Configuration();
+            config.SystemSettings["brightness"] = 80;
+
+            _mockSystemSettings
+                .Setup(s => s.CaptureOriginalSettingsAsync(It.IsAny<Dictionary<string, object>>()))
+                .ReturnsAsync(new Dictionary<string, object> { ["brightness"] = 45 });
+
+            var mockLogger = new Mock<ILogger>();
+            var engine = CreateEngine(mockLogger);
+
+            // Act
+            await engine.RunAsync(config, false);
+
+            // Assert
+            _mockStateService.Verify(s => s.SaveState(It.Is<StateData>(sd =>
+                sd.SystemSettingOriginals.ContainsKey("brightness") &&
+                sd.SystemSettingOriginals["brightness"].Equals(45))), Times.Once);
+        }
+
+        [Fact]
+        public async Task RunAsync_ShouldNotOverwriteExistingSystemSettingOriginals()
+        {
+            if (!OperatingSystem.IsWindows()) return;
+
+            // Arrange
+            var config = new Configuration();
+            config.SystemSettings["brightness"] = 80;
+
+            var previousState = new StateData();
+            previousState.SystemSettingOriginals["brightness"] = 45;
+            _mockStateService.Setup(s => s.LoadState()).Returns(previousState);
+
+            _mockSystemSettings
+                .Setup(s => s.CaptureOriginalSettingsAsync(It.IsAny<Dictionary<string, object>>()))
+                .ReturnsAsync(new Dictionary<string, object> { ["brightness"] = 80 });
+
+            var mockLogger = new Mock<ILogger>();
+            var engine = CreateEngine(mockLogger);
+
+            // Act
+            await engine.RunAsync(config, false);
+
+            // Assert
+            _mockStateService.Verify(s => s.TrackSystemSettingOriginal("brightness", It.IsAny<object>()), Times.Never);
+            _mockStateService.Verify(s => s.SaveState(It.Is<StateData>(sd =>
+                sd.SystemSettingOriginals.ContainsKey("brightness") &&
+                sd.SystemSettingOriginals["brightness"].Equals(45))), Times.Once);
+        }
+
+        [Fact]
         public async Task PrintDiffAsync_ShouldShowSystemSettingsReverts()
         {
             // Arrange
