@@ -3,6 +3,9 @@ import json
 import os
 import configparser
 import tempfile
+import shutil
+import uuid
+import datetime
 
 
 def log(msg):
@@ -20,7 +23,17 @@ def get_obs_appdata():
 def read_ini(path):
     config = configparser.RawConfigParser()
     if os.path.exists(path):
-        config.read(path, encoding="utf-8")
+        try:
+            config.read(path, encoding="utf-8")
+        except configparser.Error as e:
+            timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+            suffix = uuid.uuid4().hex[:8]
+            backup_path = f"{path}.corrupted.{timestamp}.{suffix}"
+            log(f"Config corrupted. Backing up to {backup_path} and starting fresh. Error: {e}")
+            try:
+                shutil.move(path, backup_path)
+            except Exception as backup_e:
+                log(f"Failed to backup corrupted config: {backup_e}")
     return config
 
 
