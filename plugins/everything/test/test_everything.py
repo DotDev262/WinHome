@@ -1,34 +1,48 @@
-﻿import unittest
+﻿import json
+import subprocess
 import sys
-import os
 
-# Fix import
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(current_dir, '..', 'src')))
 
-from plugin import check_installed, apply
+PLUGIN = "everything/src/plugin.py"
 
-class TestEverythingPlugin(unittest.TestCase):
 
-    def test_check_installed(self):
-        result = check_installed()
-        self.assertIn('installed', result)
+def run_plugin(payload: dict):
+    p = subprocess.Popen(
+        [sys.executable, PLUGIN],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
 
-    def test_apply_dry_run(self):
-        request = {
-            "command": "apply",
+    out, err = p.communicate(json.dumps(payload))
+    return out.strip()
+
+
+def test_check_installed():
+    out = run_plugin({"command": "check_installed", "args": {}})
+    data = json.loads(out)
+    assert "installed" in data
+
+
+def test_apply_dry_run():
+    payload = {
+        "command": "apply",
+        "args": {
+            "dry_run": True,
             "args": {
-                "dry_run": True,
-                "args": {
-                    "general": {
-                        "run_as_admin": True,
-                        "show_in_taskbar": True
-                    }
+                "general": {
+                    "run_as_admin": True,
+                    "show_in_taskbar": True
+                },
+                "search": {
+                    "match_path": True,
+                    "max_visible_results": 100
                 }
             }
         }
-        result = apply(request)
-        self.assertTrue(result["success"])
+    }
 
-if __name__ == '__main__':
-    unittest.main(verbosity=2)
+    out = run_plugin(payload)
+
+    assert "success" in json.loads(out)
