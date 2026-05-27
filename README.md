@@ -240,6 +240,7 @@ Here is a tentative plan for upcoming releases.
 - [x] **Vim/Neovim Plugin**: Configure plugins and settings for Vim/Neovim.
 - [x] **Obsidian Plugin**: Manage settings and community plugins across your Obsidian vaults.
 - [x] **Oh My Posh Plugin**: Manage PowerShell terminal prompt themes.
+- [x] **Topgrade Plugin**: Universal package upgrade tool that detects package managers and runs updates in sequence.
 - [x] **Config Generator (`winhome generate`)**: Scan the system and create a `config.yaml` based on installed apps and settings.
 - [x] **Advanced State Management** (`state list`, `state backup`, `state restore`).
 - [x] **Secret Reference Logic**: Add support for referencing secrets from environment variables or secure vaults.
