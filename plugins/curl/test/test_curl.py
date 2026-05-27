@@ -4,8 +4,10 @@ import sys
 from unittest.mock import patch
 from io import StringIO
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.plugin import main, read_curlrc, write_curlrc
+_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(_src_path)
+import plugin
+sys.path.remove(_src_path)
 
 def run_plugin(input_dict):
     """Helper to run the plugin with JSON input and return JSON output."""
@@ -18,7 +20,7 @@ def run_plugin(input_dict):
     sys.stdout = StringIO()
     
     try:
-        main()
+        plugin.main()
         output_str = sys.stdout.getvalue()
         return json.loads(output_str)
     finally:
@@ -30,7 +32,7 @@ def test_read_curlrc(tmp_path):
     curlrc_file = tmp_path / ".curlrc"
     curlrc_file.write_text(curlrc_content)
     
-    config = read_curlrc(str(curlrc_file))
+    config = plugin.read_curlrc(str(curlrc_file))
     assert config == {
         "proxy": "http://proxy.example.com",
         "-k": None,
@@ -44,14 +46,14 @@ def test_write_curlrc(tmp_path):
         "-k": None,
         "silent": "true"
     }
-    write_curlrc(str(curlrc_file), config)
+    plugin.write_curlrc(str(curlrc_file), config)
     
     content = curlrc_file.read_text()
     assert "proxy=http://proxy.example.com" in content
     assert "-k" in content.split("\n")
     assert "silent" in content.split("\n")
 
-@patch('src.plugin.get_config_path')
+@patch('plugin.get_config_path')
 def test_apply_command(mock_get_path, tmp_path):
     curlrc_file = tmp_path / ".curlrc"
     curlrc_file.write_text("proxy=http://proxy.example.com\n")
@@ -78,7 +80,7 @@ def test_apply_command(mock_get_path, tmp_path):
     assert "proxy=http://new.example.com" in content
     assert "-k" in content.split("\n")
 
-@patch('src.plugin.get_config_path')
+@patch('plugin.get_config_path')
 def test_apply_dry_run(mock_get_path, tmp_path):
     curlrc_file = tmp_path / ".curlrc"
     curlrc_file.write_text("proxy=http://proxy.example.com\n")
