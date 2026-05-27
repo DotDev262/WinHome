@@ -13,6 +13,7 @@ using Xunit;
 
 namespace WinHome.Tests;
 
+[Collection("Console")]
 public class StateCommandTests
 {
     private readonly Mock<IStateService> _mockStateService;

@@ -103,7 +103,7 @@ namespace WinHome.Tests.Services.Plugins
             var runner = new Mock<IPluginRunner>();
             var manager = new Mock<IPluginManager>();
             var resolver = new Mock<IRuntimeResolver>();
-            resolver.Setup(r => r.Resolve("uv")).Returns(Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe"));
+            resolver.Setup(r => r.Resolve("uv")).Returns(Path.Combine(Environment.SystemDirectory, "cmd.exe"));
             var adapter = new PluginPackageManagerAdapter(_plugin, runner.Object, manager.Object, resolver.Object);
 
             var available = adapter.IsAvailable();

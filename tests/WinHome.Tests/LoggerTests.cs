@@ -4,6 +4,7 @@ using WinHome.Services.Logging;
 
 namespace WinHome.Tests
 {
+    [Collection("Console")]
     public class ConsoleLoggerTests
     {
         [Fact]
