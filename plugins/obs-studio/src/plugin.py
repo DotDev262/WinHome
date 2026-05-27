@@ -249,9 +249,9 @@ def apply_config(args, context, request_id):
 
     except Exception as e:
         log(f"Error applying config: {e}")
-        return {"requestId": request_id, "success": False, "changed": False, "error": str(e)}
+        return {"requestId": request_id, "success": False, "changed": False, "error": str(e), "data": None}
 
-    return {"requestId": request_id, "success": True, "changed": changed}
+    return {"requestId": request_id, "success": True, "changed": changed, "data": None}
 
 
 def main():
@@ -274,7 +274,7 @@ def main():
     args = request.get("args", {})
     context = request.get("context", {})
 
-    response = {"requestId": request_id, "success": False, "changed": False}
+    response = {"requestId": request_id, "success": False, "changed": False, "data": None}
 
     try:
         if command == "check_installed":
