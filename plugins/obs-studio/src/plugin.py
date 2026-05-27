@@ -2,6 +2,7 @@ import sys
 import json
 import os
 import configparser
+import tempfile
 
 
 def log(msg):
@@ -25,10 +26,14 @@ def read_ini(path):
 
 def write_ini(path, config):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    temp_path = path + ".tmp"
-    with open(temp_path, "w", encoding="utf-8") as f:
-        config.write(f)
-    os.replace(temp_path, path)
+    fd, temp_path = tempfile.mkstemp(prefix="obs-studio-", dir=os.path.dirname(path))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            config.write(f)
+        os.replace(temp_path, path)
+    except Exception:
+        os.unlink(temp_path)
+        raise
 
 
 def read_json(path):
@@ -44,10 +49,14 @@ def read_json(path):
 
 def write_json(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    temp_path = path + ".tmp"
-    with open(temp_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-    os.replace(temp_path, path)
+    fd, temp_path = tempfile.mkstemp(prefix="obs-studio-", dir=os.path.dirname(path))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.replace(temp_path, path)
+    except Exception:
+        os.unlink(temp_path)
+        raise
 
 
 def merge_ini_section(config, section, values):
