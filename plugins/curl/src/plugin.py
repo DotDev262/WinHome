@@ -175,6 +175,7 @@ def main():
             "success": False,
             "changed": False,
             "error": f"Failed to parse JSON request: {str(e)}",
+            "data": None
         }
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
@@ -189,6 +190,7 @@ def main():
         "requestId": request_id,
         "success": False,
         "changed": False,
+        "data": None
     }
 
     try:
