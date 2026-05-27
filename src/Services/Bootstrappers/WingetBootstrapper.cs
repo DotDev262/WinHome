@@ -67,10 +67,6 @@ namespace WinHome.Services.Bootstrappers
 
                         #pragma warning disable CA1416
                         var di = new global::System.IO.DirectoryInfo(tempDir);
-                        global::System.Security.AccessControl.DirectorySecurity acl = security;
-                        // Use reflection if the extension method is tricky, or just set it
-                        // Since this is Windows only, trying to set ACL might be easiest via reflection or avoiding it if it doesn't compile.
-                        // Actually, SetAccessControl is available as an extension method on DirectoryInfo if System.IO.FileSystem.AccessControl is referenced.
                         di.SetAccessControl(security);
                         #pragma warning restore CA1416
                     }

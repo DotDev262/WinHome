@@ -27,7 +27,7 @@ namespace WinHome.Tests
         }
 
         [Fact]
-        public void IsInstalled_ReturnsFalse_WhenCommandFailsAndFileDoesNotExist()
+        public void IsInstalled_WhenCommandFails_StillChecksChocolateyVersionCommand()
         {
             _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(false);
             
@@ -35,7 +35,7 @@ namespace WinHome.Tests
             // we at least ensure RunCommand is called. If the fallback file exists on the CI
             // machine, this test might incorrectly return true. But it's sufficient for basic coverage.
             // A more robust approach would abstract File System access.
-            bool result = _bootstrapper.IsInstalled();
+            _bootstrapper.IsInstalled();
             _mockProcessRunner.Verify(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>()), Times.Once);
         }
 

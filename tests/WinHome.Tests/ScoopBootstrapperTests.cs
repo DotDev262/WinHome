@@ -27,11 +27,11 @@ namespace WinHome.Tests
         }
 
         [Fact]
-        public void IsInstalled_ReturnsFalse_WhenCommandFailsAndFileDoesNotExist()
+        public void IsInstalled_WhenCommandFails_VerifiesVersionCheckIsAttempted()
         {
             _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>())).Returns(false);
             
-            bool result = _bootstrapper.IsInstalled();
+            _bootstrapper.IsInstalled();
             _mockProcessRunner.Verify(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>()), Times.Once);
         }
 
