@@ -67,8 +67,8 @@ namespace WinHome.Services.System
             catch (JsonException ex)
             {
                 var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
-                var backupSuffix = Path.GetRandomFileName();
-                var backupPath = $"{_stateFilePath}.corrupted.{timestamp}.{backupSuffix}";
+                var backupSuffix = Guid.NewGuid().ToString("D");
+                var backupPath = $"{_stateFilePath}.corrupted.{timestamp}.{backupSuffix}.bak";
 
                 _logger.LogWarning(
                     $"[State] State file '{_stateFilePath}' is corrupted: {ex.Message}. " +

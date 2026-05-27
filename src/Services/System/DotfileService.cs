@@ -39,7 +39,12 @@ namespace WinHome.Services.System
                 }
 
                 // Create timestamped backup before overwriting
-                _backupService.CreateBackup(targetPath);
+                string? backupPath = _backupService.CreateBackup(targetPath);
+                if (File.Exists(targetPath) && backupPath == null)
+                {
+                    _logger.LogWarning($"[Dotfile] Skipping overwrite because backup failed for {targetPath}");
+                    return;
+                }
                 
                 // Remove the original target file if it exists (restore move semantics)
                 // This ensures the symlink/copy can be created without conflicts

@@ -39,11 +39,12 @@ namespace WinHome.Tests
             var tempFile = Path.GetTempFileName();
             var originalContent = "Original content";
             File.WriteAllText(tempFile, originalContent);
+            string? backupPath = null;
 
             try
             {
                 // Act
-                var backupPath = _backupService.CreateBackup(tempFile);
+                backupPath = _backupService.CreateBackup(tempFile);
 
                 // Assert
                 Assert.NotNull(backupPath);
@@ -67,11 +68,12 @@ namespace WinHome.Tests
             File.WriteAllText(tempFile, "test content");
             var filename = Path.GetFileName(tempFile);
             var directory = Path.GetDirectoryName(tempFile);
+            string? backupPath = null;
 
             try
             {
                 // Act
-                var backupPath = _backupService.CreateBackup(tempFile);
+                backupPath = _backupService.CreateBackup(tempFile);
 
                 // Assert
                 Assert.NotNull(backupPath);
@@ -118,11 +120,12 @@ namespace WinHome.Tests
             var tempFile = Path.GetTempFileName();
             var originalContent = "Line 1\nLine 2\nLine 3\nSpecial chars: !@#$%^&*()";
             File.WriteAllText(tempFile, originalContent);
+            string? backupPath = null;
 
             try
             {
                 // Act
-                var backupPath = _backupService.CreateBackup(tempFile);
+                backupPath = _backupService.CreateBackup(tempFile);
 
                 // Assert
                 Assert.NotNull(backupPath);
@@ -144,11 +147,12 @@ namespace WinHome.Tests
             // Arrange
             var tempFile = Path.GetTempFileName();
             File.WriteAllText(tempFile, "content");
+            string? backupPath = null;
 
             try
             {
                 // Act
-                var backupPath = _backupService.CreateBackup(tempFile);
+                backupPath = _backupService.CreateBackup(tempFile);
 
                 // Assert
                 Assert.NotNull(backupPath);
@@ -273,11 +277,12 @@ namespace WinHome.Tests
             var tempFile = Path.GetTempFileName();
             var binaryContent = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
             File.WriteAllBytes(tempFile, binaryContent);
+            string? backupPath = null;
 
             try
             {
                 // Act
-                var backupPath = _backupService.CreateBackup(tempFile);
+                backupPath = _backupService.CreateBackup(tempFile);
 
                 // Assert
                 Assert.NotNull(backupPath);
