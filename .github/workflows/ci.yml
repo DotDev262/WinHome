@@ -27,12 +27,11 @@ jobs:
     - name: Check formatting
       run: dotnet format --verify-no-changes --verbosity diagnostic WinHome.sln
 
-    - name: Install uv and bun
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        curl -fsSL https://bun.sh/install | bash
-        echo "$HOME/.bun/bin" >> $GITHUB_PATH
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Setup bun
+      uses: oven-sh/setup-bun@v2
 
     - name: Check Python formatting
       run: |
