@@ -249,10 +249,13 @@ public class StateCommandTests
             return 0;
         });
 
-        // Use Console Simulation since clear triggers a ReadLine user prompt
-        using (var stringReader = new StringReader("y"))
+        // Backup the original standard input stream
+        var originalIn = Console.In;
+
+        try
         {
-            Console.SetIn(stringReader);
+            // Simulate user pressing 'y'
+            Console.SetIn(new StringReader("y"));
 
             // Act
             int exitCode = await root.Parse(new[] { "state", "clear" }).InvokeAsync();
@@ -261,10 +264,11 @@ public class StateCommandTests
             Assert.Equal(0, exitCode);
             Assert.Equal("clear", capturedAction);
         }
-        
-        // Reset console standard input
-        var standardInput = new StreamReader(Console.OpenStandardInput());
-        Console.SetIn(standardInput);
+        finally
+        {
+            // Always safely restore standard input, even if assertions or execution fail
+            Console.SetIn(originalIn);
+        }
     }
 
     [Fact]
