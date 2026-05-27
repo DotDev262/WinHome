@@ -9,8 +9,12 @@ import yaml
 
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
-import plugin
+_SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.append(_SRC_DIR)
+try:
+    import plugin
+finally:
+    sys.path.remove(_SRC_DIR)
 
 
 class TestYasbPlugin(unittest.TestCase):
@@ -29,7 +33,7 @@ class TestYasbPlugin(unittest.TestCase):
 
         self.assertTrue(response["success"])
         self.assertFalse(response["changed"])
-        self.assertTrue(response["data"]["installed"])
+        self.assertTrue(response["data"])
 
     def test_check_installed_true_via_config_dir(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -40,7 +44,7 @@ class TestYasbPlugin(unittest.TestCase):
                 response = self.run_main({"requestId": "req-2", "command": "check_installed", "args": {}, "context": {}})
 
         self.assertTrue(response["success"])
-        self.assertTrue(response["data"]["installed"])
+        self.assertTrue(response["data"])
 
     def test_apply_merges_bars_without_overwriting_existing_config(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -77,24 +81,26 @@ class TestYasbPlugin(unittest.TestCase):
                 "requestId": "req-3",
                 "command": "apply",
                 "args": {
-                    "bars": {
-                        "status-bar": {
-                            "enabled": True,
-                            "alignment": {"position": "top", "center": False},
-                            "widgets": {
-                                "left": ["workspaces", "active_window"],
-                                "right": ["cpu", "memory", "volume", "battery"],
+                    "settings": {
+                        "bars": {
+                            "status-bar": {
+                                "enabled": True,
+                                "alignment": {"position": "top", "center": False},
+                                "widgets": {
+                                    "left": ["workspaces", "active_window"],
+                                    "right": ["cpu", "memory", "volume", "battery"],
+                                },
+                            },
+                            "music-bar": {
+                                "enabled": True,
+                                "screens": ["primary"],
+                                "widgets": {"center": ["now_playing"]},
                             },
                         },
-                        "music-bar": {
-                            "enabled": True,
-                            "screens": ["primary"],
-                            "widgets": {"center": ["now_playing"]},
-                        },
+                        "watch_stylesheet": True,
+                        "watch_config": True,
+                        "debug": False,
                     },
-                    "watch_stylesheet": True,
-                    "watch_config": True,
-                    "debug": False,
                 },
                 "context": {"dryRun": False},
             }
@@ -125,14 +131,7 @@ class TestYasbPlugin(unittest.TestCase):
             payload = {
                 "requestId": "req-4",
                 "command": "apply",
-                "args": {
-                    "bars": {
-                        "status-bar": {
-                            "enabled": True,
-                            "widgets": {"left": ["workspaces"]},
-                        }
-                    }
-                },
+                "args": {"settings": {"bars": {"status-bar": {"enabled": True, "widgets": {"left": ["workspaces"]}}}}},
                 "context": {"dryRun": True},
             }
 
@@ -141,7 +140,7 @@ class TestYasbPlugin(unittest.TestCase):
 
             config_path = os.path.join(tmp_dir, ".config", "yasb", "config.yaml")
             self.assertTrue(response["success"])
-            self.assertFalse(response["changed"])
+            self.assertTrue(response["changed"])
             self.assertTrue(response["data"]["wouldChange"])
             self.assertFalse(os.path.exists(config_path))
 
@@ -150,14 +149,7 @@ class TestYasbPlugin(unittest.TestCase):
             payload = {
                 "requestId": "req-5",
                 "command": "apply",
-                "args": {
-                    "bars": {
-                        "status-bar": {
-                            "enabled": True,
-                            "widgets": {"left": ["workspaces"]},
-                        }
-                    }
-                },
+                "args": {"settings": {"bars": {"status-bar": {"enabled": True, "widgets": {"left": ["workspaces"]}}}}},
                 "context": {"dryRun": False},
             }
 
@@ -171,6 +163,44 @@ class TestYasbPlugin(unittest.TestCase):
             self.assertTrue(response["changed"])
             self.assertTrue(os.path.isdir(config_dir))
             self.assertTrue(os.path.exists(config_path))
+
+    def test_apply_backups_corrupted_yaml_before_replacing(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = os.path.join(tmp_dir, ".config", "yasb", "config.yaml")
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+
+            with open(config_path, "w", encoding="utf-8") as file_handle:
+                file_handle.write("bars: [\n")
+
+            payload = {
+                "requestId": "req-7",
+                "command": "apply",
+                "args": {"settings": {"watch_config": True}},
+                "context": {"dryRun": False},
+            }
+
+            with patch.dict(os.environ, {"USERPROFILE": tmp_dir}):
+                response = self.run_main(payload)
+
+            backup_dir = os.path.dirname(config_path)
+            backups = [name for name in os.listdir(backup_dir) if name.startswith("config.yaml.") and name.endswith(".bak")]
+
+            self.assertTrue(response["success"])
+            self.assertTrue(response["changed"])
+            self.assertEqual(len(backups), 1)
+
+    def test_main_returns_json_error_on_bad_input(self):
+        stdin = StringIO("{")
+        stdout = StringIO()
+
+        with patch("sys.stdin", stdin), patch("sys.stdout", stdout):
+            plugin.main()
+
+        response = json.loads(stdout.getvalue().strip())
+
+        self.assertFalse(response["success"])
+        self.assertEqual(response["requestId"], "unknown")
+        self.assertIn("Failed to parse request", response["error"])
 
     def test_unknown_command(self):
         response = self.run_main({"requestId": "req-6", "command": "explode", "args": {}, "context": {}})

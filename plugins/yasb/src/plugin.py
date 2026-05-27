@@ -9,6 +9,7 @@ import os
 import shutil
 import sys
 import copy 
+import uuid
 import yaml
 
 
@@ -46,14 +47,33 @@ def read_yaml(file_path: str) -> dict:
             data = yaml.safe_load(file_handle)
             return data if isinstance(data, dict) else {}
     except Exception as error:
-        raise Exception(f"Could not parse {file_path}: {error}") from error
+        backup_path = f"{file_path}.{uuid.uuid4().hex}.bak"
+
+        try:
+            shutil.copy2(file_path, backup_path)
+            log(f"Warning: could not parse {file_path}: {error}. Backed up to {backup_path} and starting fresh.")
+        except Exception as backup_error:
+            log(f"Warning: could not parse {file_path}: {error}. Failed to back it up: {backup_error}. Starting fresh.")
+
+        return {}
 
 
 def write_yaml(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    with open(file_path, "w", encoding="utf-8") as file_handle:
-        yaml.safe_dump(data, file_handle, default_flow_style=False, sort_keys=False)
+    temp_path = f"{file_path}.tmp"
+
+    try:
+        with open(temp_path, "w", encoding="utf-8") as file_handle:
+            yaml.safe_dump(data, file_handle, default_flow_style=False, sort_keys=False)
+
+        os.replace(temp_path, file_path)
+    finally:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
 
 
 
@@ -106,7 +126,7 @@ def check_installed(request_id: str) -> dict:
         "requestId": request_id,
         "success": True,
         "changed": False,
-        "data": {"installed": installed},
+        "data": installed,
     }
 
 
@@ -116,19 +136,24 @@ def apply_config(request_id: str, args: dict, context: dict) -> dict:
     if not isinstance(args, dict):
         raise ValueError("args must be an object")
 
+    settings = args.get("settings", {})
+
+    if not isinstance(settings, dict):
+        raise ValueError("settings must be an object")
+
     config_path = get_config_path()
     current_config = read_yaml(config_path)
     
     # Securely create a deep copy to evaluate alterations cleanly
     updated_config = copy.deepcopy(current_config)
-    changed = merge_settings(updated_config, args)
+    changed = merge_settings(updated_config, settings)
 
     if dry_run:
         log(f"Would update {config_path}" if changed else f"No changes for {config_path}")
         return {
             "requestId": request_id,
             "success": True,
-            "changed": False,
+            "changed": changed,
             "data": {"wouldChange": changed},
         }
 
@@ -153,8 +178,19 @@ def main() -> None:
     try:
         request = json.loads(input_data)
     except Exception as error:
-        log(f"Failed to parse request: {error}")
-        sys.exit(1)
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "changed": False,
+                    "error": f"Failed to parse request: {error}",
+                }
+            )
+            + "\n"
+        )
+        sys.stdout.flush()
+        return
 
     request_id = request.get("requestId", "unknown")
     command = request.get("command")
