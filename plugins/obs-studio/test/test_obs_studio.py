@@ -1,11 +1,13 @@
-import subprocess
+import configparser
 import json
 import os
+import subprocess
 import sys
 import tempfile
-import configparser
 
-PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
+PLUGIN = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
+)
 
 
 def run_plugin(payload: dict, env=None) -> dict:
@@ -38,7 +40,12 @@ def write_global_ini(obs_dir, profile_name):
 def test_check_installed_false():
     with tempfile.TemporaryDirectory() as tmp:
         res = run_plugin(
-            {"requestId": "1", "command": "check_installed", "args": {}, "context": {}},
+            {
+                "requestId": "1",
+                "command": "check_installed",
+                "args": {},
+                "context": {},
+            },
             env={"OBS_INSTALL_DIR": tmp},
         )
         assert res["success"]
@@ -53,7 +60,12 @@ def test_check_installed_true():
         open(os.path.join(exe_dir, "obs64.exe"), "w").close()
 
         res = run_plugin(
-            {"requestId": "2", "command": "check_installed", "args": {}, "context": {}},
+            {
+                "requestId": "2",
+                "command": "check_installed",
+                "args": {},
+                "context": {},
+            },
             env={"OBS_INSTALL_DIR": tmp},
         )
         assert res["success"]
@@ -139,7 +151,9 @@ def test_apply_profile_video_audio():
         assert res["success"]
         assert res["changed"]
 
-        basic_ini = os.path.join(obs_dir, "basic", "profiles", "Streaming", "basic.ini")
+        basic_ini = os.path.join(
+            obs_dir, "basic", "profiles", "Streaming", "basic.ini"
+        )
         assert os.path.exists(basic_ini)
 
         config = configparser.RawConfigParser()
@@ -209,8 +223,12 @@ def test_apply_creates_profile_directories():
 
         assert res["success"]
         assert res["changed"]
-        assert os.path.exists(os.path.join(obs_dir, "basic", "profiles", "Streaming", "basic.ini"))
-        assert os.path.exists(os.path.join(obs_dir, "basic", "profiles", "Recording", "basic.ini"))
+        assert os.path.exists(
+            os.path.join(obs_dir, "basic", "profiles", "Streaming", "basic.ini")
+        )
+        assert os.path.exists(
+            os.path.join(obs_dir, "basic", "profiles", "Recording", "basic.ini")
+        )
         print("PASS: apply_creates_profile_directories")
 
 
@@ -231,7 +249,9 @@ def test_apply_profile_explicit_name():
 
         assert res["success"]
         obs_dir = os.path.join(tmp, "obs-studio")
-        basic_ini = os.path.join(obs_dir, "basic", "profiles", "MyProfile", "basic.ini")
+        basic_ini = os.path.join(
+            obs_dir, "basic", "profiles", "MyProfile", "basic.ini"
+        )
         assert os.path.exists(basic_ini)
 
         config = configparser.RawConfigParser()

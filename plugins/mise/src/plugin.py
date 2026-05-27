@@ -1,7 +1,7 @@
-import sys
 import json
 import os
 import shutil
+import sys
 import tempfile
 import uuid
 
@@ -21,7 +21,7 @@ def get_config_path() -> str:
 def read_toml(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
-    
+
     try:
         import tomllib
     except ImportError:
@@ -29,7 +29,7 @@ def read_toml(file_path: str) -> dict:
             import tomli as tomllib
         except ImportError:
             raise RuntimeError("tomllib (Python 3.11+) or tomli is required")
-            
+
     try:
         with open(file_path, "rb") as f:
             return tomllib.load(f)
@@ -47,12 +47,12 @@ def read_toml(file_path: str) -> dict:
 def write_toml(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     lines = []
-    
+
     # Write top-level key-value pairs
     for key, value in data.items():
         if not isinstance(value, dict):
             lines.append(f"{key} = {toml_value(value)}")
-            
+
     # Write sections (nested dicts)
     def write_section(section_name, section_data):
         lines.append(f"\n[{section_name}]")
@@ -62,12 +62,14 @@ def write_toml(file_path: str, data: dict) -> None:
                 write_section(f"{section_name}.{k}", v)
             else:
                 lines.append(f"{k} = {toml_value(v)}")
-                
+
     for section, contents in data.items():
         if isinstance(contents, dict):
             write_section(section, contents)
-            
-    fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(file_path), prefix="config.toml.")
+
+    fd, temp_path = tempfile.mkstemp(
+        dir=os.path.dirname(file_path), prefix="config.toml."
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write("\n".join(lines).strip() + "\n")
@@ -113,8 +115,7 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 def check_installed(args: dict, request_id: str) -> dict:
     installed = (
-        shutil.which("mise.exe") is not None
-        or shutil.which("mise") is not None
+        shutil.which("mise.exe") is not None or shutil.which("mise") is not None
     )
     return {
         "requestId": request_id,
@@ -210,13 +211,18 @@ def handle(request: dict) -> dict:
 def main() -> None:
     raw = sys.stdin.read()
     if not raw or not raw.strip():
-        sys.stdout.write(json.dumps({
-            "requestId": "unknown",
-            "success": False,
-            "changed": False,
-            "error": "Empty input",
-            "data": None
-        }) + "\n")
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "changed": False,
+                    "error": "Empty input",
+                    "data": None,
+                }
+            )
+            + "\n"
+        )
         sys.stdout.flush()
         return
 

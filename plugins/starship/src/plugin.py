@@ -1,7 +1,7 @@
-import sys
 import json
 import os
 import shutil
+import sys
 
 try:
     import tomllib
@@ -18,17 +18,17 @@ def get_config_path():
     userprofile = os.getenv("USERPROFILE")
     if not userprofile:
         raise Exception("USERPROFILE environment variable not found")
-    
+
     config_dir = os.path.join(userprofile, ".config")
     os.makedirs(config_dir, exist_ok=True)
-    
+
     return os.path.join(config_dir, "starship.toml")
 
 
 def read_toml(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
-    
+
     if tomllib:
         try:
             with open(file_path, "rb") as f:
@@ -37,7 +37,9 @@ def read_toml(file_path: str) -> dict:
             log(f"Warning: could not parse {file_path} using tomllib: {e}")
             return {}
     else:
-        log("Warning: tomllib not available (requires Python 3.11+). Starting with empty config.")
+        log(
+            "Warning: tomllib not available (requires Python 3.11+). Starting with empty config."
+        )
         return {}
 
 
@@ -54,12 +56,12 @@ def dump_value(v):
 
 def dump_toml(data: dict) -> str:
     lines = []
-    
+
     # Primitives first
     for k, v in data.items():
         if not isinstance(v, dict):
             lines.append(f"{k} = {dump_value(v)}")
-    
+
     # Tables after
     for k, v in data.items():
         if isinstance(v, dict):
@@ -67,7 +69,7 @@ def dump_toml(data: dict) -> str:
             lines.append(f"[{k}]")
             for sub_k, sub_v in v.items():
                 lines.append(f"{sub_k} = {dump_value(sub_v)}")
-                
+
     return "\n".join(lines).strip() + "\n"
 
 
@@ -85,7 +87,7 @@ def merge_settings(target: dict, source: dict) -> bool:
             if key not in target or not isinstance(target.get(key), dict):
                 target[key] = {}
                 changed = True
-            
+
             # Recursive merge for deep dictionaries
             if merge_settings(target[key], value):
                 changed = True
@@ -97,7 +99,10 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 
 def check_installed(args: dict, request_id: str) -> dict:
-    installed = shutil.which("starship.exe") is not None or shutil.which("starship") is not None
+    installed = (
+        shutil.which("starship.exe") is not None
+        or shutil.which("starship") is not None
+    )
     return {
         "requestId": request_id,
         "success": True,
@@ -113,7 +118,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
     try:
         config_path = get_config_path()
         current_config = read_toml(config_path)
-        
+
         changed = merge_settings(current_config, settings)
 
         if not changed:
@@ -154,7 +159,7 @@ def main():
     input_data = sys.stdin.read()
     if not input_data:
         return
-        
+
     try:
         request = json.loads(input_data)
     except Exception as e:

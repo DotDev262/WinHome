@@ -1,7 +1,7 @@
-import sys
 import json
 import os
 import shutil
+import sys
 
 
 def log(msg):
@@ -15,12 +15,32 @@ def get_settings_paths():
     paths = []
     if local_app_data:
         paths += [
-            os.path.join(local_app_data, "Packages", "Microsoft.WindowsTerminal_8wekyb3d8bbwe", "LocalState", "settings.json"),
-            os.path.join(local_app_data, "Packages", "Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe", "LocalState", "settings.json"),
-            os.path.join(local_app_data, "Packages", "Microsoft.WindowsTerminalDev_8wekyb3d8bbwe", "LocalState", "settings.json"),
+            os.path.join(
+                local_app_data,
+                "Packages",
+                "Microsoft.WindowsTerminal_8wekyb3d8bbwe",
+                "LocalState",
+                "settings.json",
+            ),
+            os.path.join(
+                local_app_data,
+                "Packages",
+                "Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe",
+                "LocalState",
+                "settings.json",
+            ),
+            os.path.join(
+                local_app_data,
+                "Packages",
+                "Microsoft.WindowsTerminalDev_8wekyb3d8bbwe",
+                "LocalState",
+                "settings.json",
+            ),
         ]
     if user_profile:
-        paths.append(os.path.join(user_profile, ".config", "wt", "settings.json"))
+        paths.append(
+            os.path.join(user_profile, ".config", "wt", "settings.json")
+        )
     return paths
 
 
@@ -68,7 +88,9 @@ def merge_settings(target, source):
 
 
 def check_installed(args, request_id):
-    installed = shutil.which("wt") is not None or get_active_settings_path() is not None
+    installed = (
+        shutil.which("wt") is not None or get_active_settings_path() is not None
+    )
     return {
         "requestId": request_id,
         "success": True,
@@ -86,7 +108,9 @@ def apply_config(args, context, request_id):
         if not settings_path:
             stable = get_settings_paths()[0]
             settings_path = stable
-            log(f"No existing settings.json found. Will create at: {settings_path}")
+            log(
+                f"No existing settings.json found. Will create at: {settings_path}"
+            )
 
         current = read_json(settings_path)
         changed = merge_settings(current, args)

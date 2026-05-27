@@ -5,7 +5,6 @@ import subprocess
 import sys
 import tempfile
 
-
 PLUGIN = os.path.abspath(
     os.path.join(
         os.path.dirname(__file__),
@@ -51,12 +50,14 @@ def apply_payload(args: dict, dry_run: bool = False) -> dict:
 
 
 def test_check_installed_returns_bare_installed_boolean():
-    response = run_plugin({
-        "requestId": "check-1",
-        "command": "check_installed",
-        "args": {},
-        "context": {},
-    })
+    response = run_plugin(
+        {
+            "requestId": "check-1",
+            "command": "check_installed",
+            "args": {},
+            "context": {},
+        }
+    )
 
     assert response["requestId"] == "check-1"
     assert response["success"] is True
@@ -67,10 +68,12 @@ def test_check_installed_returns_bare_installed_boolean():
 def test_apply_creates_missing_global_config_directory():
     with tempfile.TemporaryDirectory() as tmp:
         response = run_plugin(
-            apply_payload({
-                "model": "anthropic/claude-sonnet-4-5",
-                "small_model": "anthropic/claude-haiku-4-5",
-            }),
+            apply_payload(
+                {
+                    "model": "anthropic/claude-sonnet-4-5",
+                    "small_model": "anthropic/claude-haiku-4-5",
+                }
+            ),
             env={"USERPROFILE": tmp},
         )
 
@@ -96,38 +99,40 @@ def test_apply_reads_jsonc_and_preserves_existing_keys():
 
         with open(config_path, "w", encoding="utf-8") as config_file:
             config_file.write(
-                '{\n'
-                '  // keep this unrelated setting\n'
+                "{\n"
+                "  // keep this unrelated setting\n"
                 '  "theme": "dark",\n'
                 '  "url": "https://example.com//not-a-comment",\n'
                 '  "permission": {\n'
                 '    "write": "deny",\n'
                 '    "read": "allow"\n'
-                '  },\n'
+                "  },\n"
                 '  "agent": {\n'
                 '    "existing": { "mode": "subagent" }\n'
-                '  }\n'
-                '}\n'
+                "  }\n"
+                "}\n"
             )
 
         response = run_plugin(
-            apply_payload({
-                "permission": {
-                    "write": "allow",
-                    "edit": "allow",
-                },
-                "agent": {
-                    "code-reviewer": {
-                        "description": "Reviews code for best practices",
-                        "model": "anthropic/claude-sonnet-4-5",
-                        "permission": {
-                            "write": "deny",
-                            "read": "allow",
-                        },
-                        "mode": "subagent",
+            apply_payload(
+                {
+                    "permission": {
+                        "write": "allow",
+                        "edit": "allow",
                     },
-                },
-            }),
+                    "agent": {
+                        "code-reviewer": {
+                            "description": "Reviews code for best practices",
+                            "model": "anthropic/claude-sonnet-4-5",
+                            "permission": {
+                                "write": "deny",
+                                "read": "allow",
+                            },
+                            "mode": "subagent",
+                        },
+                    },
+                }
+            ),
             env={"USERPROFILE": tmp},
         )
 
@@ -162,14 +167,16 @@ def test_apply_dry_run_reports_change_without_writing():
 def test_idempotent_apply_reports_unchanged_second_time():
     with tempfile.TemporaryDirectory() as tmp:
         env = {"USERPROFILE": tmp}
-        payload = apply_payload({
-            "command": {
-                "test": {
-                    "template": "Run the full test suite with coverage...",
-                    "description": "Run tests with coverage",
+        payload = apply_payload(
+            {
+                "command": {
+                    "test": {
+                        "template": "Run the full test suite with coverage...",
+                        "description": "Run tests with coverage",
+                    },
                 },
-            },
-        })
+            }
+        )
 
         first = run_plugin(payload, env=env)
         second = run_plugin(payload, env=env)
@@ -182,21 +189,23 @@ def test_idempotent_apply_reports_unchanged_second_time():
 def test_apply_supports_project_level_config():
     with tempfile.TemporaryDirectory() as tmp:
         response = run_plugin(
-            apply_payload({
-                "projectRoot": tmp,
-                "mcp": {
-                    "filesystem": {
-                        "type": "local",
-                        "command": [
-                            "npx",
-                            "-y",
-                            "@modelcontextprotocol/server-filesystem",
-                            "/path",
-                        ],
-                        "enabled": True,
+            apply_payload(
+                {
+                    "projectRoot": tmp,
+                    "mcp": {
+                        "filesystem": {
+                            "type": "local",
+                            "command": [
+                                "npx",
+                                "-y",
+                                "@modelcontextprotocol/server-filesystem",
+                                "/path",
+                            ],
+                            "enabled": True,
+                        },
                     },
-                },
-            }),
+                }
+            ),
             env={"USERPROFILE": os.path.join(tmp, "home")},
         )
 
@@ -257,12 +266,14 @@ def test_strip_jsonc_comments_handles_block_comments():
 
 
 def test_unknown_command():
-    response = run_plugin({
-        "requestId": "unknown-1",
-        "command": "explode",
-        "args": {},
-        "context": {},
-    })
+    response = run_plugin(
+        {
+            "requestId": "unknown-1",
+            "command": "explode",
+            "args": {},
+            "context": {},
+        }
+    )
 
     assert response["requestId"] == "unknown-1"
     assert response["success"] is False

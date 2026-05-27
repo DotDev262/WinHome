@@ -15,10 +15,10 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 
-
 # ---------------------------------------------------------------------------
 # Logging — simple stderr helper, matching other WinHome plugins
 # ---------------------------------------------------------------------------
+
 
 def log(msg: str) -> None:
     print(f"[espanso] {msg}", file=sys.stderr, flush=True)
@@ -28,6 +28,7 @@ def log(msg: str) -> None:
 # YAML helpers (stdlib-only, no PyYAML dependency)
 # ---------------------------------------------------------------------------
 
+
 def _yaml_value(v) -> str:
     """Serialise a scalar Python value to a YAML-safe string."""
     if isinstance(v, bool):
@@ -35,9 +36,32 @@ def _yaml_value(v) -> str:
     if isinstance(v, (int, float)):
         return str(v)
     s = str(v)
-    if any(c in s for c in (':', '#', '[', ']', '{', '}', ',', '&', '*',
-                             '?', '|', '-', '<', '>', '=', '!', '%', '@',
-                             '`', '"', "'")):
+    if any(
+        c in s
+        for c in (
+            ":",
+            "#",
+            "[",
+            "]",
+            "{",
+            "}",
+            ",",
+            "&",
+            "*",
+            "?",
+            "|",
+            "-",
+            "<",
+            ">",
+            "=",
+            "!",
+            "%",
+            "@",
+            "`",
+            '"',
+            "'",
+        )
+    ):
         escaped = s.replace('"', '\\"')
         return f'"{escaped}"'
     if s in ("true", "false", "null", "yes", "no", "on", "off", ""):
@@ -67,7 +91,9 @@ def _dump_yaml(data: dict, indent: int = 0) -> str:
                             else:
                                 lines.append(f"{pad}    {k}:")
                             for ik, iv in v.items():
-                                lines.append(f"{pad}      {ik}: {_yaml_value(iv)}")
+                                lines.append(
+                                    f"{pad}      {ik}: {_yaml_value(iv)}"
+                                )
                         else:
                             prefix = f"{pad}  - " if first else f"{pad}    "
                             lines.append(f"{prefix}{k}: {_yaml_value(v)}")
@@ -91,13 +117,13 @@ def _parse_yaml(text: str) -> dict:
     """
     try:
         import yaml  # noqa: PLC0415
+
         return yaml.safe_load(text) or {}
     except ImportError:
         pass
 
     # Stdlib fallback — parses the specific structure Espanso uses
     result: dict = {}
-    current_key: str | None = None
     current_list: list | None = None
     current_item: dict | None = None
 
@@ -117,11 +143,9 @@ def _parse_yaml(text: str) -> dict:
                 v = v.strip()
                 if v:
                     result[k] = _cast(v)
-                    current_key = None
                     current_list = None
                     current_item = None
                 else:
-                    current_key = k
                     current_list = []
                     result[k] = current_list
                     current_item = None
@@ -143,14 +167,20 @@ def _parse_yaml(text: str) -> dict:
             continue
 
         # Continuation key under a list item: "    key: value"
-        if current_item is not None and ":" in stripped and not stripped.startswith("-"):
+        if (
+            current_item is not None
+            and ":" in stripped
+            and not stripped.startswith("-")
+        ):
             k, _, v = stripped.partition(":")
             k = k.strip()
             v = v.strip()
             if not v:
                 current_item[k] = {}
             else:
-                last_val = list(current_item.values())[-1] if current_item else None
+                last_val = (
+                    list(current_item.values())[-1] if current_item else None
+                )
                 if isinstance(last_val, dict) and depth >= 6:
                     last_val[k] = _cast(v)
                 else:
@@ -183,6 +213,7 @@ def _cast(v: str):
 # ---------------------------------------------------------------------------
 # File helpers
 # ---------------------------------------------------------------------------
+
 
 def get_base_yml_path() -> Path:
     """Return the canonical path to Espanso's base.yml on Windows."""
@@ -220,7 +251,10 @@ def write_config(path: Path, data: dict) -> None:
 # Merge logic
 # ---------------------------------------------------------------------------
 
-def deep_merge_lists(existing: list, incoming: list, key: str = "trigger") -> list:
+
+def deep_merge_lists(
+    existing: list, incoming: list, key: str = "trigger"
+) -> list:
     """
     Merge two lists of dicts by *key*.
 
@@ -229,7 +263,11 @@ def deep_merge_lists(existing: list, incoming: list, key: str = "trigger") -> li
     New items in incoming are appended.
     """
     merged = deepcopy(existing)
-    index = {item.get(key): i for i, item in enumerate(merged) if isinstance(item, dict)}
+    index = {
+        item.get(key): i
+        for i, item in enumerate(merged)
+        if isinstance(item, dict)
+    }
     for item in incoming:
         if not isinstance(item, dict):
             continue
@@ -271,6 +309,7 @@ def merge_config(existing: dict, incoming: dict) -> tuple[dict, bool]:
 # Command handlers
 # ---------------------------------------------------------------------------
 
+
 def handle_check_installed(request_id: str, _args: dict) -> dict:
     installed = is_espanso_installed()
     log(f"check_installed → installed={installed}")
@@ -306,16 +345,22 @@ def handle_apply(request_id: str, args: dict, dry_run: bool = False) -> dict:
 # Single-shot JSON-over-stdio protocol
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     try:
         msg = json.loads(sys.stdin.read())
     except json.JSONDecodeError as exc:
-        sys.stdout.write(json.dumps({
-            "requestId": None,
-            "success": False,
-            "changed": False,
-            "error": f"Invalid JSON: {exc}",
-        }) + "\n")
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": None,
+                    "success": False,
+                    "changed": False,
+                    "error": f"Invalid JSON: {exc}",
+                }
+            )
+            + "\n"
+        )
         sys.stdout.flush()
         return
 
@@ -353,8 +398,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-
-
-

@@ -1,17 +1,18 @@
-import sys
 import json
 import os
 import shutil
-import time
+import sys
 import uuid
 import xml.etree.ElementTree as ET
 
 CHOCO_NS = "http://chocolatey.org/schema/chocolatey-configuration"
-ET.register_namespace('', CHOCO_NS)
+ET.register_namespace("", CHOCO_NS)
+
 
 def log(msg):
     sys.stderr.write(f"[chocolatey-plugin] {msg}\n")
     sys.stderr.flush()
+
 
 def get_config_path():
     choco_install = os.getenv("ChocolateyInstall")
@@ -19,6 +20,7 @@ def get_config_path():
         program_data = os.getenv("ALLUSERSPROFILE", "C:\\ProgramData")
         choco_install = os.path.join(program_data, "chocolatey")
     return os.path.join(choco_install, "config", "chocolatey.config")
+
 
 def read_xml(file_path):
     if not os.path.exists(file_path):
@@ -32,13 +34,18 @@ def read_xml(file_path):
         backup_path = f"{file_path}.corrupted.{uuid.uuid4().hex[:8]}.bak"
         try:
             shutil.copy2(file_path, backup_path)
-            log(f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}. Starting with default.")
+            log(
+                f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}. Starting with default."
+            )
         except Exception:
-            log(f"Warning: could not parse {file_path}: {e}. Starting with default.")
+            log(
+                f"Warning: could not parse {file_path}: {e}. Starting with default."
+            )
         root = ET.Element(f"{{{CHOCO_NS}}}chocolatey")
         ET.SubElement(root, f"{{{CHOCO_NS}}}config")
         ET.SubElement(root, f"{{{CHOCO_NS}}}features")
         return ET.ElementTree(root)
+
 
 def write_xml(file_path, tree):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -46,18 +53,23 @@ def write_xml(file_path, tree):
     tree.write(tmp, encoding="utf-8", xml_declaration=True)
     os.replace(tmp, file_path)
 
+
 def merge_settings(tree, source):
     changed = False
     root = tree.getroot()
-    
+
     if "config" in source and isinstance(source["config"], dict):
         config_el = root.find(f"{{{CHOCO_NS}}}config")
         for key, value in source["config"].items():
             if value is None:
                 continue
 
-            str_val = str(value) if not isinstance(value, bool) else ("true" if value else "false")
-            
+            str_val = (
+                str(value)
+                if not isinstance(value, bool)
+                else ("true" if value else "false")
+            )
+
             if config_el is None:
                 config_el = ET.SubElement(root, f"{{{CHOCO_NS}}}config")
                 changed = True
@@ -67,13 +79,17 @@ def merge_settings(tree, source):
                 if add_el.get("key") == key:
                     existing = add_el
                     break
-            
+
             if existing is not None:
                 if existing.get("value") != str_val:
                     existing.set("value", str_val)
                     changed = True
             else:
-                ET.SubElement(config_el, f"{{{CHOCO_NS}}}add", {"key": key, "value": str_val})
+                ET.SubElement(
+                    config_el,
+                    f"{{{CHOCO_NS}}}add",
+                    {"key": key, "value": str_val},
+                )
                 changed = True
 
     if "features" in source and isinstance(source["features"], dict):
@@ -83,7 +99,7 @@ def merge_settings(tree, source):
                 continue
 
             str_enabled = "true" if enabled else "false"
-            
+
             if features_el is None:
                 features_el = ET.SubElement(root, f"{{{CHOCO_NS}}}features")
                 changed = True
@@ -93,19 +109,27 @@ def merge_settings(tree, source):
                 if feature_el.get("name") == name:
                     existing = feature_el
                     break
-            
+
             if existing is not None:
                 if existing.get("enabled") != str_enabled:
                     existing.set("enabled", str_enabled)
                     changed = True
             else:
-                ET.SubElement(features_el, f"{{{CHOCO_NS}}}feature", {"name": name, "enabled": str_enabled})
+                ET.SubElement(
+                    features_el,
+                    f"{{{CHOCO_NS}}}feature",
+                    {"name": name, "enabled": str_enabled},
+                )
                 changed = True
 
     return changed
 
+
 def check_installed(args, request_id):
-    installed = shutil.which("choco.exe") is not None or shutil.which("choco") is not None
+    installed = (
+        shutil.which("choco.exe") is not None
+        or shutil.which("choco") is not None
+    )
     return {
         "requestId": request_id,
         "success": True,
@@ -113,13 +137,14 @@ def check_installed(args, request_id):
         "data": installed,
     }
 
+
 def apply_config(args, context, request_id):
     dry_run = context.get("dryRun", False)
 
     try:
         config_path = get_config_path()
         tree = read_xml(config_path)
-        
+
         settings = args.get("settings", {})
         changed = merge_settings(tree, settings)
 
@@ -156,6 +181,7 @@ def apply_config(args, context, request_id):
             "error": str(e),
         }
 
+
 def main():
     input_data = sys.stdin.read()
     if not input_data:
@@ -168,7 +194,7 @@ def main():
             "requestId": "unknown",
             "success": False,
             "changed": False,
-            "error": f"Failed to parse request: {e}"
+            "error": f"Failed to parse request: {e}",
         }
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
@@ -197,6 +223,7 @@ def main():
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     main()

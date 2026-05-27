@@ -3,13 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "description": "VSCode plugin for WinHome",
-
   "main": "src/index.ts",
-
   "scripts": {
     "test": "vitest"
   },
-
   "devDependencies": {
     "@types/node": "^20.0.0",
     "ts-node": "^10.9.2",

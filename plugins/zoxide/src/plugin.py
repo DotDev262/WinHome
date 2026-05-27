@@ -5,7 +5,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ENV_VARS = (
     "_ZO_MAX_DEPTH",
     "_ZO_ECHO",
@@ -26,7 +25,12 @@ def get_user_home() -> Path:
 def get_powershell_profile_path() -> Path:
     home = get_user_home()
     if sys.platform == "win32":
-        return home / "Documents" / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
+        return (
+            home
+            / "Documents"
+            / "PowerShell"
+            / "Microsoft.PowerShell_profile.ps1"
+        )
     return home / ".config" / "powershell" / "profile.ps1"
 
 
@@ -59,14 +63,18 @@ def build_init_line(shell: str, init_args: dict) -> str:
     flag_text = f" {' '.join(flags)}" if flags else ""
 
     if shell == "powershell":
-        return f"Invoke-Expression (& {{ (zoxide init powershell{flag_text}) }})"
+        return (
+            f"Invoke-Expression (& {{ (zoxide init powershell{flag_text}) }})"
+        )
     if shell == "bash":
         return f'eval "$(zoxide init bash{flag_text})"'
 
     raise ValueError(f"Unsupported shell: {shell}")
 
 
-def update_profile_content(existing_text: str, desired_line: str) -> tuple[str, bool]:
+def update_profile_content(
+    existing_text: str, desired_line: str
+) -> tuple[str, bool]:
     current_lines = existing_text.splitlines()
     matching_lines = [
         line
@@ -79,7 +87,10 @@ def update_profile_content(existing_text: str, desired_line: str) -> tuple[str, 
         if "zoxide init" not in line or line.lstrip().startswith("#")
     ]
 
-    if matching_lines == [desired_line] and len(updated_lines) == len(current_lines) - 1:
+    if (
+        matching_lines == [desired_line]
+        and len(updated_lines) == len(current_lines) - 1
+    ):
         return existing_text, False
 
     updated_lines.append(desired_line)
@@ -87,7 +98,9 @@ def update_profile_content(existing_text: str, desired_line: str) -> tuple[str, 
     return updated_text, updated_text != existing_text
 
 
-def update_profile_file(profile_path: Path, desired_line: str, dry_run: bool) -> bool:
+def update_profile_file(
+    profile_path: Path, desired_line: str, dry_run: bool
+) -> bool:
     existing_text = ""
     if profile_path.exists():
         with open(profile_path, "r", encoding="utf-8") as handle:
@@ -123,14 +136,19 @@ def run_setx(var_name: str, value: str) -> None:
         log(f"Skipping setx for {var_name} on non-Windows platform")
         return
 
-    result = subprocess.run(["setx", var_name, value], capture_output=True, text=True)
+    result = subprocess.run(
+        ["setx", var_name, value], capture_output=True, text=True
+    )
     if result.returncode != 0:
         stderr = (result.stderr or result.stdout or "setx failed").strip()
         raise RuntimeError(f"setx {var_name} failed: {stderr}")
 
 
 def check_installed(_args: dict, request_id: str) -> dict:
-    installed = shutil.which("zoxide.exe") is not None or shutil.which("zoxide") is not None
+    installed = (
+        shutil.which("zoxide.exe") is not None
+        or shutil.which("zoxide") is not None
+    )
     return {
         "requestId": request_id,
         "success": True,

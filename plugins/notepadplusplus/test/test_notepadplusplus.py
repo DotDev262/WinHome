@@ -1,16 +1,11 @@
-import subprocess
 import json
 import os
-import tempfile
+import subprocess
 import sys
+import tempfile
 
 PLUGIN = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "src",
-        "plugin.py"
-    )
+    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
 )
 
 
@@ -19,19 +14,21 @@ def run_plugin(payload: dict) -> dict:
         [sys.executable, PLUGIN],
         input=json.dumps(payload),
         capture_output=True,
-        text=True
+        text=True,
     )
 
     return json.loads(result.stdout.strip())
 
 
 def test_check_installed():
-    res = run_plugin({
-        "requestId": "1",
-        "command": "check_installed",
-        "args": {},
-        "context": {}
-    })
+    res = run_plugin(
+        {
+            "requestId": "1",
+            "command": "check_installed",
+            "args": {},
+            "context": {},
+        }
+    )
 
     assert "success" in res
     print("✓ check_installed")
@@ -41,19 +38,14 @@ def test_apply_config_dry_run():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["APPDATA"] = tmp
 
-        res = run_plugin({
-            "requestId": "2",
-            "command": "apply",
-            "args": {
-                "settings": {
-                    "theme": "DarkMode",
-                    "fontSize": 16
-                }
-            },
-            "context": {
-                "dryRun": True
+        res = run_plugin(
+            {
+                "requestId": "2",
+                "command": "apply",
+                "args": {"settings": {"theme": "DarkMode", "fontSize": 16}},
+                "context": {"dryRun": True},
             }
-        })
+        )
 
         assert res["success"]
         assert not res["changed"]
@@ -65,34 +57,23 @@ def test_apply_config():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["APPDATA"] = tmp
 
-        res = run_plugin({
-            "requestId": "3",
-            "command": "apply",
-            "args": {
-                "settings": {
-                    "theme": "DarkMode",
-                    "wordWrap": True
-                }
-            },
-            "context": {
-                "dryRun": False
+        res = run_plugin(
+            {
+                "requestId": "3",
+                "command": "apply",
+                "args": {"settings": {"theme": "DarkMode", "wordWrap": True}},
+                "context": {"dryRun": False},
             }
-        })
+        )
 
         assert res["success"]
         assert res["changed"]
 
-        config_path = os.path.join(
-            tmp,
-            "Notepad++",
-            "config.json"
-        )
+        config_path = os.path.join(tmp, "Notepad++", "config.json")
 
         assert os.path.exists(config_path)
 
-        config = json.loads(
-            open(config_path).read()
-        )
+        config = json.loads(open(config_path).read())
 
         assert config["theme"] == "DarkMode"
         assert config["wordWrap"] is True
@@ -107,14 +88,8 @@ def test_idempotent_apply():
         payload = {
             "requestId": "4",
             "command": "apply",
-            "args": {
-                "settings": {
-                    "theme": "DarkMode"
-                }
-            },
-            "context": {
-                "dryRun": False
-            }
+            "args": {"settings": {"theme": "DarkMode"}},
+            "context": {"dryRun": False},
         }
 
         run_plugin(payload)
@@ -128,12 +103,9 @@ def test_idempotent_apply():
 
 
 def test_unknown_command():
-    res = run_plugin({
-        "requestId": "5",
-        "command": "explode",
-        "args": {},
-        "context": {}
-    })
+    res = run_plugin(
+        {"requestId": "5", "command": "explode", "args": {}, "context": {}}
+    )
 
     assert not res["success"]
     assert "error" in res

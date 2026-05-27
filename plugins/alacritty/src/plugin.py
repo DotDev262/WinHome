@@ -1,7 +1,7 @@
-import sys
 import json
 import os
 import shutil
+import sys
 import tempfile
 import uuid
 
@@ -22,15 +22,17 @@ def get_config_path() -> str:
 def read_toml(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
-    
+
     try:
         if sys.version_info >= (3, 11):
             import tomllib
+
             with open(file_path, "rb") as f:
                 data = tomllib.load(f)
                 return data if isinstance(data, dict) else {}
         else:
             import tomli
+
             with open(file_path, "rb") as f:
                 data = tomli.load(f)
                 return data if isinstance(data, dict) else {}
@@ -66,7 +68,7 @@ def toml_lines(data: dict, prefix: str = "") -> list:
     for k, v in data.items():
         if not isinstance(v, dict):
             lines.append(f"{k} = {toml_value(v)}")
-    
+
     # Then emit nested dicts as tables
     for k, v in data.items():
         if isinstance(v, dict):
@@ -80,7 +82,7 @@ def toml_lines(data: dict, prefix: str = "") -> list:
 def write_toml(file_path: str, data: dict) -> None:
     dir_path = os.path.dirname(file_path) or "."
     os.makedirs(dir_path, exist_ok=True)
-    
+
     fd, temp_path = tempfile.mkstemp(dir=dir_path, prefix="alacritty.toml.")
     try:
         lines = toml_lines(data)
@@ -176,7 +178,7 @@ def handle(request: dict) -> dict:
 
     if command == "check_installed":
         return check_installed(args, request_id)
-        
+
     if command == "apply":
         if not isinstance(args, dict):
             return {
@@ -217,13 +219,18 @@ def handle(request: dict) -> dict:
 def main() -> None:
     raw = sys.stdin.read()
     if not raw or not raw.strip():
-        sys.stdout.write(json.dumps({
-            "requestId": "unknown",
-            "success": False,
-            "changed": False,
-            "error": "Empty input",
-            "data": None
-        }) + "\n")
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "changed": False,
+                    "error": "Empty input",
+                    "data": None,
+                }
+            )
+            + "\n"
+        )
         sys.stdout.flush()
         return
 

@@ -3,7 +3,6 @@ import os
 import shutil
 import sys
 
-
 PACKAGE_FAMILY = "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"
 
 
@@ -67,7 +66,10 @@ def deep_merge(target: dict, source: dict) -> bool:
 
 
 def check_installed(args: dict, request_id: str) -> dict:
-    installed = shutil.which("winget.exe") is not None or shutil.which("winget") is not None
+    installed = (
+        shutil.which("winget.exe") is not None
+        or shutil.which("winget") is not None
+    )
     return {
         "requestId": request_id,
         "success": True,

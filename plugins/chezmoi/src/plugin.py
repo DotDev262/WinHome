@@ -1,7 +1,7 @@
-import sys
 import json
 import os
 import shutil
+import sys
 import tempfile
 import uuid
 
@@ -21,9 +21,10 @@ def get_config_path() -> str:
 def read_yaml(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
-    
+
     try:
         import yaml
+
         with open(file_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
             return data if isinstance(data, dict) else {}
@@ -39,10 +40,13 @@ def read_yaml(file_path: str) -> dict:
 
 def write_yaml(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    
-    fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(file_path), prefix="chezmoi.yaml.")
+
+    fd, temp_path = tempfile.mkstemp(
+        dir=os.path.dirname(file_path), prefix="chezmoi.yaml."
+    )
     try:
         import yaml
+
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
         os.replace(temp_path, file_path)
@@ -135,7 +139,7 @@ def handle(request: dict) -> dict:
 
     if command == "check_installed":
         return check_installed(args, request_id)
-        
+
     if command == "apply":
         if not isinstance(args, dict):
             return {
@@ -176,13 +180,18 @@ def handle(request: dict) -> dict:
 def main() -> None:
     raw = sys.stdin.read()
     if not raw or not raw.strip():
-        sys.stdout.write(json.dumps({
-            "requestId": "unknown",
-            "success": False,
-            "changed": False,
-            "error": "Empty input",
-            "data": None
-        }) + "\n")
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "changed": False,
+                    "error": "Empty input",
+                    "data": None,
+                }
+            )
+            + "\n"
+        )
         sys.stdout.flush()
         return
 

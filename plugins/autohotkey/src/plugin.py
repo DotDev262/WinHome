@@ -5,7 +5,6 @@ import shutil
 import sys
 import tempfile
 
-
 HEADER_LINE = "#Requires AutoHotkey v2.0"
 SETTINGS_START = "; WinHome managed settings start"
 SETTINGS_END = "; WinHome managed settings end"
@@ -71,7 +70,9 @@ def find_ahk_executable() -> bool:
 
     local_app_data = os.getenv("LOCALAPPDATA")
     if local_app_data:
-        search_roots.append(os.path.join(local_app_data, "Programs", "AutoHotkey"))
+        search_roots.append(
+            os.path.join(local_app_data, "Programs", "AutoHotkey")
+        )
 
     executable_names = ["AutoHotkey64.exe", "AutoHotkey.exe"]
 
@@ -126,10 +127,16 @@ def build_hotkey_block(trigger: str, action: str) -> list[str]:
 
 
 def build_hotstring_lines(trigger: str, replacement: str) -> list[str]:
-    normalized_replacement = replacement.replace("\r\n", "\n").replace("\r", "\n")
+    normalized_replacement = replacement.replace("\r\n", "\n").replace(
+        "\r", "\n"
+    )
 
     if "\n" not in normalized_replacement:
-        return [HOTSTRINGS_START, f"{trigger}{normalized_replacement}", HOTSTRINGS_END]
+        return [
+            HOTSTRINGS_START,
+            f"{trigger}{normalized_replacement}",
+            HOTSTRINGS_END,
+        ]
 
     replacement_lines = normalized_replacement.split("\n")
     return [
@@ -179,7 +186,14 @@ def strip_managed_content(existing_text: str) -> str:
             i += 1
             continue
 
-        if stripped in {SETTINGS_START, SETTINGS_END, HOTKEYS_START, HOTKEYS_END, HOTSTRINGS_START, HOTSTRINGS_END}:
+        if stripped in {
+            SETTINGS_START,
+            SETTINGS_END,
+            HOTKEYS_START,
+            HOTKEYS_END,
+            HOTSTRINGS_START,
+            HOTSTRINGS_END,
+        }:
             i += 1
             continue
 
@@ -195,7 +209,11 @@ def strip_managed_content(existing_text: str) -> str:
             i += 1
             continue
 
-        if stripped.endswith("::") and i + 1 < len(lines) and lines[i + 1].strip() == "{":
+        if (
+            stripped.endswith("::")
+            and i + 1 < len(lines)
+            and lines[i + 1].strip() == "{"
+        ):
             i += 2
             depth = 1
             while i < len(lines) and depth > 0:
@@ -207,7 +225,11 @@ def strip_managed_content(existing_text: str) -> str:
                 i += 1
             continue
 
-        if stripped.endswith("::") and i + 1 < len(lines) and lines[i + 1].strip() == "(":
+        if (
+            stripped.endswith("::")
+            and i + 1 < len(lines)
+            and lines[i + 1].strip() == "("
+        ):
             i += 2
             while i < len(lines) and lines[i].strip() != ")":
                 i += 1

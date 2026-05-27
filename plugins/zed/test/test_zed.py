@@ -6,7 +6,6 @@ import tempfile
 from contextlib import contextmanager
 from unittest import mock
 
-
 PLUGIN = os.path.abspath(
     os.path.join(
         os.path.dirname(__file__),
@@ -43,12 +42,14 @@ def temp_appdata():
 
 
 def test_check_installed():
-    res = run_plugin({
-        "requestId": "1",
-        "command": "check_installed",
-        "args": {},
-        "context": {},
-    })
+    res = run_plugin(
+        {
+            "requestId": "1",
+            "command": "check_installed",
+            "args": {},
+            "context": {},
+        }
+    )
 
     assert res["success"]
     assert not res["changed"]
@@ -57,48 +58,50 @@ def test_check_installed():
 
 def test_apply_creates_missing_directory_and_file():
     with temp_appdata() as tmp:
-        res = run_plugin({
-            "requestId": "2",
-            "command": "apply",
-            "args": {
-                "theme": {
-                    "mode": "system",
-                    "light": "One Light",
-                    "dark": "One Dark",
-                },
-                "buffer_font_family": "JetBrains Mono",
-                "buffer_font_size": 14,
-                "tab_size": 2,
-                "format_on_save": "on",
-                "vim_mode": False,
-                "relative_line_numbers": True,
-                "soft_wrap": "editor_width",
-                "cursor_shape": "bar",
-                "terminal": {
-                    "font_family": "JetBrains Mono",
-                    "font_size": 14,
-                    "shell": "powershell.json",
-                },
-                "languages": {
-                    "Python": {
-                        "tab_size": 4,
+        res = run_plugin(
+            {
+                "requestId": "2",
+                "command": "apply",
+                "args": {
+                    "theme": {
+                        "mode": "system",
+                        "light": "One Light",
+                        "dark": "One Dark",
                     },
-                    "JavaScript": {
-                        "tab_size": 2,
+                    "buffer_font_family": "JetBrains Mono",
+                    "buffer_font_size": 14,
+                    "tab_size": 2,
+                    "format_on_save": "on",
+                    "vim_mode": False,
+                    "relative_line_numbers": True,
+                    "soft_wrap": "editor_width",
+                    "cursor_shape": "bar",
+                    "terminal": {
+                        "font_family": "JetBrains Mono",
+                        "font_size": 14,
+                        "shell": "powershell.json",
+                    },
+                    "languages": {
+                        "Python": {
+                            "tab_size": 4,
+                        },
+                        "JavaScript": {
+                            "tab_size": 2,
+                        },
+                    },
+                    "features": {
+                        "copilot": True,
+                    },
+                    "auto_install_extensions": {
+                        "html": True,
+                        "dockerfile": True,
                     },
                 },
-                "features": {
-                    "copilot": True,
+                "context": {
+                    "dryRun": False,
                 },
-                "auto_install_extensions": {
-                    "html": True,
-                    "dockerfile": True,
-                },
-            },
-            "context": {
-                "dryRun": False,
-            },
-        })
+            }
+        )
 
         assert res["success"]
         assert res["changed"]
@@ -138,24 +141,26 @@ def test_apply_deep_merges_existing_commented_settings():
 """
             )
 
-        res = run_plugin({
-            "requestId": "3",
-            "command": "apply",
-            "args": {
-                "theme": {
-                    "mode": "system",
-                    "light": "One Light",
-                },
-                "languages": {
-                    "Python": {
-                        "tab_size": 4,
+        res = run_plugin(
+            {
+                "requestId": "3",
+                "command": "apply",
+                "args": {
+                    "theme": {
+                        "mode": "system",
+                        "light": "One Light",
+                    },
+                    "languages": {
+                        "Python": {
+                            "tab_size": 4,
+                        },
                     },
                 },
-            },
-            "context": {
-                "dryRun": False,
-            },
-        })
+                "context": {
+                    "dryRun": False,
+                },
+            }
+        )
 
         assert res["success"]
         assert res["changed"]
@@ -178,21 +183,24 @@ def test_apply_backs_up_corrupt_settings_before_replacing():
         with open(settings_path, "w", encoding="utf-8") as settings_file:
             settings_file.write("{ invalid json")
 
-        res = run_plugin({
-            "requestId": "4",
-            "command": "apply",
-            "args": {
-                "tab_size": 2,
-            },
-            "context": {
-                "dryRun": False,
-            },
-        })
+        res = run_plugin(
+            {
+                "requestId": "4",
+                "command": "apply",
+                "args": {
+                    "tab_size": 2,
+                },
+                "context": {
+                    "dryRun": False,
+                },
+            }
+        )
 
         backups = [
             name
             for name in os.listdir(zed_dir)
-            if name.startswith("settings.json.corrupt-") and name.endswith(".bak")
+            if name.startswith("settings.json.corrupt-")
+            and name.endswith(".bak")
         ]
 
         assert res["success"]
@@ -210,16 +218,18 @@ def test_dry_run_reports_change_without_writing():
         with open(settings_path, "w", encoding="utf-8") as settings_file:
             json.dump({"tab_size": 4}, settings_file)
 
-        res = run_plugin({
-            "requestId": "5",
-            "command": "apply",
-            "args": {
-                "tab_size": 2,
-            },
-            "context": {
-                "dryRun": True,
-            },
-        })
+        res = run_plugin(
+            {
+                "requestId": "5",
+                "command": "apply",
+                "args": {
+                    "tab_size": 2,
+                },
+                "context": {
+                    "dryRun": True,
+                },
+            }
+        )
 
         assert res["success"]
         assert res["changed"]
@@ -227,7 +237,7 @@ def test_dry_run_reports_change_without_writing():
 
 
 def test_idempotent_apply():
-    with temp_appdata() as tmp:
+    with temp_appdata():
         payload = {
             "requestId": "6",
             "command": "apply",
@@ -252,21 +262,23 @@ def test_idempotent_apply():
 
 def test_apply_normalizes_string_scalars_from_host():
     with temp_appdata() as tmp:
-        res = run_plugin({
-            "requestId": "7",
-            "command": "apply",
-            "args": {
-                "tab_size": "2",
-                "vim_mode": "false",
-                "buffer_font_size": "14",
-                "features": {
-                    "copilot": "true",
+        res = run_plugin(
+            {
+                "requestId": "7",
+                "command": "apply",
+                "args": {
+                    "tab_size": "2",
+                    "vim_mode": "false",
+                    "buffer_font_size": "14",
+                    "features": {
+                        "copilot": "true",
+                    },
                 },
-            },
-            "context": {
-                "dryRun": False,
-            },
-        })
+                "context": {
+                    "dryRun": False,
+                },
+            }
+        )
 
         assert res["success"]
         assert res["changed"]
@@ -282,15 +294,17 @@ def test_top_level_dry_run_and_config_protocol():
     with tempfile.TemporaryDirectory() as tmp:
         settings_path = os.path.join(tmp, "settings.json")
 
-        res = run_plugin({
-            "requestId": "8",
-            "command": "apply",
-            "dryRun": True,
-            "config": {
-                "configPath": settings_path,
-                "tab_size": 8,
-            },
-        })
+        res = run_plugin(
+            {
+                "requestId": "8",
+                "command": "apply",
+                "dryRun": True,
+                "config": {
+                    "configPath": settings_path,
+                    "tab_size": 8,
+                },
+            }
+        )
 
         assert res["success"]
         assert res["changed"]
@@ -298,12 +312,14 @@ def test_top_level_dry_run_and_config_protocol():
 
 
 def test_unknown_command():
-    res = run_plugin({
-        "requestId": "9",
-        "command": "explode",
-        "args": {},
-        "context": {},
-    })
+    res = run_plugin(
+        {
+            "requestId": "9",
+            "command": "explode",
+            "args": {},
+            "context": {},
+        }
+    )
 
     assert not res["success"]
     assert "error" in res

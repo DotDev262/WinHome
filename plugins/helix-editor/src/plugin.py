@@ -1,7 +1,7 @@
-import sys
 import json
 import os
 import shutil
+import sys
 
 try:
     import tomllib
@@ -23,16 +23,16 @@ def get_helix_dir():
             appdata = os.path.join(userprofile, "AppData", "Roaming")
         else:
             raise Exception("APPDATA environment variable not found")
-    
+
     helix_dir = os.path.join(appdata, "helix")
-    
+
     return helix_dir
 
 
 def read_toml(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
-    
+
     if tomllib:
         try:
             with open(file_path, "rb") as f:
@@ -41,7 +41,9 @@ def read_toml(file_path: str) -> dict:
             log(f"Warning: could not parse {file_path} using tomllib: {e}")
             return {}
     else:
-        log("Warning: tomllib not available (requires Python 3.11+). Starting with empty config.")
+        log(
+            "Warning: tomllib not available (requires Python 3.11+). Starting with empty config."
+        )
         return {}
 
 
@@ -62,9 +64,11 @@ def dump_value(v):
 def _dump_dict_recursive(d: dict, prefix: str, lines: list):
     # Primitives first
     for k, v in d.items():
-        if not isinstance(v, dict) and not (isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict)):
+        if not isinstance(v, dict) and not (
+            isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict)
+        ):
             lines.append(f"{k} = {dump_value(v)}")
-            
+
     # Array of Tables
     for k, v in d.items():
         if isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
@@ -103,19 +107,31 @@ def merge_settings(target: dict, source: dict) -> bool:
             if key not in target or not isinstance(target.get(key), dict):
                 target[key] = {}
                 changed = True
-            
+
             # Recursive merge for deep dictionaries
             if merge_settings(target[key], value):
                 changed = True
-        elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], dict):
+        elif (
+            isinstance(value, list)
+            and len(value) > 0
+            and isinstance(value[0], dict)
+        ):
             # Array of tables merge (e.g., [[language]])
             if key not in target:
                 target[key] = []
-            
+
             # Simple replacement or append logic for arrays of tables based on "name"
             for item in value:
                 if "name" in item:
-                    existing_item = next((i for i in target[key] if isinstance(i, dict) and i.get("name") == item["name"]), None)
+                    existing_item = next(
+                        (
+                            i
+                            for i in target[key]
+                            if isinstance(i, dict)
+                            and i.get("name") == item["name"]
+                        ),
+                        None,
+                    )
                     if existing_item:
                         if merge_settings(existing_item, item):
                             changed = True
@@ -134,7 +150,9 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 
 def check_installed(args: dict, request_id: str) -> dict:
-    installed = shutil.which("hx.exe") is not None or shutil.which("hx") is not None
+    installed = (
+        shutil.which("hx.exe") is not None or shutil.which("hx") is not None
+    )
     return {
         "requestId": request_id,
         "success": True,
@@ -145,7 +163,7 @@ def check_installed(args: dict, request_id: str) -> dict:
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
-    
+
     if "config" in args or "languages" in args:
         config_settings = args.get("config", {})
         language_settings = args.get("languages", {})
@@ -162,9 +180,9 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         helix_dir = get_helix_dir()
         config_path = os.path.join(helix_dir, "config.toml")
         languages_path = os.path.join(helix_dir, "languages.toml")
-        
+
         changed = False
-        
+
         # Handle config.toml
         if config_settings:
             current_config = read_toml(config_path)
@@ -173,7 +191,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
                 if not dry_run:
                     write_toml(config_path, current_config)
                     log(f"Updated config: {config_path}")
-                    
+
         # Handle languages.toml
         if language_settings:
             current_languages = read_toml(languages_path)
@@ -191,7 +209,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             }
 
         if dry_run:
-            log(f"Would update Helix config with new settings")
+            log("Would update Helix config with new settings")
             return {
                 "requestId": request_id,
                 "success": True,
@@ -218,7 +236,7 @@ def main():
     input_data = sys.stdin.read()
     if not input_data:
         return
-        
+
     try:
         request = json.loads(input_data)
     except Exception as e:
