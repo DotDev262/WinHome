@@ -6,12 +6,13 @@ from unittest.mock import patch
 import pytest
 
 import sys
-src_path = os.path.join(os.path.dirname(__file__), "..", "src")
-sys.path.append(src_path)
-try:
-    import plugin
-finally:
-    sys.path.remove(src_path)
+import importlib.util
+
+src_path = os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
+spec = importlib.util.spec_from_file_location("plugin", src_path)
+plugin = importlib.util.module_from_spec(spec)
+sys.modules["plugin"] = plugin
+spec.loader.exec_module(plugin)
 
 @pytest.fixture
 def mock_context():

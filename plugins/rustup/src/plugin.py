@@ -33,6 +33,9 @@ def read_toml(file_path: str) -> dict:
             with open(file_path, "rb") as f:
                 data = tomli.load(f)
                 return data if isinstance(data, dict) else {}
+    except ImportError as ie:
+        log(f"Missing TOML parser: {ie}")
+        raise
     except Exception as e:
         backup_path = f"{file_path}.{uuid.uuid4().hex}.bak"
         log(f"Failed to parse settings.toml: {e}. Backing up to {backup_path}")
@@ -54,7 +57,7 @@ def toml_value(value) -> str:
         return f'"{escaped}"'
     if isinstance(value, list):
         return "[" + ", ".join(toml_value(v) for v in value) + "]"
-    return '""'
+    raise TypeError(f"Unsupported TOML value type: {type(value).__name__}")
 
 
 def toml_lines(data: dict, prefix: str = "") -> list:
@@ -79,8 +82,8 @@ def write_toml(file_path: str, data: dict) -> None:
     
     fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(file_path), prefix="settings.toml.")
     try:
-        lines = toml_lines(data)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
+            lines = toml_lines(data)
             f.write("\n".join(lines).strip() + "\n")
         os.replace(temp_path, file_path)
     except Exception:
