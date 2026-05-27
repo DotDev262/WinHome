@@ -7,6 +7,7 @@ This plugin manages the Alacritty terminal emulator configuration file. It prese
 - The user must have permission to write to `%APPDATA%\alacritty\alacritty.toml`.
 ## Configuration Schema
 The plugin accepts a top-level YAML object with a single supported field:
+
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `settings` | object | none | Recursively merged into `alacritty.toml`. Any nested object shape is accepted. |

@@ -7,6 +7,7 @@ This plugin manages the configuration file for `rustup`, the Rust toolchain inst
 - The user must have permission to write to `%USERPROFILE%\.rustup\settings.toml`.
 ## Configuration Schema
 The plugin accepts a top-level YAML object with a single supported field:
+
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `settings` | object | none | Recursively merged into `settings.toml`. Any nested object shape is accepted. |

@@ -7,6 +7,7 @@ This plugin manages the configuration file for `bat`, a syntax-highlighting page
 - The user must have permission to write to `%APPDATA%\bat\config`.
 ## Configuration Schema
 The plugin accepts a top-level YAML object with a single supported field:
+
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `settings` | object | none | Merged into `bat/config`. Each key/value pair is mapped directly to a command-line flag format in the file. |

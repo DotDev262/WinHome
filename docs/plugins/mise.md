@@ -7,6 +7,7 @@ This plugin manages the configuration file for `mise`, a dev tools version manag
 - The user must have permission to write to `%LOCALAPPDATA%\mise\config.toml`.
 ## Configuration Schema
 The plugin accepts a top-level YAML object with a single supported field:
+
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `settings` | object | none | Recursively merged into `config.toml`. Any nested object shape is accepted. |

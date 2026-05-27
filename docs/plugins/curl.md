@@ -7,6 +7,7 @@ This plugin manages the configuration file for `curl`, a command line tool for t
 - The user must have permission to write to `%USERPROFILE%\_curlrc`.
 ## Configuration Schema
 The plugin accepts a top-level YAML object with a single supported field:
+
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `settings` | object | none | Merged into `_curlrc`. Each key/value pair is mapped directly to a line in the file. |

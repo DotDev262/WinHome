@@ -7,6 +7,7 @@ This plugin manages the configuration file for `chezmoi`, a dotfile manager. It 
 - The user must have permission to write to `%LOCALAPPDATA%\chezmoi\chezmoi.yaml`.
 ## Configuration Schema
 The plugin accepts a top-level YAML object with a single supported field:
+
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `settings` | object | none | Recursively merged into `chezmoi.yaml`. Any nested object shape is accepted. |
