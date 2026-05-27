@@ -29,33 +29,47 @@ def write_ini(config: Dict, dry_run: bool = False):
     
     parser = configparser.ConfigParser()
     for section, values in config.items():
-        parser[section] = {str(k): str(v).lower() if isinstance(v, bool) else str(v) 
-                          for k, v in values.items()}
+        parser[section] = {}
+        for k, v in values.items():
+            if isinstance(v, bool):
+                parser[section][k] = str(v).lower()
+            else:
+                parser[section][k] = str(v)
     
     with open(EVERYTHING_INI_PATH, 'w', encoding='utf-8') as f:
         parser.write(f)
 
+def has_changes(current: Dict, new_settings: Dict) -> bool:
+    """Simple change detection"""
+    for section_data in new_settings.values():
+        if isinstance(section_data, dict):
+            for k, v in section_data.items():
+                if str(v).lower() != current.get('Everything', {}).get(k, '').lower():
+                    return True
+    return False
+
 def apply(request: Dict) -> Dict:
     args = request.get('args', {})
     dry_run = args.get('dry_run', False)
-    new_settings = args.get('args', {})   # contains general, search, indexes, etc.
+    new_settings = args.get('args', {})   # general, search, etc.
 
     current = read_ini()
-    
-    # Most Everything settings go under [Everything] section
+    changed = has_changes(current, new_settings)
+
+    # Ensure [Everything] section exists
     if 'Everything' not in current:
         current['Everything'] = {}
-    
-    # Flatten all input sections into the main [Everything] section
+
+    # Merge all settings into [Everything] section
     for section_data in new_settings.values():
         if isinstance(section_data, dict):
-            current['Everything'].update({str(k): str(v) for k, v in section_data.items()})
+            current['Everything'].update({str(k): v for k, v in section_data.items()})
 
     write_ini(current, dry_run)
     
     return {
         "success": True,
-        "changed": True
+        "changed": changed
     }
 
 def check_installed() -> Dict:
@@ -82,8 +96,6 @@ def main():
             resp = {'error': f'Unknown command: {cmd}'}
         
         print(json.dumps(resp))
-    except json.JSONDecodeError as e:
-        print(json.dumps({'error': f'Invalid JSON: {str(e)}'}))
     except Exception as e:
         print(json.dumps({'error': str(e)}))
 
