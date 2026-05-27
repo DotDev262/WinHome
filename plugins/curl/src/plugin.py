@@ -86,10 +86,16 @@ def write_curlrc(file_path: str, merged_config: dict) -> None:
             pass
         raise
 
+def _to_str(v):
+    if v is None:
+        return None
+    return str(v).lower() if isinstance(v, bool) else str(v)
+
 def merge_settings(target: dict, source: dict) -> bool:
     changed = False
     for key, value in source.items():
-        if key not in target or target[key] != value:
+        nv = _to_str(value)
+        if key not in target or target[key] != nv:
             target[key] = value
             changed = True
     return changed
