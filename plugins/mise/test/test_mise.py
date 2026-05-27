@@ -150,3 +150,35 @@ def test_empty_stdin():
             result = json.loads(written)
             assert result["success"] is False
             assert "Empty input" in result["error"]
+
+def test_apply_config_invalid_args():
+    result = plugin.handle({
+        "requestId": "req-invalid-args",
+        "command": "apply",
+        "args": "not-a-dict",
+        "context": {}
+    })
+    assert result["success"] is False
+    assert "args must be an object" in result["error"]
+
+
+def test_apply_config_invalid_context():
+    result = plugin.handle({
+        "requestId": "req-invalid-context",
+        "command": "apply",
+        "args": {},
+        "context": "not-a-dict"
+    })
+    assert result["success"] is False
+    assert "context must be an object" in result["error"]
+
+
+def test_unknown_command():
+    result = plugin.handle({
+        "requestId": "req-unknown",
+        "command": "some_unknown_cmd",
+        "args": {},
+        "context": {}
+    })
+    assert result["success"] is False
+    assert "Unknown command: some_unknown_cmd" in result["error"]

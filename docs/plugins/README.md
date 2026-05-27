@@ -73,7 +73,7 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | `keepassxc` | Manages KeePassXC INI settings. | `config_provider` | [Details](#keepassxc) |
 | `powertoys` | Manages PowerToys general settings and supported module settings. | `config_provider` | [Details](#powertoys) |
 | `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
-| `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
+| `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) |
 
 ### Examples And Test Fixtures
 
