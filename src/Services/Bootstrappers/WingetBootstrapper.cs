@@ -20,7 +20,7 @@ namespace WinHome.Services.Bootstrappers
 
         public bool IsInstalled()
         {
-            if (_processRunner.RunCommand("winget", "--version", false)) return true;
+            if (_processRunner.RunCommand("winget", new[] { "--version" }, false)) return true;
 
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string wingetPath = Path.Combine(localAppData, "Microsoft", "WindowsApps", "winget.exe");

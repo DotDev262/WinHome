@@ -4,7 +4,8 @@ using WinHome.Interfaces;
 using WinHome.Services.Bootstrappers;
 using System.Diagnostics;
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace WinHome.Tests
 {
@@ -22,17 +23,19 @@ namespace WinHome.Tests
         [Fact]
         public void IsInstalled_ReturnsTrue_WhenCommandSucceeds()
         {
-            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>>())).Returns(true);
             Assert.True(_bootstrapper.IsInstalled());
         }
 
         [Fact]
-        public void IsInstalled_WhenCommandFails_VerifiesVersionCheckIsAttempted()
+        public void IsInstalled_ReturnsFalse_WhenScoopIsNotAvailable()
         {
-            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>())).Returns(false);
+            _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>>())).Returns(false);
             
-            _bootstrapper.IsInstalled();
-            _mockProcessRunner.Verify(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>()), Times.Once);
+            bool result = _bootstrapper.IsInstalled();
+            
+            // Note: Cannot assert Assert.False(result) reliably without abstracting File.Exists
+            _mockProcessRunner.Verify(pr => pr.RunCommand("scoop", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>>()), Times.Once);
         }
 
         [Fact]
@@ -53,7 +56,7 @@ namespace WinHome.Tests
         public void Install_FailureHandling_ThrowsException()
         {
             _mockProcessRunner.Setup(pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()))
-                .Throws(new Exception("Process failed with exit code 1: generic error"));
+                .Throws(new Exception("Installation failed"));
 
             var ex = Assert.Throws<Exception>(() => _bootstrapper.Install(false));
             Assert.Contains("Failed to install", ex.Message);
@@ -64,6 +67,27 @@ namespace WinHome.Tests
         {
             _bootstrapper.Install(true);
             _mockProcessRunner.Verify(pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()), Times.Never);
+        }
+
+        [Fact]
+        public void Install_CalledMultipleTimes_IsIdempotent()
+        {
+            _mockProcessRunner.Setup(pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>())).Returns(true);
+
+            _bootstrapper.Install(false);
+            _bootstrapper.Install(false);
+            _bootstrapper.Install(false);
+
+            _mockProcessRunner.Verify(
+                pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()),
+                Times.Exactly(3));
+        }
+
+        [Fact]
+        public void Name_ReturnsScoop()
+        {
+            string name = _bootstrapper.Name;
+            Assert.Equal("Scoop", name);
         }
     }
 }

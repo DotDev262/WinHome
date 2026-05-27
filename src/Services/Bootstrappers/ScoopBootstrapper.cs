@@ -16,7 +16,7 @@ namespace WinHome.Services.Bootstrappers
 
         public bool IsInstalled()
         {
-            if (_processRunner.RunCommand("scoop", "--version", false)) return true;
+            if (_processRunner.RunCommand("scoop", new[] { "--version" }, false)) return true;
 
             // Fallback for fresh installs where PATH isn't updated yet
             string[] searchPaths = {

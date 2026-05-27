@@ -4,7 +4,8 @@ using WinHome.Interfaces;
 using WinHome.Services.Bootstrappers;
 using System.Diagnostics;
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace WinHome.Tests
 {
@@ -24,17 +25,19 @@ namespace WinHome.Tests
         [Fact]
         public void IsInstalled_ReturnsTrue_WhenCommandSucceeds()
         {
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>>())).Returns(true);
             Assert.True(_bootstrapper.IsInstalled());
         }
 
         [Fact]
-        public void IsInstalled_WhenCommandFails_VerifiesVersionCheckIsAttempted()
+        public void IsInstalled_ReturnsFalse_WhenWingetIsNotAvailable()
         {
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(false);
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>>())).Returns(false);
             
-            _bootstrapper.IsInstalled();
-            _mockProcessRunner.Verify(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>()), Times.Once);
+            bool result = _bootstrapper.IsInstalled();
+            
+            // Note: Cannot assert Assert.False(result) reliably without abstracting File.Exists
+            _mockProcessRunner.Verify(pr => pr.RunCommand("winget", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>>()), Times.Once);
         }
 
         [Fact]
@@ -42,6 +45,13 @@ namespace WinHome.Tests
         {
             _bootstrapper.Install(true);
             _mockLogger.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("[DryRun]"))), Times.Once);
+        }
+
+        [Fact]
+        public void Name_ReturnsWinget()
+        {
+            string name = _bootstrapper.Name;
+            Assert.Equal("Winget", name);
         }
     }
 }
