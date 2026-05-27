@@ -1,10 +1,7 @@
-id: mise
-name: Mise Config Provider
-description: Manages mise dev tools version manager config.toml
+name: mise
 version: 1.0.0
+type: python
+main: src/plugin.py
 capabilities:
   - config_provider
-execute:
-  command: python
-  args:
-    - "${PLUGIN_DIR}/src/plugin.py"
+author: VIDYANKSHINI

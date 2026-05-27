@@ -8,12 +8,10 @@ from unittest.mock import patch, mock_open
 import pytest
 
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
-
-try:
-    import plugin
-except ImportError:
-    pass
+src_path = os.path.join(os.path.dirname(__file__), "..", "src")
+sys.path.append(src_path)
+import plugin
+sys.path.remove(src_path)
 
 @pytest.fixture
 def mock_context():
