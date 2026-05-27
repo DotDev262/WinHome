@@ -5,7 +5,6 @@ using WinHome.Services.Bootstrappers;
 using System.Diagnostics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace WinHome.Tests
 {

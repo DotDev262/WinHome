@@ -5,7 +5,6 @@ using WinHome.Services.Bootstrappers;
 using System.Diagnostics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace WinHome.Tests
 {
@@ -56,7 +55,7 @@ namespace WinHome.Tests
         public void Install_FailureHandling_ThrowsException()
         {
             _mockProcessRunner.Setup(pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()))
-                .Throws(new Exception("Installation failed"));
+                .Throws(new Exception("Process failed with exit code 1: Installation failed"));
 
             var ex = Assert.Throws<Exception>(() => _bootstrapper.Install(false));
             Assert.Contains("Failed to install", ex.Message);
