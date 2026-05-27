@@ -1,6 +1,6 @@
 # Plugin Directory
 
-WinHome currently ships with 35 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
+WinHome currently ships with 33 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
 
 ## Capability Legend
 
@@ -33,6 +33,8 @@ WinHome currently ships with 35 built-in plugins under `plugins/`. This page act
 
 | Name | Brief description | Capabilities | Docs |
 | --- | --- | --- | --- |
+| `alacritty` | Manages Alacritty `alacritty.toml` terminal settings. | `config_provider` | [Details](#alacritty) |
+| `bat` | Manages `bat` syntax-highlighting pager configuration. | `config_provider` | [Details](#bat) |
 | `ohmyposh` | Manages the Oh My Posh bootstrap line in a PowerShell profile. | `config_provider` | [Details](#ohmyposh) |
 | `powershell` | Generates a managed PowerShell profile block for aliases, modules, prompt, and functions. | `config_provider` | [Details](#powershell) |
 | `starship` | Manages `starship.toml` prompt settings. | `config_provider` | [Details](#starship) |
@@ -44,13 +46,23 @@ WinHome currently ships with 35 built-in plugins under `plugins/`. This page act
 
 | Name | Brief description | Capabilities | Docs |
 | --- | --- | --- | --- |
+| `chezmoi` | Manages chezmoi dotfile manager configuration. | `config_provider` | [Details](#chezmoi) |
+| `curl` | Manages `_curlrc` settings for curl. | `config_provider` | [Details](#curl) |
 | `docker` | Manages Docker Desktop `settings.json`. | `config_provider` | [Details](#docker) |
 | `gh` | Manages GitHub CLI `config.yml`. | `config_provider` | [Details](#gh) |
 | `gh-dash` | Manages `gh-dash` dashboard settings in `config.yml`. | `config_provider` | [Details](#gh-dash) |
 | `lazygit` | Manages `lazygit` YAML configuration. | `config_provider` | [Details](#lazygit) |
+| `mise` | Manages `config.toml` for the mise version manager. | `config_provider` | [Details](#mise) |
 | `opencode` | Manages OpenCode JSON and JSONC settings. | `config_provider` | [Details](#opencode) |
 | `openssh` | Manages global and host-specific entries in `~/.ssh/config`. | `config_provider` | [Details](#openssh) |
 | `rclone` | Manages `rclone.conf` global settings and remotes. | `config_provider` | [Details](#rclone) |
+
+<a id="rustup"></a>
+#### rustup
+
+Config key: `extensions.rustup`
+
+Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 
 ### Automation, Productivity, And Desktop Utilities
 
@@ -61,6 +73,7 @@ WinHome currently ships with 35 built-in plugins under `plugins/`. This page act
 | `keepassxc` | Manages KeePassXC INI settings. | `config_provider` | [Details](#keepassxc) |
 | `powertoys` | Manages PowerToys general settings and supported module settings. | `config_provider` | [Details](#powertoys) |
 | `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
+| `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
 
 ### Examples And Test Fixtures
 
@@ -202,6 +215,20 @@ Syncs VS Code `settings.json`, named profiles, and extension installation state 
 
 ### Shell, Terminal, And Navigation
 
+<a id="alacritty"></a>
+#### alacritty
+
+Config key: `extensions.alacritty`
+
+Merges TOML settings into `%APPDATA%\alacritty\alacritty.toml`.
+
+<a id="bat"></a>
+#### bat
+
+Config key: `extensions.bat`
+
+Manages flags and variables in `%APPDATA%\bat\config`.
+
 <a id="ohmyposh"></a>
 #### ohmyposh
 
@@ -246,6 +273,20 @@ Adds or refreshes Zoxide initialization lines in PowerShell and Bash profile fil
 
 ### Developer Workflow And Infrastructure
 
+<a id="chezmoi"></a>
+#### chezmoi
+
+Config key: `extensions.chezmoi`
+
+Deep-merges YAML settings into `%LOCALAPPDATA%\chezmoi\chezmoi.yaml`.
+
+<a id="curl"></a>
+#### curl
+
+Config key: `extensions.curl`
+
+Manages proxy, flags, and variables in `%USERPROFILE%\_curlrc`.
+
 <a id="docker"></a>
 #### docker
 
@@ -274,6 +315,13 @@ Config key: `extensions.lazygit`
 
 Merges YAML settings into `%APPDATA%\lazygit\config.yml`.
 
+<a id="mise"></a>
+#### mise
+
+Config key: `extensions.mise`
+
+Deep-merges TOML settings into `%LOCALAPPDATA%\mise\config.toml`.
+
 <a id="opencode"></a>
 #### opencode
 
@@ -294,6 +342,13 @@ Merges global settings and `hosts` blocks into `~/.ssh/config`.
 Config key: `extensions.rclone`
 
 Merges global settings and remote definitions into `%USERPROFILE%\.config\rclone\rclone.conf`.
+
+<a id="rustup"></a>
+#### rustup
+
+Config key: `extensions.rustup`
+
+Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 
 ### Automation, Productivity, And Desktop Utilities
 
