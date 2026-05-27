@@ -66,7 +66,8 @@ def apply_config(args, context, request_id):
         return {
             "requestId": request_id,
             "success": True,
-            "changed": False
+            "changed": False,
+            "data": None
         }
         
     config_path = get_config_path()
@@ -97,7 +98,8 @@ def apply_config(args, context, request_id):
         return {
             "requestId": request_id,
             "success": True,
-            "changed": False
+            "changed": False,
+            "data": None
         }
         
     if not dry_run:
@@ -123,6 +125,7 @@ def apply_config(args, context, request_id):
                 "requestId": request_id,
                 "success": False,
                 "changed": False,
+                "data": None,
                 "error": f"Failed to write config: {str(e)}"
             }
     else:
@@ -131,13 +134,22 @@ def apply_config(args, context, request_id):
     return {
         "requestId": request_id,
         "success": True,
-        "changed": True
+        "changed": True,
+        "data": None
     }
 
 def main():
     try:
         raw_input = sys.stdin.read().strip()
         if not raw_input:
+            print(json.dumps({
+                "requestId": "unknown",
+                "success": False,
+                "changed": False,
+                "data": None,
+                "error": "Empty input received via stdin"
+            }))
+            sys.stdout.flush()
             return
             
         request = json.loads(raw_input)
@@ -156,6 +168,7 @@ def main():
                     "requestId": request_id,
                     "success": False,
                     "changed": False,
+                    "data": None,
                     "error": f"Unknown command: {command}"
                 }
         except Exception as inner_e:
@@ -164,6 +177,7 @@ def main():
                 "requestId": request_id,
                 "success": False,
                 "changed": False,
+                "data": None,
                 "error": f"Internal Script Error: {str(inner_e)}"
             }
             
@@ -175,6 +189,7 @@ def main():
             "requestId": "unknown",
             "success": False,
             "changed": False,
+            "data": None,
             "error": f"Plugin crashed: {str(e)}"
         }))
 
