@@ -4,18 +4,10 @@ import os
 import configparser
 from pathlib import Path
 
-
-# ----------------------------
-# PATH CONFIG
-# ----------------------------
 APPDATA = os.environ.get("APPDATA", "")
 EVERYTHING_DIR = Path(APPDATA) / "Everything"
 INI_PATH = EVERYTHING_DIR / "Everything.ini"
 
-
-# ----------------------------
-# CHECK INSTALLATION
-# ----------------------------
 def handle_check_installed():
     """
     Checks whether Everything config directory exists
@@ -23,14 +15,8 @@ def handle_check_installed():
     installed = EVERYTHING_DIR.exists()
     return {"installed": installed}
 
-
-# ----------------------------
-# LOAD CONFIG
-# ----------------------------
 def load_config():
     config = configparser.ConfigParser()
-
-    # IMPORTANT: preserve case sensitivity
     config.optionxform = str # type: ignore[attr-defined]
 
     if INI_PATH.exists():
@@ -38,10 +24,6 @@ def load_config():
 
     return config
 
-
-# ----------------------------
-# MERGE CONFIG (deep-ish merge)
-# ----------------------------
 def merge_config(config, new_data):
     changed = False
 
@@ -58,17 +40,12 @@ def merge_config(config, new_data):
 
     return changed
 
-
-# ----------------------------
-# APPLY CONFIG
-# ----------------------------
 def handle_apply(args):
     dry_run = args.get("dry_run", False)
     new_config = args.get("args", {})
 
     config = load_config()
 
-    # preview (for dry-run output)
     preview = {
         section: {
             k: (str(v).lower() if isinstance(v, bool) else str(v))
@@ -78,8 +55,6 @@ def handle_apply(args):
     }
 
     changed = merge_config(config, new_config)
-
-    # DRY RUN → DO NOT WRITE FILE
     if dry_run:
         print(json.dumps({
             "success": True,
@@ -89,10 +64,8 @@ def handle_apply(args):
         }), flush=True)
         return None
 
-    # ensure directory exists
     EVERYTHING_DIR.mkdir(parents=True, exist_ok=True)
 
-    # write INI file
     with open(INI_PATH, "w", encoding="utf-8") as f:
         config.write(f)
 
@@ -101,10 +74,6 @@ def handle_apply(args):
         "changed": changed
     }
 
-
-# ----------------------------
-# MAIN ENTRYPOINT (STDIO)
-# ----------------------------
 def main():
     try:
         raw = sys.stdin.read().strip()
@@ -126,8 +95,6 @@ def main():
 
         elif command == "apply":
             result = handle_apply(args)
-
-            # dry-run already printed
             if result is None:
                 return
 
@@ -136,8 +103,6 @@ def main():
                 "success": False,
                 "error": f"unknown command: {command}"
             }
-
-        # IMPORTANT: ALWAYS PRINT JSON
         print(json.dumps(result), flush=True)
 
     except Exception as e:
@@ -146,9 +111,5 @@ def main():
             "error": str(e)
         }), flush=True)
 
-
-# ----------------------------
-# ENTRYPOINT GUARANTEE
-# ----------------------------
 if __name__ == "__main__":
     main()
