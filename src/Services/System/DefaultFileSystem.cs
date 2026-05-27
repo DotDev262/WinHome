@@ -3,11 +3,11 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.System
 {
-    public class DefaultFileSystem : IFileSystem
+  public class DefaultFileSystem : IFileSystem
+  {
+    public bool FileExists(string path)
     {
-        public bool FileExists(string path)
-        {
-            return File.Exists(path);
-        }
+      return File.Exists(path);
     }
+  }
 }
