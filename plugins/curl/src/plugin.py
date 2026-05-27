@@ -95,9 +95,13 @@ def merge_settings(target: dict, source: dict) -> bool:
     changed = False
     for key, value in source.items():
         nv = _to_str(value)
-        if key not in target or target[key] != nv:
+        if key not in target:
             target[key] = value
             changed = True
+        elif target[key] != nv:
+            if not (target[key] is None and nv == "true"):
+                target[key] = value
+                changed = True
     return changed
 
 def check_installed(args: dict, request_id: str) -> dict:
