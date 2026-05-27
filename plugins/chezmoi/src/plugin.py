@@ -22,9 +22,8 @@ def read_yaml(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
     
-    import yaml
-
     try:
+        import yaml
         with open(file_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
             return data if isinstance(data, dict) else {}
@@ -40,10 +39,10 @@ def read_yaml(file_path: str) -> dict:
 
 def write_yaml(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    import yaml
     
     fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(file_path), prefix="chezmoi.yaml.")
     try:
+        import yaml
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
         os.replace(temp_path, file_path)
@@ -83,7 +82,7 @@ def check_installed(args: dict, request_id: str) -> dict:
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = bool(context.get("dryRun", False))
-    settings = args.get("settings", {})
+    settings = args.get("settings", {}) or {}
 
     try:
         config_path = get_config_path()
