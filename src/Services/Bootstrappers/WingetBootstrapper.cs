@@ -46,28 +46,28 @@ namespace WinHome.Services.Bootstrappers
                 Directory.CreateDirectory(tempDir);
 
                 // FIX: Platform guard for Windows-only ACL APIs to prevent crashes on Linux CI
-                // FIX: Platform guard for Windows-only ACL APIs
                 if (OperatingSystem.IsWindows())
                 {
                     try
                     {
-                        var security = new global::System.Security.AccessControl.DirectorySecurity();
-                        var currentUser = global::System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+                        // Use 'using' to ensure DirectorySecurity is disposed properly
+                        using (var security = new global::System.Security.AccessControl.DirectorySecurity())
+                        {
+                            var currentUser = global::System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+                            
+                            // Define inheritance flags so files/folders inside the temp dir inherit these permissions
+                            var inheritanceFlags = global::System.Security.AccessControl.InheritanceFlags.ContainerInherit | global::System.Security.AccessControl.InheritanceFlags.ObjectInherit;
+                            var propagationFlags = global::System.Security.AccessControl.PropagationFlags.None;
 
-                        // Grant FullControl to the current user
-                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(
-                            currentUser,
-                            global::System.Security.AccessControl.FileSystemRights.FullControl,
-                            global::System.Security.AccessControl.AccessControlType.Allow));
+                            var systemSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.LocalSystemSid, null);
+                            var adminSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
 
-                        // Grant FullControl to SYSTEM and Administrators using SIDs
-                        var systemSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.LocalSystemSid, null);
-                        var adminSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
+                            security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(currentUser, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
+                            security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(systemSid, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
+                            security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(adminSid, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
 
-                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(systemSid, global::System.Security.AccessControl.FileSystemRights.FullControl, global::System.Security.AccessControl.AccessControlType.Allow));
-                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(adminSid, global::System.Security.AccessControl.FileSystemRights.FullControl, global::System.Security.AccessControl.AccessControlType.Allow));
-
-                        global::System.IO.Directory.SetAccessControl(tempDir, security);
+                            global::System.IO.Directory.SetAccessControl(tempDir, security);
+                        }
                     }
                     catch (Exception ex)
                     {
