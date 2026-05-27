@@ -60,25 +60,14 @@ namespace WinHome.Services.Bootstrappers
                 CreateNoWindow = true,
             };
 
-            using var process = Process.Start(psi);
-            if (process == null)
+            try
             {
-                throw new Exception($"Failed to start installer for {Name}");
+                _processRunner.RunProcessWithStartInfo(psi);
             }
-
-            var errorBuilder = new StringBuilder();
-            process.ErrorDataReceived += (s, e) => { if (e.Data != null) errorBuilder.AppendLine(e.Data); };
-            process.OutputDataReceived += (s, e) => { }; // Drain stdout to prevent pipe deadlock
-            process.BeginErrorReadLine();
-            process.BeginOutputReadLine();
-
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
+            catch (Exception ex)
             {
-                var error = errorBuilder.ToString();
                 // If it's just a DNS resolution error, it might be transient or need a retry
-                if (error.Contains("remote name could not be resolved"))
+                if (ex.Message.Contains("remote name could not be resolved"))
                 {
                     Console.WriteLine("[Bootstrapper] Network error resolving get.scoop.sh. Retrying in 10 seconds...");
                     Thread.Sleep(10000);
@@ -86,7 +75,7 @@ namespace WinHome.Services.Bootstrappers
                     Install(false);
                     return;
                 }
-                throw new Exception($"Failed to install {Name}: {error}");
+                throw new Exception($"Failed to install {Name}: {ex.Message}");
             }
 
             Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");

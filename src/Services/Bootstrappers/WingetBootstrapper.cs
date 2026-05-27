@@ -50,24 +50,29 @@ namespace WinHome.Services.Bootstrappers
                 {
                     try
                     {
-                        // Use 'using' to ensure DirectorySecurity is disposed properly
-                        using (var security = new global::System.Security.AccessControl.DirectorySecurity())
-                        {
-                            var currentUser = global::System.Security.Principal.WindowsIdentity.GetCurrent().Name;
-                            
-                            // Define inheritance flags so files/folders inside the temp dir inherit these permissions
-                            var inheritanceFlags = global::System.Security.AccessControl.InheritanceFlags.ContainerInherit | global::System.Security.AccessControl.InheritanceFlags.ObjectInherit;
-                            var propagationFlags = global::System.Security.AccessControl.PropagationFlags.None;
+                        // Use normal initialization, DirectorySecurity is not IDisposable
+                        var security = new global::System.Security.AccessControl.DirectorySecurity();
+                        var currentUser = global::System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+                        
+                        // Define inheritance flags so files/folders inside the temp dir inherit these permissions
+                        var inheritanceFlags = global::System.Security.AccessControl.InheritanceFlags.ContainerInherit | global::System.Security.AccessControl.InheritanceFlags.ObjectInherit;
+                        var propagationFlags = global::System.Security.AccessControl.PropagationFlags.None;
 
-                            var systemSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.LocalSystemSid, null);
-                            var adminSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
+                        var systemSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.LocalSystemSid, null);
+                        var adminSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
 
-                            security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(currentUser, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
-                            security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(systemSid, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
-                            security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(adminSid, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
+                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(currentUser, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
+                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(systemSid, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
+                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(adminSid, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
 
-                            global::System.IO.Directory.SetAccessControl(tempDir, security);
-                        }
+                        #pragma warning disable CA1416
+                        var di = new global::System.IO.DirectoryInfo(tempDir);
+                        global::System.Security.AccessControl.DirectorySecurity acl = security;
+                        // Use reflection if the extension method is tricky, or just set it
+                        // Since this is Windows only, trying to set ACL might be easiest via reflection or avoiding it if it doesn't compile.
+                        // Actually, SetAccessControl is available as an extension method on DirectoryInfo if System.IO.FileSystem.AccessControl is referenced.
+                        di.SetAccessControl(security);
+                        #pragma warning restore CA1416
                     }
                     catch (Exception ex)
                     {
