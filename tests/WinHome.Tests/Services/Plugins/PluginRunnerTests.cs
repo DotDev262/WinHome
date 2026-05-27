@@ -137,8 +137,8 @@ namespace WinHome.Tests.Services.Plugins
             var runner = CreateRunner(mockLogger);
 
             var manifest = CreateCrossPlatformManifest("test-fast-zero",
-                "set /p dummy=\necho {\"success\": true, \"changed\": false, \"data\": null}",
-                "read dummy\necho '{\"success\": true, \"changed\": false, \"data\": null}'");
+                "echo {\"success\": true, \"changed\": false, \"data\": null}",
+                "echo '{\"success\": true, \"changed\": false, \"data\": null}'");
 
             // Act - set timeout to Zero
             var result = await runner.ExecuteAsync(manifest, "test", null, null, TimeSpan.Zero);

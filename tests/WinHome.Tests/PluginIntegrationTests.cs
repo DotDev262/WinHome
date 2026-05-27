@@ -11,6 +11,30 @@ namespace WinHome.Tests
 {
     public class PluginIntegrationTests
     {
+        private static string? FindTestPluginPath(string pluginDirectoryName)
+        {
+            var current = new DirectoryInfo(AppContext.BaseDirectory);
+
+            while (current is not null)
+            {
+                var candidate = Path.Combine(current.FullName, "tests", pluginDirectoryName);
+                if (Directory.Exists(candidate))
+                {
+                    return candidate;
+                }
+
+                current = current.Parent;
+            }
+
+            return null;
+        }
+
+        private static bool RuntimeIsInstalled(IRuntimeResolver resolver, string runtimeName)
+        {
+            var resolved = resolver.Resolve(runtimeName);
+            return Path.IsPathRooted(resolved) && File.Exists(resolved);
+        }
+
         [Fact]
         public async Task PluginRunner_RealExecution_TalksToPythonViaUv()
         {
@@ -19,27 +43,18 @@ namespace WinHome.Tests
             var resolver = new RuntimeResolver(mockLogger.Object, new DefaultProcessRunner(), new DefaultFileSystem());
 
             // Skip if uv is not installed
-            try
+            if (!RuntimeIsInstalled(resolver, "uv"))
             {
-                resolver.Resolve("uv");
-            }
-            catch
-            {
-                return; // Skip test if runtime not found
+                return;
             }
 
             var runner = new PluginRunner(mockLogger.Object, resolver);
 
-            // We need to point to the actual test plugin we just created
-            var projectRoot = Directory.GetCurrentDirectory();
-            // Move up from bin/Debug/net10.0-windows to tests/WinHome.Tests
-            var current = new DirectoryInfo(projectRoot);
-            while (current != null && current.Name != "tests")
+            var pluginPath = FindTestPluginPath("TestPlugin");
+            if (pluginPath is null)
             {
-                current = current.Parent;
+                return;
             }
-
-            var pluginPath = Path.GetFullPath(Path.Combine(current!.FullName, "TestPlugin"));
 
             var manifest = new PluginManifest
             {
@@ -82,27 +97,18 @@ namespace WinHome.Tests
             var resolver = new RuntimeResolver(mockLogger.Object, new DefaultProcessRunner(), new DefaultFileSystem());
 
             // Skip if bun is not installed
-            try
+            if (!RuntimeIsInstalled(resolver, "bun"))
             {
-                resolver.Resolve("bun");
-            }
-            catch
-            {
-                return; // Skip test if runtime not found
+                return;
             }
 
             var runner = new PluginRunner(mockLogger.Object, resolver);
 
-            // We need to point to the actual test plugin we just created
-            var projectRoot = Directory.GetCurrentDirectory();
-            // Move up from bin/Debug/net10.0-windows to tests/WinHome.Tests
-            var current = new DirectoryInfo(projectRoot);
-            while (current != null && current.Name != "tests")
+            var pluginPath = FindTestPluginPath("TestPluginJS");
+            if (pluginPath is null)
             {
-                current = current.Parent;
+                return;
             }
-
-            var pluginPath = Path.GetFullPath(Path.Combine(current!.FullName, "TestPluginJS"));
 
             var manifest = new PluginManifest
             {
