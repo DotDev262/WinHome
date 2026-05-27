@@ -114,7 +114,7 @@ class TestYasbPlugin(unittest.TestCase):
             with open(config_path, "r", encoding="utf-8") as file_handle:
                 content = yaml.safe_load(file_handle)
 
-            self.assertFalse(content["watch_stylesheet"])
+            self.assertTrue(content["watch_stylesheet"])
             self.assertTrue(content["watch_config"])
             self.assertFalse(content["debug"])
             self.assertTrue(content["bars"]["status-bar"]["enabled"])
@@ -143,6 +143,22 @@ class TestYasbPlugin(unittest.TestCase):
             self.assertTrue(response["changed"])
             self.assertTrue(response["data"]["wouldChange"])
             self.assertFalse(os.path.exists(config_path))
+
+    def test_apply_returns_null_data_on_success(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            payload = {
+                "requestId": "req-4b",
+                "command": "apply",
+                "args": {"settings": {"watch_config": True}},
+                "context": {"dryRun": False},
+            }
+
+            with patch.dict(os.environ, {"USERPROFILE": tmp_dir}):
+                response = self.run_main(payload)
+
+            self.assertTrue(response["success"])
+            self.assertIn("data", response)
+            self.assertIsNone(response["data"])
 
     def test_apply_creates_missing_config_directory(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -202,11 +218,25 @@ class TestYasbPlugin(unittest.TestCase):
         self.assertEqual(response["requestId"], "unknown")
         self.assertIn("Failed to parse request", response["error"])
 
+    def test_main_returns_json_error_on_empty_input(self):
+        stdin = StringIO("")
+        stdout = StringIO()
+
+        with patch("sys.stdin", stdin), patch("sys.stdout", stdout):
+            plugin.main()
+
+        response = json.loads(stdout.getvalue().strip())
+
+        self.assertFalse(response["success"])
+        self.assertEqual(response["requestId"], "unknown")
+        self.assertIn("empty stdin", response["error"])
+
     def test_unknown_command(self):
         response = self.run_main({"requestId": "req-6", "command": "explode", "args": {}, "context": {}})
 
         self.assertFalse(response["success"])
         self.assertIn("error", response)
+        self.assertIsNone(response["data"])
 
 
 if __name__ == "__main__":

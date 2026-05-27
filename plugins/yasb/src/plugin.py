@@ -7,8 +7,9 @@
 import json
 import os
 import shutil
+import tempfile
 import sys
-import copy 
+import copy
 import uuid
 import yaml
 
@@ -61,10 +62,9 @@ def read_yaml(file_path: str) -> dict:
 def write_yaml(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    temp_path = f"{file_path}.tmp"
-
+    temp_fd, temp_path = tempfile.mkstemp(prefix="yasb-", dir=os.path.dirname(file_path))
     try:
-        with open(temp_path, "w", encoding="utf-8") as file_handle:
+        with os.fdopen(temp_fd, "w", encoding="utf-8") as file_handle:
             yaml.safe_dump(data, file_handle, default_flow_style=False, sort_keys=False)
 
         os.replace(temp_path, file_path)
@@ -75,17 +75,12 @@ def write_yaml(file_path: str, data: dict) -> None:
             except OSError:
                 pass
 
-
-
-
-def merge_settings(target: dict, source: dict, depth: int = 0) -> bool:
+def merge_settings(target: dict, source: dict) -> bool:
     """Deep-merge `source` into `target`.
 
     Behavior:
     - Dict values are merged recursively.
-    - At the top level (depth==0), existing scalar values in `target` are preserved
-      and will not be overwritten by `source`.
-    - Nested scalar values (depth>0) are overwritten when different or missing.
+    - Scalar values are overwritten when different or missing.
 
     Returns True if `target` was modified.
     """
@@ -97,14 +92,9 @@ def merge_settings(target: dict, source: dict, depth: int = 0) -> bool:
                 target[key] = {}
                 changed = True
 
-            if merge_settings(target[key], value, depth + 1):
+            if merge_settings(target[key], value):
                 changed = True
         else:
-            # At the top level, do not overwrite existing scalar values
-            if depth == 0 and key in target:
-                # preserve existing top-level scalar
-                continue
-
             if key not in target or target[key] != value:
                 target[key] = value
                 changed = True
@@ -166,6 +156,7 @@ def apply_config(request_id: str, args: dict, context: dict) -> dict:
         "requestId": request_id,
         "success": True,
         "changed": changed,
+        "data": None,
     }
 
 
@@ -173,6 +164,19 @@ def main() -> None:
     input_data = sys.stdin.read()
 
     if not input_data:
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "changed": False,
+                    "data": None,
+                    "error": "Failed to parse request: empty stdin",
+                }
+            )
+            + "\n"
+        )
+        sys.stdout.flush()
         return
 
     try:
@@ -184,6 +188,7 @@ def main() -> None:
                     "requestId": "unknown",
                     "success": False,
                     "changed": False,
+                    "data": None,
                     "error": f"Failed to parse request: {error}",
                 }
             )
@@ -201,6 +206,7 @@ def main() -> None:
         "requestId": request_id,
         "success": False,
         "changed": False,
+        "data": None,
     }
 
     try:
