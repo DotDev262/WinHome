@@ -239,6 +239,35 @@ public class StateCommandTests
     }
 
     [Fact]
+    public async Task StateClear_InvokesClearAction()
+    {
+        // Arrange
+        string? capturedAction = null;
+        var root = BuildRealCommand(async (action, path, logLevel) =>
+        {
+            capturedAction = action;
+            return 0;
+        });
+
+        // Use Console Simulation since clear triggers a ReadLine user prompt
+        using (var stringReader = new StringReader("y"))
+        {
+            Console.SetIn(stringReader);
+
+            // Act
+            int exitCode = await root.Parse(new[] { "state", "clear" }).InvokeAsync();
+
+            // Assert
+            Assert.Equal(0, exitCode);
+            Assert.Equal("clear", capturedAction);
+        }
+        
+        // Reset console standard input
+        var standardInput = new StreamReader(Console.OpenStandardInput());
+        Console.SetIn(standardInput);
+    }
+
+    [Fact]
     public async Task StateList_WithVerboseFlag_PassesTraceLogLevel()
     {
         LogLevel? capturedLevel = null;

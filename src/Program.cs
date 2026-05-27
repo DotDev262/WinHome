@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.CommandLine;
+using System.IO;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
 using WinHome.Services.Logging;
@@ -121,6 +122,28 @@ class Program
                         case "restore":
                             if (string.IsNullOrEmpty(path)) return 1;
                             stateService.RestoreState(path);
+                            break;
+                        case "clear":
+                            try
+                            {
+                                // Look for winhome.state.json in the current working directory
+                                string stateFilePath = Path.Combine(Directory.GetCurrentDirectory(), "winhome.state.json");
+                                
+                                if (File.Exists(stateFilePath))
+                                {
+                                    File.Delete(stateFilePath);
+                                    logger.LogSuccess("[State] Success: winhome.state.json has been deleted and tracking state is reset.");
+                                }
+                                else
+                                {
+                                    logger.LogInfo("[State] No active winhome.state.json file was found. State is already clean.");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.LogError($"[State] Failed to clear tracking state file: {ex.Message}");
+                                return 1;
+                            }
                             break;
                     }
                     return 0;

@@ -1,5 +1,8 @@
+using System;
 using System.CommandLine;
 using System.CommandLine.Parsing;
+using System.IO;
+using System.Threading.Tasks;
 using WinHome.Interfaces;
 using WinHome.Models;
 using YamlDotNet.Serialization;
@@ -172,9 +175,37 @@ public static class CliBuilder
             return await stateAction("restore", path, ComputeLogLevel(quiet, verbose));
         });
 
+        // Clear SubCommand (New Feature)
+        var clearSubCommand = new Command("clear");
+        clearSubCommand.Description = "Force reset the WinHome tracking state";
+        clearSubCommand.Options.Add(verboseOption);
+        clearSubCommand.Options.Add(quietOption);
+        clearSubCommand.SetAction(async (ParseResult result) =>
+        {
+            bool verbose = result.GetValue(verboseOption);
+            bool quiet = result.GetValue(quietOption);
+            int conflict = RejectConflictingFlags(verbose, quiet);
+            if (conflict != 0) return conflict;
+
+            Console.WriteLine("Warning: Are you sure you want to clear the WinHome tracking state?");
+            Console.Write("This will not uninstall apps but will trigger full reconciliation on the next run. [y/N]: ");
+            
+            string? response = Console.ReadLine()?.Trim().ToLower();
+            if (response == "y" || response == "yes")
+            {
+                return await stateAction("clear", null, ComputeLogLevel(quiet, verbose));
+            }
+            else
+            {
+                Console.WriteLine("Operation cancelled. State was not cleared.");
+                return 0;
+            }
+        });
+
         stateCommand.Subcommands.Add(listSubCommand);
         stateCommand.Subcommands.Add(backupSubCommand);
         stateCommand.Subcommands.Add(restoreSubCommand);
+        stateCommand.Subcommands.Add(clearSubCommand); // Registered here
 
         rootCommand.Add(stateCommand);
 
