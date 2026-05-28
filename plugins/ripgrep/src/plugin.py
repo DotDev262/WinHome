@@ -154,6 +154,15 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
     settings = args.get("settings", {})
 
+    if not isinstance(settings, dict):
+        return {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": "settings must be an object",
+            "data": None,
+        }
+
     try:
         config_path = get_config_path()
         current_config = read_ripgreprc(config_path)
