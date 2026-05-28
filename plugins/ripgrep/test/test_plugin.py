@@ -1,67 +1,145 @@
 import json
 import os
+import subprocess
+import sys
 import tempfile
 
-from plugins.ripgrep.src.plugin import (
-    parse_ripgreprc,
-    build_ripgreprc_content,
-    merge_settings,
+PLUGIN = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "src",
+        "plugin.py"
+    )
 )
 
 
-def test_parse_ripgreprc():
-    lines = [
-        "--smart-case\n",
-        "--hidden\n",
-        "--max-columns=150\n",
-    ]
+def run_plugin(payload: dict) -> dict:
+    result = subprocess.run(
+        [sys.executable, PLUGIN],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True
+    )
 
-    parsed = parse_ripgreprc(lines)
-
-    assert parsed["smart-case"] is True
-    assert parsed["hidden"] is True
-    assert parsed["max-columns"] == "150"
+    return json.loads(result.stdout.strip())
 
 
-def test_build_ripgreprc_content():
-    config = {
-        "smart-case": True,
-        "hidden": True,
-        "max-columns": 150,
-    }
+def test_check_installed():
+    res = run_plugin({
+        "requestId": "1",
+        "command": "check_installed",
+        "args": {},
+        "context": {}
+    })
 
-    content = build_ripgreprc_content(config)
-
-    assert "--smart-case" in content
-    assert "--hidden" in content
-    assert "--max-columns=150" in content
-
-
-def test_merge_settings():
-    current = {
-        "smart-case": True,
-    }
-
-    new = {
-        "hidden": True,
-    }
-
-    changed = merge_settings(current, new)
-
-    assert changed is True
-    assert current["hidden"] is True
+    assert res["requestId"] == "1"
+    assert res["success"]
+    assert "data" in res
+    assert isinstance(res["data"], bool)
 
 
-def test_merge_settings_remove_false():
-    current = {
-        "hidden": True,
-    }
+def test_apply_config_dry_run():
+    with tempfile.TemporaryDirectory() as tmp:
+        config_path = os.path.join(tmp, ".ripgreprc")
+        os.environ["RIPGREP_CONFIG_PATH"] = config_path
 
-    new = {
-        "hidden": False,
-    }
+        res = run_plugin({
+            "requestId": "2",
+            "command": "apply",
+            "args": {
+                "settings": {
+                    "smart-case": True,
+                    "hidden": True,
+                    "max-columns": 150
+                }
+            },
+            "context": {
+                "dryRun": True
+            }
+        })
 
-    changed = merge_settings(current, new)
+        assert res["requestId"] == "2"
+        assert res["success"]
+        assert res["changed"]
+        assert "data" in res
+        assert not os.path.exists(config_path)
 
-    assert changed is True
-    assert "hidden" not in current
+
+def test_apply_config_write():
+    with tempfile.TemporaryDirectory() as tmp:
+        config_path = os.path.join(tmp, ".ripgreprc")
+        os.environ["RIPGREP_CONFIG_PATH"] = config_path
+
+        res = run_plugin({
+            "requestId": "3",
+            "command": "apply",
+            "args": {
+                "settings": {
+                    "smart-case": True,
+                    "hidden": True,
+                    "max-columns": 150
+                }
+            },
+            "context": {
+                "dryRun": False
+            }
+        })
+
+        assert res["requestId"] == "3"
+        assert res["success"]
+        assert res["changed"]
+        assert os.path.exists(config_path)
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        assert "--smart-case" in content
+        assert "--hidden" in content
+        assert "--max-columns=150" in content
+
+
+def test_preserves_existing_unknown_flags():
+    with tempfile.TemporaryDirectory() as tmp:
+        config_path = os.path.join(tmp, ".ripgreprc")
+        os.environ["RIPGREP_CONFIG_PATH"] = config_path
+
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write("--unknown-flag\n")
+
+        res = run_plugin({
+            "requestId": "4",
+            "command": "apply",
+            "args": {
+                "settings": {
+                    "smart-case": True
+                }
+            },
+            "context": {
+                "dryRun": False
+            }
+        })
+
+        assert res["success"]
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        assert "--unknown-flag" in content
+        assert "--smart-case" in content
+
+
+def test_empty_stdin_returns_json_error():
+    result = subprocess.run(
+        [sys.executable, PLUGIN],
+        input="",
+        capture_output=True,
+        text=True
+    )
+
+    res = json.loads(result.stdout.strip())
+
+    assert res["requestId"] == "unknown"
+    assert not res["success"]
+    assert "data" in res
+    assert "error" in res
