@@ -1,0 +1,5 @@
+id: ripgrep
+name: ripgrep
+version: 1.0.0
+type: config_provider
+entry: src/plugin.py
