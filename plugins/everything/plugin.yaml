@@ -1,4 +1,4 @@
-﻿name: everything
+name: everything
 version: 1.0.0
 type: python
 main: src/plugin.py

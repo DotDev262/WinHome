@@ -1,77 +1,82 @@
-﻿import sys
+import configparser
 import json
 import os
-import configparser
+import sys
 from pathlib import Path
+
 
 APPDATA = os.environ.get("APPDATA", "")
 EVERYTHING_DIR = Path(APPDATA) / "Everything"
 INI_PATH = EVERYTHING_DIR / "Everything.ini"
 
-def handle_check_installed():
-    """
-    Checks whether Everything config directory exists
-    """
-    installed = EVERYTHING_DIR.exists()
-    return {"installed": installed}
+
+def handle_check_installed(request_id):
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": False,
+        "data": EVERYTHING_DIR.exists()
+    }
 
 def load_config():
     config = configparser.ConfigParser()
-    config.optionxform = str # type: ignore[attr-defined]
+    config.optionxform = str  # type: ignore[attr-defined]
 
     if INI_PATH.exists():
-        config.read(INI_PATH)
+        config.read(INI_PATH, encoding="utf-8")
 
     return config
 
-def merge_config(config, new_data):
+def merge_config(config, settings):
     changed = False
 
-    for section, values in new_data.items():
-        if section not in config:
-            config[section] = {}
+    for section, values in settings.items():
+        if not config.has_section(section):
+            config.add_section(section)
 
         for key, value in values.items():
-            str_value = str(value).lower() if isinstance(value, bool) else str(value)
+            value_str = str(value).lower()
 
-            if config[section].get(key) != str_value:
-                config[section][key] = str_value
+            if config[section].get(key) != value_str:
+                config[section][key] = value_str
                 changed = True
 
     return changed
 
-def handle_apply(args):
-    dry_run = args.get("dry_run", False)
-    new_config = args.get("args", {})
+def handle_apply(args, context, request_id):
+    dry_run = context.get("dryRun", False)
+    settings = args.get("settings", {})
 
     config = load_config()
 
-    preview = {
-        section: {
-            k: (str(v).lower() if isinstance(v, bool) else str(v))
-            for k, v in values.items()
-        }
-        for section, values in new_config.items()
-    }
+    changed = merge_config(config, settings)
 
-    changed = merge_config(config, new_config)
     if dry_run:
-        print(json.dumps({
+        preview = {
+            section: dict(config[section])
+            for section in config.sections()
+        }
+
+        return {
+            "requestId": request_id,
             "success": True,
             "changed": changed,
-            "dry_run": True,
-            "preview": preview
-        }), flush=True)
-        return None
+            "data": {
+                "dryRun": True,
+                "preview": preview
+            }
+        }
 
     EVERYTHING_DIR.mkdir(parents=True, exist_ok=True)
 
-    with open(INI_PATH, "w", encoding="utf-8") as f:
-        config.write(f)
+    with open(INI_PATH, "w", encoding="utf-8") as file:
+        config.write(file)
 
     return {
+        "requestId": request_id,
         "success": True,
-        "changed": changed
+        "changed": changed,
+        "data": {}
     }
 
 def main():
@@ -80,36 +85,41 @@ def main():
 
         if not raw:
             print(json.dumps({
+                "requestId": None,
                 "success": False,
                 "error": "empty input"
-            }), flush=True)
+            }))
             return
 
         payload = json.loads(raw)
 
+        request_id = payload.get("requestId")
         command = payload.get("command")
         args = payload.get("args", {})
+        context = payload.get("context", {})
 
         if command == "check_installed":
-            result = handle_check_installed()
+            result = handle_check_installed(request_id)
 
         elif command == "apply":
-            result = handle_apply(args)
-            if result is None:
-                return
+            result = handle_apply(args, context, request_id)
 
         else:
             result = {
+                "requestId": request_id,
                 "success": False,
                 "error": f"unknown command: {command}"
             }
+
         print(json.dumps(result), flush=True)
 
-    except Exception as e:
+    except Exception as error:
         print(json.dumps({
+            "requestId": None,
             "success": False,
-            "error": str(e)
+            "error": str(error)
         }), flush=True)
 
 if __name__ == "__main__":
     main()
+

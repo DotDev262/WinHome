@@ -1,13 +1,13 @@
-﻿import json
+import json
 import subprocess
 import sys
 
 
-PLUGIN = "everything/src/plugin.py"
+PLUGIN = "src/plugin.py"
 
 
 def run_plugin(payload: dict):
-    p = subprocess.Popen(
+    process = subprocess.Popen(
         [sys.executable, PLUGIN],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -15,29 +15,40 @@ def run_plugin(payload: dict):
         text=True
     )
 
-    out, err = p.communicate(json.dumps(payload))
-    return out.strip()
+    stdout, stderr = process.communicate(json.dumps(payload))
+
+    if stderr:
+        print(stderr)
+
+    return stdout.strip()
 
 
 def test_check_installed():
-    out = run_plugin({"command": "check_installed", "args": {}})
+    payload = {
+        "requestId": "1",
+        "command": "check_installed",
+        "args": {}
+    }
+
+    out = run_plugin(payload)
+
     data = json.loads(out)
-    assert "installed" in data
+
+    assert data["success"] is True
+    assert isinstance(data["data"], bool)
 
 
 def test_apply_dry_run():
     payload = {
+        "requestId": "1",
         "command": "apply",
+        "context": {
+            "dryRun": True
+        },
         "args": {
-            "dry_run": True,
-            "args": {
+            "settings": {
                 "general": {
-                    "run_as_admin": True,
-                    "show_in_taskbar": True
-                },
-                "search": {
-                    "match_path": True,
-                    "max_visible_results": 100
+                    "run_as_admin": True
                 }
             }
         }
@@ -45,4 +56,8 @@ def test_apply_dry_run():
 
     out = run_plugin(payload)
 
-    assert "success" in json.loads(out)
+    data = json.loads(out)
+
+    assert data["success"] is True
+    assert data["changed"] is True
+    
