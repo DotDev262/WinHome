@@ -134,6 +134,8 @@ namespace WinHome
 
             var previousState = _stateService.LoadState();
             currentState.SystemSettingOriginals = new Dictionary<string, object>(previousState.SystemSettingOriginals);
+            var confirmedApplied = new HashSet<string>(previousState.AppliedItems, StringComparer.OrdinalIgnoreCase);
+            var hadSuccessfulApply = false;
 
             // Cleanup
             var itemsToRemove = previousState.AppliedItems.Except(currentState.AppliedItems).ToList();
@@ -149,6 +151,7 @@ namespace WinHome
                         if (parts.Length == 2 && _registry.Revert(parts[0], parts[1], dryRun) && !dryRun)
                         {
                             removedItems.Add(uniqueId);
+                            confirmedApplied.Remove(uniqueId);
                         }
                     }
                     else
@@ -160,6 +163,7 @@ namespace WinHome
                             if (!dryRun)
                             {
                                 removedItems.Add(uniqueId);
+                                confirmedApplied.Remove(uniqueId);
                             }
                         }
                     }
@@ -296,7 +300,8 @@ namespace WinHome
                                 _stateWriter.RecordStep(successResult);
                                 applyState[stepId] = successResult;
 
-                                _stateService.MarkAsApplied(stepId);
+                                confirmedApplied.Add(stepId);
+                                hadSuccessfulApply = true;
                             }
 
                             _env.RefreshPath();
@@ -438,7 +443,8 @@ namespace WinHome
                             _stateWriter.RecordStep(successResult);
                             applyState[stepId] = successResult;
 
-                            _stateService.MarkAsApplied(stepId);
+                            confirmedApplied.Add(stepId);
+                            hadSuccessfulApply = true;
                         }
                     }
                     catch (Exception ex)
@@ -504,6 +510,12 @@ namespace WinHome
 
             if (!dryRun)
             {
+                if (hadSuccessfulApply)
+                {
+                    currentState.AppliedItems = confirmedApplied;
+                    _stateService.SaveState(currentState);
+                }
+
                 _logger.LogSuccess("\n[State Synced] Applied changes flushed.");
             }
             else

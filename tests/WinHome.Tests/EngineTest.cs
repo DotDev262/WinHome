@@ -82,6 +82,8 @@ namespace WinHome.Tests
                 It.Is<AppConfig>(a => a.Id == "TestApp"),
                 false),
                 Times.Once);
+            _mockStateService.Verify(s => s.MarkAsApplied(It.IsAny<string>()), Times.Never);
+            _mockStateService.Verify(s => s.SaveState(It.Is<StateData>(state => state.AppliedItems.SetEquals(new[] { "winget:TestApp" }))), Times.Once);
         }
 
         [Fact]
@@ -184,8 +186,8 @@ namespace WinHome.Tests
             _mockRegistry.Verify(r => r.Apply(It.Is<RegistryTweak>(t => t.Path == "HKCU\\Software\\WinHome" && t.Name == "SettingA"), false), Times.Once);
             _mockRegistry.Verify(r => r.Apply(It.Is<RegistryTweak>(t => t.Path == "HKCU\\Software\\Preset" && t.Name == "PresetSetting"), false), Times.Once);
             _mockSystemSettings.Verify(s => s.ApplyNonRegistrySettingsAsync(It.Is<Dictionary<string, object>>(d => d.ContainsKey("explorer.showHiddenFiles")), false), Times.Once);
-            _mockStateService.Verify(s => s.MarkAsApplied("reg:HKCU\\Software\\WinHome|SettingA"), Times.Once);
-            _mockStateService.Verify(s => s.MarkAsApplied("reg:HKCU\\Software\\Preset|PresetSetting"), Times.Once);
+            _mockStateService.Verify(s => s.MarkAsApplied(It.IsAny<string>()), Times.Never);
+            _mockStateService.Verify(s => s.SaveState(It.Is<StateData>(state => state.AppliedItems.SetEquals(new[] { "reg:HKCU\\Software\\WinHome|SettingA", "reg:HKCU\\Software\\Preset|PresetSetting" }))), Times.Once);
         }
 
         [Fact]
