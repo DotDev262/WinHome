@@ -43,6 +43,8 @@ namespace WinHome.Tests
 
             // Setup basic behavior
             _mockWinget.Setup(x => x.IsAvailable()).Returns(true);
+            _mockRegistry.Setup(r => r.Apply(It.IsAny<RegistryTweak>(), It.IsAny<bool>())).Returns(true);
+            _mockRegistry.Setup(r => r.Revert(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(true);
             _mockSystemSettings.Setup(x => x.GetTweaksAsync(It.IsAny<Dictionary<string, object>>()))
                                .Returns(Task.FromResult<IEnumerable<RegistryTweak>>(new List<RegistryTweak>()));
             _mockPluginManager.Setup(m => m.DiscoverPlugins()).Returns(new List<PluginManifest>());
@@ -347,7 +349,7 @@ namespace WinHome.Tests
         }
 
         [Fact]
-        public async Task RunAsync_ShouldCleanupPreviousStateAndPersistCurrentState()
+        public async Task RunAsync_ShouldRemoveStateOnlyAfterSuccessfulCleanup()
         {
             // Arrange
             var config = new Configuration();
@@ -366,7 +368,71 @@ namespace WinHome.Tests
             // Assert
             _mockWinget.Verify(m => m.Uninstall("OldApp", false), Times.Once);
             _mockRegistry.Verify(r => r.Revert("HKCU\\Software\\Old", "OldSetting", false), Times.Once);
-            _mockStateService.Verify(s => s.SaveState(It.Is<StateData>(sd => sd.AppliedItems.Count == 0)), Times.Once);
+            _mockStateService.Verify(s => s.RemoveApplied("winget:OldApp"), Times.Once);
+            _mockStateService.Verify(s => s.RemoveApplied("reg:HKCU\\Software\\Old|OldSetting"), Times.Once);
+            _mockStateService.Verify(s => s.SaveState(It.IsAny<StateData>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task RunAsync_ShouldNotPersistUnknownManagerAsApplied()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.Apps.Add(new AppConfig { Id = "MissingApp", Manager = "unknown-manager" });
+            var mockLogger = new Mock<ILogger>();
+            var engine = CreateEngine(mockLogger);
+
+            // Act
+            await engine.RunAsync(config, false);
+
+            // Assert
+            _mockStateService.Verify(s => s.MarkAsApplied("unknown-manager:MissingApp"), Times.Never);
+            _mockStateService.Verify(s => s.SaveState(It.IsAny<StateData>()), Times.Never);
+            mockLogger.Verify(l => l.LogError(It.Is<string>(s => s.Contains("Unknown manager: unknown-manager"))), Times.Once);
+        }
+
+        [Fact]
+        public async Task RunAsync_ShouldNotMarkFailedRegistryApplyAsApplied()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.RegistryTweaks.Add(new RegistryTweak
+            {
+                Path = "HKCU\\Software\\WinHome",
+                Name = "FailedSetting",
+                Value = 1,
+                Type = "dword"
+            });
+            _mockRegistry.Setup(r => r.Apply(It.IsAny<RegistryTweak>(), false)).Returns(false);
+            var mockLogger = new Mock<ILogger>();
+            var engine = CreateEngine(mockLogger);
+
+            // Act
+            await engine.RunAsync(config, false);
+
+            // Assert
+            _mockStateService.Verify(s => s.MarkAsApplied("reg:HKCU\\Software\\WinHome|FailedSetting"), Times.Never);
+            _mockStateService.Verify(s => s.SaveState(It.IsAny<StateData>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task RunAsync_ShouldPreserveTrackedSystemSettingOriginals()
+        {
+            // Arrange
+            var config = new Configuration();
+            config.SystemSettings["brightness"] = 80;
+            _mockSystemSettings
+                .Setup(s => s.CaptureOriginalSettingsAsync(It.IsAny<Dictionary<string, object>>()))
+                .ReturnsAsync(new Dictionary<string, object> { ["brightness"] = 50 });
+            var mockLogger = new Mock<ILogger>();
+            var engine = CreateEngine(mockLogger);
+
+            // Act
+            await engine.RunAsync(config, false);
+
+            // Assert
+            _mockStateService.Verify(s => s.TrackSystemSettingOriginal("brightness", 50), Times.Once);
+            _mockStateService.Verify(s => s.SaveState(It.IsAny<StateData>()), Times.Never);
         }
 
         [Fact]
@@ -405,9 +471,8 @@ namespace WinHome.Tests
             await engine.RunAsync(config, false);
 
             // Assert
-            _mockStateService.Verify(s => s.SaveState(It.Is<StateData>(sd =>
-                sd.SystemSettingOriginals.ContainsKey("brightness") &&
-                sd.SystemSettingOriginals["brightness"].Equals(45))), Times.Once);
+            _mockStateService.Verify(s => s.TrackSystemSettingOriginal("brightness", 45), Times.Once);
+            _mockStateService.Verify(s => s.SaveState(It.IsAny<StateData>()), Times.Never);
         }
 
         [Fact]
@@ -435,9 +500,7 @@ namespace WinHome.Tests
 
             // Assert
             _mockStateService.Verify(s => s.TrackSystemSettingOriginal("brightness", It.IsAny<object>()), Times.Never);
-            _mockStateService.Verify(s => s.SaveState(It.Is<StateData>(sd =>
-                sd.SystemSettingOriginals.ContainsKey("brightness") &&
-                sd.SystemSettingOriginals["brightness"].Equals(45))), Times.Once);
+            _mockStateService.Verify(s => s.SaveState(It.IsAny<StateData>()), Times.Never);
         }
 
         [Fact]

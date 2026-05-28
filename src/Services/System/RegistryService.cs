@@ -16,7 +16,7 @@ namespace WinHome.Services.System
             _registryWrapper = registryWrapper;
         }
 
-        public void Apply(RegistryTweak tweak, bool dryRun)
+        public bool Apply(RegistryTweak tweak, bool dryRun)
         {
             try
             {
@@ -32,7 +32,7 @@ namespace WinHome.Services.System
                     if (currentValue != null && currentValue.ToString() == tweak.Value?.ToString())
                     {
                         Console.WriteLine($"[Registry] Skipped: {tweak.Name} (Already set)");
-                        return;
+                        return true;
                     }
 
                     if (dryRun)
@@ -40,7 +40,7 @@ namespace WinHome.Services.System
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine($"[DryRun] Would set Registry: {tweak.Path}\\{tweak.Name} = {tweak.Value}");
                         Console.ResetColor();
-                        return;
+                        return true;
                     }
                 }
 
@@ -49,7 +49,7 @@ namespace WinHome.Services.System
                     if (key == null)
                     {
                         Console.WriteLine($"[Error] Could not create registry subkey: {tweak.Path}");
-                        return;
+                        return false;
                     }
 
                     RegistryValueKind kind = tweak.Type.ToLower() switch
@@ -75,6 +75,7 @@ namespace WinHome.Services.System
 
                     key.SetValue(tweak.Name, valueToWrite ?? string.Empty, kind);
                     Console.WriteLine($"[Registry] Set {tweak.Name} = {tweak.Value}");
+                    return true;
                 }
             }
             catch (Exception ex)
@@ -85,10 +86,11 @@ namespace WinHome.Services.System
                 {
                     throw;
                 }
+                return false;
             }
         }
 
-        public void Revert(string path, string name, bool dryRun)
+        public bool Revert(string path, string name, bool dryRun)
         {
             try
             {
@@ -98,7 +100,7 @@ namespace WinHome.Services.System
                 IRegistryKey root = _registryWrapper.GetRootKey(path, out string subKeyPath);
                 using (IRegistryKey? key = root.OpenSubKey(subKeyPath, writable: !dryRun))
                 {
-                    if (key == null) return;
+                    if (key == null) return true;
 
                     if (key.GetValue(name) != null)
                     {
@@ -107,17 +109,23 @@ namespace WinHome.Services.System
                             Console.ForegroundColor = ConsoleColor.Yellow;
                             Console.WriteLine($"[DryRun] Would delete Registry value: {path}\\{name}");
                             Console.ResetColor();
-                            return;
+                            return true;
                         }
 
                         key.DeleteValue(name);
                         Console.WriteLine($"[Registry] Reverted {name}");
                     }
+                    return true;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[Error] Registry revert failed: {ex.Message}");
+                if (ex is InvalidOperationException && ex.Message.StartsWith("Security Risk"))
+                {
+                    throw;
+                }
+                return false;
             }
         }
 

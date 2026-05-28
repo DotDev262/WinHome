@@ -8,6 +8,7 @@ namespace WinHome.Services.System
     {
         private readonly string _stateFilePath;
         private readonly ILogger _logger;
+        private readonly object _sync = new();
         private StateData _inMemoryState;
 
         public StateService(ILogger logger)
@@ -89,39 +90,65 @@ namespace WinHome.Services.System
 
         public void SaveState(StateData state)
         {
-            _inMemoryState = new StateData
+            lock (_sync)
             {
-                AppliedItems = new HashSet<string>(state.AppliedItems),
-                SystemSettingOriginals = new Dictionary<string, object>(state.SystemSettingOriginals)
-            };
-            FlushToDisk();
+                _inMemoryState = new StateData
+                {
+                    AppliedItems = new HashSet<string>(state.AppliedItems),
+                    SystemSettingOriginals = new Dictionary<string, object>(state.SystemSettingOriginals)
+                };
+                FlushToDisk();
+            }
         }
 
         public void MarkAsApplied(string item)
         {
-            if (_inMemoryState.AppliedItems.Add(item))
+            lock (_sync)
             {
-                FlushToDisk();
+                if (_inMemoryState.AppliedItems.Add(item))
+                {
+                    FlushToDisk();
+                }
+            }
+        }
+
+        public void RemoveApplied(string item)
+        {
+            lock (_sync)
+            {
+                if (_inMemoryState.AppliedItems.Remove(item))
+                {
+                    FlushToDisk();
+                }
             }
         }
 
         public void TrackSystemSettingOriginal(string settingKey, object originalValue)
         {
-            _inMemoryState.SystemSettingOriginals[settingKey] = originalValue;
-            FlushToDisk();
+            lock (_sync)
+            {
+                _inMemoryState.SystemSettingOriginals[settingKey] = originalValue;
+                FlushToDisk();
+            }
         }
 
         public void RemoveSystemSettingOriginal(string settingKey)
         {
-            if (_inMemoryState.SystemSettingOriginals.Remove(settingKey))
+            lock (_sync)
             {
-                FlushToDisk();
+                if (_inMemoryState.SystemSettingOriginals.Remove(settingKey))
+                {
+                    FlushToDisk();
+                }
             }
         }
 
         public object? GetSystemSettingOriginal(string settingKey)
         {
-            return _inMemoryState.SystemSettingOriginals.TryGetValue(settingKey, out var value) ? value : null;
+            lock (_sync)
+            {
+                return _inMemoryState.SystemSettingOriginals.TryGetValue(settingKey, out var value) ? value : null;
+            }
         }
 
         private void FlushToDisk()
@@ -188,7 +215,10 @@ namespace WinHome.Services.System
 
         public IEnumerable<string> ListItems()
         {
-            return _inMemoryState.AppliedItems;
+            lock (_sync)
+            {
+                return _inMemoryState.AppliedItems.ToList();
+            }
         }
     }
 }

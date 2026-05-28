@@ -37,9 +37,10 @@ namespace WinHome.Tests
 
 
             // Act
-            _registryService.Apply(tweak, false);
+            var result = _registryService.Apply(tweak, false);
 
             // Assert
+            Assert.True(result);
             _mockRegistryKey.Verify(x => x.SetValue(tweak.Name, tweak.Value, RegistryValueKind.String), Times.Once);
         }
 
@@ -58,11 +59,33 @@ namespace WinHome.Tests
             _mockRegistryKey.Setup(x => x.CreateSubKey(It.IsAny<string>(), true)).Returns(_mockRegistryKey.Object);
 
             // Act
-            _registryService.Apply(tweak, false);
+            var result = _registryService.Apply(tweak, false);
 
             // Assert
+            Assert.True(result);
             _mockRegistryKey.Verify(x => x.CreateSubKey(subKeyPath, true), Times.Once);
             _mockRegistryKey.Verify(x => x.SetValue(tweak.Name, tweak.Value, RegistryValueKind.String), Times.Once);
+        }
+
+        [Fact]
+        public void Apply_Should_ReturnFalse_When_SubKey_Cannot_Be_Created()
+        {
+            // Arrange
+            var tweak = new RegistryTweak { Path = "HKCU\\Software\\TestMissing", Name = "TestValue", Value = "Test", Type = "string" };
+            var subKeyPath = "Software\\TestMissing";
+            _mockRegistryWrapper.Setup(x => x.GetRootKey(tweak.Path, out subKeyPath))
+                .Callback(new GetRootKeyCallback((string fullPath, out string s) => s = subKeyPath))
+                .Returns(_mockRegistryKey.Object);
+
+            _mockRegistryKey.Setup(x => x.OpenSubKey(It.IsAny<string>(), false)).Returns((IRegistryKey?)null);
+            _mockRegistryKey.Setup(x => x.CreateSubKey(It.IsAny<string>(), true)).Returns((IRegistryKey?)null);
+
+            // Act
+            var result = _registryService.Apply(tweak, false);
+
+            // Assert
+            Assert.False(result);
+            _mockRegistryKey.Verify(x => x.SetValue(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<RegistryValueKind>()), Times.Never);
         }
 
         [Fact]
@@ -79,9 +102,10 @@ namespace WinHome.Tests
             _mockRegistryKey.Setup(x => x.GetValue(name)).Returns("some value");
 
             // Act
-            _registryService.Revert(path, name, false);
+            var result = _registryService.Revert(path, name, false);
 
             // Assert
+            Assert.True(result);
             _mockRegistryKey.Verify(x => x.DeleteValue(name), Times.Once);
         }
     }

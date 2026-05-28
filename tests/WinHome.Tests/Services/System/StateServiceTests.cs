@@ -203,6 +203,18 @@ namespace WinHome.Tests.Services.System
         }
 
         [Fact]
+        public void RemoveApplied_RemovesItemFromDisk()
+        {
+            var svc = CreateService();
+            svc.MarkAsApplied("oldPackage");
+
+            svc.RemoveApplied("oldPackage");
+
+            var written = JsonSerializer.Deserialize<StateData>(File.ReadAllText(_stateFilePath));
+            Assert.DoesNotContain("oldPackage", written?.AppliedItems!);
+        }
+
+        [Fact]
         public void SaveState_WritesAllItemsToDisk()
         {
             var items = new HashSet<string> { "a", "b", "c" };
