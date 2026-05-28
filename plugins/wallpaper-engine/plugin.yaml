@@ -1,0 +1,8 @@
+name: wallpaper-engine
+version: 1.0.0
+type: python
+main: src/plugin.py
+
+capabilities:
+  - check_installed
+  - apply

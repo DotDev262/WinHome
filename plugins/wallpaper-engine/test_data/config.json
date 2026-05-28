@@ -1,0 +1,8 @@
+{
+    "volume": 0.5,
+    "fps": 30,
+    "audio": {
+        "volume": 0.7,
+        "mute": true
+    }
+}
