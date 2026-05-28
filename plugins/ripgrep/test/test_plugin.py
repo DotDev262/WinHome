@@ -65,4 +65,3 @@ def test_merge_settings_remove_false():
 
     assert changed is True
     assert "hidden" not in current
-    
