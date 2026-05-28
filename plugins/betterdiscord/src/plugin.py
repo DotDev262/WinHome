@@ -23,7 +23,20 @@ def read_json(file_path: str) -> dict:
             return json.load(f)
     except Exception as e:
         log(f"Failed to read json: {e}")
-        return {}
+
+    try:
+        import shutil
+        import uuid
+
+        backup_path = f"{file_path}.{uuid.uuid4()}.bak"
+        shutil.copy(file_path, backup_path)
+
+        log(f"Corrupted file backed up to: {backup_path}")
+
+    except Exception as backup_error:
+        log(f"Backup failed: {backup_error}")
+
+    return {}
 
 
 def deep_merge(original: dict, updates: dict) -> dict:
@@ -71,6 +84,16 @@ def check_installed(args: dict, request_id: str) -> dict:
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     settings = args.get("settings", {})
+
+    if not isinstance(settings, dict):
+        return {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "data": None,
+            "error": "settings must be an object"
+        }
+
     dry_run = context.get("dryRun", False)
 
     current = read_json(SETTINGS_PATH)
@@ -85,6 +108,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "requestId": request_id,
             "success": True,
             "changed": False,
+            "data": None,
         }
 
     if dry_run:
@@ -93,7 +117,8 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         return {
             "requestId": request_id,
             "success": True,
-            "changed": False,
+            "changed": True,
+            "data": None,
         }
 
     try:
@@ -103,6 +128,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "requestId": request_id,
             "success": True,
             "changed": True,
+            "data": None,
         }
 
     except Exception as e:
@@ -110,6 +136,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "requestId": request_id,
             "success": False,
             "changed": False,
+            "data": None,
             "error": str(e),
         }
 
@@ -118,13 +145,32 @@ def main():
     input_data = sys.stdin.read()
 
     if not input_data:
+        print(json.dumps({
+            "requestId": "unknown",
+            "success": False,
+            "changed": False,
+            "data": None,
+            "error": "No input received on stdin",
+        }))
+
+        sys.stdout.flush()
         return
 
     try:
         request = json.loads(input_data)
+
     except Exception as e:
-        log(f"Failed to parse request: {e}")
-        sys.exit(1)
+        response = {
+            "requestId": "unknown",
+            "success": False,
+            "changed": False,
+            "data": None,
+            "error": f"Failed to parse request: {str(e)}",
+        }
+
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
+        return
 
     request_id = request.get("requestId", "unknown")
     command = request.get("command")
@@ -135,6 +181,7 @@ def main():
         "requestId": request_id,
         "success": False,
         "changed": False,
+        "data": None,
     }
 
     try:
