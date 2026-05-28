@@ -301,7 +301,7 @@ def handle_get(request: dict) -> Dict[str, Any]:
 def handle_set(request: dict) -> Dict[str, Any]:
     request_id = request.get("requestId")
     context = request.get("context", {})
-    dry_run = bool(context.get("dryRun", False))
+    dry_run = context.get("dryRun", False)
 
     try:
         settings = request.get("args", {}).get("settings", {})
@@ -374,7 +374,7 @@ def main() -> None:
             + "\n"
         )
         sys.stdout.flush()
-        sys.exit(1)
+        return
 
     try:
         request = json.loads(raw)
@@ -382,7 +382,6 @@ def main() -> None:
         result = make_response(None, False, False, {}, f"Failed to parse request: {exc}")
         sys.stdout.write(json.dumps(result) + "\n")
         sys.stdout.flush()
-        sys.exit(1)
         return
 
     try:

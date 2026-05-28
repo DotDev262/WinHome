@@ -45,7 +45,7 @@ def plugin_env(tmp_path, path=None):
 def test_empty_stdin_returns_json_error(tmp_path):
     env = plugin_env(tmp_path)
     res, result = run_plugin(env=env, raw_input="")
-    assert result.returncode != 0
+    assert result.returncode == 0
     assert res["success"] is False
     assert res["requestId"] is None
     assert res["data"]["error"] == "Empty stdin"
