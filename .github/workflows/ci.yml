@@ -28,7 +28,7 @@ jobs:
       run: dotnet format --verify-no-changes --verbosity diagnostic WinHome.sln
 
     - name: Setup uv
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@v7
 
     - name: Setup bun
       uses: oven-sh/setup-bun@v2
