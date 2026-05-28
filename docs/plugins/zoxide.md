@@ -1,3 +1,5 @@
+# Zoxide Plugin
+
 ## Overview
 
 The Zoxide plugin configures smart directory navigation using `zoxide`.

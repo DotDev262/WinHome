@@ -1,3 +1,5 @@
+# Yazi Plugin
+
 ## Overview
 
 The Yazi plugin manages configuration for the Yazi terminal file manager using TOML files.

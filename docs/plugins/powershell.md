@@ -1,3 +1,5 @@
+# PowerShell Plugin
+
 ## Overview
 
 The PowerShell plugin modifies the PowerShell profile to inject aliases, modules, and functions.

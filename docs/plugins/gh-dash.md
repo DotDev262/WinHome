@@ -1,3 +1,5 @@
+# gh-dash Plugin
+
 ## Overview
 
 The gh-dash plugin manages GitHub dashboard configuration for gh-dash.

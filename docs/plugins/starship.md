@@ -1,3 +1,5 @@
+# Starship Plugin
+
 ## Overview
 
 The Starship plugin configures the Starship shell prompt by updating the `starship.toml` configuration file.

@@ -1,3 +1,5 @@
+# Oh My Posh Plugin
+
 ## Overview
 
 The Oh My Posh plugin configures terminal themes using Oh My Posh prompt engine.

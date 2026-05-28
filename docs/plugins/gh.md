@@ -1,3 +1,5 @@
+# GitHub CLI Plugin
+
 ## Overview
 
 The GitHub CLI plugin manages configuration for `gh` using YAML config file.
