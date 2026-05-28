@@ -133,6 +133,28 @@ extensions:
   - `properties`: Alias for `settings`.
   - `raw`: Merge into the module's top-level JSON (advanced).
 
+---
+
+## Oh My Posh
+
+The `ohmyposh` plugin allows you to customize the PowerShell terminal prompt using Oh My Posh themes.
+
+### Example
+```yaml
+
+ohmyposh:
+  profile: "C:\\Users\\test\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1"
+  settings:
+    theme: "tokyonight"
+```
+
+### Options
+- `profile`: Optional. The absolute path to the PowerShell profile script file. If not specified, WinHome will automatically detect your profile path.
+- `settings`:
+  - `theme`: The name or configuration path of the theme to apply.
+
+---
+
 ## Generic Extensions
 
 For other plugins that do not have a dedicated top-level section, use the `extensions` block.

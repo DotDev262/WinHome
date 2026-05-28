@@ -21,7 +21,7 @@ public class AppRunner
         _logger = logger;
     }
 
-    public async Task<int> RunAsync(FileInfo configFile, bool dryRun, string? profile, bool debug, bool diff, bool json)
+    public async Task<int> RunAsync(FileInfo configFile, bool dryRun, string? profile, bool debug, bool diff, bool json, bool force = false, bool continueOnError = false)
     {
         try
         {
@@ -51,7 +51,7 @@ public class AppRunner
             // Resolve Secrets
             _secretResolver.ResolveObject(config);
 
-            await _engine.RunAsync(config, dryRun, profile, debug, diff);
+            await _engine.RunAsync(config, dryRun, profile, debug, diff, force, continueOnError);
             return 0;
         }
         catch (Exception ex)

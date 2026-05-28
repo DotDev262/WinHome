@@ -2,6 +2,7 @@ using WinHome.Interfaces;
 using WinHome.Models;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 
 namespace WinHome.Services.System
 {
@@ -9,7 +10,8 @@ namespace WinHome.Services.System
     {
         private readonly IProcessRunner _processRunner;
         private readonly IRegistryService _registryService;
-        private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification" };
+        private readonly ILogger<SystemSettingsService> _logger;
+        private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification", "screen_timeout_ac", "screen_timeout_dc", "sleep_timeout_ac", "sleep_timeout_dc" };
 
         private readonly Dictionary<string, List<RegistryTweak>> _securityPresets = new()
         {
@@ -28,20 +30,40 @@ namespace WinHome.Services.System
                 new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost", Name = "EnableWebContentEvaluation", Value = 1, Type = "dword" },
                 new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", Name = "NoDriveTypeAutoRun", Value = 255, Type = "dword" },
                 new RegistryTweak { Path = @"HKLM\Software\Policies\Microsoft\Windows NT\DNSClient", Name = "EnableMulticast", Value = 0, Type = "dword" },
-                
+
                 // Disable Windows Script Host
                 new RegistryTweak { Path = @"HKLM\Software\Microsoft\Windows Script Host\Settings", Name = "Enabled", Value = 0, Type = "dword" },
                 // Disable Remote Assistance
                 new RegistryTweak { Path = @"HKLM\System\CurrentControlSet\Control\Remote Assistance", Name = "fAllowToGetHelp", Value = 0, Type = "dword" },
                 // Disable NetBIOS over TCP/IP (prevent LLMNR/NBT-NS poisoning)
                 new RegistryTweak { Path = @"HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces", Name = "NetbiosOptions", Value = 2, Type = "dword" }
+            },
+            ["privacy"] = new()
+            {
+                // Disable Windows Telemetry data collection
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", Name = "AllowTelemetry", Value = 0, Type = "dword" },
+                // Disable Advertising ID for personalized ads
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", Name = "Enabled", Value = 0, Type = "dword" },
+                // Disable Activity History feed
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", Name = "EnableActivityFeed", Value = 0, Type = "dword" },
+                // Disable Activity History cloud upload
+                new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", Name = "UploadUserActivities", Value = 0, Type = "dword" },
+                // Disable Tailored Experiences based on diagnostic data
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy", Name = "TailoredExperiencesWithDiagnosticDataEnabled", Value = 0, Type = "dword" },
+                // Disable Feedback Notifications
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\Siuf\Rules", Name = "NumberOfSIUFInPeriod", Value = 0, Type = "dword" },
+                // Disable implicit text/ink collection for input personalization
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization", Name = "RestrictImplicitTextCollection", Value = 1, Type = "dword" },
+                // Disable contact harvesting for handwriting recognition
+                new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization\TrainedDataStore", Name = "HarvestContacts", Value = 0, Type = "dword" }
             }
         };
 
-        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService)
+        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService, ILogger<SystemSettingsService> logger)
         {
             _processRunner = processRunner;
             _registryService = registryService;
+            _logger = logger;
         }
 
         private record SettingDefinition(
@@ -54,7 +76,6 @@ namespace WinHome.Services.System
 
         private readonly List<SettingDefinition> _catalog = new()
         {
-
             new("dark_mode",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", "dword",
                 new() { { "true", 0 }, { "false", 1 } }),
@@ -63,7 +84,6 @@ namespace WinHome.Services.System
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", "dword",
                 new() { { "true", 0 }, { "false", 1 } }),
 
-
             new("taskbar_alignment",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarAl", "dword",
                 new() { { "left", 0 }, { "center", 1 } }),
@@ -71,7 +91,6 @@ namespace WinHome.Services.System
             new("taskbar_widgets",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa", "dword",
                 new() { { "hide", 0 }, { "show", 1 } }),
-
 
             new("show_file_extensions",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", "dword",
@@ -89,10 +108,33 @@ namespace WinHome.Services.System
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "LaunchTo", "dword",
                 new() { { "this_pc", 1 }, { "quick_access", 2 } }),
 
+            new("desktop_icons_this_pc",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("desktop_icons_user_folder",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{59031A47-3F72-44A7-89C5-5595FE6B30EE}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("desktop_icons_network",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("desktop_icons_recycle_bin",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{645FF040-5081-101B-9F08-00AA002F954E}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
+
+            new("desktop_icons_control_panel",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel", "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", "dword",
+                new() { { "true", 0 }, { "false", 1 } }),
 
             new("bing_search_enabled",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", "dword",
                 new() { { "true", 1 }, { "false", 0 } }),
+
+            new("taskbar_search",
+                @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", "dword",
+                new() { { "hidden", 0 }, { "icon", 1 }, { "icon_label", 2 }, { "search_box", 3 } }),
 
             new("transparency",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", "dword",
@@ -121,9 +163,14 @@ namespace WinHome.Services.System
             new("snap_assist_flyout",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "EnableSnapAssistFlyout", "dword",
                 new() { { "true", 1 }, { "false", 0 } }),
+
+            // clipboard_history
+            new("clipboard_history",
+                @"HKCU\Software\Microsoft\Clipboard", "EnableClipboardHistory", "dword",
+                new() { { "true", 1 }, { "false", 0 } }),
         };
 
-        public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object> settings)
+        public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings)
         {
             return await Task.Run(() =>
             {
@@ -143,7 +190,7 @@ namespace WinHome.Services.System
                         }
                         else
                         {
-                            Console.WriteLine($"[Warning] Unknown security preset '{val}'. Allowed: {string.Join(", ", _securityPresets.Keys)}");
+                            _logger.LogWarning("[Warning] Unknown security preset '{Preset}'. Allowed: {Allowed}", val, string.Join(", ", _securityPresets.Keys));
                         }
                         continue;
                     }
@@ -166,7 +213,7 @@ namespace WinHome.Services.System
                         }
                         else
                         {
-                            Console.WriteLine($"[Warning] Invalid value '{val}' for setting '{key}'. Allowed: {string.Join(", ", def.ValueMap.Keys)}");
+                            _logger.LogWarning("[Warning] Invalid value '{Value}' for setting '{Key}'. Allowed: {Allowed}", val, key, string.Join(", ", def.ValueMap.Keys));
                         }
                     }
                 }
@@ -187,18 +234,14 @@ namespace WinHome.Services.System
                         var regValue = _registryService.Read(def.RegistryPath, def.RegistryName);
                         if (regValue != null)
                         {
-                            // Find corresponding user-friendly key for this value
-                            var match = def.ValueMap.FirstOrDefault(kvp => 
+                            var match = def.ValueMap.FirstOrDefault(kvp =>
                             {
                                 if (kvp.Value is byte[] kvpBytes && regValue is byte[] regBytes)
-                                {
                                     return kvpBytes.SequenceEqual(regBytes);
-                                }
                                 return kvp.Value?.ToString() == regValue?.ToString();
                             });
                             if (!match.Equals(default(KeyValuePair<string, object>)))
                             {
-                                // Handle Booleans properly
                                 object val = match.Key;
                                 if (bool.TryParse(match.Key, out bool bVal)) val = bVal;
                                 else if (int.TryParse(match.Key, out int iVal)) val = iVal;
@@ -223,7 +266,99 @@ namespace WinHome.Services.System
             return match?.SettingKey;
         }
 
-        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object> settings, bool dryRun)
+        public async Task<Dictionary<string, object>> CaptureOriginalSettingsAsync(Dictionary<string, object> settings)
+        {
+            return await Task.Run(() =>
+            {
+                var originals = new Dictionary<string, object>();
+                if (settings == null) return originals;
+
+                foreach (var setting in settings.Where(s => _nonRegistryKeys.Contains(s.Key.ToLower())))
+                {
+                    string key = setting.Key.ToLower();
+                    try
+                    {
+                        switch (key)
+                        {
+                            case "brightness":
+                                string brightCommand = "(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness";
+                                var brightResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", brightCommand });
+                                if (int.TryParse(brightResult?.Trim(), out int currentBrightness))
+                                    originals["brightness"] = currentBrightness;
+                                break;
+
+                            case "volume":
+                                string volCommand = @"[Math]::Round((New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar * 100)";
+                                var volResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", volCommand });
+                                if (int.TryParse(volResult?.Trim(), out int currentVolume))
+                                    originals["volume"] = currentVolume;
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Warning] Could not capture original value for '{key}': {ex.Message}");
+                    }
+                }
+
+                return originals;
+            });
+        }
+
+        public async Task RevertSystemSettingAsync(string settingKey, object originalValue, bool dryRun)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    string key = settingKey.ToLower();
+                    switch (key)
+                    {
+                        case "brightness":
+                            if (int.TryParse(originalValue?.ToString(), out int brightness))
+                            {
+                                string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
+                                if (dryRun)
+                                {
+                                    Console.ForegroundColor = ConsoleColor.Yellow;
+                                    Console.WriteLine($"[DryRun] Would revert brightness to {brightness}");
+                                    Console.ResetColor();
+                                }
+                                else
+                                {
+                                    _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
+                                    Console.WriteLine($"[System Settings] Reverted brightness to {brightness}");
+                                }
+                            }
+                            break;
+
+                        case "volume":
+                            if (int.TryParse(originalValue?.ToString(), out int volume))
+                            {
+                                string command = $@"$vol = [Math]::Round({volume} / 100.0, 2); (New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar = $vol";
+                                if (dryRun)
+                                {
+                                    Console.ForegroundColor = ConsoleColor.Yellow;
+                                    Console.WriteLine($"[DryRun] Would revert volume to {volume}");
+                                    Console.ResetColor();
+                                }
+                                else
+                                {
+                                    _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
+                                    Console.WriteLine($"[System Settings] Reverted volume to {volume}");
+                                }
+                            }
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Error] Failed to revert {settingKey}: {ex.Message}");
+                }
+            });
+        }
+
+        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun)
         {
             if (settings == null) return Task.CompletedTask;
 
@@ -233,18 +368,34 @@ namespace WinHome.Services.System
                 switch (key)
                 {
                     case "brightness":
-                        if (int.TryParse(userSetting.Value.ToString(), out int brightness))
+                        if (userSetting.Value == null) break;
+                        if (!int.TryParse(userSetting.Value.ToString(), out int brightness))
                         {
-                            string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
-                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                            _logger.LogWarning("Brightness value '{Value}' is not a valid integer.", userSetting.Value);
+                            break;
                         }
+                        if (brightness < 0 || brightness > 100)
+                        {
+                            _logger.LogWarning("Brightness value '{Value}' is out of range (0-100).", brightness);
+                            break;
+                        }
+                        _processRunner.RunCommand("powershell", $"-Command \"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})\"", dryRun);
                         break;
+
                     case "volume":
-                        if (int.TryParse(userSetting.Value.ToString(), out int volume))
+                        if (userSetting.Value == null) break;
+                        if (!int.TryParse(userSetting.Value.ToString(), out int volume))
                         {
-                            string command = $"Set-AudioDevice -PlaybackVolume {volume}";
-                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
+                            _logger.LogWarning("Volume value '{Value}' is not a valid integer.", userSetting.Value);
+                            break;
                         }
+                        if (volume < 0 || volume > 100)
+                        {
+                            _logger.LogWarning("Volume value '{Value}' is out of range (0-100).", volume);
+                            break;
+                        }
+                        string volCommand = $@"$vol = [Math]::Round({volume} / 100.0, 2); (New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar = $vol";
+                        _processRunner.RunCommand("powershell", $"-Command \"{volCommand}\"", dryRun);
                         break;
                     case "notification":
                         if (userSetting.Value is Dictionary<object, object> notificationConfig)
@@ -255,10 +406,39 @@ namespace WinHome.Services.System
                             _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
                         }
                         break;
+                    case "screen_timeout_ac":
+                        ApplyPowerSetting("monitor-timeout-ac", userSetting.Value, dryRun);
+                        break;
+                    case "screen_timeout_dc":
+                        ApplyPowerSetting("monitor-timeout-dc", userSetting.Value, dryRun);
+                        break;
+                    case "sleep_timeout_ac":
+                        ApplyPowerSetting("standby-timeout-ac", userSetting.Value, dryRun);
+                        break;
+                    case "sleep_timeout_dc":
+                        ApplyPowerSetting("standby-timeout-dc", userSetting.Value, dryRun);
+                        break;
                 }
             }
 
             return Task.CompletedTask;
+        }
+
+        private void ApplyPowerSetting(string powercfgArg, object? value, bool dryRun)
+        {
+            if (value?.ToString() is string valStr && int.TryParse(valStr, out int minutes))
+            {
+                if (minutes < 0)
+                {
+                    _logger.LogWarning($"[Settings] Power setting value '{minutes}' cannot be negative. Skipping.");
+                    return;
+                }
+                _processRunner.RunCommand("powercfg", $"/change {powercfgArg} {minutes}", dryRun);
+            }
+            else if (value != null)
+            {
+                _logger.LogWarning($"[Settings] Power setting value '{value}' is not a valid integer. Skipping.");
+            }
         }
     }
 }

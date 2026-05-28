@@ -15,7 +15,7 @@ namespace WinHome.Services.Bootstrappers
 
         public bool IsInstalled()
         {
-            if (_processRunner.RunCommand("choco", "--version", false)) return true;
+            if (_processRunner.RunCommand("choco", new[] { "--version" }, false)) return true;
 
             string chocoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "chocolatey", "bin", "choco.exe");
             return File.Exists(chocoPath);
@@ -48,30 +48,25 @@ namespace WinHome.Services.Bootstrappers
 
             try
             {
-                using var process = Process.Start(psi);
-                if (process == null) throw new Exception($"Failed to start installer for {Name}");
-
-                process.WaitForExit();
-
-                if (process.ExitCode != 0)
-                {
-                    var error = process.StandardError.ReadToEnd();
-                    if (error.Contains("remote name could not be resolved") || error.Contains("Operation timed out"))
-                    {
-                        Console.WriteLine($"[Bootstrapper] Network error installing {Name}. Retrying in 10 seconds...");
-                        Thread.Sleep(10000);
-                        Install(false);
-                        return;
-                    }
-                    throw new Exception($"Failed to install {Name}: {error}");
-                }
+                _processRunner.RunProcessWithStartInfo(psi);
             }
-            catch (Exception ex) when (!ex.Message.Contains("Failed to install"))
+            catch (Exception ex)
             {
-                Console.WriteLine($"[Bootstrapper] Unexpected error: {ex.Message}. Retrying...");
-                Thread.Sleep(5000);
-                Install(false);
-                return;
+                if (ex.Message.Contains("remote name could not be resolved") || ex.Message.Contains("Operation timed out"))
+                {
+                    Console.WriteLine($"[Bootstrapper] Network error installing {Name}. Retrying in 10 seconds...");
+                    Thread.Sleep(10000);
+                    Install(false);
+                    return;
+                }
+                if (!ex.Message.Contains("Process failed with exit code"))
+                {
+                    Console.WriteLine($"[Bootstrapper] Unexpected error: {ex.Message}. Retrying...");
+                    Thread.Sleep(5000);
+                    Install(false);
+                    return;
+                }
+                throw new Exception($"Failed to install {Name}: {ex.Message}", ex);
             }
 
             Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");

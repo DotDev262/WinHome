@@ -5,30 +5,64 @@ namespace WinHome.Services.Logging
     public class ConsoleLogger : ILogger
     {
         private readonly object _consoleLock = new();
+        private volatile LogLevel _minLevel = LogLevel.Info;
+
+        public void SetMinLevel(LogLevel level)
+        {
+            _minLevel = level;
+        }
 
         public void Log(string message, LogLevel level)
         {
-            lock (_consoleLock)
+            if (level < _minLevel) return;
+
+            switch (level)
             {
-                switch (level)
-                {
-                    case LogLevel.Info:
-                        LogInfo(message);
-                        break;
-                    case LogLevel.Success:
-                        LogSuccess(message);
-                        break;
-                    case LogLevel.Warning:
-                        LogWarning(message);
-                        break;
-                    case LogLevel.Error:
-                        LogError(message);
-                        break;
-                }
+                case LogLevel.Trace:
+                    WriteTrace(message);
+                    break;
+                case LogLevel.Debug:
+                    WriteDebug(message);
+                    break;
+                case LogLevel.Info:
+                    WriteInfo(message);
+                    break;
+                case LogLevel.Success:
+                    WriteSuccess(message);
+                    break;
+                case LogLevel.Warning:
+                    WriteWarning(message);
+                    break;
+                case LogLevel.Error:
+                    WriteError(message);
+                    break;
+                default:
+                    WriteInfo(message);
+                    break;
             }
         }
 
         public void LogError(string message)
+        {
+            Log(message, LogLevel.Error);
+        }
+
+        public void LogInfo(string message)
+        {
+            Log(message, LogLevel.Info);
+        }
+
+        public void LogSuccess(string message)
+        {
+            Log(message, LogLevel.Success);
+        }
+
+        public void LogWarning(string message)
+        {
+            Log(message, LogLevel.Warning);
+        }
+
+        private void WriteError(string message)
         {
             lock (_consoleLock)
             {
@@ -38,7 +72,23 @@ namespace WinHome.Services.Logging
             }
         }
 
-        public void LogInfo(string message)
+        private void WriteTrace(string message)
+        {
+            lock (_consoleLock)
+            {
+                Console.WriteLine($"[Trace] {message}");
+            }
+        }
+
+        private void WriteDebug(string message)
+        {
+            lock (_consoleLock)
+            {
+                Console.WriteLine($"[Debug] {message}");
+            }
+        }
+
+        private void WriteInfo(string message)
         {
             lock (_consoleLock)
             {
@@ -46,7 +96,7 @@ namespace WinHome.Services.Logging
             }
         }
 
-        public void LogSuccess(string message)
+        private void WriteSuccess(string message)
         {
             lock (_consoleLock)
             {
@@ -56,7 +106,7 @@ namespace WinHome.Services.Logging
             }
         }
 
-        public void LogWarning(string message)
+        private void WriteWarning(string message)
         {
             lock (_consoleLock)
             {

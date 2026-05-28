@@ -54,7 +54,7 @@ namespace WinHome.Services.Managers
             if (_sourceUpdated || dryRun) return;
 
             _logger.LogInfo("[Winget] Updating package sources...");
-            _processRunner.RunCommand(_wingetPath, "source update", false, line => LogFiltered(line, "SourceUpdate"));
+            _processRunner.RunCommand(_wingetPath, new[] { "source", "update", "--accept-source-agreements" }, false, line => LogFiltered(line, "SourceUpdate"));
             _sourceUpdated = true;
         }
 
@@ -83,8 +83,12 @@ namespace WinHome.Services.Managers
             UpdateSource(dryRun);
 
             _logger.LogInfo($"[Winget] Installing {app.Id}...");
-            string args = $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --no-upgrade";
-            if (!string.IsNullOrEmpty(app.Source)) args += $" --source {app.Source}";
+            var args = new global::System.Collections.Generic.List<string> { "install", "--id", app.Id, "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity", "--no-upgrade" };
+            if (!string.IsNullOrEmpty(app.Source))
+            {
+                args.Add("--source");
+                args.Add(app.Source);
+            }
 
             bool alreadyInstalled = false;
             bool success = _processRunner.RunCommand(_wingetPath, args, false, line =>
@@ -118,7 +122,7 @@ namespace WinHome.Services.Managers
             }
 
             _logger.LogInfo($"[Winget] Uninstalling {appId}...");
-            string args = $"uninstall --id {appId} -e --silent --accept-source-agreements --disable-interactivity";
+            var args = new[] { "uninstall", "--id", appId, "-e", "--silent", "--accept-source-agreements", "--disable-interactivity" };
 
             if (!_processRunner.RunCommand(_wingetPath, args, false, line => LogFiltered(line, "Uninstall")))
             {
@@ -130,7 +134,7 @@ namespace WinHome.Services.Managers
         public bool IsInstalled(string appId)
         {
             ResolveWingetPath();
-            var output = _processRunner.RunCommandWithOutput(_wingetPath, $"list -q {appId}");
+            var output = _processRunner.RunCommandWithOutput(_wingetPath, new[] { "list", "-q", appId });
             return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
         }
     }

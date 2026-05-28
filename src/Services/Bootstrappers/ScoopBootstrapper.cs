@@ -15,7 +15,7 @@ namespace WinHome.Services.Bootstrappers
 
         public bool IsInstalled()
         {
-            if (_processRunner.RunCommand("scoop", "--version", false)) return true;
+            if (_processRunner.RunCommand("scoop", new[] { "--version" }, false)) return true;
 
             // Fallback for fresh installs where PATH isn't updated yet
             string[] searchPaths = {
@@ -59,19 +59,14 @@ namespace WinHome.Services.Bootstrappers
                 CreateNoWindow = true,
             };
 
-            using var process = Process.Start(psi);
-            if (process == null)
+            try
             {
-                throw new Exception($"Failed to start installer for {Name}");
+                _processRunner.RunProcessWithStartInfo(psi);
             }
-
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
+            catch (Exception ex)
             {
-                var error = process.StandardError.ReadToEnd();
                 // If it's just a DNS resolution error, it might be transient or need a retry
-                if (error.Contains("remote name could not be resolved"))
+                if (ex.Message.Contains("remote name could not be resolved"))
                 {
                     Console.WriteLine("[Bootstrapper] Network error resolving get.scoop.sh. Retrying in 10 seconds...");
                     Thread.Sleep(10000);
@@ -79,7 +74,7 @@ namespace WinHome.Services.Bootstrappers
                     Install(false);
                     return;
                 }
-                throw new Exception($"Failed to install {Name}: {error}");
+                throw new Exception($"Failed to install {Name}: {ex.Message}", ex);
             }
 
             Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");

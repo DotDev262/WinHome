@@ -4,6 +4,7 @@ using Xunit;
 using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Services.Managers;
+using System.Collections.Generic;
 
 namespace WinHome.Tests
 {
@@ -36,14 +37,14 @@ namespace WinHome.Tests
             // Allow version check
             _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(true);
 
-            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun, It.IsAny<Action<string>>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
                              .Returns(true);
 
             // Act
             _chocolateyService.Uninstall(appId, dryRun);
 
             // Assert
-            _mockProcessRunner.Verify(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun, It.IsAny<Action<string>>()), Times.Once);
+            _mockProcessRunner.Verify(pr => pr.RunCommand("choco", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()), Times.Once);
         }
 
         [Fact]
@@ -60,7 +61,7 @@ namespace WinHome.Tests
             _chocolateyService.Uninstall(appId, dryRun);
 
             // Assert
-            _mockProcessRunner.Verify(pr => pr.RunCommand("choco", $"uninstall {appId} -y", It.IsAny<bool>(), It.IsAny<Action<string>>()), Times.Never);
+            _mockProcessRunner.Verify(pr => pr.RunCommand("choco", It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<Action<string>>()), Times.Never);
         }
 
         [Fact]
@@ -73,7 +74,7 @@ namespace WinHome.Tests
             // Allow version check
             _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(true);
 
-            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"uninstall {appId} -y", dryRun, It.IsAny<Action<string>>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
                              .Returns(false);
 
             // Act & Assert
@@ -91,9 +92,9 @@ namespace WinHome.Tests
             // Allow version check
             _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(true);
 
-            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
                              .Returns(""); // Not installed
-            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"install {app.Id} -y", dryRun, It.IsAny<Action<string>>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
                              .Returns(false); // Fails
 
             // Act & Assert
@@ -111,10 +112,10 @@ namespace WinHome.Tests
             // Allow version check
             _mockProcessRunner.Setup(pr => pr.RunCommand("choco", "--version", false, It.IsAny<Action<string>>())).Returns(true);
 
-            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
                              .Returns(""); // Not installed
-            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", $"install {app.Id} -y", dryRun, It.IsAny<Action<string>>()))
-                             .Callback<string, string, bool, Action<string>>((_, _, _, onOutput) =>
+            _mockProcessRunner.Setup(pr => pr.RunCommand("choco", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
+                             .Callback<string, IEnumerable<string>, bool, Action<string>>((_, _, _, onOutput) =>
                              {
                                  onOutput?.Invoke("Chocolatey installed 0/1 packages. ... 1 packages installed currently");
                              })

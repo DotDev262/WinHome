@@ -27,6 +27,20 @@ jobs:
     - name: Check formatting
       run: dotnet format --verify-no-changes --verbosity diagnostic WinHome.sln
 
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v7
+
+    - name: Setup bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Check Python formatting
+      run: |
+        uv tool run ruff check plugins/
+        uv tool run ruff format --check plugins/
+
+    - name: Check JS/TS formatting
+      run: bun x prettier --check plugins/
+
     - name: Build
       run: dotnet build WinHome.sln
 

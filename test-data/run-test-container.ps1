@@ -7,6 +7,7 @@ $testPluginPySrc = "tests\TestPlugin"
 $vimPluginSrc = "plugins\vim"
 $vscodePluginSrc = "plugins\vscode"
 $obsidianPluginSrc = "plugins\obsidian"
+$ohmyposhPluginSrc = "plugins\ohmyposh"
 
 function Copy-Plugin($src, $name) {
     if (Test-Path $src) {
@@ -24,6 +25,7 @@ Copy-Plugin $testPluginPySrc "test-echo-py"
 Copy-Plugin $vimPluginSrc "vim"
 Copy-Plugin $vscodePluginSrc "vscode"
 Copy-Plugin $obsidianPluginSrc "obsidian"
+Copy-Plugin $ohmyposhPluginSrc "ohmyposh"
 
 # Run WinHome
 ./WinHome.exe --config test-config-container.yaml --debug

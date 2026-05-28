@@ -20,7 +20,7 @@ namespace WinHome.Services.Bootstrappers
 
         public bool IsInstalled()
         {
-            if (_processRunner.RunCommand("winget", "--version", false)) return true;
+            if (_processRunner.RunCommand("winget", new[] { "--version" }, false)) return true;
 
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string wingetPath = Path.Combine(localAppData, "Microsoft", "WindowsApps", "winget.exe");
@@ -41,9 +41,40 @@ namespace WinHome.Services.Bootstrappers
 
             try
             {
-                string tempDir = Path.Combine(Path.GetTempPath(), "WinHome_WingetInstall");
-                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+                // FIX: Use a randomized name with a "WinHome_" prefix for debuggability
+                string tempDir = Path.Combine(Path.GetTempPath(), "WinHome_" + Path.GetRandomFileName());
                 Directory.CreateDirectory(tempDir);
+
+                // FIX: Platform guard for Windows-only ACL APIs to prevent crashes on Linux CI
+                if (OperatingSystem.IsWindows())
+                {
+                    try
+                    {
+                        // Use normal initialization, DirectorySecurity is not IDisposable
+                        var security = new global::System.Security.AccessControl.DirectorySecurity();
+                        var currentUser = global::System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+                        
+                        // Define inheritance flags so files/folders inside the temp dir inherit these permissions
+                        var inheritanceFlags = global::System.Security.AccessControl.InheritanceFlags.ContainerInherit | global::System.Security.AccessControl.InheritanceFlags.ObjectInherit;
+                        var propagationFlags = global::System.Security.AccessControl.PropagationFlags.None;
+
+                        var systemSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.LocalSystemSid, null);
+                        var adminSid = new global::System.Security.Principal.SecurityIdentifier(global::System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
+
+                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(currentUser, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
+                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(systemSid, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
+                        security.AddAccessRule(new global::System.Security.AccessControl.FileSystemAccessRule(adminSid, global::System.Security.AccessControl.FileSystemRights.FullControl, inheritanceFlags, propagationFlags, global::System.Security.AccessControl.AccessControlType.Allow));
+
+                        #pragma warning disable CA1416
+                        var di = new global::System.IO.DirectoryInfo(tempDir);
+                        di.SetAccessControl(security);
+                        #pragma warning restore CA1416
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"[Bootstrapper] Could not set ACL: {ex.Message}.");
+                    }
+                }
 
                 string version = GetLatestVersion();
                 _logger.LogInfo($"[Bootstrapper] Latest Winget version detected: {version}");

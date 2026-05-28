@@ -11,13 +11,16 @@ powered by modern, dependency-free, single-file .NET.
 
 ### 🔰 Project Badges
 
-![Release](https://img.shields.io/github/v/release/DotDev262/WinHome?label=latest)
-![Downloads](https://img.shields.io/github/downloads/DotDev262/WinHome/total?color=blue)
-![Stars](https://img.shields.io/github/stars/DotDev262/WinHome?style=social)
-![License](https://img.shields.io/github/license/DotDev262/WinHome)
-![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
-![.NET](https://img.shields.io/badge/.NET-10.0-purple)
-![Build](https://img.shields.io/github/actions/workflow/status/DotDev262/WinHome/release.yaml?label=build)
+[![CI](https://img.shields.io/github/actions/workflow/status/DotDev262/WinHome/ci.yml?branch=main&label=CI&logo=github)](https://github.com/DotDev262/WinHome/actions/workflows/ci.yml)
+[![Release Build](https://img.shields.io/github/actions/workflow/status/DotDev262/WinHome/release.yaml?label=release%20build&logo=github)](https://github.com/DotDev262/WinHome/actions/workflows/release.yaml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/DotDev262/WinHome/docs.yml?label=docs&logo=github-pages&color=blue)](https://github.com/DotDev262/WinHome/actions/workflows/docs.yml)
+[![Code Coverage](https://img.shields.io/badge/coverage-see%20CI-lightgrey?logo=codecov)](https://github.com/DotDev262/WinHome/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/DotDev262/WinHome?label=latest&logo=github)](https://github.com/DotDev262/WinHome/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/DotDev262/WinHome/total?color=blue&logo=github)](https://github.com/DotDev262/WinHome/releases)
+[![Stars](https://img.shields.io/github/stars/DotDev262/WinHome?style=social)](https://github.com/DotDev262/WinHome/stargazers)
+[![License](https://img.shields.io/github/license/DotDev262/WinHome)](./LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4?logo=windows)]()
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 
 </div>
 
@@ -57,14 +60,44 @@ Before using WinHome, ensure your environment meets the following requirements:
 
 WinHome ships as a **self-contained single EXE** (no .NET runtime needed), compatible with all Windows x64 systems.
 
-1. Visit the **Releases Page**
+### Method 1: Manual Download
+
+1. Visit the [**Releases Page**](https://github.com/DotDev262/WinHome/releases/latest)
 2. Download **WinHome.exe**
 3. Run it from PowerShell or CMD
 
-### Quick Install (PowerShell)
+### Method 2: Quick Install (PowerShell One-Liner)
 
 ```powershell
 Invoke-WebRequest -Uri "https://github.com/DotDev262/WinHome/releases/latest/download/WinHome.exe" -OutFile "WinHome.exe"
+```
+
+### Method 3: winget *(coming soon)*
+
+> Once WinHome is published to the Windows Package Manager repository, you will be able to install it with:
+
+```powershell
+# Coming soon — pending winget submission
+winget install DotDev262.WinHome
+```
+
+### Method 4: Scoop *(coming soon)*
+
+> Once the Scoop bucket is published:
+
+```powershell
+# Coming soon — pending Scoop bucket submission
+scoop bucket add winhome https://github.com/DotDev262/scoop-winhome
+scoop install winhome
+```
+
+### Method 5: Chocolatey *(coming soon)*
+
+> Once the Chocolatey package is published:
+
+```powershell
+# Coming soon — pending Chocolatey package approval
+choco install winhome
 ```
 
 > **Post-Install Note:** For easier global access, we recommend moving `WinHome.exe` to a folder included in your system's `PATH` environment variable (e.g., `C:\Users\<User>\bin`).
@@ -118,6 +151,7 @@ For complete, real-world setup examples (Developer, Minimalist, Gamer), see the 
 
 WinHome implements enterprise-grade security controls to prevent common infrastructure automation pitfalls.
 
+
 ### 🔒 Context Awareness (RegistryGuard)
 WinHome actively detects if it is running as `SYSTEM` (common in CI/CD or Scheduled Tasks) and **blocks attempts to modify `HKEY_CURRENT_USER`**. This prevents the "Admin Context Trap" where settings are accidentally applied to the LocalSystem profile instead of the logged-in user.
 
@@ -155,7 +189,7 @@ This roadmap is a living document that outlines the project's future direction. 
 - [ ] **Advanced State Management**: Add CLI commands to view, backup, and restore system state.
 - [ ] **Structured Output**: Add a `--json` flag for machine-readable output of run results.
 - [ ] **GUI Mode**: Develop a simple graphical user interface for non-technical users.
-- [ ] **Profile-based PATH Overrides**: Allow different profiles to have unique PATH environment variables.
+- [x] **Profile-based PATH Overrides**: Allow different profiles to have unique PATH environment variables.
 - [ ] **"Generate" Function**: Add a command to generate a `config.yaml` file from the current state of a live system.
 - [ ] **DSL**: Evolve the configuration into a more powerful Domain-Specific Language (similar to Nix).
 
@@ -205,6 +239,7 @@ Here is a tentative plan for upcoming releases.
 - [x] **VSCode Plugin**: Implement VSCode settings and extension sync as the first official plugin.
 - [x] **Vim/Neovim Plugin**: Configure plugins and settings for Vim/Neovim.
 - [x] **Obsidian Plugin**: Manage settings and community plugins across your Obsidian vaults.
+- [x] **Oh My Posh Plugin**: Manage PowerShell terminal prompt themes.
 - [x] **Config Generator (`winhome generate`)**: Scan the system and create a `config.yaml` based on installed apps and settings.
 - [x] **Advanced State Management** (`state list`, `state backup`, `state restore`).
 - [x] **Secret Reference Logic**: Add support for referencing secrets from environment variables or secure vaults.
@@ -305,6 +340,13 @@ profiles:
     git:
       userName: "John Doe (Work)"
       userEmail: "john.doe@work.com"
+    envVars:
+      - variable: "EDITOR"
+        value: "code"
+        action: "set"
+      - variable: "Path"
+        value: "%USERPROFILE%\work\bin"
+        action: "append"
 ```
 
 ---
@@ -321,6 +363,7 @@ No registry keys or hidden folders are left behind by the tool itself.
 ---
 
 ## ❓ Troubleshooting
+For a comprehensive troubleshooting guide, see [Troubleshooting](docs/troubleshooting.md).
 
 **"Winget not recognized"**
 > Ensure the **App Installer** is updated from the Microsoft Store. WinHome attempts to use the system-level Winget.
@@ -332,8 +375,35 @@ No registry keys or hidden folders are left behind by the tool itself.
 
 ## 🤝 Contributing
 
-Contributions, discussions, and feature ideas are welcome!
-Please open an Issue or Pull Request on GitHub.
+Contributions, discussions, and feature ideas are welcome! WinHome is an open-source project and we'd love your help to make it better.
+
+### 📖 Contribution Resources
+
+| Resource | Description |
+|---|---|
+| [Contributing Guide](./CONTRIBUTING.md) | Full guide: branching, commit style, PR process |
+| [GSSOC 2026 Instructions](./CONTRIBUTING.md#-gssoc-2026-participants) | Program-specific labels & tracking info |
+| [Configuration Wiki](./docs/config.md) | Understand WinHome's configuration schema |
+| [Configuration Cookbook](./docs/cookbook.md) | Real-world `config.yaml` examples |
+| [Testing Guide](./docs/testing.md) | How to write and run tests |
+| [Cross-Platform Dev](./docs/cross-platform-dev.md) | Developing on Linux/macOS |
+| [Security Guide](./docs/security.md) | Security practices and guidelines |
+| [Troubleshooting](./docs/troubleshooting.md) | Common issues and solutions |
+| [GitHub Discussions](https://github.com/DotDev262/WinHome/discussions) | Community Q&A and ideas |
+| [Open Issues](https://github.com/DotDev262/WinHome/issues) | Find something to work on |
+
+### 🚀 Quick Start for Contributors
+
+1. **Fork** the repository → [Fork WinHome](https://github.com/DotDev262/WinHome/fork)
+2. **Clone** your fork and create a branch: `git checkout -b <issue-number>-short-description`
+3. **Build**: `dotnet build WinHome.sln`
+4. **Test**: `dotnet test WinHome.sln`
+5. **Format**: `dotnet format WinHome.sln` (required before submitting)
+6. **Open a Pull Request** and link it to the relevant issue (`Closes #<issue-number>`)
+
+> 💡 **GSSOC 2026 participants:** Please read the [Contributing Guide](./CONTRIBUTING.md) for program-specific instructions on PR labels and leaderboard tracking.
+
+Please open an [Issue](https://github.com/DotDev262/WinHome/issues/new/choose) or [Pull Request](https://github.com/DotDev262/WinHome/pulls) on GitHub.
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
@@ -370,6 +440,10 @@ WinHome stands on the shoulders of incredible open-source technologies:
 * **PowerShell**
 
 And most importantly, the open-source community. ❤️
+
+
+📘 For detailed security guidance and best practices, see the [Security Guide](./docs/security.md).
+
 
 ---
 

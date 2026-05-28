@@ -24,9 +24,15 @@ obsidian:
       plugins:
         - "obsidian-git"
 
+ohmyposh:
+  profile: "C:\\Users\\test\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1"
+  settings:
+    theme: "tokyonight"
+
 # Generic Plugin Section
 extensions:
   test-echo:
     message: "Python Plugin Integration Test"
   test-echo-js:
     message: "JavaScript Plugin Integration Test"
+  

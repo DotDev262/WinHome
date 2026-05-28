@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using WinHome.Interfaces;
 
 namespace WinHome.Services.System
@@ -6,10 +5,14 @@ namespace WinHome.Services.System
     public class RuntimeResolver : IRuntimeResolver
     {
         private readonly ILogger _logger;
+        private readonly IProcessRunner _processRunner;
+        private readonly IFileSystem _fileSystem;
 
-        public RuntimeResolver(ILogger logger)
+        public RuntimeResolver(ILogger logger, IProcessRunner processRunner, IFileSystem fileSystem)
         {
             _logger = logger;
+            _processRunner = processRunner;
+            _fileSystem = fileSystem;
         }
 
         public string Resolve(string runtimeName)
@@ -26,39 +29,39 @@ namespace WinHome.Services.System
             if (runtimeName == "bun")
             {
                 string bunPath = Path.Combine(localAppData, ".bun", "bin", "bun.exe");
-                if (File.Exists(bunPath)) return bunPath;
+                if (_fileSystem.FileExists(bunPath)) return bunPath;
             }
             else if (runtimeName == "uv")
             {
                 string uvPath = Path.Combine(localAppData, "uv", "uv.exe");
-                if (File.Exists(uvPath)) return uvPath;
+                if (_fileSystem.FileExists(uvPath)) return uvPath;
             }
             else if (runtimeName == "scoop")
             {
                 string scoopMainShim = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "scoop", "shims", "scoop.cmd");
-                if (File.Exists(scoopMainShim)) return scoopMainShim;
+                if (_fileSystem.FileExists(scoopMainShim)) return scoopMainShim;
             }
             else if (runtimeName == "choco")
             {
                 string chocoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "chocolatey", "bin", "choco.exe");
-                if (File.Exists(chocoPath)) return chocoPath;
+                if (_fileSystem.FileExists(chocoPath)) return chocoPath;
 
                 string chocoPathAlt = @"C:\ProgramData\chocolatey\bin\choco.exe";
-                if (File.Exists(chocoPathAlt)) return chocoPathAlt;
+                if (_fileSystem.FileExists(chocoPathAlt)) return chocoPathAlt;
             }
             else if (runtimeName == "winget")
             {
                 string wingetPath = Path.Combine(localAppData, "Microsoft", "WindowsApps", "winget.exe");
-                if (File.Exists(wingetPath)) return wingetPath;
+                if (_fileSystem.FileExists(wingetPath)) return wingetPath;
             }
 
             // 3. Scoop Shims
             string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             string scoopShim = Path.Combine(userProfile, "scoop", "shims", $"{runtimeName}.exe");
-            if (File.Exists(scoopShim)) return scoopShim;
+            if (_fileSystem.FileExists(scoopShim)) return scoopShim;
 
             string scoopCmdShim = Path.Combine(userProfile, "scoop", "shims", $"{runtimeName}.cmd");
-            if (File.Exists(scoopCmdShim)) return scoopCmdShim;
+            if (_fileSystem.FileExists(scoopCmdShim)) return scoopCmdShim;
 
             // Return original name and hope for the best (or it will fail and trigger bootstrapping)
             return runtimeName;
@@ -68,38 +71,33 @@ namespace WinHome.Services.System
         {
             try
             {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "where.exe",
-                    Arguments = runtimeName,
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                using var process = Process.Start(psi);
-                if (process == null) return string.Empty;
+                var output = _processRunner.RunCommandWithOutput("where.exe", runtimeName);
+                if (string.IsNullOrWhiteSpace(output)) return string.Empty;
 
                 string fullPath = string.Empty;
-                while (!process.StandardOutput.EndOfStream)
+                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var rawLine in lines)
                 {
-                    string line = process.StandardOutput.ReadLine()?.Trim() ?? string.Empty;
+                    string line = rawLine.Trim();
                     if (string.IsNullOrEmpty(line)) continue;
+                    if (!Path.IsPathRooted(line)) continue;
 
-                    // Prioritize .exe, .cmd, .bat
                     if (line.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
                         line.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) ||
                         line.EndsWith(".bat", StringComparison.OrdinalIgnoreCase))
                     {
-                        fullPath = line;
-                        break;
+                        return line;
                     }
 
-                    // Fallback to first found if nothing else
                     if (string.IsNullOrEmpty(fullPath)) fullPath = line;
                 }
 
-                process.WaitForExit();
-                return process.ExitCode == 0 ? fullPath : string.Empty;
+                if (string.IsNullOrEmpty(fullPath))
+                {
+                    _logger.LogInfo($"[RuntimeResolver] No valid PATH match for '{runtimeName}'.");
+                }
+
+                return fullPath;
             }
             catch { return string.Empty; }
         }

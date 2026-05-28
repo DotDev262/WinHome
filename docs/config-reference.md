@@ -28,6 +28,23 @@ systemSettings:
   dark_mode: true
 ```
 
+## Power Management
+You can configure system power and sleep timeouts under `systemSettings` (values are in minutes).
+
+*   `screen_timeout_ac`: Screen timeout when plugged in.
+*   `screen_timeout_dc`: Screen timeout on battery.
+*   `sleep_timeout_ac`: Sleep timeout when plugged in.
+*   `sleep_timeout_dc`: Sleep timeout on battery.
+
+**Example:**
+```yaml
+systemSettings:
+  screen_timeout_ac: 15
+  screen_timeout_dc: 5
+  sleep_timeout_ac: 60
+  sleep_timeout_dc: 15
+```
+
 ## Plugins
 You can configure installed plugins under the `extensions` key. The key name must match the plugin name.
 
@@ -77,6 +94,14 @@ extensions:
           isEnabled: true
 ```
 
+**Example (Oh My Posh Plugin):**
+```yaml
+ohmyposh:
+  profile: "C:\\Users\\test\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1"
+  settings:
+    theme: "tokyonight"
+```
+
 ## Apps
 Install applications using supported managers (`winget`, `scoop`, `choco`) or installed plugins.
 
@@ -90,3 +115,27 @@ apps:
     manager: "vim"
 ```
 
+## Profiles
+Profiles can override selected top-level settings when `--profile <name>` is used.
+
+```yaml
+envVars:
+  - variable: "EDITOR"
+    value: "nvim"
+    action: "set"
+
+profiles:
+  work:
+    git:
+      userName: "Work User"
+      userEmail: "work@example.com"
+    envVars:
+      - variable: "EDITOR"
+        value: "code"
+        action: "set"
+      - variable: "Path"
+        value: "%USERPROFILE%\work\bin"
+        action: "append"
+```
+
+For `profiles.<name>.envVars`, `action: set` replaces any matching top-level variable for that profile. `action: append` keeps the base variable entries and adds the profile-specific value.

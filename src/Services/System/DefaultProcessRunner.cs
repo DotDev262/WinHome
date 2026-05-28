@@ -5,6 +5,7 @@ namespace WinHome.Services.System
 {
     public class DefaultProcessRunner : IProcessRunner
     {
+        [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
         public bool RunCommand(string fileName, string args, bool dryRun, Action<string>? onOutput = null)
         {
             if (dryRun) return true;
@@ -18,6 +19,32 @@ namespace WinHome.Services.System
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
+            return RunProcessInternal(startInfo, fileName, onOutput);
+        }
+
+        public bool RunCommand(string fileName, IEnumerable<string> args, bool dryRun, Action<string>? onOutput = null)
+        {
+            if (dryRun) return true;
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            foreach (var arg in args)
+            {
+                startInfo.ArgumentList.Add(arg);
+            }
+            return RunProcessInternal(startInfo, fileName, onOutput);
+        }
+
+        private bool RunProcessInternal(ProcessStartInfo startInfo, string fileName, Action<string>? onOutput)
+        {
+
+
             try
             {
                 using var process = new Process { StartInfo = startInfo };
@@ -49,6 +76,15 @@ namespace WinHome.Services.System
                     process.Kill(true);
                     return false;
                 }
+
+                if (onOutput != null)
+                {
+                    // Ensure async event handlers (BeginOutputReadLine/BeginErrorReadLine) 
+                    // have finished processing streams before we dispose the process.
+                    // completed in pr.no 134
+                    process.WaitForExit();
+                }
+
                 return process.ExitCode == 0;
             }
             catch (Exception ex)
@@ -58,11 +94,31 @@ namespace WinHome.Services.System
             }
         }
 
+        [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
         public string RunCommandWithOutput(string fileName, string args)
         {
             return RunCommandWithOutput(fileName, args, null);
         }
 
+        public string RunCommandWithOutput(string fileName, IEnumerable<string> args)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = false,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            foreach (var arg in args)
+            {
+                startInfo.ArgumentList.Add(arg);
+            }
+            return RunProcessWithOutputInternal(startInfo, null);
+        }
+
+        [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
         public string RunCommandWithOutput(string fileName, string args, string? standardInput)
         {
             var startInfo = new ProcessStartInfo
@@ -75,6 +131,12 @@ namespace WinHome.Services.System
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            return RunProcessWithOutputInternal(startInfo, standardInput);
+        }
+
+        private string RunProcessWithOutputInternal(ProcessStartInfo startInfo, string? standardInput)
+        {
+
 
             try
             {
@@ -104,6 +166,7 @@ namespace WinHome.Services.System
             }
             catch { return string.Empty; }
         }
+        [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
         public string RunAndCapture(string fileName, string arguments)
         {
             try
@@ -127,6 +190,73 @@ namespace WinHome.Services.System
             {
                 return string.Empty;
             }
+        }
+
+        public string RunAndCapture(string fileName, IEnumerable<string> arguments)
+        {
+            try
+            {
+                var psi = new global::System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = fileName,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                foreach (var arg in arguments)
+                {
+                    psi.ArgumentList.Add(arg);
+                }
+                using var process = global::System.Diagnostics.Process.Start(psi);
+                if (process == null) return string.Empty;
+
+                string output = process.StandardOutput.ReadToEnd().Trim();
+                process.WaitForExit();
+                return output;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        public bool RunProcessWithStartInfo(ProcessStartInfo startInfo)
+        {
+            using var process = Process.Start(startInfo);
+
+            if (process == null)
+                throw new Exception("Failed to start process");
+
+            Task<string>? outputTask = null;
+            Task<string>? errorTask = null;
+
+            if (startInfo.RedirectStandardOutput)
+                outputTask = process.StandardOutput.ReadToEndAsync();
+
+            if (startInfo.RedirectStandardError)
+                errorTask = process.StandardError.ReadToEndAsync();
+
+            if (!process.WaitForExit(TimeSpan.FromMinutes(10)))
+            {
+                process.Kill(true);
+                throw new TimeoutException("Process execution timed out.");
+            }
+
+            if (outputTask != null)
+                outputTask.GetAwaiter().GetResult();
+
+            if (errorTask != null)
+                errorTask.GetAwaiter().GetResult();
+
+            var error = errorTask != null ? errorTask.Result : string.Empty;
+
+            if (process.ExitCode != 0)
+            {
+                throw new Exception(
+                    $"Process failed with exit code {process.ExitCode}: {error}");
+            }
+
+            return true;
         }
     }
 }

@@ -33,14 +33,14 @@ namespace WinHome.Tests
             var app = new AppConfig { Id = "testapp" };
             bool dryRun = false;
 
-            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
                              .Returns(""); // Not installed
 
             // Allow for --version check
             _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "source update", false, It.IsAny<Action<string>>())).Returns(true);
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>>())).Returns(true);
 
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --no-upgrade", dryRun, It.IsAny<Action<string>>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
                              .Returns(false); // Fails
 
             // Act & Assert
@@ -55,15 +55,15 @@ namespace WinHome.Tests
             var app = new AppConfig { Id = "testapp" };
             bool dryRun = false;
 
-            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<string>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
                              .Returns(""); // Not installed
 
             // Allow for --version check
             _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "source update", false, It.IsAny<Action<string>>())).Returns(true);
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>>())).Returns(true);
 
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"install --id {app.Id} -e --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --no-upgrade", dryRun, It.IsAny<Action<string>>()))
-                             .Callback<string, string, bool, Action<string>>((_, _, _, onOutput) =>
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
+                             .Callback<string, IEnumerable<string>, bool, Action<string>>((_, _, _, onOutput) =>
                              {
                                  onOutput?.Invoke("[Winget:Install] A package version is already installed. Installation cancelled.");
                              })
@@ -84,7 +84,7 @@ namespace WinHome.Tests
             // Allow for --version check
             _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
 
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", $"uninstall --id {appId} -e --silent --accept-source-agreements --disable-interactivity", dryRun, It.IsAny<Action<string>>()))
+            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<System.Collections.Generic.IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
                              .Returns(false); // Fails
 
             // Act & Assert

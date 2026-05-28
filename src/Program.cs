@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.CommandLine;
+using System.IO;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
 using WinHome.Services.Logging;
@@ -13,13 +14,24 @@ class Program
     {
         try
         {
+            if (Array.IndexOf(args, "--version") >= 0)
+            {
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                string versionString = version is not null
+                    ? $"WinHome v{version.Major}.{version.Minor}.{version.Build}"
+                    : "WinHome v1.0.0";
+                Console.WriteLine(versionString);
+                return 0;
+            }
+
             using IHost host = AppHost.CreateHost(args);
 
             var rootCommand = CliBuilder.BuildRootCommand(
                 // Run Action
-                async (file, dryRun, profile, debug, diff, json, update) =>
+                async (file, dryRun, profile, debug, diff, json, update, force, continueOnError, minLogLevel) =>
                 {
                     var logger = host.Services.GetRequiredService<ILogger>();
+                    logger.SetMinLevel(minLogLevel);
 
                     if (update)
                     {
@@ -35,7 +47,7 @@ class Program
 
                     var runner = host.Services.GetRequiredService<AppRunner>();
 
-                    var exitCode = await runner.RunAsync(file, dryRun, profile, debug, diff, json);
+                    var exitCode = await runner.RunAsync(file, dryRun, profile, debug, diff, json, force, continueOnError);
 
                     if (logger is JsonLogger jsonLogger)
                     {
@@ -45,10 +57,11 @@ class Program
                     return exitCode;
                 },
                 // Generate Action
-                async (outputFile) =>
+                async (outputFile, minLogLevel) =>
                 {
-                    var generator = host.Services.GetRequiredService<IGeneratorService>();
                     var logger = host.Services.GetRequiredService<ILogger>();
+                    logger.SetMinLevel(minLogLevel);
+                    var generator = host.Services.GetRequiredService<IGeneratorService>();
 
                     try
                     {
@@ -79,10 +92,11 @@ class Program
                     }
                 },
                 // State Action
-                async (command, path) =>
+                async (command, path, minLogLevel) =>
                 {
-                    var stateService = host.Services.GetRequiredService<IStateService>();
                     var logger = host.Services.GetRequiredService<ILogger>();
+                    logger.SetMinLevel(minLogLevel);
+                    var stateService = host.Services.GetRequiredService<IStateService>();
 
                     switch (command)
                     {
@@ -109,10 +123,35 @@ class Program
                             if (string.IsNullOrEmpty(path)) return 1;
                             stateService.RestoreState(path);
                             break;
+                        case "clear":
+                            try
+                            {
+                                // Look for winhome.state.json in the current working directory
+                                string stateFilePath = Path.Combine(Directory.GetCurrentDirectory(), "winhome.state.json");
+                                
+                                if (File.Exists(stateFilePath))
+                                {
+                                    File.Delete(stateFilePath);
+                                    logger.LogSuccess("[State] Success: winhome.state.json has been deleted and tracking state is reset.");
+                                }
+                                else
+                                {
+                                    logger.LogInfo("[State] No active winhome.state.json file was found. State is already clean.");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.LogError($"[State] Failed to clear tracking state file: {ex.Message}");
+                                return 1;
+                            }
+                            break;
                     }
                     return 0;
                 }
             );
+
+            // Register status command (reads .winhome-state.json)
+            StatusCommand.Register(rootCommand, host.Services);
 
             return await rootCommand.Parse(args).InvokeAsync();
         }

@@ -39,3 +39,7 @@ extensions:
           accentColor: "#002aff"
         plugins:
           - "obsidian-git"
+  ohmyposh:
+    profile: "C:\\Users\\test\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1"
+    settings:
+      theme: "tokyonight"

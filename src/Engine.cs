@@ -1,6 +1,7 @@
 using System.Text.Json;
 using WinHome.Interfaces;
 using WinHome.Models;
+using WinHome.Services;
 
 namespace WinHome
 {
@@ -21,6 +22,7 @@ namespace WinHome
         private readonly IPluginRunner _pluginRunner;
         private readonly IStateService _stateService;
         private readonly IRuntimeResolver _runtimeResolver;
+        private readonly StateWriter _stateWriter;
 
         public Engine(
             Dictionary<string, IPackageManager> managers,
@@ -52,9 +54,32 @@ namespace WinHome
             _stateService = stateService;
             _logger = logger;
             _runtimeResolver = runtimeResolver;
+            _stateWriter = new StateWriter();
         }
 
-        public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false)
+        // Backwards-compatible overload accepting a StateWriter (injected via DI). If not provided the default is used.
+        public Engine(
+            Dictionary<string, IPackageManager> managers,
+            IDotfileService dotfiles,
+            IRegistryService registry,
+            ISystemSettingsService systemSettings,
+            IWslService wsl,
+            IGitService git,
+            IEnvironmentService env,
+            IWindowsServiceManager serviceManager,
+            IScheduledTaskService scheduledTaskService,
+            IPluginManager pluginManager,
+            IPluginRunner pluginRunner,
+            IStateService stateService,
+            ILogger logger,
+            IRuntimeResolver runtimeResolver,
+            StateWriter? stateWriter)
+            : this(managers, dotfiles, registry, systemSettings, wsl, git, env, serviceManager, scheduledTaskService, pluginManager, pluginRunner, stateService, logger, runtimeResolver)
+        {
+            _stateWriter = stateWriter ?? new StateWriter();
+        }
+
+        public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false, bool forceReapply = false, bool continueOnError = false)
         {
             _logger.LogInfo($"--- WinHome v{config.Version} ---");
 
@@ -81,6 +106,7 @@ namespace WinHome
                 {
                     _logger.LogInfo($"\n[Profile] Activating '{profileName}'...");
                     if (profile.Git != null) config.Git = profile.Git;
+                    ApplyProfileEnvironmentOverrides(config, profile);
                 }
                 else
                 {
@@ -107,9 +133,10 @@ namespace WinHome
             var currentState = await BuildStateFromConfig(config);
 
             var previousState = _stateService.LoadState();
+            currentState.SystemSettingOriginals = new Dictionary<string, object>(previousState.SystemSettingOriginals);
 
             // Cleanup
-            var itemsToRemove = previousState.Except(currentState).ToList();
+            var itemsToRemove = previousState.AppliedItems.Except(currentState.AppliedItems).ToList();
             if (itemsToRemove.Any())
             {
                 _logger.LogInfo("\n--- Cleaning Up ---");
@@ -129,6 +156,29 @@ namespace WinHome
                         }
                     }
                 }));
+            }
+
+            // Revert system settings that are no longer in config
+            if (OperatingSystem.IsWindows() && previousState.SystemSettingOriginals.Any())
+            {
+                var removedSystemSettings = previousState.SystemSettingOriginals.Keys
+                    .Where(k => !config.SystemSettings.ContainsKey(k))
+                    .ToList();
+
+                if (removedSystemSettings.Any())
+                {
+                    _logger.LogInfo("\n--- Reverting Removed System Settings ---");
+                    foreach (var settingKey in removedSystemSettings)
+                    {
+                        var originalValue = previousState.SystemSettingOriginals[settingKey];
+                        await _systemSettings.RevertSystemSettingAsync(settingKey, originalValue, dryRun);
+                        if (!dryRun)
+                        {
+                            _stateService.RemoveSystemSettingOriginal(settingKey);
+                            currentState.SystemSettingOriginals.Remove(settingKey);
+                        }
+                    }
+                }
             }
 
             // 1. Ensure System Managers (Scoop) are ready if needed by plugins
@@ -151,7 +201,7 @@ namespace WinHome
             {
                 // Only reconcile runtimes for plugins that are actually used in the config
                 var usedPluginNames = config.Apps.Select(a => a.Manager)
-                    .Concat(new[] { "vim", "vscode", "obsidian" }.Where(_ => config.Vim != null || config.Vscode != null || config.Obsidian != null))
+                    .Concat(new[] { "vim", "vscode", "obsidian", "ohmyposh" }.Where(_ => config.Vim != null || config.Vscode != null || config.Obsidian != null || config.Ohmyposh != null))
                     .Concat(config.Extensions.Keys)
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -172,35 +222,91 @@ namespace WinHome
             if (config.Apps.Any())
             {
                 _logger.LogInfo("\n--- Reconciling Apps ---");
+                var applyState = _stateWriter.Load();
+
                 foreach (var app in config.Apps)
                 {
-                    _logger.LogInfo($"[Engine] Processing {app.Manager}:{app.Id}...");
+                    var stepId = $"{app.Manager}:{app.Id}";
+                    _logger.LogInfo($"[Engine] Processing {stepId}...");
+
+                    if (!forceReapply && !dryRun && applyState.TryGetValue(stepId, out var previous) && previous.Status == StepStatus.Succeeded)
+                    {
+                        _logger.LogInfo($"[Engine] Skipping previously applied {stepId}.");
+                        // Record skipped if not present or different
+                        var skippedResult = new StepResult
+                        {
+                            StepId = stepId,
+                            StepType = "app",
+                            StepName = app.Id,
+                            Status = StepStatus.Skipped,
+                            AppliedAt = previous.AppliedAt
+                        };
+                        applyState[stepId] = skippedResult;
+                        continue;
+                    }
+
                     if (_managers.TryGetValue(app.Manager, out var mgr))
                     {
-                        if (mgr is WinHome.Services.Plugins.PluginPackageManagerAdapter adapter)
+                        try
                         {
-                            if (loggedPlugins.Add(app.Manager))
+                            if (mgr is WinHome.Services.Plugins.PluginPackageManagerAdapter adapter)
                             {
-                                _logger.LogInfo($"[Plugin] Discovered: {app.Manager} ({adapter.PluginType})");
+                                if (loggedPlugins.Add(app.Manager))
+                                {
+                                    _logger.LogInfo($"[Plugin] Discovered: {app.Manager} ({adapter.PluginType})");
+                                }
                             }
-                        }
 
-                        if (!mgr.IsAvailable())
-                        {
-                            _logger.LogInfo($"[Engine] Manager '{app.Manager}' not available. Bootstrapping...");
-                            mgr.Bootstrapper.Install(dryRun);
                             if (!mgr.IsAvailable())
                             {
-                                _logger.LogError($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
-                                continue;
+                                _logger.LogInfo($"[Engine] Manager '{app.Manager}' not available. Bootstrapping...");
+                                mgr.Bootstrapper.Install(dryRun);
+                                if (!mgr.IsAvailable())
+                                {
+                                    _logger.LogError($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
+                                    continue;
+                                }
                             }
+
+                            mgr.Install(app, dryRun);
+
+                            if (!dryRun)
+                            {
+                                var successResult = new StepResult
+                                {
+                                    StepId = stepId,
+                                    StepType = "app",
+                                    StepName = app.Id,
+                                    Status = StepStatus.Succeeded,
+                                    AppliedAt = DateTime.UtcNow
+                                };
+                                _stateWriter.RecordStep(successResult);
+                                applyState[stepId] = successResult;
+
+                                _stateService.MarkAsApplied(stepId);
+                            }
+
+                            _env.RefreshPath();
                         }
-                        mgr.Install(app, dryRun);
-                        if (!dryRun)
+                        catch (Exception ex)
                         {
-                            _stateService.MarkAsApplied($"{app.Manager}:{app.Id}");
+                            var original = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex);
+                            var failedResult = new StepResult
+                            {
+                                StepId = stepId,
+                                StepType = "app",
+                                StepName = app.Id,
+                                Status = StepStatus.Failed,
+                                ErrorMessage = ex.Message,
+                                AppliedAt = DateTime.UtcNow
+                            };
+
+                            try { _stateWriter.RecordStep(failedResult); } catch { }
+                            applyState[stepId] = failedResult;
+
+                            _logger.LogError($"[Error] Failed applying {stepId}: {ex.Message}");
+                            if (!continueOnError) original.Throw();
                         }
-                        _env.RefreshPath();
                     }
                     else
                     {
@@ -220,7 +326,10 @@ namespace WinHome
             if (config.EnvVars.Any())
             {
                 _logger.LogInfo("\n--- Configuring Environment Variables ---");
-                await Task.Run(() => Parallel.ForEach(config.EnvVars, env => _env.Apply(env, dryRun)));
+                foreach (var env in config.EnvVars)
+                {
+                    _env.Apply(env, dryRun);
+                }
             }
 
             // Plugin Extensions
@@ -228,6 +337,7 @@ namespace WinHome
             if (config.Vim != null) allExtensions["vim"] = config.Vim;
             if (config.Vscode != null) allExtensions["vscode"] = config.Vscode;
             if (config.Obsidian != null) allExtensions["obsidian"] = config.Obsidian;
+            if (config.Ohmyposh != null) allExtensions["ohmyposh"] = config.Ohmyposh;
 
             if (allExtensions.Any())
             {
@@ -274,12 +384,64 @@ namespace WinHome
             {
                 _logger.LogInfo("\n--- Applying Registry Tweaks ---");
                 // Run sequentially to ensure state is saved accurately after each operation
+                var applyState = _stateWriter.Load();
                 foreach (var tweak in allTweaks)
                 {
-                    _registry.Apply(tweak, dryRun);
-                    if (!dryRun)
+                    var stepId = $"reg:{tweak.Path}|{tweak.Name}";
+
+                    if (!forceReapply && !dryRun && applyState.TryGetValue(stepId, out var previous) && previous.Status == StepStatus.Succeeded)
                     {
-                        _stateService.MarkAsApplied($"reg:{tweak.Path}|{tweak.Name}");
+                        _logger.LogInfo($"[Engine] Skipping previously applied registry tweak {tweak.Path}|{tweak.Name}.");
+                        var skippedResult = new StepResult
+                        {
+                            StepId = stepId,
+                            StepType = "registry",
+                            StepName = tweak.Name,
+                            Status = StepStatus.Skipped,
+                            AppliedAt = previous.AppliedAt
+                        };
+                        applyState[stepId] = skippedResult;
+                        continue;
+                    }
+
+                    try
+                    {
+                        _registry.Apply(tweak, dryRun);
+
+                        if (!dryRun)
+                        {
+                            var successResult = new StepResult
+                            {
+                                StepId = stepId,
+                                StepType = "registry",
+                                StepName = tweak.Name,
+                                Status = StepStatus.Succeeded,
+                                AppliedAt = DateTime.UtcNow
+                            };
+                            _stateWriter.RecordStep(successResult);
+                            applyState[stepId] = successResult;
+
+                            _stateService.MarkAsApplied(stepId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var original = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex);
+                        var failedResult = new StepResult
+                        {
+                            StepId = stepId,
+                            StepType = "registry",
+                            StepName = tweak.Name,
+                            Status = StepStatus.Failed,
+                            ErrorMessage = ex.Message,
+                            AppliedAt = DateTime.UtcNow
+                        };
+
+                        try { _stateWriter.RecordStep(failedResult); } catch { }
+                        applyState[stepId] = failedResult;
+
+                        _logger.LogError($"[Error] Registry tweak failed: {ex.Message}");
+                        if (!continueOnError) original.Throw();
                     }
                 }
             }
@@ -287,6 +449,21 @@ namespace WinHome
             if (config.SystemSettings.Any() && OperatingSystem.IsWindows())
             {
                 _logger.LogInfo("\n--- Applying System Settings ---");
+
+                // Capture original values before applying new settings
+                if (!dryRun)
+                {
+                    var originals = await _systemSettings.CaptureOriginalSettingsAsync(config.SystemSettings);
+                    foreach (var kvp in originals)
+                    {
+                        if (!currentState.SystemSettingOriginals.ContainsKey(kvp.Key))
+                        {
+                            currentState.SystemSettingOriginals[kvp.Key] = kvp.Value;
+                            _stateService.TrackSystemSettingOriginal(kvp.Key, kvp.Value);
+                        }
+                    }
+                }
+
                 await _systemSettings.ApplyNonRegistrySettingsAsync(config.SystemSettings, dryRun);
             }
 
@@ -326,11 +503,16 @@ namespace WinHome
             var previousState = _stateService.LoadState();
             var currentState = await BuildStateFromConfig(config);
 
-            var itemsToRemove = previousState.Except(currentState).ToList();
-            var itemsToAdd = currentState.Except(previousState).ToList();
-            var unchangedItems = previousState.Intersect(currentState).ToList();
+            var itemsToRemove = previousState.AppliedItems.Except(currentState.AppliedItems).ToList();
+            var itemsToAdd = currentState.AppliedItems.Except(previousState.AppliedItems).ToList();
+            var unchangedItems = previousState.AppliedItems.Intersect(currentState.AppliedItems).ToList();
 
-            if (!itemsToRemove.Any() && !itemsToAdd.Any())
+            // System settings reverts
+            var systemSettingsReverts = previousState.SystemSettingOriginals.Keys
+                .Where(k => !config.SystemSettings.ContainsKey(k))
+                .ToList();
+
+            if (!itemsToRemove.Any() && !itemsToAdd.Any() && !systemSettingsReverts.Any())
             {
                 _logger.LogSuccess("No changes detected. System is up to date.");
                 return;
@@ -342,6 +524,16 @@ namespace WinHome
                 foreach (var item in itemsToRemove)
                 {
                     _logger.LogError($"  - {FormatFriendlyName(item)}");
+                }
+            }
+
+            if (systemSettingsReverts.Any())
+            {
+                _logger.LogError("\n[-] System Settings to Revert:");
+                foreach (var setting in systemSettingsReverts)
+                {
+                    var originalValue = previousState.SystemSettingOriginals[setting];
+                    _logger.LogError($"  - {setting} → {originalValue}");
                 }
             }
 
@@ -392,14 +584,44 @@ namespace WinHome
             return item;
         }
 
-        private async Task<HashSet<string>> BuildStateFromConfig(Configuration config)
+        private static void ApplyProfileEnvironmentOverrides(Configuration config, ProfileConfig profile)
         {
-            var state = new HashSet<string>();
+            if (!profile.EnvVars.Any())
+            {
+                return;
+            }
+
+            foreach (var profileEnv in profile.EnvVars.Where(env => !string.IsNullOrWhiteSpace(env.Variable)))
+            {
+                if (string.Equals(profileEnv.Action, "set", StringComparison.OrdinalIgnoreCase))
+                {
+                    config.EnvVars = config.EnvVars
+                        .Where(env => !string.Equals(env.Variable, profileEnv.Variable, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    config.EnvVars.Add(profileEnv);
+                    continue;
+                }
+
+                var alreadyConfigured = config.EnvVars.Any(env =>
+                    string.Equals(env.Variable, profileEnv.Variable, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(env.Action, profileEnv.Action, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(env.Value, profileEnv.Value, StringComparison.OrdinalIgnoreCase));
+
+                if (!alreadyConfigured)
+                {
+                    config.EnvVars.Add(profileEnv);
+                }
+            }
+        }
+
+        private async Task<StateData> BuildStateFromConfig(Configuration config)
+        {
+            var state = new StateData();
 
             // App managers
             foreach (var app in config.Apps)
             {
-                state.Add($"{app.Manager}:{app.Id}");
+                state.AppliedItems.Add($"{app.Manager}:{app.Id}");
             }
 
             // Registry tweaks
@@ -407,7 +629,7 @@ namespace WinHome
             var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
             foreach (var reg in allTweaks)
             {
-                state.Add($"reg:{reg.Path}|{reg.Name}");
+                state.AppliedItems.Add($"reg:{reg.Path}|{reg.Name}");
             }
 
             return state;
