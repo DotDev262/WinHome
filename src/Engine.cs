@@ -319,7 +319,7 @@ namespace WinHome
                                 AppliedAt = DateTime.UtcNow
                             };
 
-                            try { _stateWriter.RecordStep(failedResult); } catch { }
+                            TryRecordStep(failedResult);
                             applyState[stepId] = failedResult;
 
                             _logger.LogError($"[Error] Failed applying {stepId}: {ex.Message}");
@@ -427,22 +427,7 @@ namespace WinHome
                         var applied = _registry.Apply(tweak, dryRun);
                         if (!applied)
                         {
-                            var message = $"Failed to apply registry tweak {tweak.Path}|{tweak.Name}.";
-                            var failedResult = new StepResult
-                            {
-                                StepId = stepId,
-                                StepType = "registry",
-                                StepName = tweak.Name,
-                                Status = StepStatus.Failed,
-                                ErrorMessage = message,
-                                AppliedAt = DateTime.UtcNow
-                            };
-
-                            try { _stateWriter.RecordStep(failedResult); } catch { }
-                            applyState[stepId] = failedResult;
-
-                            _logger.LogError($"[Error] Registry tweak failed: {message}");
-                            continue;
+                            throw new Exception($"Failed to apply registry tweak {tweak.Path}|{tweak.Name}.");
                         }
 
                         if (!dryRun)
@@ -475,7 +460,7 @@ namespace WinHome
                             AppliedAt = DateTime.UtcNow
                         };
 
-                        try { _stateWriter.RecordStep(failedResult); } catch { }
+                        TryRecordStep(failedResult);
                         applyState[stepId] = failedResult;
 
                         _logger.LogError($"[Error] Registry tweak failed: {ex.Message}");
@@ -596,6 +581,18 @@ namespace WinHome
                 {
                     _logger.LogInfo($"  = {FormatFriendlyName(item)}");
                 }
+            }
+        }
+
+        private void TryRecordStep(StepResult result)
+        {
+            try
+            {
+                _stateWriter.RecordStep(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[State] Failed to record step '{result.StepId}': {ex.Message}");
             }
         }
 
