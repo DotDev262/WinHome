@@ -74,16 +74,47 @@ namespace WinHome.Services
         var serialized = JsonSerializer.Serialize(_cache, _opts);
         File.WriteAllText(tmp, serialized);
 
-        try
-        {
-          File.Replace(tmp, _path, null);
+                try
+                {
+                    File.Replace(tmp, _path, null);
+                }
+                catch (FileNotFoundException)
+                {
+                    File.Move(tmp, _path);
+                }
+            }
         }
-        catch (FileNotFoundException)
+
+        // Remove a step entry from the persisted state (used when cleanup uninstalls/reverts resources)
+        public void RemoveStep(string stepId)
         {
-          File.Move(tmp, _path);
+            lock (_lock)
+            {
+                if (_cache == null) Load();
+                if (_cache == null) return;
+
+                if (!_cache.Remove(stepId)) return;
+
+                var dir = Path.GetDirectoryName(_path);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                var tmp = _path + ".tmp";
+                var serialized = JsonSerializer.Serialize(_cache, _opts);
+                File.WriteAllText(tmp, serialized);
+
+                try
+                {
+                    File.Replace(tmp, _path, null);
+                }
+                catch (FileNotFoundException)
+                {
+                    File.Move(tmp, _path);
+                }
+            }
         }
-      }
     }
-  }
 }
 

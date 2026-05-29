@@ -169,11 +169,16 @@ namespace WinHome
           }
         }));
 
-        foreach (var item in removedItems)
-        {
-          _stateService.RemoveApplied(item);
-        }
-      }
+                foreach (var item in removedItems)
+                {
+                    _stateService.RemoveApplied(item);
+                    try
+                    {
+                        _stateWriter.RemoveStep(item);
+                    }
+                    catch { }
+                }
+            }
 
       // Revert system settings that are no longer in config
       if (OperatingSystem.IsWindows() && previousState.SystemSettingOriginals.Any())
