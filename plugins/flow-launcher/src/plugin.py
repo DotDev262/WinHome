@@ -2,6 +2,7 @@ import sys
 import json
 import os
 import shutil
+import uuid
 
 def log(msg):
     sys.stderr.write(f"[flow-launcher-plugin] {msg}\n")
@@ -24,7 +25,7 @@ def read_json(file_path):
     except Exception as e:
         log(f"Warning: could not parse {file_path}: {e}")
         try:
-            backup_path = file_path + ".bak"
+            backup_path = f"{file_path}.{uuid.uuid4().hex}.bak"
             shutil.copy2(file_path, backup_path)
             log(f"Backed up corrupted config to {backup_path}")
         except Exception as backup_error:
