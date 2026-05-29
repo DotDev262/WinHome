@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 import tempfile
+import uuid
 
 
 CONFIG_DIR = ".spicetify"
@@ -13,6 +14,18 @@ CONFIG_FILE = "config.ini"
 def log(msg):
     sys.stderr.write(f"[spicetify-plugin] {msg}\n")
     sys.stderr.flush()
+
+def backup_corrupt_config(file_path: str):
+    if not os.path.exists(file_path):
+        return
+
+    backup_path = f"{file_path}.corrupt.{uuid.uuid4()}"
+
+    try:
+        shutil.copy2(file_path, backup_path)
+        log(f"Backed up corrupt config to {backup_path}")
+    except Exception as e:
+        log(f"Failed to backup corrupt config: {e}")
 
 
 def get_config_path():
@@ -26,8 +39,15 @@ def read_ini(file_path: str) -> configparser.ConfigParser:
     if not os.path.exists(file_path):
         return config
 
-    config.read(file_path, encoding="utf-8")
-    return config
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            config.read_file(f)
+
+        return config
+
+    except Exception:
+        backup_corrupt_config(file_path)
+        return configparser.ConfigParser()
 
 
 def normalize_value(value):
