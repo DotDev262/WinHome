@@ -427,7 +427,22 @@ namespace WinHome
                         var applied = _registry.Apply(tweak, dryRun);
                         if (!applied)
                         {
-                            throw new Exception($"Failed to apply registry tweak {tweak.Path}|{tweak.Name}.");
+                            var message = $"Failed to apply registry tweak {tweak.Path}|{tweak.Name}.";
+                            var failedResult = new StepResult
+                            {
+                                StepId = stepId,
+                                StepType = "registry",
+                                StepName = tweak.Name,
+                                Status = StepStatus.Failed,
+                                ErrorMessage = message,
+                                AppliedAt = DateTime.UtcNow
+                            };
+
+                            try { _stateWriter.RecordStep(failedResult); } catch { }
+                            applyState[stepId] = failedResult;
+
+                            _logger.LogError($"[Error] Registry tweak failed: {message}");
+                            continue;
                         }
 
                         if (!dryRun)

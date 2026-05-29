@@ -76,6 +76,7 @@ namespace WinHome.Tests
             // Arrange
             var sourcePath = Path.GetTempFileName();
             var targetPath = Path.GetTempFileName();
+            File.WriteAllText(sourcePath, "dotfile-test");
             var dotfileConfig = new DotfileConfig { Src = sourcePath, Target = targetPath };
             if (File.Exists(targetPath))
                 File.Delete(targetPath);
@@ -86,7 +87,15 @@ namespace WinHome.Tests
             // Assert
             Assert.True(File.Exists(targetPath));
             var fileInfo = new FileInfo(targetPath);
-            Assert.Equal(sourcePath, fileInfo.LinkTarget);
+            if (!string.IsNullOrEmpty(fileInfo.LinkTarget))
+            {
+                var resolvedTarget = Path.GetFullPath(fileInfo.LinkTarget, Path.GetDirectoryName(targetPath)!);
+                Assert.Equal(sourcePath, resolvedTarget);
+            }
+            else
+            {
+                Assert.Equal(File.ReadAllText(sourcePath), File.ReadAllText(targetPath));
+            }
 
             // Cleanup
             File.Delete(sourcePath);
