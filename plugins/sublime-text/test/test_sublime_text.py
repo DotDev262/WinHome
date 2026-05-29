@@ -17,13 +17,17 @@ PLUGIN = os.path.abspath(
 
 
 def run_plugin(payload: dict, env: Optional[dict] = None) -> Tuple[dict, str]:
+    return run_plugin_raw(json.dumps(payload), env)
+
+
+def run_plugin_raw(input_data: str, env: Optional[dict] = None) -> Tuple[dict, str]:
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
 
     result = subprocess.run(
         [sys.executable, PLUGIN],
-        input=json.dumps(payload),
+        input=input_data,
         capture_output=True,
         text=True,
         env=merged_env,
@@ -55,7 +59,7 @@ def test_check_installed_reports_boolean():
 
     assert res["success"]
     assert res["changed"] is False
-    assert isinstance(res["data"]["installed"], bool)
+    assert isinstance(res["data"], bool)
 
 
 def test_apply_merges_existing_preferences():
@@ -79,10 +83,12 @@ def test_apply_merges_existing_preferences():
                 "requestId": "2",
                 "command": "apply",
                 "args": {
-                    "theme": "Adaptive.sublime-theme",
-                    "font_size": 12,
-                    "nested": {"replace": "new", "added": True},
-                    "ignored_packages": ["Vintage"],
+                    "settings": {
+                        "theme": "Adaptive.sublime-theme",
+                        "font_size": 12,
+                        "nested": {"replace": "new", "added": True},
+                        "ignored_packages": ["Vintage"],
+                    },
                 },
                 "context": {"dryRun": False},
             },
@@ -106,27 +112,29 @@ def test_apply_merges_existing_preferences():
         assert config["ignored_packages"] == ["Vintage"]
 
 
-def test_apply_supports_issue_input_format():
+def test_apply_supports_sublime_settings():
     with tempfile.TemporaryDirectory() as tmp:
         res, _stderr = run_plugin(
             {
                 "requestId": "3",
                 "command": "apply",
                 "args": {
-                    "color_scheme": (
-                        "Packages/Theme - Monokai Pro/"
-                        "Monokai Pro.sublime-color-scheme"
-                    ),
-                    "theme": "Adaptive.sublime-theme",
-                    "font_size": 12,
-                    "font_face": "JetBrains Mono",
-                    "tab_size": 4,
-                    "translate_tabs_to_spaces": True,
-                    "word_wrap": True,
-                    "highlight_line": True,
-                    "save_on_focus_lost": True,
-                    "ignored_packages": ["Vintage"],
-                    "rulers": [80, 120],
+                    "settings": {
+                        "color_scheme": (
+                            "Packages/Theme - Monokai Pro/"
+                            "Monokai Pro.sublime-color-scheme"
+                        ),
+                        "theme": "Adaptive.sublime-theme",
+                        "font_size": 12,
+                        "font_face": "JetBrains Mono",
+                        "tab_size": 4,
+                        "translate_tabs_to_spaces": True,
+                        "word_wrap": True,
+                        "highlight_line": True,
+                        "save_on_focus_lost": True,
+                        "ignored_packages": ["Vintage"],
+                        "rulers": [80, 120],
+                    },
                 },
                 "context": {},
             },
@@ -150,7 +158,9 @@ def test_dry_run_logs_and_does_not_write():
             {
                 "requestId": "4",
                 "command": "apply",
-                "args": {"theme": "Adaptive.sublime-theme"},
+                "args": {
+                    "settings": {"theme": "Adaptive.sublime-theme"},
+                },
                 "context": {"dryRun": True},
             },
             {"APPDATA": tmp},
@@ -171,7 +181,9 @@ def test_apply_creates_missing_directories():
             {
                 "requestId": "5",
                 "command": "apply",
-                "args": {"word_wrap": True},
+                "args": {
+                    "settings": {"word_wrap": True},
+                },
                 "context": {},
             },
             {"APPDATA": tmp},
@@ -187,7 +199,9 @@ def test_idempotent_apply_reports_unchanged():
         payload = {
             "requestId": "6",
             "command": "apply",
-            "args": {"theme": "Adaptive.sublime-theme"},
+            "args": {
+                "settings": {"theme": "Adaptive.sublime-theme"},
+            },
             "context": {},
         }
 
@@ -215,13 +229,100 @@ def test_unknown_command_returns_error():
     assert "Unknown command" in res["error"]
 
 
+def test_empty_stdin_returns_error_response():
+    res, _stderr = run_plugin_raw("")
+
+    assert res["requestId"] == "unknown"
+    assert res["success"] is False
+    assert res["changed"] is False
+    assert res["error"] == "Empty stdin"
+
+
+def test_apply_without_settings_does_not_merge_metadata():
+    with tempfile.TemporaryDirectory() as tmp:
+        res, _stderr = run_plugin(
+            {
+                "requestId": "8",
+                "command": "apply",
+                "args": {"theme": "Adaptive.sublime-theme"},
+                "context": {},
+            },
+            {"APPDATA": tmp},
+        )
+
+        assert res["success"]
+        assert res["changed"] is False
+        assert not os.path.exists(preferences_path(tmp))
+
+
+def test_top_level_dry_run_is_ignored():
+    with tempfile.TemporaryDirectory() as tmp:
+        res, _stderr = run_plugin(
+            {
+                "requestId": "9",
+                "command": "apply",
+                "args": {
+                    "settings": {"theme": "Adaptive.sublime-theme"},
+                },
+                "dryRun": True,
+                "context": {},
+            },
+            {"APPDATA": tmp},
+        )
+
+        assert res["success"]
+        assert res["changed"]
+        assert os.path.exists(preferences_path(tmp))
+
+
+def test_corrupt_preferences_are_backed_up():
+    with tempfile.TemporaryDirectory() as tmp:
+        pref_path = preferences_path(tmp)
+        os.makedirs(os.path.dirname(pref_path), exist_ok=True)
+
+        with open(pref_path, "w", encoding="utf-8") as f:
+            f.write("{not-json")
+
+        res, _stderr = run_plugin(
+            {
+                "requestId": "10",
+                "command": "apply",
+                "args": {
+                    "settings": {"theme": "Adaptive.sublime-theme"},
+                },
+                "context": {},
+            },
+            {"APPDATA": tmp},
+        )
+
+        backup_files = [
+            name
+            for name in os.listdir(os.path.dirname(pref_path))
+            if name.startswith("Preferences.sublime-settings.")
+            and name.endswith(".bak")
+        ]
+
+        assert res["success"]
+        assert res["changed"]
+        assert len(backup_files) == 1
+
+        with open(pref_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        assert config["theme"] == "Adaptive.sublime-theme"
+
+
 if __name__ == "__main__":
     test_check_installed_reports_boolean()
     test_apply_merges_existing_preferences()
-    test_apply_supports_issue_input_format()
+    test_apply_supports_sublime_settings()
     test_dry_run_logs_and_does_not_write()
     test_apply_creates_missing_directories()
     test_idempotent_apply_reports_unchanged()
     test_unknown_command_returns_error()
+    test_empty_stdin_returns_error_response()
+    test_apply_without_settings_does_not_merge_metadata()
+    test_top_level_dry_run_is_ignored()
+    test_corrupt_preferences_are_backed_up()
 
     print("\nAll tests passed.")

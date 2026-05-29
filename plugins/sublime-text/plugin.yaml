@@ -1,5 +1,6 @@
 name: sublime-text
 version: 1.0.0
+author: gitsofyash
 type: python
 main: src/plugin.py
 capabilities:

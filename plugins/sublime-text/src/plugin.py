@@ -2,6 +2,8 @@ import json
 import os
 import shutil
 import sys
+import tempfile
+import uuid
 
 
 PREFERENCES_FILE = "Preferences.sublime-settings"
@@ -37,14 +39,30 @@ def read_json(file_path: str) -> dict:
             data = json.load(f)
             return data if isinstance(data, dict) else {}
     except json.JSONDecodeError as e:
-        raise Exception(f"Could not parse {file_path}: {e}") from e
+        backup_path = f"{file_path}.{uuid.uuid4()}.bak"
+        shutil.copy2(file_path, backup_path)
+        log(f"Backed up corrupt preferences file to {backup_path}: {e}")
+        return {}
 
 
 def write_json(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
+    temp_path = None
+
+    try:
+        fd, temp_path = tempfile.mkstemp(
+            prefix="sublime-text-",
+            dir=os.path.dirname(file_path),
+        )
+
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+            f.write("\n")
+
+        os.replace(temp_path, file_path)
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 def deep_merge(target: dict, source: dict) -> bool:
@@ -95,15 +113,15 @@ def check_installed(_args: dict, request_id: str) -> dict:
         "success": True,
         "changed": False,
         "error": None,
-        "data": {"installed": installed},
+        "data": installed,
     }
 
 
-def apply_config(args: dict, context: dict, request_id: str, dry_run: bool) -> dict:
+def apply_config(args: dict, request_id: str, dry_run: bool) -> dict:
     try:
         config_path = get_preferences_path()
         current_config = read_json(config_path)
-        desired_config = args.get("settings", args)
+        desired_config = args.get("settings", {})
 
         if not isinstance(desired_config, dict):
             return {
@@ -160,15 +178,15 @@ def apply_config(args: dict, context: dict, request_id: str, dry_run: bool) -> d
 def build_response(request: dict) -> dict:
     request_id = request.get("requestId", "unknown")
     command = request.get("command")
-    args = request.get("args", request.get("config", {}))
+    args = request.get("args", {})
     context = request.get("context", {})
-    dry_run = bool(context.get("dryRun", request.get("dryRun", False)))
+    dry_run = bool(context.get("dryRun", False))
 
     if command == "check_installed":
         return check_installed(args, request_id)
 
     if command == "apply":
-        return apply_config(args, context, request_id, dry_run)
+        return apply_config(args, request_id, dry_run)
 
     return {
         "requestId": request_id,
@@ -181,6 +199,14 @@ def build_response(request: dict) -> dict:
 def main():
     input_data = sys.stdin.read()
     if not input_data:
+        response = {
+            "requestId": "unknown",
+            "success": False,
+            "changed": False,
+            "error": "Empty stdin",
+        }
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
         return
 
     try:
