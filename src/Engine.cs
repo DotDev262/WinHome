@@ -180,7 +180,256 @@ namespace WinHome
                 }
             }
 
-      // Revert system settings that are no longer in config
+            // Revert system settings that are no longer in config
+            if (OperatingSystem.IsWindows() && previousState.SystemSettingOriginals.Any())
+            {
+                var removedSystemSettings = previousState.SystemSettingOriginals.Keys
+                    .Where(k => !config.SystemSettings.ContainsKey(k))
+                    .ToList();
+
+                if (removedSystemSettings.Any())
+                {
+                    _logger.LogInfo("\n--- Reverting Removed System Settings ---");
+                    foreach (var settingKey in removedSystemSettings)
+                    {
+                        var originalValue = previousState.SystemSettingOriginals[settingKey];
+                        await _systemSettings.RevertSystemSettingAsync(settingKey, originalValue, dryRun);
+                        if (!dryRun)
+                        {
+                            _stateService.RemoveSystemSettingOriginal(settingKey);
+                            currentState.SystemSettingOriginals.Remove(settingKey);
+                        }
+                    }
+                }
+            }
+
+            // 1. Ensure System Managers (Scoop) are ready if needed by plugins
+            if (plugins.Any(p => p.Type.ToLower() == "python" || p.Type.ToLower() == "javascript" || p.Type.ToLower() == "typescript"))
+            {
+                if (_managers.TryGetValue("scoop", out var scoopMgr))
+                {
+                    if (!scoopMgr.IsAvailable())
+                    {
+                        _logger.LogInfo("\n--- Bootstrapping System Managers ---");
+                        _logger.LogInfo("[Engine] Bootstrapping Scoop for plugin runtimes...");
+                        scoopMgr.Bootstrapper.Install(dryRun);
+                    }
+                }
+            }
+
+            // 2. Reconcile Plugin Runtimes
+            var pluginsNeedingRuntime = plugins.Where(p => !p.Type.Equals("executable", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (pluginsNeedingRuntime.Any())
+            {
+                // Only reconcile runtimes for plugins that are actually used in the config
+                var usedPluginNames = config.Apps.Select(a => a.Manager)
+                    .Concat(new[] { "vim", "vscode", "obsidian", "ohmyposh" }.Where(_ => config.Vim != null || config.Vscode != null || config.Obsidian != null || config.Ohmyposh != null))
+                    .Concat(config.Extensions.Keys)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var usedPluginsNeedingRuntime = pluginsNeedingRuntime.Where(p => usedPluginNames.Contains(p.Name)).ToList();
+
+                if (usedPluginsNeedingRuntime.Any())
+                {
+                    _logger.LogInfo("\n--- Reconciling Plugin Runtimes ---");
+                    foreach (var plugin in usedPluginsNeedingRuntime)
+                    {
+                        await _pluginManager.EnsureRuntimeAsync(plugin);
+                    }
+                    _env.RefreshPath();
+                }
+            }
+
+            // Install Apps
+            if (config.Apps.Any())
+            {
+                _logger.LogInfo("\n--- Reconciling Apps ---");
+                var applyState = _stateWriter.Load();
+
+                foreach (var app in config.Apps)
+                {
+                    var stepId = $"{app.Manager}:{app.Id}";
+                    _logger.LogInfo($"[Engine] Processing {stepId}...");
+
+                    if (!forceReapply && !dryRun && applyState.TryGetValue(stepId, out var previous) && previous.Status == StepStatus.Succeeded)
+                    {
+                        _logger.LogInfo($"[Engine] Skipping previously applied {stepId}.");
+                        // Record skipped if not present or different
+                        var skippedResult = new StepResult
+                        {
+                            StepId = stepId,
+                            StepType = "app",
+                            StepName = app.Id,
+                            Status = StepStatus.Skipped,
+                            AppliedAt = previous.AppliedAt
+                        };
+                        applyState[stepId] = skippedResult;
+                        continue;
+                    }
+
+                    if (_managers.TryGetValue(app.Manager, out var mgr))
+                    {
+                        try
+                        {
+                            if (mgr is WinHome.Services.Plugins.PluginPackageManagerAdapter adapter)
+                            {
+                                if (loggedPlugins.Add(app.Manager))
+                                {
+                                    _logger.LogInfo($"[Plugin] Discovered: {app.Manager} ({adapter.PluginType})");
+                                }
+                            }
+
+                            if (!mgr.IsAvailable())
+                            {
+                                _logger.LogInfo($"[Engine] Manager '{app.Manager}' not available. Bootstrapping...");
+                                mgr.Bootstrapper.Install(dryRun);
+                                if (!mgr.IsAvailable())
+                                {
+                                    _logger.LogError($"[Error] Manager '{app.Manager}' not found after attempting to install it.");
+                                    continue;
+                                }
+                            }
+
+                            mgr.Install(app, dryRun);
+
+                            if (!dryRun)
+                            {
+                                var successResult = new StepResult
+                                {
+                                    StepId = stepId,
+                                    StepType = "app",
+                                    StepName = app.Id,
+                                    Status = StepStatus.Succeeded,
+                                    AppliedAt = DateTime.UtcNow
+                                };
+                                _stateWriter.RecordStep(successResult);
+                                applyState[stepId] = successResult;
+
+                                confirmedApplied.Add(stepId);
+                                hadSuccessfulApply = true;
+                            }
+
+                            _env.RefreshPath();
+                        }
+                        catch (Exception ex)
+                        {
+                            var original = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex);
+                            var failedResult = new StepResult
+                            {
+                                StepId = stepId,
+                                StepType = "app",
+                                StepName = app.Id,
+                                Status = StepStatus.Failed,
+                                ErrorMessage = ex.Message,
+                                AppliedAt = DateTime.UtcNow
+                            };
+
+                            try { _stateWriter.RecordStep(failedResult); } catch { }
+                            applyState[stepId] = failedResult;
+
+                            _logger.LogError($"[Error] Failed applying {stepId}: {ex.Message}");
+                            if (!continueOnError) original.Throw();
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogError($"[Error] Unknown manager: {app.Manager}");
+                    }
+                }
+            }
+
+            if (config.Git != null) _git.Configure(config.Git, dryRun);
+
+            if (config.Wsl != null)
+            {
+                _logger.LogInfo("\n--- Configuring WSL ---");
+                _wsl.Configure(config.Wsl, dryRun);
+            }
+
+            if (config.EnvVars.Any())
+            {
+                _logger.LogInfo("\n--- Configuring Environment Variables ---");
+                foreach (var env in config.EnvVars)
+                {
+                    _env.Apply(env, dryRun);
+                }
+            }
+
+            // Plugin Extensions
+            var allExtensions = new Dictionary<string, object>(config.Extensions);
+            if (config.Vim != null) allExtensions["vim"] = config.Vim;
+            if (config.Vscode != null) allExtensions["vscode"] = config.Vscode;
+            if (config.Obsidian != null) allExtensions["obsidian"] = config.Obsidian;
+            if (config.Ohmyposh != null) allExtensions["ohmyposh"] = config.Ohmyposh;
+
+            if (allExtensions.Any())
+            {
+                _logger.LogInfo("\n--- Running Plugin Extensions ---");
+                foreach (var ext in allExtensions)
+                {
+                    var pluginName = ext.Key;
+                    var pluginConfig = ext.Value;
+
+                    // Find plugin by name
+                    var plugin = plugins.FirstOrDefault(p => p.Name.Equals(pluginName, StringComparison.OrdinalIgnoreCase));
+
+                    if (plugin != null)
+                    {
+                        if (loggedPlugins.Add(plugin.Name))
+                        {
+                            _logger.LogInfo($"[Plugin] Discovered: {plugin.Name} ({plugin.Type})");
+                        }
+
+                        await _pluginManager.EnsureRuntimeAsync(plugin);
+                        _logger.LogInfo($"[Plugin] Applying configuration for '{pluginName}'...");
+                        var result = await _pluginRunner.ExecuteAsync(plugin, "apply", pluginConfig, new { dryRun = dryRun });
+
+                        if (!result.Success)
+                        {
+                            _logger.LogError($"[Error] Plugin '{pluginName}' failed: {result.Error}");
+                        }
+                        else if (result.Changed)
+                        {
+                            _logger.LogSuccess($"[Plugin] '{pluginName}' applied successfully.");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"[Warning] Configuration found for '{pluginName}' but no matching plugin is installed.");
+                    }
+                }
+            }
+
+            var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
+            var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
+
+            if (allTweaks.Any() && OperatingSystem.IsWindows())
+            {
+                _logger.LogInfo("\n--- Applying Registry Tweaks ---");
+                // Run sequentially to ensure state is saved accurately after each operation
+                var applyState = _stateWriter.Load();
+                foreach (var tweak in allTweaks)
+                {
+                    var stepId = $"reg:{tweak.Path}|{tweak.Name}";
+
+                    if (!forceReapply && !dryRun && applyState.TryGetValue(stepId, out var previous) && previous.Status == StepStatus.Succeeded)
+                    {
+                        _logger.LogInfo($"[Engine] Skipping previously applied registry tweak {tweak.Path}|{tweak.Name}.");
+                        var skippedResult = new StepResult
+                        {
+                            StepId = stepId,
+                            StepType = "registry",
+                            StepName = tweak.Name,
+                            Status = StepStatus.Skipped,
+                            AppliedAt = previous.AppliedAt
+                        };
+                        applyState[stepId] = skippedResult;
+                        continue;
+                    }
+                }
+            }
+
+            // Revert system settings that are no longer in config
       if (OperatingSystem.IsWindows() && previousState.SystemSettingOriginals.Any())
       {
         var removedSystemSettings = previousState.SystemSettingOriginals.Keys
