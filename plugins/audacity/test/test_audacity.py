@@ -1,9 +1,9 @@
-import subprocess
+import configparser
 import json
 import os
-import tempfile
+import subprocess
 import sys
-import configparser
+import tempfile
 
 PLUGIN = os.path.abspath(
     os.path.join(
