@@ -7,7 +7,6 @@ import tempfile
 from dataclasses import dataclass
 from typing import Optional
 
-
 SETTING_FILE = "settings.txt"
 LINE_RE = re.compile(r"^(?P<leading>\s*)(?P<key>[^=\s#;]+)(?P<sep>\s*=\s*)(?P<value>.*)$")
 
@@ -26,7 +25,7 @@ def get_appdata_dir() -> str:
     if userprofile:
         return os.path.join(userprofile, "AppData", "Roaming")
 
-    raise RuntimeError("APPDATA environment variable not set")
+    raise RuntimeError("Neither APPDATA nor USERPROFILE environment variable is set")
 
 
 def get_settings_path() -> str:
@@ -125,10 +124,7 @@ def render_lines(lines: list[SettingLine]) -> str:
             continue
 
         value = "" if line.value is None else line.value
-        rendered.append(
-            f"{line.leading}{line.key}{line.separator}{value}{line.suffix}"
-            + ("\n" if line.raw.endswith("\n") or not line.raw else "")
-        )
+        rendered.append(f"{line.leading}{line.key}{line.separator}{value}{line.suffix}\n")
 
     text = "".join(rendered)
 
@@ -161,7 +157,7 @@ def merge_settings(lines: list[SettingLine], settings: dict) -> bool:
                     value=normalized_value,
                     leading="",
                     separator="=",
-                        suffix="",
+                    suffix="",
                 )
             )
             changed = True

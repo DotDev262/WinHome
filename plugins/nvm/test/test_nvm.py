@@ -4,7 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 PLUGIN = Path(__file__).resolve().parents[1] / "src" / "plugin.py"
 
 
@@ -223,3 +222,26 @@ def test_apply_idempotent_when_no_diff(tmp_path):
     assert second["success"] is True
     assert second["changed"] is False
     assert settings_path.read_text(encoding="utf-8") == "root=C:\\nvm\npath=C:\\node\n"
+
+
+def test_apply_no_trailing_newline_in_existing_file(tmp_path):
+    env = make_env(tmp_path)
+    settings_path = tmp_path / "AppData" / "Roaming" / "nvm" / "settings.txt"
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    settings_path.write_text("root=C:\\nvm", encoding="utf-8")
+
+    response = run_plugin(
+        {
+            "requestId": "req-8",
+            "command": "apply",
+            "args": {"settings": {"arch": "64"}},
+            "context": {"dryRun": False},
+        },
+        env=env,
+    )
+
+    content = settings_path.read_text(encoding="utf-8")
+    assert response["success"] is True
+    assert response["changed"] is True
+    assert "root=C:\\nvm\n" in content
+    assert "arch=64\n" in content
