@@ -94,11 +94,16 @@ class TestIrfanViewPlugin(unittest.TestCase):
             # Test check_installed
             res = plugin.handle_request({"command": "check_installed", "requestId": "1"})
             self.assertEqual(res["requestId"], "1")
-            self.assertIn("installed", res)
+            self.assertIn("data", res)
 
             # Test apply
             res = plugin.handle_request(
-                {"command": "apply", "requestId": "2", "args": {"settings": {"Others": {"Test": True}}, "dryRun": True}}
+                {
+                    "command": "apply",
+                    "requestId": "2",
+                    "args": {"settings": {"Others": {"Test": True}}},
+                    "context": {"dryRun": True},
+                }
             )
             self.assertEqual(res["requestId"], "2")
             self.assertTrue(res.get("success"))
