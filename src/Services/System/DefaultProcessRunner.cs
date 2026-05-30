@@ -3,6 +3,7 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Default implementation of <see cref="IProcessRunner"/> that spawns real OS processes.</summary>
   public class DefaultProcessRunner : IProcessRunner
   {
     [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]

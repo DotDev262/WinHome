@@ -5,6 +5,7 @@ using WinHome.Models.Plugins;
 
 namespace WinHome.Services.Plugins
 {
+  /// <summary>Adapts a plugin to the <see cref="IPackageManager"/> interface so plugins can install packages.</summary>
   public class PluginPackageManagerAdapter : IPackageManager
   {
     private readonly PluginManifest _plugin;
@@ -12,6 +13,7 @@ namespace WinHome.Services.Plugins
     private readonly IPluginManager _manager;
     private readonly IRuntimeResolver _resolver;
 
+    /// <summary>Initializes a new instance of <see cref="PluginPackageManagerAdapter"/>.</summary>
     public PluginPackageManagerAdapter(PluginManifest plugin, IPluginRunner runner, IPluginManager manager, IRuntimeResolver resolver)
     {
       ArgumentNullException.ThrowIfNull(plugin);
@@ -29,12 +31,13 @@ namespace WinHome.Services.Plugins
 
     public IPackageManagerBootstrapper Bootstrapper => new PluginRuntimeBootstrapper(_plugin, _manager, _resolver);
 
+    /// <summary>Returns <c>true</c> if the plugin's runtime is installed.</summary>
     public bool IsAvailable()
     {
-      // For a plugin, "Available" means the plugin file exists and runtime is ready.
       return Bootstrapper.IsInstalled();
     }
 
+    /// <summary>Returns <c>true</c> if the plugin reports the package as installed.</summary>
     public bool IsInstalled(string appId)
     {
       var result = TryExecute("check_installed", new { packageId = appId }, null);
@@ -43,6 +46,7 @@ namespace WinHome.Services.Plugins
         && isInstalled;
     }
 
+    /// <summary>Installs a package by delegating to the plugin's install command.</summary>
     public void Install(AppConfig app, bool dryRun)
     {
       ArgumentNullException.ThrowIfNull(app);
@@ -63,6 +67,7 @@ namespace WinHome.Services.Plugins
       EnsureSuccess(result, "install", app.Id);
     }
 
+    /// <summary>Uninstalls a package by delegating to the plugin's uninstall command.</summary>
     public void Uninstall(string appId, bool dryRun)
     {
       // Ensure runtime is available before execution

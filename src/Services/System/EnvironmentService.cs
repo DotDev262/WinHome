@@ -8,14 +8,15 @@ namespace WinHome.Services.System
   public class EnvironmentService : IEnvironmentService
   {
     private readonly ILogger _logger;
-    // We strictly target the USER scope. No Admin needed.
     private const EnvironmentVariableTarget Target = EnvironmentVariableTarget.User;
 
+    /// <summary>Initializes a new instance of <see cref="EnvironmentService"/>.</summary>
     public EnvironmentService(ILogger logger)
     {
       _logger = logger;
     }
 
+    /// <summary>Sets, appends, or modifies a user-scoped environment variable.</summary>
     public void Apply(EnvVarConfig env, bool dryRun)
     {
       if (string.IsNullOrEmpty(env.Variable)) return;
@@ -64,6 +65,7 @@ namespace WinHome.Services.System
       }
     }
 
+    /// <summary>Refreshes the current process PATH by merging machine and user PATH from the registry.</summary>
     public void RefreshPath()
     {
       try

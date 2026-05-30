@@ -5,9 +5,9 @@ using WinHome.Services;
 
 namespace WinHome
 {
+  /// <summary>Main orchestrator for WinHome configuration application. Coordinates all services: apps, registry, WSL, Git, env vars, services, scheduled tasks, dotfiles, plugins, and system settings.</summary>
   public class Engine
   {
-    // Dependencies are now Interfaces (Mockable)
     private readonly Dictionary<string, IPackageManager> _managers;
     private readonly IDotfileService _dotfiles;
     private readonly IRegistryService _registry;
@@ -24,6 +24,7 @@ namespace WinHome
     private readonly IRuntimeResolver _runtimeResolver;
     private readonly StateWriter _stateWriter;
 
+    /// <summary>Initializes a new instance of <see cref="Engine"/> with all required service dependencies.</summary>
     public Engine(
         Dictionary<string, IPackageManager> managers,
         IDotfileService dotfiles,
@@ -57,7 +58,7 @@ namespace WinHome
       _stateWriter = new StateWriter();
     }
 
-    // Backwards-compatible overload accepting a StateWriter (injected via DI). If not provided the default is used.
+    /// <summary>Initializes a new instance with an optional <see cref="StateWriter"/> for resumable applies.</summary>
     public Engine(
         Dictionary<string, IPackageManager> managers,
         IDotfileService dotfiles,
@@ -79,6 +80,14 @@ namespace WinHome
       _stateWriter = stateWriter ?? new StateWriter();
     }
 
+    /// <summary>Applies the given configuration: installs apps, applies registry tweaks, configures WSL/Git/env/services/tasks, links dotfiles, runs plugins, and applies system settings.</summary>
+    /// <param name="config">The configuration to apply.</param>
+    /// <param name="dryRun">If <c>true</c>, previews changes without making any.</param>
+    /// <param name="profileName">Optional named profile to activate.</param>
+    /// <param name="debug">If <c>true</c>, shows detailed error information.</param>
+    /// <param name="diff">If <c>true</c>, shows a diff of changes and returns without applying.</param>
+    /// <param name="forceReapply">If <c>true</c>, reapplies steps even if previously succeeded.</param>
+    /// <param name="continueOnError">If <c>true</c>, continues with remaining steps when a step fails.</param>
     public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false, bool forceReapply = false, bool continueOnError = false)
     {
       _logger.LogInfo($"--- WinHome v{config.Version} ---");
@@ -529,6 +538,8 @@ namespace WinHome
       }
     }
 
+    /// <summary>Prints a diff of what will change compared to the previously applied state.</summary>
+    /// <param name="config">The proposed configuration to diff against.</param>
     public async Task PrintDiffAsync(Configuration config)
     {
       _logger.LogInfo("\n--- State Diff ---");
@@ -589,6 +600,7 @@ namespace WinHome
       }
     }
 
+    /// <summary>Formats an internal item identifier into a human-readable name for display.</summary>
     private string FormatFriendlyName(string item)
     {
       if (item.StartsWith("reg:"))
@@ -617,6 +629,7 @@ namespace WinHome
       return item;
     }
 
+    /// <summary>Applies environment variable overrides from the active profile onto the configuration.</summary>
     private static void ApplyProfileEnvironmentOverrides(Configuration config, ProfileConfig profile)
     {
       if (!profile.EnvVars.Any())
@@ -647,6 +660,7 @@ namespace WinHome
       }
     }
 
+    /// <summary>Builds a <see cref="StateData"/> from the given configuration listing all items that would be applied.</summary>
     private async Task<StateData> BuildStateFromConfig(Configuration config)
     {
       var state = new StateData();
@@ -668,6 +682,9 @@ namespace WinHome
       return state;
     }
 
+    /// <summary>Waits for internet connectivity by pinging 1.1.1.1.</summary>
+    /// <param name="timeoutSeconds">Maximum seconds to wait for connectivity.</param>
+    /// <returns><c>true</c> if network is available within the timeout.</returns>
     private bool WaitForNetwork(int timeoutSeconds = 30)
     {
       _logger.LogInfo("[Engine] Checking for internet connectivity...");

@@ -3,6 +3,7 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Parses full registry paths (e.g. "HKCU\Software\Foo") into a root hive and subkey path.</summary>
   public class RegistryWrapper : IRegistryWrapper
   {
     public IRegistryKey GetRootKey(string fullPath, out string subKey)

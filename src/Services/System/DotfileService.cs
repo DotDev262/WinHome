@@ -3,14 +3,17 @@ using WinHome.Models;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Creates symbolic links (or copies as fallback) for dotfile configuration.</summary>
   public class DotfileService : IDotfileService
   {
     private readonly ILogger _logger;
 
+    /// <summary>Initializes a new instance of <see cref="DotfileService"/>.</summary>
     public DotfileService(ILogger logger)
     {
       _logger = logger;
     }
+    /// <summary>Applies a dotfile configuration by creating a symlink (or copy) from source to target.</summary>
     public void Apply(DotfileConfig dotfile, bool dryRun)
     {
       try

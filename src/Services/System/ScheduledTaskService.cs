@@ -16,6 +16,7 @@ namespace WinHome.Services.System
   {
     private readonly ILogger<ScheduledTaskService> _logger;
 
+    /// <summary>Initializes a new instance of <see cref="ScheduledTaskService"/>.</summary>
     public ScheduledTaskService(ILogger<ScheduledTaskService> logger)
     {
       _logger = logger;

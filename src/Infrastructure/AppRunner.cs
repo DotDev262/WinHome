@@ -6,6 +6,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace WinHome.Infrastructure;
 
+/// <summary>Orchestrates configuration loading, validation, secret resolution, and engine execution.</summary>
 public class AppRunner
 {
   private readonly Engine _engine;
@@ -13,6 +14,7 @@ public class AppRunner
   private readonly ISecretResolver _secretResolver;
   private readonly ILogger _logger;
 
+  /// <summary>Initializes a new instance of <see cref="AppRunner"/>.</summary>
   public AppRunner(Engine engine, IConfigValidator validator, ISecretResolver secretResolver, ILogger logger)
   {
     _engine = engine;
@@ -21,6 +23,16 @@ public class AppRunner
     _logger = logger;
   }
 
+  /// <summary>Loads, validates, resolves secrets in, and applies the given configuration file.</summary>
+  /// <param name="configFile">Path to the YAML configuration file.</param>
+  /// <param name="dryRun">If <c>true</c>, previews changes without applying.</param>
+  /// <param name="profile">Optional named profile to activate.</param>
+  /// <param name="debug">If <c>true</c>, shows detailed error information.</param>
+  /// <param name="diff">If <c>true</c>, shows a diff of changes.</param>
+  /// <param name="json">If <c>true</c>, outputs results as JSON.</param>
+  /// <param name="force">If <c>true</c>, reapplies steps even if previously succeeded.</param>
+  /// <param name="continueOnError">If <c>true</c>, continues applying remaining steps on failure.</param>
+  /// <returns>Exit code (0 for success).</returns>
   public async Task<int> RunAsync(FileInfo configFile, bool dryRun, string? profile, bool debug, bool diff, bool json, bool force = false, bool continueOnError = false)
   {
     try

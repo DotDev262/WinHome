@@ -4,6 +4,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Describes a trigger for a scheduled task (time-based, event-based, etc.).</summary>
   public class TriggerConfig
   {
     [YamlMember(Alias = "type")]

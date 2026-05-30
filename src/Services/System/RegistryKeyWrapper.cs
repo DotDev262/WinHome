@@ -3,10 +3,12 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Wraps a <see cref="RegistryKey"/> to implement <see cref="IRegistryKey"/> for testability.</summary>
   public class RegistryKeyWrapper : IRegistryKey
   {
     private readonly RegistryKey _registryKey;
 
+    /// <summary>Initializes a new instance wrapping the given <see cref="RegistryKey"/>.</summary>
     public RegistryKeyWrapper(RegistryKey registryKey)
     {
       _registryKey = registryKey;

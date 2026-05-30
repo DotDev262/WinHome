@@ -9,8 +9,14 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Infrastructure;
 
+/// <summary>Builds the System.CommandLine root command and all subcommands for the WinHome CLI.</summary>
 public static class CliBuilder
 {
+  /// <summary>Constructs the root command with all options, subcommands (run, generate, state, completion), and their handlers.</summary>
+  /// <param name="runAction">Handler for the default run action (applies configuration).</param>
+  /// <param name="generateAction">Handler for the generate subcommand (generates config from system state).</param>
+  /// <param name="stateAction">Handler for the state subcommand (manages tracking state).</param>
+  /// <returns>The configured root <see cref="RootCommand"/>.</returns>
   public static RootCommand BuildRootCommand(
       Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
       Func<FileInfo?, LogLevel, Task<int>> generateAction,
@@ -247,6 +253,7 @@ public static class CliBuilder
     return rootCommand;
   }
 
+  /// <summary>Computes the effective log level from quiet/verbose flags.</summary>
   private static LogLevel ComputeLogLevel(bool quiet, bool verbose)
   {
     if (quiet) return LogLevel.Warning;
@@ -254,6 +261,8 @@ public static class CliBuilder
     return LogLevel.Info;
   }
 
+  /// <summary>Ensures --verbose and --quiet are not used simultaneously.</summary>
+  /// <returns>0 if no conflict, 1 if both flags are set.</returns>
   private static int RejectConflictingFlags(bool verbose, bool quiet)
   {
     if (verbose && quiet)

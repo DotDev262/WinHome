@@ -5,6 +5,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Top-level configuration model for WinHome. Maps directly from YAML/JSON config files.</summary>
   public class Configuration
   {
     [YamlMember(Alias = "version")]

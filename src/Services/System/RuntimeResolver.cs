@@ -2,12 +2,14 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Resolves the full file system path to runtime executables (git, scoop, bun, uv, etc.) via PATH and common fallback locations.</summary>
   public class RuntimeResolver : IRuntimeResolver
   {
     private readonly ILogger _logger;
     private readonly IProcessRunner _processRunner;
     private readonly IFileSystem _fileSystem;
 
+    /// <summary>Initializes a new instance of <see cref="RuntimeResolver"/>.</summary>
     public RuntimeResolver(ILogger logger, IProcessRunner processRunner, IFileSystem fileSystem)
     {
       _logger = logger;

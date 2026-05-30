@@ -4,6 +4,7 @@ using WinHome.Services.Bootstrappers;
 
 namespace WinHome.Services.Managers
 {
+  /// <summary>Manages package operations via Scoop.</summary>
   public class ScoopService : IPackageManager
   {
     private readonly IProcessRunner _processRunner;
@@ -11,6 +12,7 @@ namespace WinHome.Services.Managers
     private readonly IRuntimeResolver _resolver;
     public IPackageManagerBootstrapper Bootstrapper { get; }
 
+    /// <summary>Initializes a new instance of <see cref="ScoopService"/>.</summary>
     public ScoopService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
     {
       _processRunner = processRunner;
@@ -24,11 +26,13 @@ namespace WinHome.Services.Managers
       return _resolver.Resolve("scoop");
     }
 
+    /// <summary>Returns <c>true</c> if Scoop is available on the system.</summary>
     public bool IsAvailable()
     {
       return Bootstrapper.IsInstalled();
     }
 
+    /// <summary>Installs a package via Scoop. Skips if already installed.</summary>
     public void Install(AppConfig app, bool dryRun)
     {
       string executable = GetScoopExecutable();
@@ -75,6 +79,7 @@ namespace WinHome.Services.Managers
       _logger.LogSuccess($"[Success] Installed {app.Id}");
     }
 
+    /// <summary>Uninstalls a package via Scoop.</summary>
     public void Uninstall(string appId, bool dryRun)
     {
       string executable = GetScoopExecutable();
@@ -94,6 +99,7 @@ namespace WinHome.Services.Managers
       _logger.LogSuccess($"[Success] Uninstalled {appId}");
     }
 
+    /// <summary>Checks whether a package is installed via Scoop.</summary>
     public bool IsInstalled(string appId)
     {
       string executable = GetScoopExecutable();
