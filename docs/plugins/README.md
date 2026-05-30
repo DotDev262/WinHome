@@ -23,11 +23,11 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 
 | Name | Brief description | Capabilities | Docs |
 | --- | --- | --- | --- |
-| `helix-editor` | Manages Helix `config.toml` and `languages.toml`. | `config_provider` | [Details](#helix-editor) |
-| `notepadplusplus` | Manages Notepad++ JSON settings. | `config_provider` | [Details](#notepadplusplus) |
-| `obsidian` | Configures vault settings and community plugins for Obsidian. | `config_provider` | [Details](#obsidian) |
-| `vim` | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [Details](#vim) |
-| `vscode` | Syncs VS Code settings, profiles, and extensions. | `config_provider`, `package_manager` | [Details](#vscode) |
+| `helix-editor` | Manages Helix `config.toml` and `languages.toml`. | `config_provider` | [helix-editor.md](helix-editor.md) |
+| `notepadplusplus` | Manages Notepad++ JSON settings. | `config_provider` | [notepadplusplus.md](notepadplusplus.md) |
+| `obsidian` | Configures vault settings and community plugins for Obsidian. | `config_provider` | [obsidian.md](obsidian.md) |
+| `vim` | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [vim.md](vim.md) |
+| `vscode` | Syncs VS Code settings, profiles, and extensions. | `config_provider`, `package_manager` | [vscode.md](vscode.md) |
 
 ### Shell, Terminal, And Navigation
 
@@ -38,7 +38,7 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | `ohmyposh` | Manages the Oh My Posh bootstrap line in a PowerShell profile. | `config_provider` | [Details](#ohmyposh) |
 | `powershell` | Generates a managed PowerShell profile block for aliases, modules, prompt, and functions. | `config_provider` | [Details](#powershell) |
 | `starship` | Manages `starship.toml` prompt settings. | `config_provider` | [Details](#starship) |
-| `windows-terminal` | Manages Windows Terminal `settings.json` for stable, preview, or dev installs. | `config_provider` | [Details](#windows-terminal) |
+| `windows-terminal` | Manages Windows Terminal `settings.json` for stable, preview, or dev installs. | `config_provider` | [windows-terminal.md](windows-terminal.md) |
 | `yazi` | Manages Yazi core, keymap, and theme TOML files. | `config_provider` | [Details](#yazi) |
 | `zoxide` | Adds or updates shell init hooks for Zoxide in PowerShell and Bash profiles. | `config_provider` | [Details](#zoxide) |
 
