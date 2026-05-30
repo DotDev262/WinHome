@@ -35,11 +35,17 @@ jobs:
             JS_PLUGINS+=("$plugin")
           done
 
-          PY_JSON=$(printf '%s\n' "${PY_PLUGINS[@]}" | jq -R . | jq -sc .)
-          JS_JSON=$(printf '%s\n' "${JS_PLUGINS[@]}" | jq -R . | jq -sc .)
+          if [ ${#PY_PLUGINS[@]} -eq 0 ]; then
+            PY_JSON="[]"
+          else
+            PY_JSON=$(printf '%s\n' "${PY_PLUGINS[@]}" | jq -R . | jq -sc .)
+          fi
 
-          [ -z "$PY_JSON" ] && PY_JSON="[]"
-          [ -z "$JS_JSON" ] && JS_JSON="[]"
+          if [ ${#JS_PLUGINS[@]} -eq 0 ]; then
+            JS_JSON="[]"
+          else
+            JS_JSON=$(printf '%s\n' "${JS_PLUGINS[@]}" | jq -R . | jq -sc .)
+          fi
 
           echo "python_plugins=$PY_JSON" >> "$GITHUB_OUTPUT"
           echo "js_plugins=$JS_JSON"     >> "$GITHUB_OUTPUT"
@@ -70,12 +76,16 @@ jobs:
       - name: Run plugin test
         shell: bash
         run: |
-          TEST_FILE="plugins/${{ matrix.plugin }}/test/test_${{ matrix.plugin }}.py"
-
-          if [ ! -f "$TEST_FILE" ]; then
-            echo "⚠️  Test file not found: $TEST_FILE — skipping."
-            exit 0
-          fi
+          
+          TEST_FILES=$(ls test/test_*.ts test/test_*.js 2>/dev/null)
+            if [ -n "$TEST_FILES" ]; then
+              for TEST_FILE in $TEST_FILES; do
+                echo "▶ Running $TEST_FILE"
+                bun run "$TEST_FILE"
+              done
+            else
+              echo "⚠️  No test script or test file found — skipping."
+            fi
 
           echo "▶ Running $TEST_FILE"
           uv run python "$TEST_FILE"
@@ -129,3 +139,9 @@ jobs:
         if: failure()
         run: |
           echo "::error title=Plugin test failed::Plugin '${{ matrix.plugin }}' test failed. See logs above."
+
+          
+
+
+
+
