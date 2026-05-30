@@ -5,12 +5,7 @@ import sys
 import tempfile
 
 PLUGIN = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "src",
-        "plugin.py"
-    )
+    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
 )
 
 
@@ -19,19 +14,16 @@ def run_plugin(payload: dict) -> dict:
         [sys.executable, PLUGIN],
         input=json.dumps(payload),
         capture_output=True,
-        text=True
+        text=True,
     )
 
     return json.loads(result.stdout.strip())
 
 
 def test_check_installed_response_format():
-    res = run_plugin({
-        "requestId": "1",
-        "command": "check_installed",
-        "args": {},
-        "context": {}
-    })
+    res = run_plugin(
+        {"requestId": "1", "command": "check_installed", "args": {}, "context": {}}
+    )
 
     assert res["requestId"] == "1"
     assert res["success"]
@@ -44,19 +36,16 @@ def test_apply_config_dry_run():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["USERPROFILE"] = tmp
 
-        res = run_plugin({
-            "requestId": "2",
-            "command": "apply",
-            "args": {
-                "settings": {
-                    "storeDir": "C:/pnpm/store",
-                    "autoInstallPeers": True
-                }
-            },
-            "context": {
-                "dryRun": True
+        res = run_plugin(
+            {
+                "requestId": "2",
+                "command": "apply",
+                "args": {
+                    "settings": {"storeDir": "C:/pnpm/store", "autoInstallPeers": True}
+                },
+                "context": {"dryRun": True},
             }
-        })
+        )
 
         npmrc_path = os.path.join(tmp, ".npmrc")
 
@@ -71,25 +60,25 @@ def test_apply_config_writes_supported_settings():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["USERPROFILE"] = tmp
 
-        res = run_plugin({
-            "requestId": "3",
-            "command": "apply",
-            "args": {
-                "settings": {
-                    "storeDir": "C:/pnpm/store",
-                    "globalDir": "C:/pnpm/global",
-                    "globalBinDir": "C:/pnpm/bin",
-                    "nodeVersion": "22.0.0",
-                    "packageManager": "pnpm@9.0.0",
-                    "autoInstallPeers": True,
-                    "strictPeerDependencies": False,
-                    "shamefullyHoist": True
-                }
-            },
-            "context": {
-                "dryRun": False
+        res = run_plugin(
+            {
+                "requestId": "3",
+                "command": "apply",
+                "args": {
+                    "settings": {
+                        "storeDir": "C:/pnpm/store",
+                        "globalDir": "C:/pnpm/global",
+                        "globalBinDir": "C:/pnpm/bin",
+                        "nodeVersion": "22.0.0",
+                        "packageManager": "pnpm@9.0.0",
+                        "autoInstallPeers": True,
+                        "strictPeerDependencies": False,
+                        "shamefullyHoist": True,
+                    }
+                },
+                "context": {"dryRun": False},
             }
-        })
+        )
 
         npmrc_path = os.path.join(tmp, ".npmrc")
 
@@ -119,18 +108,14 @@ def test_preserves_unknown_existing_keys():
         with open(npmrc_path, "w", encoding="utf-8") as f:
             f.write("unknown-setting=value\n")
 
-        res = run_plugin({
-            "requestId": "4",
-            "command": "apply",
-            "args": {
-                "settings": {
-                    "storeDir": "C:/pnpm/store"
-                }
-            },
-            "context": {
-                "dryRun": False
+        res = run_plugin(
+            {
+                "requestId": "4",
+                "command": "apply",
+                "args": {"settings": {"storeDir": "C:/pnpm/store"}},
+                "context": {"dryRun": False},
             }
-        })
+        )
 
         assert res["success"]
 
@@ -148,14 +133,8 @@ def test_idempotent_apply():
         payload = {
             "requestId": "5",
             "command": "apply",
-            "args": {
-                "settings": {
-                    "storeDir": "C:/pnpm/store"
-                }
-            },
-            "context": {
-                "dryRun": False
-            }
+            "args": {"settings": {"storeDir": "C:/pnpm/store"}},
+            "context": {"dryRun": False},
         }
 
         first = run_plugin(payload)
@@ -168,14 +147,14 @@ def test_idempotent_apply():
 
 
 def test_invalid_settings_returns_json_error():
-    res = run_plugin({
-        "requestId": "6",
-        "command": "apply",
-        "args": {
-            "settings": None
-        },
-        "context": {}
-    })
+    res = run_plugin(
+        {
+            "requestId": "6",
+            "command": "apply",
+            "args": {"settings": None},
+            "context": {},
+        }
+    )
 
     assert res["requestId"] == "6"
     assert not res["success"]
@@ -186,10 +165,7 @@ def test_invalid_settings_returns_json_error():
 
 def test_empty_stdin_returns_json_error():
     result = subprocess.run(
-        [sys.executable, PLUGIN],
-        input="",
-        capture_output=True,
-        text=True
+        [sys.executable, PLUGIN], input="", capture_output=True, text=True
     )
 
     res = json.loads(result.stdout.strip())
