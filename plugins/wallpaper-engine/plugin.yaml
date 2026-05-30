@@ -4,5 +4,6 @@ type: python
 main: src/plugin.py
 
 capabilities:
+  - config_provider
   - check_installed
   - apply

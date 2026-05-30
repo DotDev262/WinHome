@@ -1,53 +1,75 @@
-import unittest
+import subprocess
+import json
 
-from src.plugin import deep_merge
+
+def run_plugin(payload):
+    process = subprocess.run(
+        ["python", "src/plugin.py"],
+        input=json.dumps(payload),
+        text=True,
+        capture_output=True
+    )
+
+    if not process.stdout.strip():
+        raise Exception(f"Plugin failed: {process.stderr}")
+
+    return json.loads(process.stdout)
 
 
-class TestWallpaperEngine(unittest.TestCase):
+# ---------------- TESTS ----------------
 
-    def test_deep_merge(self):
+def test_check_installed():
+    result = run_plugin({
+        "requestId": "1",
+        "method": "check_installed",
+        "params": {}
+    })
 
-        base = {
-            "audio": {
-                "volume": 0.7
-            }
+    assert result["success"] in [True, False]
+    assert "data" in result
+    assert "installed" in result["data"]
+
+
+def test_apply_dry_run():
+    result = run_plugin({
+        "requestId": "2",
+        "method": "apply",
+        "params": {
+            "settings": {"volume": 0.5},
+            "context": {"dryRun": True}
         }
+    })
 
-        updates = {
-            "audio": {
-                "mute": True
-            }
+    assert "success" in result
+    assert "data" in result
+    assert "dryRun" in result["data"]
+    assert result["data"]["dryRun"] is True
+
+
+def test_apply_structure():
+    result = run_plugin({
+        "requestId": "3",
+        "method": "apply",
+        "params": {
+            "settings": {"volume": 0.8},
+            "context": {"dryRun": False}
         }
+    })
 
-        result = deep_merge(base, updates)
+    assert "success" in result
+    assert "changed" in result
+    assert "data" in result
 
-        self.assertEqual(
-            result["audio"]["volume"],
-            0.7
-        )
 
-        self.assertEqual(
-            result["audio"]["mute"],
-            True
-        )
-    def test_dry_run(self):
-
-        args = {
-            "requestId": "test-101",
-            "dryRun": True,
-            "settings": {
-                "volume": 0.2
-            }
+def test_invalid_settings():
+    result = run_plugin({
+        "requestId": "4",
+        "method": "apply",
+        "params": {
+            "settings": "invalid_string",
+            "context": {"dryRun": True}
         }
+    })
 
-        result = {
-            "success": True,
-            "requestId": "test-101",
-            "dryRun": True
-        }
-
-        self.assertEqual(result["success"], True)
-
-        self.assertEqual(result["dryRun"], True)
-
-        self.assertEqual(result["requestId"], "test-101")
+    assert result["success"] is False
+    assert "error" in result
