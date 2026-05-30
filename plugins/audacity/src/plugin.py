@@ -1,7 +1,7 @@
-import sys
+import configparser
 import json
 import os
-import configparser
+import sys
 import tempfile
 
 
