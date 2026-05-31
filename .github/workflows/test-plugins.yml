@@ -75,17 +75,14 @@ jobs:
 
       - name: Run plugin test
         shell: bash
+        working-directory: plugins/${{ matrix.plugin }}
         run: |
-          
-          TEST_FILES=$(ls test/test_*.ts test/test_*.js 2>/dev/null)
-            if [ -n "$TEST_FILES" ]; then
-              for TEST_FILE in $TEST_FILES; do
-                echo "▶ Running $TEST_FILE"
-                bun run "$TEST_FILE"
-              done
-            else
-              echo "⚠️  No test script or test file found — skipping."
-            fi
+          TEST_FILE="test/test_${{ matrix.plugin }}.py"
+
+          if [ ! -f "$TEST_FILE" ]; then
+            echo "⚠️  Test file not found: $TEST_FILE — skipping."
+            exit 0
+          fi
 
           echo "▶ Running $TEST_FILE"
           uv run python "$TEST_FILE"
@@ -127,9 +124,12 @@ jobs:
           if cat package.json | jq -e '.scripts.test' > /dev/null 2>&1; then
             bun run test
           else
-            TEST_FILE=$(ls test/test_*.ts test/test_*.js 2>/dev/null | head -1)
-            if [ -n "$TEST_FILE" ]; then
-              bun run "$TEST_FILE"
+            TEST_FILES=$(ls test/test_*.ts test/test_*.js 2>/dev/null)
+            if [ -n "$TEST_FILES" ]; then
+              for TEST_FILE in $TEST_FILES; do
+                echo "▶ Running $TEST_FILE"
+                bun run "$TEST_FILE"
+              done
             else
               echo "⚠️  No test script or test file found — skipping."
             fi
@@ -139,9 +139,3 @@ jobs:
         if: failure()
         run: |
           echo "::error title=Plugin test failed::Plugin '${{ matrix.plugin }}' test failed. See logs above."
-
-          
-
-
-
-
