@@ -5,7 +5,6 @@ import sys
 import tempfile
 import uuid
 
-
 CONFIG_FILE = ".npmrc"
 
 

@@ -169,18 +169,6 @@ namespace WinHome
           }
         }));
 
-<<<<<<< HEAD
-                foreach (var item in removedItems)
-                {
-                    _stateService.RemoveApplied(item);
-                    try
-                    {
-                        _stateWriter.RemoveStep(item);
-                    }
-                    catch { }
-                }
-            }
-=======
         foreach (var item in removedItems)
         {
           _stateService.RemoveApplied(item);
@@ -191,7 +179,6 @@ namespace WinHome
           catch { }
         }
       }
->>>>>>> d88b03c (fix: address PR review feedback)
 
             // Revert system settings that are no longer in config
             if (OperatingSystem.IsWindows() && previousState.SystemSettingOriginals.Any())
