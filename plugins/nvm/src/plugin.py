@@ -4,12 +4,15 @@ import shutil
 import sys
 import tempfile
 
+
 def get_settings_path():
     appdata = os.environ.get("APPDATA", "")
     return os.path.join(appdata, "nvm", "settings.txt")
 
+
 def log(msg):
     sys.stderr.write(f"[nvm-plugin] {msg}\n")
+
 
 def check_installed(args, request_id):
     exists = os.path.exists(get_settings_path()) or shutil.which("nvm.exe") is not None
@@ -20,6 +23,7 @@ def check_installed(args, request_id):
         "data": exists,
     }
 
+
 def read_settings_file(path):
     lines = []
     if os.path.exists(path):
@@ -29,6 +33,7 @@ def read_settings_file(path):
         except Exception as e:
             return None, f"Error reading {path}: {e}"
     return lines, None
+
 
 def write_settings_file(path, lines):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -45,10 +50,11 @@ def write_settings_file(path, lines):
         os.remove(temp_path)
         return f"Error writing settings: {e}"
 
+
 def apply_config(args, context, request_id):
     dry_run = context.get("dryRun", False)
     settings = args.get("settings", {})
-    
+
     appdata = os.environ.get("APPDATA", "")
     if not appdata:
         return {
@@ -77,7 +83,7 @@ def apply_config(args, context, request_id):
         if not stripped or stripped.startswith("#"):
             new_lines.append(line)
             continue
-        
+
         parts = line.split("=", 1)
         if len(parts) == 2:
             key = parts[0].strip()
@@ -132,6 +138,7 @@ def apply_config(args, context, request_id):
         "changed": True,
     }
 
+
 def main():
     input_data = sys.stdin.read()
     if not input_data:
@@ -161,6 +168,7 @@ def main():
         }
 
     print(json.dumps(response))
+
 
 if __name__ == "__main__":
     main()
