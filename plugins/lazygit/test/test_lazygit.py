@@ -1,3 +1,9 @@
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
+
 import json
 import os
 import subprocess

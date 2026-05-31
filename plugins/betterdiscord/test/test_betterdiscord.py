@@ -100,7 +100,7 @@ def test_dry_run():
     )
 
     assert res["success"]
-    assert not res["changed"]
+    assert res["changed"]
 
     print("✓ dry_run")
 

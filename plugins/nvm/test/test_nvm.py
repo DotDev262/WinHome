@@ -105,3 +105,29 @@ def test_apply_dry_run(mock_env):
     # File should not be modified
     with open(settings_path, "r") as f:
         assert f.read() == "root=C:\\old_nvm\n"
+
+
+if __name__ == "__main__":
+    # Simple manual runner for CI discovery
+    import os
+    import tempfile
+    from unittest.mock import patch
+
+    with tempfile.TemporaryDirectory() as tmp:
+        with patch.dict(os.environ, {"APPDATA": tmp}):
+            print("Running test_check_installed_false...")
+            test_check_installed_false(tmp)
+            print("Running test_check_installed_true_via_file...")
+            test_check_installed_true_via_file(tmp)
+            print("Running test_check_installed_true_via_path...")
+            test_check_installed_true_via_path(tmp)
+            print("Running test_apply_new_file...")
+            test_apply_new_file(tmp)
+            print("Running test_apply_merge_existing_file...")
+            test_apply_merge_existing_file(tmp)
+            print("Running test_apply_idempotent...")
+            test_apply_idempotent(tmp)
+            print("Running test_apply_dry_run...")
+            test_apply_dry_run(tmp)
+
+    print("\nAll tests passed.")

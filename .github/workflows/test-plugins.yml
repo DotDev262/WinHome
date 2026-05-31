@@ -110,17 +110,21 @@ jobs:
         run: |
           curl -fsSL https://bun.sh/install | bash
           echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.bun/bin:$PATH"
           bun --version
 
       - name: Install dependencies
         shell: bash
         working-directory: plugins/${{ matrix.plugin }}
-        run: bun install
+        run: |
+          export PATH="$HOME/.bun/bin:$PATH"
+          bun install
 
       - name: Run plugin test
         shell: bash
         working-directory: plugins/${{ matrix.plugin }}
         run: |
+          export PATH="$HOME/.bun/bin:$PATH"
           if cat package.json | jq -e '.scripts.test' > /dev/null 2>&1; then
             bun run test
           else
