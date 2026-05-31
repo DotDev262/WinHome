@@ -45,9 +45,7 @@ class TestPipPlugin(unittest.TestCase):
     def test_apply_config_creates_new(self, mock_get_path):
         mock_get_path.return_value = self.pip_ini_path
 
-        args = {
-            "settings": {"index-url": "https://pypi.org/simple", "timeout": 60}
-        }
+        args = {"settings": {"index-url": "https://pypi.org/simple", "timeout": 60}}
         response = plugin.apply_config(args, {}, "req-3")
 
         self.assertTrue(response["success"])
@@ -57,9 +55,7 @@ class TestPipPlugin(unittest.TestCase):
         config = configparser.ConfigParser()
         config.read(self.pip_ini_path)
         self.assertTrue(config.has_section("global"))
-        self.assertEqual(
-            config.get("global", "index-url"), "https://pypi.org/simple"
-        )
+        self.assertEqual(config.get("global", "index-url"), "https://pypi.org/simple")
         self.assertEqual(config.get("global", "timeout"), "60")
 
     @patch.object(plugin, "get_pip_ini_path")
@@ -86,9 +82,7 @@ class TestPipPlugin(unittest.TestCase):
 
         self.assertTrue(response["success"])
         self.assertTrue(response["changed"])
-        self.assertFalse(
-            os.path.exists(self.pip_ini_path)
-        )  # Should not actually write
+        self.assertFalse(os.path.exists(self.pip_ini_path))  # Should not actually write
 
     @patch("sys.stdin", new_callable=StringIO)
     @patch("sys.stdout", new_callable=StringIO)
@@ -121,11 +115,7 @@ class TestPipPlugin(unittest.TestCase):
         self.assertTrue(response["changed"])
 
         # Verify it backed up the file
-        backups = [
-            f
-            for f in os.listdir(os.path.dirname(self.pip_ini_path))
-            if f.endswith(".bak")
-        ]
+        backups = [f for f in os.listdir(os.path.dirname(self.pip_ini_path)) if f.endswith(".bak")]
         self.assertTrue(len(backups) > 0)
 
         # Verify new config

@@ -90,9 +90,7 @@ class TestApplyConfig(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = os.path.join(tmpdir, ".cargo", "config.toml")
             with patch("plugin.get_config_path", return_value=config_path):
-                result = plugin.apply_config(
-                    {"settings": {"build": {"jobs": 4}}}, {}, "req-10"
-                )
+                result = plugin.apply_config({"settings": {"build": {"jobs": 4}}}, {}, "req-10")
             self.assertTrue(result["success"])
             self.assertTrue(result["changed"])
             self.assertTrue(os.path.exists(config_path))
@@ -104,9 +102,7 @@ class TestApplyConfig(unittest.TestCase):
             with open(config_path, "w") as f:
                 f.write("[build]\njobs = 4\n")
             with patch("plugin.get_config_path", return_value=config_path):
-                result = plugin.apply_config(
-                    {"settings": {"build": {"jobs": 4}}}, {}, "req-11"
-                )
+                result = plugin.apply_config({"settings": {"build": {"jobs": 4}}}, {}, "req-11")
             self.assertTrue(result["success"])
             self.assertFalse(result["changed"])
 

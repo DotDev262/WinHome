@@ -5,9 +5,7 @@ import sys
 import tempfile
 
 # Compute dynamic path to the oh-my-posh plugin script
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -54,10 +52,7 @@ def test_apply_fresh_install():
 
         content = read_file(profile)
         assert "# OH-MY-POSH-PLUGIN BEGIN" in content
-        assert (
-            'oh-my-posh init pwsh --config "tokyonight_storm" | Invoke-Expression'
-            in content
-        )
+        assert 'oh-my-posh init pwsh --config "tokyonight_storm" | Invoke-Expression' in content
         assert "# OH-MY-POSH-PLUGIN END" in content
         print("✓ test_apply_fresh_install")
 
@@ -217,9 +212,7 @@ def test_check_installed():
 
 
 def test_invalid_payloads():
-    res_err = run_plugin(
-        {"requestId": "6a", "command": "apply", "args": {}, "context": {}}
-    )
+    res_err = run_plugin({"requestId": "6a", "command": "apply", "args": {}, "context": {}})
     assert not res_err["success"]
     assert "error" in res_err
 

@@ -37,9 +37,7 @@ def log(msg):
 
 def make_request(url: str):
     """Make an HTTP request to the given URL with a user agent"""
-    req = urllib.request.Request(
-        url, headers={"User-Agent": "WinHome-Environment-Manager/1.0"}
-    )
+    req = urllib.request.Request(url, headers={"User-Agent": "WinHome-Environment-Manager/1.0"})
     return urllib.request.urlopen(req)
 
 
@@ -84,9 +82,7 @@ def group_settings_by_file(settings: dict) -> dict:
 # Vault-wise settings
 
 
-def apply_vault_settings(
-    vault_path: str, settings: dict, dry_run: bool
-) -> dict:
+def apply_vault_settings(vault_path: str, settings: dict, dry_run: bool) -> dict:
     """Apply settings to a vault"""
     obsidian_dir = os.path.join(vault_path, ".obsidian")
     grouped = group_settings_by_file(settings)
@@ -165,9 +161,7 @@ def fetch_latest_version(repo: str):
         return None
 
 
-def download_plugin(
-    vault_path: str, plugin_id: str, repo: str, version: str
-) -> None:
+def download_plugin(vault_path: str, plugin_id: str, repo: str, version: str) -> None:
     """Downloads a plugin to the vault"""
     plugin_dir = os.path.join(vault_path, ".obsidian", "plugins", plugin_id)
     os.makedirs(plugin_dir, exist_ok=True)
@@ -197,9 +191,7 @@ def download_plugin(
                 continue
 
         if not success and file != "styles.css":
-            raise Exception(
-                f"Failed to download required asset '{file}' for {plugin_id}: {last_error}"
-            )
+            raise Exception(f"Failed to download required asset '{file}' for {plugin_id}: {last_error}")
 
 
 # Apply Changes
@@ -321,9 +313,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             continue
 
         if vault.get("settings"):
-            res = apply_vault_settings(
-                vault_path, vault["settings"], context.get("dryRun", False)
-            )
+            res = apply_vault_settings(vault_path, vault["settings"], context.get("dryRun", False))
             if not res["success"]:
                 overall_success = False
             if res["changed"]:

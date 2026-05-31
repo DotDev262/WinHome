@@ -6,9 +6,7 @@ import sys
 
 # Standard Neovim data directory on Windows
 # %LOCALAPPDATA%\nvim-data\site\pack\winhome\start\
-NVIM_DATA_DIR = os.path.expandvars(
-    r"%LOCALAPPDATA%\nvim-data\site\pack\winhome\start"
-)
+NVIM_DATA_DIR = os.path.expandvars(r"%LOCALAPPDATA%\nvim-data\site\pack\winhome\start")
 # %LOCALAPPDATA%\nvim\init.lua
 NVIM_CONFIG_DIR = os.path.expandvars(r"%LOCALAPPDATA%\nvim")
 INIT_LUA_PATH = os.path.join(NVIM_CONFIG_DIR, "init.lua")
@@ -106,9 +104,7 @@ def apply_config(config, context):
     for key, value in settings.items():
         if key == "theme":
             lines.append(f"vim.cmd('colorscheme {value}')")
-        elif isinstance(value, bool) or (
-            isinstance(value, str) and value.lower() in ("true", "false")
-        ):
+        elif isinstance(value, bool) or (isinstance(value, str) and value.lower() in ("true", "false")):
             if isinstance(value, bool):
                 val_str = "true" if value else "false"
             else:

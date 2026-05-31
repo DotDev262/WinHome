@@ -95,6 +95,7 @@ def merge_settings(target: dict, source: dict) -> bool:
 
     return changed
 
+
 def check_installed(args: dict, request_id: str) -> dict:
     installed = os.path.isdir(get_sdkman_dir())
 

@@ -120,7 +120,6 @@ def parse_line(line: str) -> ConfigLine:
     return ConfigLine(raw=line, key=None, value=None, managed=False)
 
 
-
 def parse_config(text: str) -> Tuple[List[ConfigLine], bool]:
     """Returns (lines, corrupted)."""
     # This parser is line-based and should be resilient.
@@ -219,7 +218,6 @@ def merge_settings(lines: List[ConfigLine], settings: Dict[str, Any]) -> Tuple[L
     # Normalize any managed line with malformed content? Keep unknown/unmanaged untouched.
     # NOTE: merge_settings does not mark corruption; corruption is handled at file-load time.
     return lines, changed
-
 
 
 def backup_corrupt_config(config_path: Path) -> Path:
@@ -347,9 +345,7 @@ def dispatch(request: dict) -> Any:
     if command == "set":
         return handle_set(request)
 
-    return make_response(
-        request.get("requestId"), False, False, {}, f"Unknown command: {command}"
-    )
+    return make_response(request.get("requestId"), False, False, {}, f"Unknown command: {command}")
 
 
 def main() -> None:
@@ -403,4 +399,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -91,9 +91,7 @@ def _dump_yaml(data: dict, indent: int = 0) -> str:
                             else:
                                 lines.append(f"{pad}    {k}:")
                             for ik, iv in v.items():
-                                lines.append(
-                                    f"{pad}      {ik}: {_yaml_value(iv)}"
-                                )
+                                lines.append(f"{pad}      {ik}: {_yaml_value(iv)}")
                         else:
                             prefix = f"{pad}  - " if first else f"{pad}    "
                             lines.append(f"{prefix}{k}: {_yaml_value(v)}")
@@ -167,20 +165,14 @@ def _parse_yaml(text: str) -> dict:
             continue
 
         # Continuation key under a list item: "    key: value"
-        if (
-            current_item is not None
-            and ":" in stripped
-            and not stripped.startswith("-")
-        ):
+        if current_item is not None and ":" in stripped and not stripped.startswith("-"):
             k, _, v = stripped.partition(":")
             k = k.strip()
             v = v.strip()
             if not v:
                 current_item[k] = {}
             else:
-                last_val = (
-                    list(current_item.values())[-1] if current_item else None
-                )
+                last_val = list(current_item.values())[-1] if current_item else None
                 if isinstance(last_val, dict) and depth >= 6:
                     last_val[k] = _cast(v)
                 else:
@@ -252,9 +244,7 @@ def write_config(path: Path, data: dict) -> None:
 # ---------------------------------------------------------------------------
 
 
-def deep_merge_lists(
-    existing: list, incoming: list, key: str = "trigger"
-) -> list:
+def deep_merge_lists(existing: list, incoming: list, key: str = "trigger") -> list:
     """
     Merge two lists of dicts by *key*.
 
@@ -263,11 +253,7 @@ def deep_merge_lists(
     New items in incoming are appended.
     """
     merged = deepcopy(existing)
-    index = {
-        item.get(key): i
-        for i, item in enumerate(merged)
-        if isinstance(item, dict)
-    }
+    index = {item.get(key): i for i, item in enumerate(merged) if isinstance(item, dict)}
     for item in incoming:
         if not isinstance(item, dict):
             continue

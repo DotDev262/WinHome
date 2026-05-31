@@ -4,9 +4,7 @@ import unittest
 from unittest.mock import mock_open, patch
 
 # Append src to sys.path and remove it after import to avoid side effects
-_src_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src")
-)
+_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 sys.path.append(_src_path)
 import plugin
 
@@ -18,29 +16,21 @@ class TestShareXPlugin(unittest.TestCase):
         target = {
             "ApplicationSettings": {
                 "ShowTray": False,
-                "CaptureSettings": {
-                    "Screenshot": {"CaptureTransparency": True}
-                },
+                "CaptureSettings": {"Screenshot": {"CaptureTransparency": True}},
             },
             "ImageSettings": {"ImageFormat": "JPEG"},
         }
         source = {
             "ApplicationSettings": {
                 "ShowTray": True,
-                "CaptureSettings": {
-                    "Screenshot": {"CaptureTransparency": False}
-                },
+                "CaptureSettings": {"Screenshot": {"CaptureTransparency": False}},
             },
             "UploadSettings": {"DestinationType": "Imgur"},
         }
         changed = plugin.deep_merge(target, source)
         self.assertTrue(changed)
         self.assertTrue(target["ApplicationSettings"]["ShowTray"])
-        self.assertFalse(
-            target["ApplicationSettings"]["CaptureSettings"]["Screenshot"][
-                "CaptureTransparency"
-            ]
-        )
+        self.assertFalse(target["ApplicationSettings"]["CaptureSettings"]["Screenshot"]["CaptureTransparency"])
         self.assertEqual(target["ImageSettings"]["ImageFormat"], "JPEG")
         self.assertEqual(target["UploadSettings"]["DestinationType"], "Imgur")
 
@@ -123,12 +113,8 @@ class TestShareXPlugin(unittest.TestCase):
         with patch("plugin.open", m_open):
             plugin.write_json(file_path, data)
 
-        mock_makedirs.assert_called_once_with(
-            "dummy", mode=0o700, exist_ok=True
-        )
-        m_open.assert_called_once_with(
-            file_path + ".tmp", "w", encoding="utf-8"
-        )
+        mock_makedirs.assert_called_once_with("dummy", mode=0o700, exist_ok=True)
+        m_open.assert_called_once_with(file_path + ".tmp", "w", encoding="utf-8")
         handle = m_open()
         handle.write.assert_called_with("\n")
         mock_replace.assert_called_once_with(file_path + ".tmp", file_path)
@@ -160,11 +146,7 @@ class TestShareXPlugin(unittest.TestCase):
             self.assertEqual(content["a"], 2)
 
             # Verify backup was created
-            backups = [
-                f
-                for f in os.listdir(temp_dir)
-                if f.startswith("ShareX.json.corrupted.")
-            ]
+            backups = [f for f in os.listdir(temp_dir) if f.startswith("ShareX.json.corrupted.")]
             self.assertEqual(len(backups), 1)
 
 

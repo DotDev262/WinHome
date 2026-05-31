@@ -26,14 +26,10 @@ def read_ini(path):
         try:
             config.read(path, encoding="utf-8")
         except configparser.Error as e:
-            timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
-                "%Y%m%d%H%M%S"
-            )
+            timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
             suffix = uuid.uuid4().hex[:8]
             backup_path = f"{path}.corrupted.{timestamp}.{suffix}"
-            log(
-                f"Config corrupted. Backing up to {backup_path} and starting fresh. Error: {e}"
-            )
+            log(f"Config corrupted. Backing up to {backup_path} and starting fresh. Error: {e}")
             try:
                 shutil.move(path, backup_path)
             except Exception as backup_e:
@@ -43,9 +39,7 @@ def read_ini(path):
 
 def write_ini(path, config):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd, temp_path = tempfile.mkstemp(
-        prefix="obs-studio-", dir=os.path.dirname(path)
-    )
+    fd, temp_path = tempfile.mkstemp(prefix="obs-studio-", dir=os.path.dirname(path))
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             config.write(f)
@@ -61,10 +55,7 @@ def merge_ini_section(config, section, values):
         config.add_section(section)
     for key, value in values.items():
         str_value = str(value)
-        if (
-            not config.has_option(section, key)
-            or config.get(section, key) != str_value
-        ):
+        if not config.has_option(section, key) or config.get(section, key) != str_value:
             config.set(section, key, str_value)
             changed = True
     return changed
@@ -102,11 +93,7 @@ def apply_global_ini(obs_dir, general, dry_run):
     changed = False
 
     if general:
-        mapped = {
-            GENERAL_KEY_MAP[k]: v
-            for k, v in general.items()
-            if k in GENERAL_KEY_MAP
-        }
+        mapped = {GENERAL_KEY_MAP[k]: v for k, v in general.items() if k in GENERAL_KEY_MAP}
         if mapped:
             if dry_run:
                 log(f"Would update {global_ini_path} [General] with: {mapped}")
@@ -151,9 +138,7 @@ def apply_profile_ini(obs_dir, profile_name, args, dry_run):
 
     video = args.get("video")
     if video:
-        mapped = {
-            VIDEO_KEY_MAP[k]: v for k, v in video.items() if k in VIDEO_KEY_MAP
-        }
+        mapped = {VIDEO_KEY_MAP[k]: v for k, v in video.items() if k in VIDEO_KEY_MAP}
         if dry_run:
             log(f"Would update {basic_ini_path} [Video] with: {mapped}")
             changed = merge_ini_section(config, "Video", mapped) or changed
@@ -162,9 +147,7 @@ def apply_profile_ini(obs_dir, profile_name, args, dry_run):
 
     audio = args.get("audio")
     if audio:
-        mapped = {
-            AUDIO_KEY_MAP[k]: v for k, v in audio.items() if k in AUDIO_KEY_MAP
-        }
+        mapped = {AUDIO_KEY_MAP[k]: v for k, v in audio.items() if k in AUDIO_KEY_MAP}
         if dry_run:
             log(f"Would update {basic_ini_path} [Audio] with: {mapped}")
             changed = merge_ini_section(config, "Audio", mapped) or changed
@@ -194,33 +177,17 @@ def apply_profile_ini(obs_dir, profile_name, args, dry_run):
                 }
             )
         if dry_run:
-            log(
-                f"Would update {basic_ini_path} [Output] with: {output_section}"
-            )
-            log(
-                f"Would update {basic_ini_path} [SimpleOutput] with: {simple_output}"
-            )
+            log(f"Would update {basic_ini_path} [Output] with: {output_section}")
+            log(f"Would update {basic_ini_path} [SimpleOutput] with: {simple_output}")
             if output_section:
-                changed = (
-                    merge_ini_section(config, "Output", output_section)
-                    or changed
-                )
+                changed = merge_ini_section(config, "Output", output_section) or changed
             if simple_output:
-                changed = (
-                    merge_ini_section(config, "SimpleOutput", simple_output)
-                    or changed
-                )
+                changed = merge_ini_section(config, "SimpleOutput", simple_output) or changed
         else:
             if output_section:
-                changed = (
-                    merge_ini_section(config, "Output", output_section)
-                    or changed
-                )
+                changed = merge_ini_section(config, "Output", output_section) or changed
             if simple_output:
-                changed = (
-                    merge_ini_section(config, "SimpleOutput", simple_output)
-                    or changed
-                )
+                changed = merge_ini_section(config, "SimpleOutput", simple_output) or changed
 
     hotkeys = args.get("hotkeys")
     if hotkeys:
@@ -285,20 +252,13 @@ def apply_config(args, context, request_id):
             changed = apply_global_ini(obs_dir, general, dry_run) or changed
 
         profile_name = args.get("profile") or get_active_profile(obs_dir)
-        has_profile_settings = any(
-            args.get(k) for k in ("video", "audio", "output", "hotkeys")
-        )
+        has_profile_settings = any(args.get(k) for k in ("video", "audio", "output", "hotkeys"))
 
         if has_profile_settings:
             if not profile_name:
-                log(
-                    "No profile specified and no active profile found — skipping video/audio/output/hotkeys"
-                )
+                log("No profile specified and no active profile found — skipping video/audio/output/hotkeys")
             else:
-                changed = (
-                    apply_profile_ini(obs_dir, profile_name, args, dry_run)
-                    or changed
-                )
+                changed = apply_profile_ini(obs_dir, profile_name, args, dry_run) or changed
 
         profiles = args.get("profiles", [])
         if profiles:

@@ -14,6 +14,7 @@ def log(msg):
     sys.stderr.write(f"[spicetify-plugin] {msg}\n")
     sys.stderr.flush()
 
+
 def backup_corrupt_config(file_path: str):
     if not os.path.exists(file_path):
         return

@@ -16,9 +16,7 @@ except ImportError:
 
 
 def get_config_path() -> str:
-    return os.path.join(
-        os.environ.get("APPDATA", ""), "GitHub CLI", "config.yml"
-    )
+    return os.path.join(os.environ.get("APPDATA", ""), "GitHub CLI", "config.yml")
 
 
 def log(message: str) -> None:
@@ -78,9 +76,7 @@ def get_config_target(config: dict) -> dict:
 
 
 def check_installed(request_id: str) -> dict:
-    installed = (
-        shutil.which("gh") is not None or shutil.which("gh.exe") is not None
-    )
+    installed = shutil.which("gh") is not None or shutil.which("gh.exe") is not None
     return {
         "requestId": request_id,
         "success": True,
