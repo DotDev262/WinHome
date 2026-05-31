@@ -1,6 +1,6 @@
 # Plugin Directory
 
-WinHome currently ships with 33 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
+WinHome currently ships with 36 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
 
 ## Capability Legend
 
@@ -14,20 +14,22 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | Name | Brief description | Capabilities | Docs |
 | --- | --- | --- | --- |
 | `cargo` | Manages Cargo settings in `.cargo/config.toml`. | `config_provider` | [Details](#cargo) |
+| `go` | Manages Go toolchain environment variables via `go env -w`. | `config_provider` | [go.md](go.md) |
 | `chocolatey` | Manages Chocolatey client configuration and feature flags. | `config_provider` | [Details](#chocolatey) |
 | `npm` | Manages user-level `.npmrc` settings. | `config_provider` | [Details](#npm) |
 | `pip` | Manages `pip.ini` settings for Python package installs. | `config_provider` | [Details](#pip) |
+| `scoop` | Manages Scoop client `config.json`, separate from package installation. | `config_provider` | [scoop.md](scoop.md) |
 | `winget` | Manages Winget CLI `settings.json`, separate from package installation. | `config_provider` | [Details](#winget) |
 
 ### Editors And Knowledge Tools
 
 | Name | Brief description | Capabilities | Docs |
 | --- | --- | --- | --- |
-| `helix-editor` | Manages Helix `config.toml` and `languages.toml`. | `config_provider` | [Details](#helix-editor) |
-| `notepadplusplus` | Manages Notepad++ JSON settings. | `config_provider` | [Details](#notepadplusplus) |
-| `obsidian` | Configures vault settings and community plugins for Obsidian. | `config_provider` | [Details](#obsidian) |
-| `vim` | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [Details](#vim) |
-| `vscode` | Syncs VS Code settings, profiles, and extensions. | `config_provider`, `package_manager` | [Details](#vscode) |
+| `helix-editor` | Manages Helix `config.toml` and `languages.toml`. | `config_provider` | [helix-editor.md](helix-editor.md) |
+| `notepadplusplus` | Manages Notepad++ JSON settings. | `config_provider` | [notepadplusplus.md](notepadplusplus.md) |
+| `obsidian` | Configures vault settings and community plugins for Obsidian. | `config_provider` | [obsidian.md](obsidian.md) |
+| `vim` | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [vim.md](vim.md) |
+| `vscode` | Syncs VS Code settings, profiles, and extensions. | `config_provider`, `package_manager` | [vscode.md](vscode.md) |
 
 ### Shell, Terminal, And Navigation
 
@@ -35,10 +37,11 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | --- | --- | --- | --- |
 | `alacritty` | Manages Alacritty `alacritty.toml` terminal settings. | `config_provider` | [Details](#alacritty) |
 | `bat` | Manages `bat` syntax-highlighting pager configuration. | `config_provider` | [Details](#bat) |
+| `fzf` | Manages default fzf options in `_fzfrc`. | `config_provider` | [fzf.md](fzf.md) |
 | `ohmyposh` | Manages the Oh My Posh bootstrap line in a PowerShell profile. | `config_provider` | [Details](#ohmyposh) |
 | `powershell` | Generates a managed PowerShell profile block for aliases, modules, prompt, and functions. | `config_provider` | [Details](#powershell) |
 | `starship` | Manages `starship.toml` prompt settings. | `config_provider` | [Details](#starship) |
-| `windows-terminal` | Manages Windows Terminal `settings.json` for stable, preview, or dev installs. | `config_provider` | [Details](#windows-terminal) |
+| `windows-terminal` | Manages Windows Terminal `settings.json` for stable, preview, or dev installs. | `config_provider` | [windows-terminal.md](windows-terminal.md) |
 | `yazi` | Manages Yazi core, keymap, and theme TOML files. | `config_provider` | [Details](#yazi) |
 | `zoxide` | Adds or updates shell init hooks for Zoxide in PowerShell and Bash profiles. | `config_provider` | [Details](#zoxide) |
 
@@ -48,14 +51,16 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | --- | --- | --- | --- |
 | `chezmoi` | Manages chezmoi dotfile manager configuration. | `config_provider` | [Details](#chezmoi) |
 | `curl` | Manages `_curlrc` settings for curl. | `config_provider` | [Details](#curl) |
-| `docker` | Manages Docker Desktop `settings.json`. | `config_provider` | [Details](#docker) |
+| `docker` | Manages Docker Desktop `settings.json`. | `config_provider` | [docker.md](docker.md) |
 | `gh` | Manages GitHub CLI `config.yml`. | `config_provider` | [Details](#gh) |
 | `gh-dash` | Manages `gh-dash` dashboard settings in `config.yml`. | `config_provider` | [Details](#gh-dash) |
-| `lazygit` | Manages `lazygit` YAML configuration. | `config_provider` | [Details](#lazygit) |
+| `lazygit` | Manages `lazygit` YAML configuration. | `config_provider` | [lazygit.md](lazygit.md) |
 | `mise` | Manages `config.toml` for the mise version manager. | `config_provider` | [Details](#mise) |
-| `opencode` | Manages OpenCode JSON and JSONC settings. | `config_provider` | [Details](#opencode) |
-| `openssh` | Manages global and host-specific entries in `~/.ssh/config`. | `config_provider` | [Details](#openssh) |
+| `opencode` | Manages OpenCode JSON and JSONC settings. | `config_provider` | [opencode.md](opencode.md) |
+| `postman` | Manages Postman API client JSON settings under `packages/` or `storage/`. | `config_provider` | [postman.md](postman.md) |
+| `openssh` | Manages global and host-specific entries in `~/.ssh/config`. | `config_provider` | [openssh.md](openssh.md) |
 | `rclone` | Manages `rclone.conf` global settings and remotes. | `config_provider` | [Details](#rclone) |
+| `ripgrep` | Manages default `rg` flags in `.ripgreprc`. | `config_provider` | [ripgrep.md](ripgrep.md) |
 
 <a id="rustup"></a>
 #### rustup
@@ -69,10 +74,12 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | Name | Brief description | Capabilities | Docs |
 | --- | --- | --- | --- |
 | `autohotkey` | Manages an AutoHotkey v2 bootstrap script and WinHome-owned settings block. | `config_provider` | [Details](#autohotkey) |
-| `espanso` | Manages Espanso text expansion rules in `base.yml`. | `config_provider` | [Details](#espanso) |
-| `keepassxc` | Manages KeePassXC INI settings. | `config_provider` | [Details](#keepassxc) |
+| `espanso` | Manages Espanso text expansion rules in `base.yml`. | `config_provider` | [espanso.md](espanso.md) |
+| `keepassxc` | Manages KeePassXC INI settings. | `config_provider` | [keepassxc.md](keepassxc.md) |
 | `powertoys` | Manages PowerToys general settings and supported module settings. | `config_provider` | [Details](#powertoys) |
 | `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
+| `windows-explorer` | Manages File Explorer advanced settings in the user registry. | `config_provider` | [windows-explorer.md](windows-explorer.md) |
+| `vlc` | Manages VLC `vlcrc` playback and interface settings. | `config_provider` | [vlc.md](vlc.md) |
 | `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) |
 
 ### Examples And Test Fixtures
@@ -169,6 +176,13 @@ Config key: `extensions.pip`
 
 Merges Pip settings into `%APPDATA%\pip\pip.ini`.
 
+<a id="scoop"></a>
+#### scoop
+
+Config key: `extensions.scoop`
+
+Deep-merges settings into `%USERPROFILE%\.config\scoop\config.json` (or `%XDG_CONFIG_HOME%\scoop\config.json`). For package installs, see [Scoop module docs](../modules/scoop.md). Full plugin guide: [scoop.md](scoop.md).
+
 <a id="winget"></a>
 #### winget
 
@@ -228,6 +242,13 @@ Merges TOML settings into `%APPDATA%\alacritty\alacritty.toml`.
 Config key: `extensions.bat`
 
 Manages flags and variables in `%APPDATA%\bat\config`.
+
+<a id="fzf"></a>
+#### fzf
+
+Config key: `extensions.fzf`
+
+Merges `export` lines into `%USERPROFILE%\_fzfrc` (or `~/.fzfrc`). See [fzf.md](fzf.md).
 
 <a id="ohmyposh"></a>
 #### ohmyposh
@@ -329,6 +350,13 @@ Config key: `extensions.opencode`
 
 Merges OpenCode JSON or JSONC settings into `%USERPROFILE%\.config\opencode\opencode.json`, or an explicit project path when provided.
 
+<a id="postman"></a>
+#### postman
+
+Config key: `extensions.postman`
+
+Deep-merges JSON settings into the newest Postman config file under `%APPDATA%\Postman\packages\` (with fallback to `storage\settings.json`). See [postman.md](postman.md).
+
 <a id="openssh"></a>
 #### openssh
 
@@ -342,6 +370,13 @@ Merges global settings and `hosts` blocks into `~/.ssh/config`.
 Config key: `extensions.rclone`
 
 Merges global settings and remote definitions into `%USERPROFILE%\.config\rclone\rclone.conf`.
+
+<a id="ripgrep"></a>
+#### ripgrep
+
+Config key: `extensions.ripgrep`
+
+Merges default flags into `%USERPROFILE%\.ripgreprc` (or `RIPGREP_CONFIG_PATH`). See [ripgrep.md](ripgrep.md).
 
 <a id="rustup"></a>
 #### rustup
@@ -386,6 +421,13 @@ Manages general PowerToys settings plus supported module files such as `FancyZon
 Config key: `extensions.sharex`
 
 Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
+
+<a id="vlc"></a>
+#### vlc
+
+Config key: `extensions.vlc`
+
+Merges INI-like settings into `%APPDATA%\vlc\vlcrc`. See [vlc.md](vlc.md).
 
 ### Examples And Test Fixtures
 
