@@ -24,10 +24,16 @@
   href: gh-dash.md
 - name: Gh
   href: gh.md
+- name: Helix Editor
+  href: helix-editor.md
 - name: Mise
   href: mise.md
 - name: Npm
   href: npm.md
+- name: Notepad++
+  href: notepadplusplus.md
+- name: Obsidian
+  href: obsidian.md
 - name: Ohmyposh
   href: ohmyposh.md
 - name: Pip
@@ -40,10 +46,18 @@
   href: rclone.md
 - name: Rustup
   href: rustup.md
+- name: Scoop
+  href: scoop.md
 - name: Sharex
   href: sharex.md
 - name: Starship
   href: starship.md
+- name: Vim
+  href: vim.md
+- name: VS Code
+  href: vscode.md
+- name: Windows Terminal
+  href: windows-terminal.md
 - name: Winget
   href: winget.md
 - name: Yazi
