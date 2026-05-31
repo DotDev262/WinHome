@@ -20,16 +20,30 @@
   href: chocolatey.md
 - name: Curl
   href: curl.md
+- name: Docker
+  href: docker.md
+- name: Espanso
+  href: espanso.md
 - name: Gh Dash
   href: gh-dash.md
+- name: Go
+  href: go.md
 - name: Gh
   href: gh.md
+- name: KeePassXC
+  href: keepassxc.md
+- name: Lazygit
+  href: lazygit.md
 - name: Mise
   href: mise.md
 - name: Npm
   href: npm.md
 - name: Ohmyposh
   href: ohmyposh.md
+- name: OpenCode
+  href: opencode.md
+- name: OpenSSH
+  href: openssh.md
 - name: Pip
   href: pip.md
 - name: Powershell
