@@ -86,7 +86,15 @@ namespace WinHome.Tests
       // Assert
       Assert.True(File.Exists(targetPath));
       var fileInfo = new FileInfo(targetPath);
-      Assert.Equal(sourcePath, fileInfo.LinkTarget);
+      if (fileInfo.LinkTarget is not null)
+      {
+        Assert.Equal(sourcePath, fileInfo.LinkTarget);
+      }
+      else
+      {
+        Assert.Equal(File.ReadAllText(sourcePath), File.ReadAllText(targetPath));
+        _loggerMock.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("Symlink failed"))), Times.Once);
+      }
 
       // Cleanup
       File.Delete(sourcePath);
