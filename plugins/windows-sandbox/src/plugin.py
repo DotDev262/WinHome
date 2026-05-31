@@ -60,15 +60,9 @@ def write_xml(path: str, root: ET.Element) -> None:
 
 def check_installed(args: dict, request_id: str) -> dict:
     windir = os.environ.get("WINDIR", "C:\\Windows")
-
     sandbox_path = os.path.join(windir, "System32", "WindowsSandbox.exe")
 
-    return {
-        "requestId": request_id,
-        "success": True,
-        "changed": False,
-        "data": os.path.exists(sandbox_path)
-    }
+    return {"requestId": request_id, "success": True, "changed": False, "data": os.path.exists(sandbox_path)}
 
 
 def merge_settings(root: ET.Element, settings: dict) -> bool:
@@ -90,7 +84,6 @@ def merge_settings(root: ET.Element, settings: dict) -> bool:
             value = "Enable" if settings[key] else "Disable"
 
             node = root.find(xml_tag)
-
             if node is None:
                 node = ET.SubElement(root, xml_tag)
 
@@ -103,7 +96,6 @@ def merge_settings(root: ET.Element, settings: dict) -> bool:
         value = str(settings["memoryInMB"])
 
         node = root.find("MemoryInMB")
-
         if node is None:
             node = ET.SubElement(root, "MemoryInMB")
 
@@ -116,7 +108,6 @@ def merge_settings(root: ET.Element, settings: dict) -> bool:
         new_value = settings["mappedFolders"]
 
         node = root.find("MappedFolders")
-
         existing = []
 
         if node is not None:
@@ -124,10 +115,14 @@ def merge_settings(root: ET.Element, settings: dict) -> bool:
                 host = mf.find("HostFolder")
                 readonly = mf.find("ReadOnly")
 
-                existing.append({
-                    "hostFolder": host.text if host is not None else "",
-                    "readOnly": readonly.text == "true" if readonly is not None else False
-                })
+                existing.append(
+                    {
+                        "hostFolder": host.text if host is not None else "",
+                        "readOnly": (
+                            readonly.text.lower() == "true" if readonly is not None and readonly.text else False
+                        ),
+                    }
+                )
 
         # only mark changed if different
         if existing != new_value:
@@ -148,13 +143,11 @@ def merge_settings(root: ET.Element, settings: dict) -> bool:
             readonly = ET.SubElement(mf, "ReadOnly")
             readonly.text = str(folder.get("readOnly", False)).lower()
 
-
     return changed
 
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
-
     settings = args.get("settings", {})
 
     if not isinstance(settings, dict):
@@ -163,7 +156,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "success": False,
             "changed": False,
             "error": "settings must be a dictionary",
-            "data": None
+            "data": None,
         }
 
     try:
@@ -172,34 +165,16 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
         changed = merge_settings(root, settings)
 
-        # DRY RUN → no file write
         if dry_run:
-            return {
-                "requestId": request_id,
-                "success": True,
-                "changed": changed,
-                "data": None
-            }
+            return {"requestId": request_id, "success": True, "changed": changed, "data": None}
 
-        # ACTUAL WRITE
         if changed:
             write_xml(config_path, root)
 
-        return {
-            "requestId": request_id,
-            "success": True,
-            "changed": changed,
-            "data": None
-        }
+        return {"requestId": request_id, "success": True, "changed": changed, "data": None}
 
     except Exception as e:
-        return {
-            "requestId": request_id,
-            "success": False,
-            "changed": False,
-            "error": str(e),
-            "data": None
-        }
+        return {"requestId": request_id, "success": False, "changed": False, "error": str(e), "data": None}
 
 
 def main():
@@ -211,7 +186,7 @@ def main():
             "success": False,
             "changed": False,
             "error": "No input received",
-            "data": None
+            "data": None,
         }
         sys.stdout.write(json.dumps(response) + "\n")
         return
@@ -224,7 +199,7 @@ def main():
             "success": False,
             "changed": False,
             "error": f"Invalid JSON: {e}",
-            "data": None
+            "data": None,
         }
         sys.stdout.write(json.dumps(response) + "\n")
         return
@@ -237,11 +212,7 @@ def main():
         response = check_installed(args, request_id)
 
     elif command == "apply":
-        response = apply_config(
-            args,
-            request.get("context", {}),
-            request_id
-        )
+        response = apply_config(args, request.get("context", {}), request_id)
 
     else:
         response = {
@@ -249,7 +220,7 @@ def main():
             "success": False,
             "changed": False,
             "error": f"Unknown command: {command}",
-            "data": None
+            "data": None,
         }
 
     sys.stdout.write(json.dumps(response) + "\n")

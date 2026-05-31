@@ -3,7 +3,6 @@ import os
 import sys
 import tempfile
 
-
 def get_settings_path():
     appdata = os.environ.get("APPDATA", "")
     return os.path.join(appdata, "BetterDiscord", "data", "settings.json")
@@ -154,7 +153,9 @@ def main():
                 }
             )
         )
+        sys.stdout.flush()
         return
+        
 
     try:
         request = json.loads(input_data)
