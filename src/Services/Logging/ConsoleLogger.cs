@@ -4,8 +4,14 @@ namespace WinHome.Services.Logging
 {
   public class ConsoleLogger : ILogger
   {
+    private readonly LogFileWriter? _logFile;
     private readonly object _consoleLock = new();
     private volatile LogLevel _minLevel = LogLevel.Info;
+
+    public ConsoleLogger(LogFileWriter? logFile = null)
+    {
+      _logFile = logFile;
+    }
 
     public void SetMinLevel(LogLevel level)
     {
@@ -70,6 +76,8 @@ namespace WinHome.Services.Logging
         Console.WriteLine(message);
         Console.ResetColor();
       }
+
+      WriteToFile(message, LogLevel.Error);
     }
 
     private void WriteTrace(string message)
@@ -78,6 +86,8 @@ namespace WinHome.Services.Logging
       {
         Console.WriteLine($"[Trace] {message}");
       }
+
+      WriteToFile(message, LogLevel.Trace);
     }
 
     private void WriteDebug(string message)
@@ -86,6 +96,8 @@ namespace WinHome.Services.Logging
       {
         Console.WriteLine($"[Debug] {message}");
       }
+
+      WriteToFile(message, LogLevel.Debug);
     }
 
     private void WriteInfo(string message)
@@ -94,6 +106,8 @@ namespace WinHome.Services.Logging
       {
         Console.WriteLine(message);
       }
+
+      WriteToFile(message, LogLevel.Info);
     }
 
     private void WriteSuccess(string message)
@@ -104,6 +118,8 @@ namespace WinHome.Services.Logging
         Console.WriteLine(message);
         Console.ResetColor();
       }
+
+      WriteToFile(message, LogLevel.Success);
     }
 
     private void WriteWarning(string message)
@@ -114,6 +130,13 @@ namespace WinHome.Services.Logging
         Console.WriteLine(message);
         Console.ResetColor();
       }
+
+      WriteToFile(message, LogLevel.Warning);
+    }
+
+    private void WriteToFile(string message, LogLevel level)
+    {
+      _logFile?.Write(level, message);
     }
   }
 }

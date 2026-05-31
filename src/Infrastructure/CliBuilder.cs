@@ -61,6 +61,10 @@ public static class CliBuilder
     jsonOption.Description = "Output results as JSON";
     jsonOption.DefaultValueFactory = _ => false;
 
+    var logFileOption = new Option<FileInfo?>("--log-file");
+    logFileOption.Description = "Append log output to the given file in addition to the console";
+    logFileOption.DefaultValueFactory = _ => null;
+
     var forceOption = new Option<bool>("--force") { Description = "Force reapply steps even if previously succeeded" };
     forceOption.DefaultValueFactory = _ => false;
 
@@ -77,6 +81,7 @@ public static class CliBuilder
     rootCommand.Options.Add(verboseOption);
     rootCommand.Options.Add(quietOption);
     rootCommand.Options.Add(jsonOption);
+    rootCommand.Options.Add(logFileOption);
     rootCommand.Options.Add(forceOption);
     rootCommand.Options.Add(continueOnErrorOption);
 
@@ -109,6 +114,7 @@ public static class CliBuilder
     generateCommand.Options.Add(outputOption);
     generateCommand.Options.Add(verboseOption);
     generateCommand.Options.Add(quietOption);
+    generateCommand.Options.Add(logFileOption);
 
     generateCommand.SetAction(async (ParseResult result) =>
     {
@@ -129,6 +135,7 @@ public static class CliBuilder
     stateCommand.Description = "Manage the system state managed by WinHome";
     stateCommand.Options.Add(verboseOption);
     stateCommand.Options.Add(quietOption);
+    stateCommand.Options.Add(logFileOption);
 
     var listSubCommand = new Command("list");
     listSubCommand.Description = "List all items currently managed by WinHome";

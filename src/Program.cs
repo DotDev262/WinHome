@@ -155,6 +155,11 @@ class Program
 
       return await rootCommand.Parse(args).InvokeAsync();
     }
+    catch (InvalidOperationException ex)
+    {
+      Console.Error.WriteLine($"Error: {ex.Message}");
+      return 1;
+    }
     catch (Exception ex)
     {
       Console.ForegroundColor = ConsoleColor.Red;

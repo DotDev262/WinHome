@@ -17,27 +17,41 @@ public static class AppHost
   {
     // Check for --json flag in args to force JSON logging early
     bool isJson = args.Contains("--json");
+    LogFileWriter? logFileWriter = null;
+    var logFilePath = LogFilePathParser.Parse(args);
+
+    if (logFilePath != null)
+    {
+      if (!LogFileWriter.TryCreate(logFilePath, out logFileWriter, out var error))
+      {
+        throw new InvalidOperationException(error);
+      }
+    }
 
     return Host.CreateDefaultBuilder(args)
         .ConfigureServices((context, services) =>
         {
-          ConfigureServices(context.Configuration, services, isJson);
+          ConfigureServices(context.Configuration, services, isJson, logFileWriter);
+          if (logFileWriter != null)
+          {
+            services.AddSingleton(logFileWriter);
+          }
         })
         .Build();
   }
 
-  public static void ConfigureServices(IConfiguration configuration, IServiceCollection services, bool isJsonForce = false)
+  public static void ConfigureServices(IConfiguration configuration, IServiceCollection services, bool isJsonForce = false, LogFileWriter? logFileWriter = null)
   {
     var isJsonConfig = configuration.GetValue<bool>("json");
     var isJson = isJsonForce || isJsonConfig;
 
     if (isJson)
     {
-      services.AddSingleton<ILogger, JsonLogger>();
+      services.AddSingleton<ILogger>(_ => new JsonLogger(logFileWriter));
     }
     else
     {
-      services.AddSingleton<ILogger, ConsoleLogger>();
+      services.AddSingleton<ILogger>(_ => new ConsoleLogger(logFileWriter));
     }
 
     // System Services
