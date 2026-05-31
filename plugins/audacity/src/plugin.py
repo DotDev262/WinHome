@@ -157,6 +157,7 @@ def merge_settings(
 # Plugin commands
 # ---------------------------------------------------------------------------
 
+
 def check_installed(args: dict, request_id: str) -> dict:
     """Return True if the Audacity config directory exists OR audacity.exe
     is on the PATH — whichever is found first."""
@@ -218,10 +219,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             }
 
         if dry_run:
-            log(
-                f"Would update {config_path} with: "
-                f"{json.dumps(settings)}"
-            )
+            log(f"Would update {config_path} with: {json.dumps(settings)}")
 
             return {
                 "requestId": request_id,
@@ -253,6 +251,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main():
     input_data = sys.stdin.read()
@@ -296,4 +295,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -5,18 +5,12 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "src",
-        "plugin.py"
-    )
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def run_plugin(payload: dict, env: dict = None) -> dict:
     merged_env = os.environ.copy()
@@ -53,6 +47,7 @@ def read_cfg(path: str) -> configparser.RawConfigParser:
 # ---------------------------------------------------------------------------
 # check_installed
 # ---------------------------------------------------------------------------
+
 
 def test_check_installed_dir_exists():
     """Returns True when %APPDATA%\\audacity\\ directory is present."""
@@ -104,12 +99,14 @@ def test_check_installed_no_appdata():
 
     result = subprocess.run(
         [sys.executable, PLUGIN],
-        input=json.dumps({
-            "requestId": "ci-3",
-            "command": "check_installed",
-            "args": {},
-            "context": {},
-        }),
+        input=json.dumps(
+            {
+                "requestId": "ci-3",
+                "command": "check_installed",
+                "args": {},
+                "context": {},
+            }
+        ),
         capture_output=True,
         text=True,
         env=env,
@@ -126,6 +123,7 @@ def test_check_installed_no_appdata():
 # ---------------------------------------------------------------------------
 # apply — basic writes
 # ---------------------------------------------------------------------------
+
 
 def test_apply_creates_config_dir():
     """apply creates %APPDATA%\\audacity\\ and audacity.cfg when absent."""
@@ -228,6 +226,7 @@ def test_apply_bool_casting():
 # apply — dry-run
 # ---------------------------------------------------------------------------
 
+
 def test_apply_dry_run_no_file():
     """Dry-run with no existing config must not create any file."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -288,6 +287,7 @@ def test_apply_dry_run_existing_file_unchanged():
 # ---------------------------------------------------------------------------
 # apply — merge / idempotency
 # ---------------------------------------------------------------------------
+
 
 def test_apply_merges_with_existing_config():
     """Applying new keys preserves keys already in the file."""
@@ -468,6 +468,7 @@ def test_apply_with_sample_cfg():
 # apply — atomic write verification
 # ---------------------------------------------------------------------------
 
+
 def test_apply_atomic_no_temp_files_left():
     """No .tmp files should remain after a successful write."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -492,6 +493,7 @@ def test_apply_atomic_no_temp_files_left():
 # ---------------------------------------------------------------------------
 # apply — POSIX trailing newline
 # ---------------------------------------------------------------------------
+
 
 def test_apply_posix_trailing_newline():
     """Written config file must end with a newline character."""
@@ -520,13 +522,16 @@ def test_apply_posix_trailing_newline():
 # Error paths
 # ---------------------------------------------------------------------------
 
+
 def test_unknown_command():
-    res = run_plugin({
-        "requestId": "e-1",
-        "command": "explode",
-        "args": {},
-        "context": {},
-    })
+    res = run_plugin(
+        {
+            "requestId": "e-1",
+            "command": "explode",
+            "args": {},
+            "context": {},
+        }
+    )
 
     assert res["success"] is False
     assert "error" in res
@@ -582,4 +587,3 @@ if __name__ == "__main__":
     test_apply_no_settings_no_change()
 
     print("\nAll tests passed.")
-
