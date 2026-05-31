@@ -582,3 +582,4 @@ if __name__ == "__main__":
     test_apply_no_settings_no_change()
 
     print("\nAll tests passed.")
+
