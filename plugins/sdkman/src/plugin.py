@@ -14,10 +14,12 @@ def log(msg):
 
 
 def get_sdkman_dir():
-    return os.path.join(
-        os.environ.get("USERPROFILE", ""),
-        ".sdkman",
-    )
+    userprofile = os.environ.get("USERPROFILE")
+
+    if userprofile:
+        return os.path.join(userprofile, ".sdkman")
+
+    return os.path.expanduser("~/.sdkman")
 
 
 def get_config_path():
@@ -49,6 +51,9 @@ def read_config(file_path: str) -> dict:
 
 
 def sdkman_value(value):
+    if value is None:
+        return None
+
     if isinstance(value, bool):
         return "true" if value else "false"
 
@@ -79,12 +84,16 @@ def merge_settings(target: dict, source: dict) -> bool:
     changed = False
 
     for key, value in source.items():
-        if key not in target or target[key] != sdkman_value(value):
-            target[key] = sdkman_value(value)
+        converted = sdkman_value(value)
+
+        if converted is None:
+            continue
+
+        if key not in target or target[key] != converted:
+            target[key] = converted
             changed = True
 
     return changed
-
 
 def check_installed(args: dict, request_id: str) -> dict:
     installed = os.path.isdir(get_sdkman_dir())
@@ -100,6 +109,9 @@ def check_installed(args: dict, request_id: str) -> dict:
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = bool(context.get("dryRun", False))
     settings = args.get("settings", {})
+
+    if not isinstance(settings, dict):
+        raise ValueError("settings must be an object")
 
     try:
         config_path = get_config_path()
@@ -147,6 +159,8 @@ def handle(request: dict) -> dict:
     context = request.get("context", {})
 
     if command == "check_installed":
+        if not isinstance(args, dict):
+            raise ValueError("args must be an object")
         return check_installed(args, request_id)
     if command == "apply":
         if not isinstance(args, dict):

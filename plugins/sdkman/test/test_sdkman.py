@@ -112,6 +112,17 @@ class TestApplyConfig(unittest.TestCase):
             self.assertTrue(result["changed"])
             self.assertFalse(os.path.exists(config_path))
 
+    def test_invalid_settings_type(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "settings must be an object",
+        ):
+            plugin.apply_config(
+                {"settings": "invalid"},
+                {},
+                "req-invalid",
+            )
+
     def test_idempotent(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = os.path.join(
@@ -200,6 +211,17 @@ class TestApplyConfig(unittest.TestCase):
                 config["sdkman_beta_channel"],
                 "true",
             )
+
+    def test_none_values_are_ignored(self):
+        target = {}
+
+        changed = plugin.merge_settings(
+            target,
+            {"sdkman_auto_answer": None},
+        )
+
+        self.assertFalse(changed)
+        self.assertEqual(target, {})
 
 
 class TestProtocol(unittest.TestCase):
