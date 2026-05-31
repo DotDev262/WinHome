@@ -14,6 +14,11 @@ namespace WinHome.Services.Plugins
 
     public PluginPackageManagerAdapter(PluginManifest plugin, IPluginRunner runner, IPluginManager manager, IRuntimeResolver resolver)
     {
+      ArgumentNullException.ThrowIfNull(plugin);
+      ArgumentNullException.ThrowIfNull(runner);
+      ArgumentNullException.ThrowIfNull(manager);
+      ArgumentNullException.ThrowIfNull(resolver);
+
       _plugin = plugin;
       _runner = runner;
       _manager = manager;
@@ -32,14 +37,18 @@ namespace WinHome.Services.Plugins
 
     public bool IsInstalled(string appId)
     {
-      var result = _runner.ExecuteAsync(_plugin, "check_installed", new { packageId = appId }, null).Result;
-      return result.Success && result.Data?.ToString()?.ToLower() == "true";
+      var result = TryExecute("check_installed", new { packageId = appId }, null);
+      return result?.Success == true
+        && bool.TryParse(result.Data?.ToString(), out var isInstalled)
+        && isInstalled;
     }
 
     public void Install(AppConfig app, bool dryRun)
     {
+      ArgumentNullException.ThrowIfNull(app);
+
       // Ensure runtime is available before execution
-      _manager.EnsureRuntimeAsync(_plugin).Wait();
+      EnsureRuntime();
 
       var args = new
       {
@@ -50,27 +59,63 @@ namespace WinHome.Services.Plugins
 
       var context = new { dryRun = dryRun };
 
-      var result = _runner.ExecuteAsync(_plugin, "install", args, context).Result;
-
-      if (!result.Success)
-      {
-        throw new Exception($"Plugin '{_plugin.Name}' failed to install '{app.Id}': {result.Error}");
-      }
+      var result = ExecuteRequired("install", args, context);
+      EnsureSuccess(result, "install", app.Id);
     }
 
     public void Uninstall(string appId, bool dryRun)
     {
       // Ensure runtime is available before execution
-      _manager.EnsureRuntimeAsync(_plugin).Wait();
+      EnsureRuntime();
 
       var context = new { dryRun = dryRun };
-      var result = _runner.ExecuteAsync(_plugin, "uninstall", new { packageId = appId }, context).Result;
+      var result = ExecuteRequired("uninstall", new { packageId = appId }, context);
+      EnsureSuccess(result, "uninstall", appId);
+    }
 
-      if (!result.Success)
+    private void EnsureRuntime()
+    {
+      _manager.EnsureRuntimeAsync(_plugin).GetAwaiter().GetResult();
+    }
+
+    private PluginResult? TryExecute(string command, object? args, object? context)
+    {
+      try
       {
-        // Log warning? For now throw.
-        throw new Exception($"Plugin '{_plugin.Name}' failed to uninstall '{appId}': {result.Error}");
+        return _runner.ExecuteAsync(_plugin, command, args, context).GetAwaiter().GetResult();
       }
+      catch
+      {
+        return null;
+      }
+    }
+
+    private PluginResult ExecuteRequired(string command, object? args, object? context)
+    {
+      try
+      {
+        return _runner.ExecuteAsync(_plugin, command, args, context).GetAwaiter().GetResult()
+          ?? throw new InvalidOperationException($"Plugin '{_plugin.Name}' returned an invalid response for '{command}'.");
+      }
+      catch (TimeoutException ex)
+      {
+        throw new TimeoutException($"Plugin '{_plugin.Name}' timed out while executing '{command}'.", ex);
+      }
+      catch (TaskCanceledException ex)
+      {
+        throw new TimeoutException($"Plugin '{_plugin.Name}' timed out while executing '{command}'.", ex);
+      }
+    }
+
+    private void EnsureSuccess(PluginResult result, string operation, string target)
+    {
+      if (result.Success)
+      {
+        return;
+      }
+
+      var error = string.IsNullOrWhiteSpace(result.Error) ? "Unknown error." : result.Error;
+      throw new Exception($"Plugin '{_plugin.Name}' failed to {operation} '{target}': {error}");
     }
 
     // Inner class to satisfy the Interface contract
@@ -122,7 +167,7 @@ namespace WinHome.Services.Plugins
 
       public void Install(bool dryRun)
       {
-        _m.EnsureRuntimeAsync(_p).Wait();
+        _m.EnsureRuntimeAsync(_p).GetAwaiter().GetResult();
       }
     }
   }
