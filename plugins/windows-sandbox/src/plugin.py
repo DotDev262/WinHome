@@ -113,14 +113,33 @@ def merge_settings(root: ET.Element, settings: dict) -> bool:
 
     # mappedFolders support
     if "mappedFolders" in settings:
+        new_value = settings["mappedFolders"]
+
         node = root.find("MappedFolders")
 
+        existing = []
+
+        if node is not None:
+            for mf in node.findall("MappedFolder"):
+                host = mf.find("HostFolder")
+                readonly = mf.find("ReadOnly")
+
+                existing.append({
+                    "hostFolder": host.text if host is not None else "",
+                    "readOnly": readonly.text == "true" if readonly is not None else False
+                })
+
+        # only mark changed if different
+        if existing != new_value:
+            changed = True
+
+        # rebuild XML safely
         if node is None:
             node = ET.SubElement(root, "MappedFolders")
         else:
-            node.clear()  # only clear if updating existing
+            node.clear()
 
-        for folder in settings["mappedFolders"]:
+        for folder in new_value:
             mf = ET.SubElement(node, "MappedFolder")
 
             host = ET.SubElement(mf, "HostFolder")
@@ -129,7 +148,6 @@ def merge_settings(root: ET.Element, settings: dict) -> bool:
             readonly = ET.SubElement(mf, "ReadOnly")
             readonly.text = str(folder.get("readOnly", False)).lower()
 
-        changed = True
 
     return changed
 
@@ -154,6 +172,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
         changed = merge_settings(root, settings)
 
+        # DRY RUN → no file write
         if dry_run:
             return {
                 "requestId": request_id,
@@ -162,6 +181,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
                 "data": None
             }
 
+        # ACTUAL WRITE
         if changed:
             write_xml(config_path, root)
 
