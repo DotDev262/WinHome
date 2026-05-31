@@ -1,9 +1,8 @@
 import json
 import os
 import subprocess
-import sys
 import tempfile
-import os
+import sys
 
 PLUGIN = os.path.abspath(
     os.path.join(

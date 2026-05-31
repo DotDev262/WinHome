@@ -1,9 +1,8 @@
 import json
 import os
 import sys
-import xml.etree.ElementTree as ET
 import tempfile
-
+import xml.etree.ElementTree as ET
 
 def create_default_wsb():
     root = ET.Element("Configuration")
