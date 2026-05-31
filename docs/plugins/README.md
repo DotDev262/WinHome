@@ -48,13 +48,13 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | --- | --- | --- | --- |
 | `chezmoi` | Manages chezmoi dotfile manager configuration. | `config_provider` | [Details](#chezmoi) |
 | `curl` | Manages `_curlrc` settings for curl. | `config_provider` | [Details](#curl) |
-| `docker` | Manages Docker Desktop `settings.json`. | `config_provider` | [Details](#docker) |
+| `docker` | Manages Docker Desktop `settings.json`. | `config_provider` | [docker.md](docker.md) |
 | `gh` | Manages GitHub CLI `config.yml`. | `config_provider` | [Details](#gh) |
 | `gh-dash` | Manages `gh-dash` dashboard settings in `config.yml`. | `config_provider` | [Details](#gh-dash) |
-| `lazygit` | Manages `lazygit` YAML configuration. | `config_provider` | [Details](#lazygit) |
+| `lazygit` | Manages `lazygit` YAML configuration. | `config_provider` | [lazygit.md](lazygit.md) |
 | `mise` | Manages `config.toml` for the mise version manager. | `config_provider` | [Details](#mise) |
-| `opencode` | Manages OpenCode JSON and JSONC settings. | `config_provider` | [Details](#opencode) |
-| `openssh` | Manages global and host-specific entries in `~/.ssh/config`. | `config_provider` | [Details](#openssh) |
+| `opencode` | Manages OpenCode JSON and JSONC settings. | `config_provider` | [opencode.md](opencode.md) |
+| `openssh` | Manages global and host-specific entries in `~/.ssh/config`. | `config_provider` | [openssh.md](openssh.md) |
 | `rclone` | Manages `rclone.conf` global settings and remotes. | `config_provider` | [Details](#rclone) |
 
 <a id="rustup"></a>
@@ -69,8 +69,8 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | Name | Brief description | Capabilities | Docs |
 | --- | --- | --- | --- |
 | `autohotkey` | Manages an AutoHotkey v2 bootstrap script and WinHome-owned settings block. | `config_provider` | [Details](#autohotkey) |
-| `espanso` | Manages Espanso text expansion rules in `base.yml`. | `config_provider` | [Details](#espanso) |
-| `keepassxc` | Manages KeePassXC INI settings. | `config_provider` | [Details](#keepassxc) |
+| `espanso` | Manages Espanso text expansion rules in `base.yml`. | `config_provider` | [espanso.md](espanso.md) |
+| `keepassxc` | Manages KeePassXC INI settings. | `config_provider` | [keepassxc.md](keepassxc.md) |
 | `powertoys` | Manages PowerToys general settings and supported module settings. | `config_provider` | [Details](#powertoys) |
 | `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
 | `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) |
