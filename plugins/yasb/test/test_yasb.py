@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
+
 import json
 import os
 import sys
@@ -201,8 +208,7 @@ class TestYasbPlugin(unittest.TestCase):
 
             backup_dir = os.path.dirname(config_path)
             backups = [
-                name for name in os.listdir(backup_dir)
-                if name.startswith("config.yaml.") and name.endswith(".bak")
+                name for name in os.listdir(backup_dir) if name.startswith("config.yaml.") and name.endswith(".bak")
             ]
 
             self.assertTrue(response["success"])

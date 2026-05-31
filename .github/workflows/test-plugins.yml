@@ -63,8 +63,16 @@ jobs:
         plugin: ${{ fromJson(needs.discover.outputs.python_plugins) }}
 
     name: "Python › ${{ matrix.plugin }}"
+    env:
+      APPDATA: /home/runner/appdata
+      LOCALAPPDATA: /home/runner/localappdata
+      USERPROFILE: /home/runner
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          mkdir -p $APPDATA $LOCALAPPDATA
 
       - name: Install uv
         shell: bash
@@ -85,7 +93,8 @@ jobs:
           fi
 
           echo "▶ Running $TEST_FILE"
-          uv run python "$TEST_FILE"
+          chmod +x "$TEST_FILE"
+          uv run "$TEST_FILE"
 
       - name: Annotate failure
         if: failure()
@@ -110,17 +119,21 @@ jobs:
         run: |
           curl -fsSL https://bun.sh/install | bash
           echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.bun/bin:$PATH"
           bun --version
 
       - name: Install dependencies
         shell: bash
         working-directory: plugins/${{ matrix.plugin }}
-        run: bun install
+        run: |
+          export PATH="$HOME/.bun/bin:$PATH"
+          bun install
 
       - name: Run plugin test
         shell: bash
         working-directory: plugins/${{ matrix.plugin }}
         run: |
+          export PATH="$HOME/.bun/bin:$PATH"
           if cat package.json | jq -e '.scripts.test' > /dev/null 2>&1; then
             bun run test
           else

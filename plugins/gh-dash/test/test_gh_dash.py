@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
+
 import json
 import os
 import sys
@@ -8,9 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import yaml
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 import plugin
 
 
@@ -27,9 +32,7 @@ class TestGhDashPlugin(unittest.TestCase):
     def test_check_installed_true_via_which(self):
         with patch(
             "plugin.shutil.which",
-            side_effect=lambda name: (
-                "/usr/local/bin/gh-dash" if name == "gh-dash" else None
-            ),
+            side_effect=lambda name: "/usr/local/bin/gh-dash" if name == "gh-dash" else None,
         ):
             response = self.run_main(
                 {
@@ -128,9 +131,7 @@ class TestGhDashPlugin(unittest.TestCase):
                 ]
             }
             with open(config_path, "w", encoding="utf-8") as fh:
-                yaml.dump(
-                    initial, fh, default_flow_style=False, sort_keys=False
-                )
+                yaml.dump(initial, fh, default_flow_style=False, sort_keys=False)
 
             with patch("plugin.get_config_path", return_value=config_path):
                 response = self.run_main(
@@ -193,14 +194,10 @@ class TestGhDashPlugin(unittest.TestCase):
             config_path = os.path.join(tmp_dir, "config.yml")
             initial = {
                 "defaultLimit": 30,
-                "prSections": [
-                    {"title": "My PRs", "filters": "is:open author:@me"}
-                ],
+                "prSections": [{"title": "My PRs", "filters": "is:open author:@me"}],
             }
             with open(config_path, "w", encoding="utf-8") as fh:
-                yaml.dump(
-                    initial, fh, default_flow_style=False, sort_keys=False
-                )
+                yaml.dump(initial, fh, default_flow_style=False, sort_keys=False)
 
             with patch("plugin.get_config_path", return_value=config_path):
                 response = self.run_main(
@@ -322,9 +319,7 @@ class TestGhDashPlugin(unittest.TestCase):
                         "args": {
                             "settings": {
                                 "defaultLimit": 40,
-                                "prSections": [
-                                    {"title": "Wrapped", "filters": "is:open"}
-                                ],
+                                "prSections": [{"title": "Wrapped", "filters": "is:open"}],
                             }
                         },
                         "context": {"dryRun": False},

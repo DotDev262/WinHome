@@ -66,9 +66,16 @@ namespace WinHome.Services.Plugins
         process.BeginErrorReadLine();
 
         // 1. Send Request
-        string jsonRequest = JsonSerializer.Serialize(request);
-        await process.StandardInput.WriteLineAsync(jsonRequest.AsMemory(), cts.Token);
-        process.StandardInput.Close(); // Close Stdin to signal EOF to the plugin if it reads until EOF
+        try
+        {
+          string jsonRequest = JsonSerializer.Serialize(request);
+          await process.StandardInput.WriteLineAsync(jsonRequest.AsMemory(), cts.Token);
+          process.StandardInput.Close(); // Close Stdin to signal EOF to the plugin if it reads until EOF
+        }
+        catch (IOException) when (process.HasExited)
+        {
+          // Ignore pipe errors if the process has already exited (e.g. simple echo scripts)
+        }
 
         // 2. Read Response with Size Limit (10MB) and Timeout
         var outputBuilder = new StringBuilder();
