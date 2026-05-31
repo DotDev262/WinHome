@@ -7,7 +7,6 @@ The VS Code plugin manages Visual Studio Code configuration, extensions, and use
 It can:
 
 - Install VS Code extensions
-- Remove extensions
 - Update VS Code settings
 - Create and manage named profiles
 - Apply settings to specific profiles
@@ -86,5 +85,8 @@ profiles:
 - Existing settings are merged rather than replaced.
 - Extensions are installed using the VS Code CLI.
 - The plugin requires the `code` command to be available.
-- Profile creation depends on VS Code profile storage.
+- Profile creation depends on VS Code profile storage.4
+- Named profiles are automatically created if they do not already exist.
+- Settings are merged with existing settings.json values.
+- Extension names should be valid VS Code extension IDs.
 
