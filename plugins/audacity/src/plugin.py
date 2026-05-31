@@ -4,7 +4,6 @@ import os
 import sys
 import tempfile
 
-
 CONFIG_FILENAME = "audacity.cfg"
 APP_DIR_NAME = "audacity"
 
