@@ -175,3 +175,14 @@ def test_empty_stdin_returns_json_error():
     assert res["changed"] is False
     assert "error" in res
     assert "data" in res
+
+if __name__ == "__main__":
+    test_check_installed_response_format()
+    test_apply_config_dry_run()
+    test_apply_config_writes_supported_settings()
+    test_preserves_unknown_existing_keys()
+    test_idempotent_apply()
+    test_invalid_settings_returns_json_error()
+    test_empty_stdin_returns_json_error()
+
+    print("\nAll tests passed.")
