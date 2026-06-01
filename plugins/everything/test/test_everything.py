@@ -2,9 +2,7 @@ import json
 import subprocess
 import sys
 
-
 PLUGIN = "src/plugin.py"
-
 
 def run_plugin(payload: dict):
     process = subprocess.Popen(
@@ -22,7 +20,6 @@ def run_plugin(payload: dict):
 
     return stdout.strip()
 
-
 def test_check_installed():
     payload = {
         "requestId": "1",
@@ -36,7 +33,6 @@ def test_check_installed():
 
     assert data["success"] is True
     assert isinstance(data["data"], bool)
-
 
 def test_apply_dry_run():
     payload = {
@@ -60,4 +56,4 @@ def test_apply_dry_run():
 
     assert data["success"] is True
     assert data["changed"] is True
-    
+
