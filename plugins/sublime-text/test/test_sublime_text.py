@@ -212,6 +212,7 @@ def test_idempotent_apply_reports_unchanged():
         assert first["changed"]
         assert second["success"]
         assert second["changed"] is False
+        assert second["data"] == {}
 
 
 def test_unknown_command_returns_error():
@@ -227,6 +228,7 @@ def test_unknown_command_returns_error():
     assert res["success"] is False
     assert res["changed"] is False
     assert "Unknown command" in res["error"]
+    assert res["data"] == {}
 
 
 def test_empty_stdin_returns_error_response():
@@ -236,6 +238,7 @@ def test_empty_stdin_returns_error_response():
     assert res["success"] is False
     assert res["changed"] is False
     assert res["error"] == "Empty stdin"
+    assert res["data"] == {}
 
 
 def test_apply_without_settings_does_not_merge_metadata():
@@ -252,7 +255,26 @@ def test_apply_without_settings_does_not_merge_metadata():
 
         assert res["success"]
         assert res["changed"] is False
+        assert res["data"] == {}
         assert not os.path.exists(preferences_path(tmp))
+
+
+def test_apply_rejects_non_object_settings_with_data():
+    with tempfile.TemporaryDirectory() as tmp:
+        res, _stderr = run_plugin(
+            {
+                "requestId": "9",
+                "command": "apply",
+                "args": {"settings": ["theme"]},
+                "context": {},
+            },
+            {"APPDATA": tmp},
+        )
+
+        assert res["success"] is False
+        assert res["changed"] is False
+        assert res["data"] == {}
+        assert "apply args must be a JSON object" in res["error"]
 
 
 def test_top_level_dry_run_is_ignored():
@@ -322,6 +344,7 @@ if __name__ == "__main__":
     test_unknown_command_returns_error()
     test_empty_stdin_returns_error_response()
     test_apply_without_settings_does_not_merge_metadata()
+    test_apply_rejects_non_object_settings_with_data()
     test_top_level_dry_run_is_ignored()
     test_corrupt_preferences_are_backed_up()
 

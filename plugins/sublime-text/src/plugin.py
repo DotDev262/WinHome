@@ -129,6 +129,7 @@ def apply_config(args: dict, request_id: str, dry_run: bool) -> dict:
                 "success": False,
                 "changed": False,
                 "error": "apply args must be a JSON object",
+                "data": {},
             }
 
         changed = deep_merge(current_config, desired_config)
@@ -139,6 +140,7 @@ def apply_config(args: dict, request_id: str, dry_run: bool) -> dict:
                 "success": True,
                 "changed": False,
                 "error": None,
+                "data": {},
             }
 
         if dry_run:
@@ -172,6 +174,7 @@ def apply_config(args: dict, request_id: str, dry_run: bool) -> dict:
             "success": False,
             "changed": False,
             "error": str(e),
+            "data": {},
         }
 
 
@@ -180,7 +183,7 @@ def build_response(request: dict) -> dict:
     command = request.get("command")
     args = request.get("args", {})
     context = request.get("context", {})
-    dry_run = bool(context.get("dryRun", False))
+    dry_run = context.get("dryRun", False)
 
     if command == "check_installed":
         return check_installed(args, request_id)
@@ -193,6 +196,7 @@ def build_response(request: dict) -> dict:
         "success": False,
         "changed": False,
         "error": f"Unknown command: {command}",
+        "data": {},
     }
 
 
@@ -204,6 +208,7 @@ def main():
             "success": False,
             "changed": False,
             "error": "Empty stdin",
+            "data": {},
         }
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
@@ -219,6 +224,7 @@ def main():
             "success": False,
             "changed": False,
             "error": f"Internal Script Error: {str(e)}",
+            "data": {},
         }
 
     sys.stdout.write(json.dumps(response) + "\n")
