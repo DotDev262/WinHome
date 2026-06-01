@@ -44,8 +44,8 @@ def test_apply_dry_run():
         "args": {
             "settings": {
                 "test_section": {
-                "test_key": "abc123"
-                }
+                    "test_key": "abc123"
+                    }
             }
         }
     }
