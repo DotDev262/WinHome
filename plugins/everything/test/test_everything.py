@@ -43,8 +43,8 @@ def test_apply_dry_run():
         },
         "args": {
             "settings": {
-                "general": {
-                    "run_as_admin": True
+                "test_section": {
+                "test_key": "abc123"
                 }
             }
         }

@@ -87,6 +87,8 @@ def main():
             print(json.dumps({
                 "requestId": None,
                 "success": False,
+                "changed": False,
+                "data": None,
                 "error": "empty input"
             }))
             return
