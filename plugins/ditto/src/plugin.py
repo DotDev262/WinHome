@@ -111,7 +111,6 @@ def main():
         sys.stdout.flush()
         return
 
-
     request_id = request.get("requestId", "unknown")
     command = request.get("command")
     args = request.get("args", {})
