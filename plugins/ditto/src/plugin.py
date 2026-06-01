@@ -78,7 +78,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
     if dry_run:
         log(f"Would update {CONFIG_PATH} with: {json.dumps(new_settings)}")
-        return {"requestId": request_id, "success": True, "changed": True}  
+        return {"requestId": request_id, "success": True, "changed": True}
 
     try:
         write_json_atomic(CONFIG_PATH, current)

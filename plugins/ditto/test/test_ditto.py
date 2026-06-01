@@ -115,8 +115,8 @@ def test_dry_run():
             env={"APPDATA": tmp},
         )
         assert res["success"]
-        assert res["changed"]  
-        assert not os.path.exists(config_path)  
+        assert res["changed"]
+        assert not os.path.exists(config_path)
         print("✓ dry_run")
 
 
