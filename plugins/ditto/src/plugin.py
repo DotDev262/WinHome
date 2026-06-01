@@ -78,7 +78,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
     if dry_run:
         log(f"Would update {CONFIG_PATH} with: {json.dumps(new_settings)}")
-        return {"requestId": request_id, "success": True, "changed": False}
+        return {"requestId": request_id, "success": True, "changed": True}  
 
     try:
         write_json_atomic(CONFIG_PATH, current)
@@ -97,13 +97,20 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 def main():
     input_data = sys.stdin.read()
     if not input_data:
+        response = {"requestId": "unknown", "success": False, "error": "Empty stdin"}
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
         return
 
     try:
         request = json.loads(input_data)
     except Exception as e:
         log(f"Failed to parse request: {e}")
-        sys.exit(1)
+        response = {"requestId": "unknown", "success": False, "error": f"Invalid JSON: {str(e)}"}
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
+        return
+
 
     request_id = request.get("requestId", "unknown")
     command = request.get("command")
