@@ -5,7 +5,6 @@ import sys
 import tempfile
 import uuid
 
-
 PREFERENCES_FILE = "Preferences.sublime-settings"
 SUBLIME_APPDATA_DIR = os.path.join("Sublime Text", "Packages", "User")
 COMMON_INSTALL_PATHS = [
@@ -144,10 +143,7 @@ def apply_config(args: dict, request_id: str, dry_run: bool) -> dict:
             }
 
         if dry_run:
-            log(
-                f"Dry run: would update {config_path} with "
-                f"{json.dumps(desired_config, sort_keys=True)}"
-            )
+            log(f"Dry run: would update {config_path} with {json.dumps(desired_config, sort_keys=True)}")
             return {
                 "requestId": request_id,
                 "success": True,

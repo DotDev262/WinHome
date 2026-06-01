@@ -5,7 +5,6 @@ import sys
 import tempfile
 from typing import Optional, Tuple
 
-
 PLUGIN = os.path.abspath(
     os.path.join(
         os.path.dirname(__file__),
@@ -120,10 +119,7 @@ def test_apply_supports_sublime_settings():
                 "command": "apply",
                 "args": {
                     "settings": {
-                        "color_scheme": (
-                            "Packages/Theme - Monokai Pro/"
-                            "Monokai Pro.sublime-color-scheme"
-                        ),
+                        "color_scheme": ("Packages/Theme - Monokai Pro/Monokai Pro.sublime-color-scheme"),
                         "theme": "Adaptive.sublime-theme",
                         "font_size": 12,
                         "font_face": "JetBrains Mono",
@@ -320,8 +316,7 @@ def test_corrupt_preferences_are_backed_up():
         backup_files = [
             name
             for name in os.listdir(os.path.dirname(pref_path))
-            if name.startswith("Preferences.sublime-settings.")
-            and name.endswith(".bak")
+            if name.startswith("Preferences.sublime-settings.") and name.endswith(".bak")
         ]
 
         assert res["success"]
