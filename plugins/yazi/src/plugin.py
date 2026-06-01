@@ -1,7 +1,7 @@
-import sys
 import json
 import os
 import shutil
+import sys
 
 try:
     import tomllib
@@ -111,20 +111,18 @@ def serialize_toml(data: dict) -> str:
         if isinstance(value, (int, float)):
             return str(value)
         if isinstance(value, str):
-            escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
-            return f"\"{escaped}\""
+            escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+            return f'"{escaped}"'
         if isinstance(value, list):
             items = ", ".join(serialize_inline(v) for v in value)
             return f"[{items}]"
         if isinstance(value, dict):
             return serialize_inline(value)
-        return f"\"{str(value)}\""
+        return f'"{str(value)}"'
 
     def serialize_inline(value) -> str:
         if isinstance(value, dict):
-            items = ", ".join(
-                f"{k} = {serialize_value(v)}" for k, v in value.items()
-            )
+            items = ", ".join(f"{k} = {serialize_value(v)}" for k, v in value.items())
             return f"{{ {items} }}"
         return serialize_value(value)
 
@@ -269,14 +267,10 @@ def main():
             response = apply_config(args, context, request_id)
 
         else:
-            response["error"] = (
-                f"Unknown command: {command}"
-            )
+            response["error"] = f"Unknown command: {command}"
 
     except Exception as fatal_err:
-        response["error"] = (
-            f"Internal Script Error: {str(fatal_err)}"
-        )
+        response["error"] = f"Internal Script Error: {str(fatal_err)}"
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()

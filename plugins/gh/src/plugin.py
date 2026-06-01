@@ -146,7 +146,9 @@ def main() -> None:
         result = handle(request)
     except Exception as error:
         result = {
-            "requestId": request.get("requestId", "unknown") if "request" in locals() and isinstance(request, dict) else "unknown",
+            "requestId": request.get("requestId", "unknown")
+            if "request" in locals() and isinstance(request, dict)
+            else "unknown",
             "success": False,
             "changed": False,
             "error": str(error),

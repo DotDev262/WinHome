@@ -5,7 +5,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ENV_VARS = (
     "_ZO_MAX_DEPTH",
     "_ZO_ECHO",
@@ -68,16 +67,8 @@ def build_init_line(shell: str, init_args: dict) -> str:
 
 def update_profile_content(existing_text: str, desired_line: str) -> tuple[str, bool]:
     current_lines = existing_text.splitlines()
-    matching_lines = [
-        line
-        for line in current_lines
-        if "zoxide init" in line and not line.lstrip().startswith("#")
-    ]
-    updated_lines = [
-        line
-        for line in current_lines
-        if "zoxide init" not in line or line.lstrip().startswith("#")
-    ]
+    matching_lines = [line for line in current_lines if "zoxide init" in line and not line.lstrip().startswith("#")]
+    updated_lines = [line for line in current_lines if "zoxide init" not in line or line.lstrip().startswith("#")]
 
     if matching_lines == [desired_line] and len(updated_lines) == len(current_lines) - 1:
         return existing_text, False

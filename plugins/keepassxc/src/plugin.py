@@ -1,20 +1,23 @@
-import sys
+import datetime
 import json
 import os
-import shutil
 import re
-import datetime
+import shutil
+import sys
 import uuid
+
 
 def log(msg):
     sys.stderr.write(f"[keepassxc-plugin] {msg}\n")
     sys.stderr.flush()
+
 
 def get_config_path():
     appdata = os.getenv("APPDATA")
     if not appdata:
         raise Exception("APPDATA environment variable not found")
     return os.path.join(appdata, "KeePassXC", "keepassxc.ini")
+
 
 def read_text(file_path: str) -> str:
     if not os.path.exists(file_path):
@@ -33,6 +36,7 @@ def read_text(file_path: str) -> str:
             log(f"Failed to backup corrupted config: {backup_e}")
         return ""
 
+
 def write_text(file_path: str, data: str) -> None:
     dir_path = os.path.dirname(file_path)
     if dir_path:
@@ -42,50 +46,53 @@ def write_text(file_path: str, data: str) -> None:
         f.write(data)
     os.replace(tmp_path, file_path)
 
+
 def parse_ini(text: str) -> tuple:
     blocks = []
-    current_block = {'name': None, 'lines': []}
+    current_block = {"name": None, "lines": []}
     blocks.append(current_block)
-    has_trailing_newline = text.endswith('\n')
-    is_crlf = '\r\n' in text
-    
+    has_trailing_newline = text.endswith("\n")
+    is_crlf = "\r\n" in text
+
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped:
-            current_block['lines'].append({'type': 'empty', 'raw': line})
+            current_block["lines"].append({"type": "empty", "raw": line})
             continue
-        if stripped.startswith('#') or stripped.startswith(';'):
-            current_block['lines'].append({'type': 'comment', 'raw': line})
+        if stripped.startswith("#") or stripped.startswith(";"):
+            current_block["lines"].append({"type": "comment", "raw": line})
             continue
-            
-        match_section = re.match(r'^\[(.*)\]$', stripped)
+
+        match_section = re.match(r"^\[(.*)\]$", stripped)
         if match_section:
             section_name = match_section.group(1).strip()
-            current_block = {'name': section_name, 'lines': []}
+            current_block = {"name": section_name, "lines": []}
             blocks.append(current_block)
-            current_block['lines'].append({'type': 'section', 'raw': line})
+            current_block["lines"].append({"type": "section", "raw": line})
             continue
-            
-        match_kv = re.match(r'^([^=]+)=(.*)$', stripped)
+
+        match_kv = re.match(r"^([^=]+)=(.*)$", stripped)
         if match_kv:
             key = match_kv.group(1).strip()
             val = match_kv.group(2).strip()
-            current_block['lines'].append({'type': 'kv', 'raw': line, 'key': key, 'val': val})
+            current_block["lines"].append({"type": "kv", "raw": line, "key": key, "val": val})
         else:
-            current_block['lines'].append({'type': 'unknown', 'raw': line})
-            
+            current_block["lines"].append({"type": "unknown", "raw": line})
+
     return blocks, has_trailing_newline, is_crlf
+
 
 def serialize_ini(blocks: list, has_trailing_newline: bool, is_crlf: bool) -> str:
     lines = []
     for b in blocks:
-        for l in b['lines']:
-            lines.append(l['raw'])
+        for line in b["lines"]:
+            lines.append(line["raw"])
     newline = "\r\n" if is_crlf else "\n"
     res = newline.join(lines)
     if has_trailing_newline and res and not res.endswith(newline):
         res += newline
     return res
+
 
 def format_val(val) -> str:
     if val is None:
@@ -94,71 +101,74 @@ def format_val(val) -> str:
         return "true" if val else "false"
     return str(val)
 
+
 def merge_kv(block: dict, key: str, val) -> bool:
     target_val_str = format_val(val)
     lower_key = key.lower()
-    
-    for line in block['lines']:
-        if line['type'] == 'kv' and line['key'].lower() == lower_key:
-            if str(line['val']) != target_val_str:
-                indent_match = re.match(r'^(\s*)', line['raw'])
+
+    for line in block["lines"]:
+        if line["type"] == "kv" and line["key"].lower() == lower_key:
+            if str(line["val"]) != target_val_str:
+                indent_match = re.match(r"^(\s*)", line["raw"])
                 indent = indent_match.group(1) if indent_match else ""
-                
-                eq_match = re.search(r'(\s*=\s*)', line['raw'])
+
+                eq_match = re.search(r"(\s*=\s*)", line["raw"])
                 eq_str = eq_match.group(1) if eq_match else "="
-                
-                old_val_str = str(line.get('val', ''))
+
+                old_val_str = str(line.get("val", ""))
                 suffix = ""
                 if eq_match:
-                    remainder = line['raw'][eq_match.end():]
+                    remainder = line["raw"][eq_match.end() :]
                     if remainder.startswith(old_val_str):
-                        suffix = remainder[len(old_val_str):]
-                
-                line['val'] = target_val_str
-                original_key = line.get('key', key)
-                line['raw'] = f"{indent}{original_key}{eq_str}{target_val_str}{suffix}"
+                        suffix = remainder[len(old_val_str) :]
+
+                line["val"] = target_val_str
+                original_key = line.get("key", key)
+                line["raw"] = f"{indent}{original_key}{eq_str}{target_val_str}{suffix}"
                 return True
             return False
-            
-    insert_idx = len(block['lines'])
-    while insert_idx > 0 and block['lines'][insert_idx-1]['type'] == 'empty':
+
+    insert_idx = len(block["lines"])
+    while insert_idx > 0 and block["lines"][insert_idx - 1]["type"] == "empty":
         insert_idx -= 1
-        
-    block['lines'].insert(insert_idx, {
-        'type': 'kv',
-        'raw': f"{key}={target_val_str}",
-        'key': key,
-        'val': target_val_str
-    })
+
+    block["lines"].insert(
+        insert_idx,
+        {
+            "type": "kv",
+            "raw": f"{key}={target_val_str}",
+            "key": key,
+            "val": target_val_str,
+        },
+    )
     return True
+
 
 def merge_settings(blocks: list, args: dict) -> bool:
     changed = False
     settings = args.get("settings", {})
-    
+
     for section_name, section_settings in settings.items():
         if not isinstance(section_settings, dict):
             continue
-            
-        block = next((b for b in blocks if b['name'] == section_name), None)
-        
+
+        block = next((b for b in blocks if b["name"] == section_name), None)
+
         if not block:
-            block = {'name': section_name, 'lines': []}
-            if blocks and blocks[-1]['lines'] and blocks[-1]['lines'][-1]['type'] != 'empty':
-                blocks[-1]['lines'].append({'type': 'empty', 'raw': ''})
-                
-            block['lines'].append({
-                'type': 'section',
-                'raw': f"[{section_name}]"
-            })
+            block = {"name": section_name, "lines": []}
+            if blocks and blocks[-1]["lines"] and blocks[-1]["lines"][-1]["type"] != "empty":
+                blocks[-1]["lines"].append({"type": "empty", "raw": ""})
+
+            block["lines"].append({"type": "section", "raw": f"[{section_name}]"})
             blocks.append(block)
             changed = True
-            
+
         for k, v in section_settings.items():
             if merge_kv(block, k, v):
                 changed = True
-                
+
     return changed
+
 
 def check_installed(args: dict, request_id: str) -> dict:
     installed = False
@@ -167,17 +177,17 @@ def check_installed(args: dict, request_id: str) -> dict:
     else:
         program_files = os.getenv("PROGRAMFILES", "C:\\Program Files")
         local_appdata = os.getenv("LOCALAPPDATA", "")
-        
+
         paths_to_check = [
             os.path.join(program_files, "KeePassXC", "KeePassXC.exe"),
-            os.path.join(local_appdata, "KeePassXC", "KeePassXC.exe") if local_appdata else ""
+            os.path.join(local_appdata, "KeePassXC", "KeePassXC.exe") if local_appdata else "",
         ]
-        
+
         for p in paths_to_check:
             if p and os.path.exists(p):
                 installed = True
                 break
-                
+
     return {
         "requestId": request_id,
         "success": True,
@@ -185,18 +195,19 @@ def check_installed(args: dict, request_id: str) -> dict:
         "data": installed,
     }
 
+
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
 
     try:
         config_path = get_config_path()
         current_text = read_text(config_path)
-        
+
         blocks, has_trailing_newline, is_crlf = parse_ini(current_text)
-        
+
         if not current_text:
             has_trailing_newline = True
-            
+
         changed = merge_settings(blocks, args)
 
         if not changed:
@@ -234,11 +245,12 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "error": str(e),
         }
 
+
 def main():
     input_data = sys.stdin.read()
     if not input_data:
         return
-        
+
     try:
         request = json.loads(input_data)
     except json.JSONDecodeError as e:
@@ -287,6 +299,7 @@ def main():
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     main()

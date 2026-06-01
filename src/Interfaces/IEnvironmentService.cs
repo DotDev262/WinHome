@@ -2,9 +2,9 @@ using WinHome.Models;
 
 namespace WinHome.Interfaces
 {
-    public interface IEnvironmentService
-    {
-        void Apply(EnvVarConfig env, bool dryRun);
-        void RefreshPath();
-    }
+  public interface IEnvironmentService
+  {
+    void Apply(EnvVarConfig env, bool dryRun);
+    void RefreshPath();
+  }
 }

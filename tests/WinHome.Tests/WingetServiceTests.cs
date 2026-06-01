@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Moq;
 using Xunit;
 using WinHome.Interfaces;
@@ -7,89 +8,89 @@ using WinHome.Services.Managers;
 
 namespace WinHome.Tests
 {
-    public class WingetServiceTests
+  public class WingetServiceTests
+  {
+    private readonly Mock<IProcessRunner> _mockProcessRunner;
+    private readonly Mock<IPackageManagerBootstrapper> _mockBootstrapper;
+    private readonly Mock<IRuntimeResolver> _mockRuntimeResolver;
+    private readonly WingetService _wingetService;
+
+    public WingetServiceTests()
     {
-        private readonly Mock<IProcessRunner> _mockProcessRunner;
-        private readonly Mock<IPackageManagerBootstrapper> _mockBootstrapper;
-        private readonly Mock<IRuntimeResolver> _mockRuntimeResolver;
-        private readonly WingetService _wingetService;
+      _mockProcessRunner = new Mock<IProcessRunner>();
+      _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
+      _mockRuntimeResolver = new Mock<IRuntimeResolver>();
+      var mockLogger = new Mock<ILogger>();
 
-        public WingetServiceTests()
-        {
-            _mockProcessRunner = new Mock<IProcessRunner>();
-            _mockBootstrapper = new Mock<IPackageManagerBootstrapper>();
-            _mockRuntimeResolver = new Mock<IRuntimeResolver>();
-            var mockLogger = new Mock<ILogger>();
+      _mockRuntimeResolver.Setup(r => r.Resolve("winget")).Returns("winget");
 
-            _mockRuntimeResolver.Setup(r => r.Resolve("winget")).Returns("winget");
-
-            _wingetService = new WingetService(_mockProcessRunner.Object, _mockBootstrapper.Object, mockLogger.Object, _mockRuntimeResolver.Object);
-        }
-
-        [Fact]
-        public void Install_ThrowsException_WhenProcessRunnerFails()
-        {
-            // Arrange
-            var app = new AppConfig { Id = "testapp" };
-            bool dryRun = false;
-
-            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
-                             .Returns(""); // Not installed
-
-            // Allow for --version check
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>>())).Returns(true);
-
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
-                             .Returns(false); // Fails
-
-            // Act & Assert
-            var ex = Assert.Throws<Exception>(() => _wingetService.Install(app, dryRun));
-            Assert.Equal($"Failed to install {app.Id} using Winget.", ex.Message);
-        }
-
-        [Fact]
-        public void Install_Succeeds_WhenAlreadyInstalledErrorOccurs()
-        {
-            // Arrange
-            var app = new AppConfig { Id = "testapp" };
-            bool dryRun = false;
-
-            _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
-                             .Returns(""); // Not installed
-
-            // Allow for --version check
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>>())).Returns(true);
-
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
-                             .Callback<string, IEnumerable<string>, bool, Action<string>>((_, _, _, onOutput) =>
-                             {
-                                 onOutput?.Invoke("[Winget:Install] A package version is already installed. Installation cancelled.");
-                             })
-                             .Returns(false); // Fails
-
-            // Act & Assert
-            // Should not throw
-            _wingetService.Install(app, dryRun);
-        }
-
-        [Fact]
-        public void Uninstall_ThrowsException_WhenProcessRunnerFails()
-        {
-            // Arrange
-            string appId = "testapp";
-            bool dryRun = false;
-
-            // Allow for --version check
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", "--version", false, It.IsAny<Action<string>>())).Returns(true);
-
-            _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<System.Collections.Generic.IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
-                             .Returns(false); // Fails
-
-            // Act & Assert
-            var ex = Assert.Throws<Exception>(() => _wingetService.Uninstall(appId, dryRun));
-            Assert.Equal($"Failed to uninstall {appId} using Winget.", ex.Message);
-        }
+      _wingetService = new WingetService(_mockProcessRunner.Object, _mockBootstrapper.Object, mockLogger.Object, _mockRuntimeResolver.Object);
     }
+
+    [Fact]
+    public void Install_ThrowsException_WhenProcessRunnerFails()
+    {
+      // Arrange
+      var app = new AppConfig { Id = "testapp" };
+      bool dryRun = false;
+
+      _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
+                       .Returns(""); // Not installed
+
+      // Allow for --version check
+      _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true);
+      _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true);
+
+      _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>?>()))
+                       .Returns(false); // Fails
+
+      // Act & Assert
+      var ex = Assert.Throws<Exception>(() => _wingetService.Install(app, dryRun));
+      Assert.Equal($"Failed to install {app.Id} using Winget.", ex.Message);
+    }
+
+    [Fact]
+    public void Install_Succeeds_WhenAlreadyInstalledErrorOccurs()
+    {
+      // Arrange
+      var app = new AppConfig { Id = "testapp" };
+      bool dryRun = false;
+
+      _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
+                       .Returns(""); // Not installed
+
+      // Allow for --version check
+      _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true);
+      _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true);
+
+      _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>?>()))
+                       .Callback<string, IEnumerable<string>, bool, Action<string>?>((_, _, _, onOutput) =>
+                       {
+                         onOutput?.Invoke("[Winget:Install] A package version is already installed. Installation cancelled.");
+                       })
+                       .Returns(false); // Fails
+
+      // Act & Assert
+      // Should not throw
+      _wingetService.Install(app, dryRun);
+    }
+
+    [Fact]
+    public void Uninstall_ThrowsException_WhenProcessRunnerFails()
+    {
+      // Arrange
+      string appId = "testapp";
+      bool dryRun = false;
+
+      // Allow for --version check
+      _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true);
+
+      _mockProcessRunner.Setup(pr => pr.RunCommand("winget", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>?>()))
+                       .Returns(false); // Fails
+
+      // Act & Assert
+      var ex = Assert.Throws<Exception>(() => _wingetService.Uninstall(appId, dryRun));
+      Assert.Equal($"Failed to uninstall {appId} using Winget.", ex.Message);
+    }
+  }
 }

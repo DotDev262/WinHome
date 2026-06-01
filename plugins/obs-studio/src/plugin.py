@@ -1,11 +1,11 @@
-import sys
+import configparser
+import datetime
 import json
 import os
-import configparser
-import tempfile
 import shutil
+import sys
+import tempfile
 import uuid
-import datetime
 
 
 def log(msg):
@@ -161,17 +161,21 @@ def apply_profile_ini(obs_dir, profile_name, args, dry_run):
         streaming = output.get("streaming", {})
         simple_output = {}
         if recording:
-            simple_output.update({
-                "FilePath": recording.get("path", ""),
-                "RecQuality": recording.get("quality", ""),
-                "RecFormat": recording.get("format", ""),
-                "RecEncoder": recording.get("encoder", ""),
-            })
+            simple_output.update(
+                {
+                    "FilePath": recording.get("path", ""),
+                    "RecQuality": recording.get("quality", ""),
+                    "RecFormat": recording.get("format", ""),
+                    "RecEncoder": recording.get("encoder", ""),
+                }
+            )
         if streaming:
-            simple_output.update({
-                "VBitrate": str(streaming.get("bitrate", "")),
-                "StreamEncoder": streaming.get("encoder", ""),
-            })
+            simple_output.update(
+                {
+                    "VBitrate": str(streaming.get("bitrate", "")),
+                    "StreamEncoder": streaming.get("encoder", ""),
+                }
+            )
         if dry_run:
             log(f"Would update {basic_ini_path} [Output] with: {output_section}")
             log(f"Would update {basic_ini_path} [SimpleOutput] with: {simple_output}")
@@ -262,15 +266,36 @@ def apply_config(args, context, request_id):
 
     except Exception as e:
         log(f"Error applying config: {e}")
-        return {"requestId": request_id, "success": False, "changed": False, "error": str(e), "data": None}
+        return {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": str(e),
+            "data": None,
+        }
 
-    return {"requestId": request_id, "success": True, "changed": changed, "data": None}
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": changed,
+        "data": None,
+    }
 
 
 def main():
     input_data = sys.stdin.read()
     if not input_data:
-        sys.stdout.write(json.dumps({"requestId": "unknown", "success": False, "changed": False, "error": "No input"}) + "\n")
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "changed": False,
+                    "error": "No input",
+                }
+            )
+            + "\n"
+        )
         sys.stdout.flush()
         return
 
@@ -278,7 +303,17 @@ def main():
         request = json.loads(input_data)
     except Exception as e:
         log(f"Failed to parse request: {e}")
-        sys.stdout.write(json.dumps({"requestId": "unknown", "success": False, "changed": False, "error": f"Failed to parse request: {e}"}) + "\n")
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "changed": False,
+                    "error": f"Failed to parse request: {e}",
+                }
+            )
+            + "\n"
+        )
         sys.stdout.flush()
         return
 
@@ -287,7 +322,12 @@ def main():
     args = request.get("args", {})
     context = request.get("context", {})
 
-    response = {"requestId": request_id, "success": False, "changed": False, "data": None}
+    response = {
+        "requestId": request_id,
+        "success": False,
+        "changed": False,
+        "data": None,
+    }
 
     try:
         if command == "check_installed":

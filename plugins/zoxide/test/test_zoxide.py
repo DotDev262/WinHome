@@ -1,9 +1,8 @@
 import importlib.util
 import json
-from pathlib import Path
 from io import StringIO
+from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
-
 
 PLUGIN_PATH = Path(__file__).resolve().parents[1] / "src" / "plugin.py"
 
@@ -32,19 +31,25 @@ def test_check_installed_returns_false_when_zoxide_is_missing():
 
 
 def test_apply_sets_env_vars_via_setx_when_values_differ():
-    with patch.dict(
-        plugin.os.environ,
-        {
-            "USERPROFILE": "C:/Users/Test",
-            "_ZO_MAX_DEPTH": "5",
-            "_ZO_ECHO": "1",
-            "_ZO_EXCLUDE_DIRS": "C:\\Windows;C:\\Program Files",
-            "_ZO_RESOLVE_SYMLINKS": "1",
-        },
-        clear=True,
-    ), patch.object(plugin, "update_profile_file", return_value=False), patch.object(
-        plugin.subprocess, "run", return_value=MagicMock(returncode=0, stderr="", stdout="")
-    ) as mock_run:
+    with (
+        patch.dict(
+            plugin.os.environ,
+            {
+                "USERPROFILE": "C:/Users/Test",
+                "_ZO_MAX_DEPTH": "5",
+                "_ZO_ECHO": "1",
+                "_ZO_EXCLUDE_DIRS": "C:\\Windows;C:\\Program Files",
+                "_ZO_RESOLVE_SYMLINKS": "1",
+            },
+            clear=True,
+        ),
+        patch.object(plugin, "update_profile_file", return_value=False),
+        patch.object(
+            plugin.subprocess,
+            "run",
+            return_value=MagicMock(returncode=0, stderr="", stdout=""),
+        ) as mock_run,
+    ):
         result = plugin.apply_config(
             {
                 "env_vars": {
@@ -67,20 +72,24 @@ def test_apply_sets_env_vars_via_setx_when_values_differ():
 
 
 def test_apply_skips_setx_when_env_vars_match():
-    with patch.dict(
-        plugin.os.environ,
-        {
-            "USERPROFILE": "C:/Users/Test",
-            "_ZO_MAX_DEPTH": "10",
-            "_ZO_ECHO": "1",
-            "_ZO_EXCLUDE_DIRS": "C:\\Windows;C:\\Program Files",
-            "_ZO_RESOLVE_SYMLINKS": "1",
-        },
-        clear=True,
-    ), patch.object(plugin, "update_profile_file", return_value=False), patch.object(
-        plugin.subprocess,
-        "run",
-        side_effect=AssertionError("setx should not be called when values already match"),
+    with (
+        patch.dict(
+            plugin.os.environ,
+            {
+                "USERPROFILE": "C:/Users/Test",
+                "_ZO_MAX_DEPTH": "10",
+                "_ZO_ECHO": "1",
+                "_ZO_EXCLUDE_DIRS": "C:\\Windows;C:\\Program Files",
+                "_ZO_RESOLVE_SYMLINKS": "1",
+            },
+            clear=True,
+        ),
+        patch.object(plugin, "update_profile_file", return_value=False),
+        patch.object(
+            plugin.subprocess,
+            "run",
+            side_effect=AssertionError("setx should not be called when values already match"),
+        ),
     ):
         result = plugin.apply_config(
             {
@@ -102,19 +111,22 @@ def test_apply_skips_setx_when_env_vars_match():
 
 
 def test_apply_skips_setx_on_non_windows():
-    with patch.dict(
-        plugin.os.environ,
-        {
-            "USERPROFILE": "C:/Users/Test",
-            "_ZO_MAX_DEPTH": "5",
-        },
-        clear=True,
-    ), patch.object(plugin.sys, "platform", "linux"), patch.object(
-        plugin, "update_profile_file", return_value=False
-    ), patch.object(
-        plugin.subprocess,
-        "run",
-        side_effect=AssertionError("setx should not run on non-Windows platforms"),
+    with (
+        patch.dict(
+            plugin.os.environ,
+            {
+                "USERPROFILE": "C:/Users/Test",
+                "_ZO_MAX_DEPTH": "5",
+            },
+            clear=True,
+        ),
+        patch.object(plugin.sys, "platform", "linux"),
+        patch.object(plugin, "update_profile_file", return_value=False),
+        patch.object(
+            plugin.subprocess,
+            "run",
+            side_effect=AssertionError("setx should not run on non-Windows platforms"),
+        ),
     ):
         result = plugin.apply_config(
             {
@@ -133,11 +145,12 @@ def test_apply_updates_powershell_init_line_when_flags_change():
     existing = 'Write-Host "hello"\nInvoke-Expression (& { (zoxide init powershell) })\n'
     opened = mock_open(read_data=existing)
 
-    with patch.dict(plugin.os.environ, {"USERPROFILE": "C:/Users/Test"}, clear=True), patch(
-        "builtins.open", opened
-    ), patch.object(plugin.Path, "exists", return_value=True), patch.object(
-        plugin.Path, "mkdir"
-    ) as mock_mkdir:
+    with (
+        patch.dict(plugin.os.environ, {"USERPROFILE": "C:/Users/Test"}, clear=True),
+        patch("builtins.open", opened),
+        patch.object(plugin.Path, "exists", return_value=True),
+        patch.object(plugin.Path, "mkdir") as mock_mkdir,
+    ):
         profile_path = Path("C:/Users/Test/Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
         changed = plugin.update_profile_file(
             profile_path,
@@ -157,40 +170,43 @@ def test_apply_updates_powershell_init_line_when_flags_change():
 
 
 def test_apply_preserves_comment_lines_containing_zoxide_init():
-    existing = '# How to use zoxide init\nInvoke-Expression (& { (zoxide init powershell) })\n'
+    existing = "# How to use zoxide init\nInvoke-Expression (& { (zoxide init powershell) })\n"
     updated, changed = plugin.update_profile_content(
         existing,
         plugin.build_init_line("powershell", {"cmd": "z", "hook": "pwd", "no_cmd": False}),
     )
 
     assert changed is True
-    assert '# How to use zoxide init' in updated
-    assert 'Invoke-Expression (& { (zoxide init powershell --cmd z) })' in updated
+    assert "# How to use zoxide init" in updated
+    assert "Invoke-Expression (& { (zoxide init powershell --cmd z) })" in updated
 
 
 def test_apply_appends_init_line_if_not_present():
     updated, changed = plugin.update_profile_content(
-        'Set-Location C:/Work\n',
+        "Set-Location C:/Work\n",
         plugin.build_init_line("bash", {"cmd": None, "hook": "pwd", "no_cmd": False}),
     )
 
     assert changed is True
-    assert 'Set-Location C:/Work' in updated
+    assert "Set-Location C:/Work" in updated
     assert 'eval "$(zoxide init bash)"' in updated
 
 
 def test_apply_dry_run_does_not_write_files_or_run_setx():
-    opened = mock_open(read_data='Set-Location C:/Work\n')
+    opened = mock_open(read_data="Set-Location C:/Work\n")
 
-    with patch.dict(
-        plugin.os.environ,
-        {
-            "USERPROFILE": "C:/Users/Test",
-            "_ZO_MAX_DEPTH": "5",
-        },
-        clear=True,
-    ), patch.object(plugin.subprocess, "run") as mock_run, patch("builtins.open", opened), patch.object(
-        plugin.Path, "exists", return_value=True
+    with (
+        patch.dict(
+            plugin.os.environ,
+            {
+                "USERPROFILE": "C:/Users/Test",
+                "_ZO_MAX_DEPTH": "5",
+            },
+            clear=True,
+        ),
+        patch.object(plugin.subprocess, "run") as mock_run,
+        patch("builtins.open", opened),
+        patch.object(plugin.Path, "exists", return_value=True),
     ):
         result = plugin.apply_config(
             {
@@ -214,20 +230,23 @@ def test_apply_returns_changed_false_when_nothing_needs_updating():
     existing = f"{matching_line}\n"
     opened = mock_open(read_data=existing)
 
-    with patch.dict(
-        plugin.os.environ,
-        {
-            "USERPROFILE": "C:/Users/Test",
-            "_ZO_MAX_DEPTH": "10",
-            "_ZO_ECHO": "1",
-            "_ZO_EXCLUDE_DIRS": "C:\\Windows;C:\\Program Files",
-            "_ZO_RESOLVE_SYMLINKS": "1",
-        },
-        clear=True,
-    ), patch.object(plugin.subprocess, "run") as mock_run, patch.object(
-        plugin.shutil, "which", return_value="C:/Tools/zoxide.exe"
-    ), patch("builtins.open", opened), patch.object(plugin.Path, "exists", return_value=True), patch.object(
-        plugin, "update_profile_file", return_value=False
+    with (
+        patch.dict(
+            plugin.os.environ,
+            {
+                "USERPROFILE": "C:/Users/Test",
+                "_ZO_MAX_DEPTH": "10",
+                "_ZO_ECHO": "1",
+                "_ZO_EXCLUDE_DIRS": "C:\\Windows;C:\\Program Files",
+                "_ZO_RESOLVE_SYMLINKS": "1",
+            },
+            clear=True,
+        ),
+        patch.object(plugin.subprocess, "run") as mock_run,
+        patch.object(plugin.shutil, "which", return_value="C:/Tools/zoxide.exe"),
+        patch("builtins.open", opened),
+        patch.object(plugin.Path, "exists", return_value=True),
+        patch.object(plugin, "update_profile_file", return_value=False),
     ):
         result = plugin.apply_config(
             {
@@ -262,9 +281,11 @@ def test_apply_handles_missing_profile_file_by_creating_it():
     profile_path = Path("C:/Users/Test/Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
     opened = mock_open()
 
-    with patch.object(plugin.Path, "exists", return_value=False), patch(
-        "builtins.open", opened
-    ), patch.object(plugin.Path, "mkdir") as mock_mkdir:
+    with (
+        patch.object(plugin.Path, "exists", return_value=False),
+        patch("builtins.open", opened),
+        patch.object(plugin.Path, "mkdir") as mock_mkdir,
+    ):
         changed = plugin.update_profile_file(
             profile_path,
             plugin.build_init_line("powershell", {"cmd": None, "hook": "pwd", "no_cmd": False}),
@@ -296,9 +317,11 @@ def test_main_handles_pretty_printed_json_request():
         indent=2,
     )
 
-    with patch("sys.stdin", StringIO(request)), patch("sys.stdout", new_callable=StringIO), patch.object(
-        plugin.shutil, "which", side_effect=[None, "C:/Tools/zoxide"]
-    ) as mock_which:
+    with (
+        patch("sys.stdin", StringIO(request)),
+        patch("sys.stdout", new_callable=StringIO),
+        patch.object(plugin.shutil, "which", side_effect=[None, "C:/Tools/zoxide"]) as mock_which,
+    ):
         plugin.main()
         output = plugin.sys.stdout.getvalue() if hasattr(plugin.sys.stdout, "getvalue") else None
 

@@ -1,31 +1,34 @@
-import sys
+import datetime
 import json
 import os
 import shutil
-import datetime
+import sys
 import uuid
+
 
 def log(msg):
     sys.stderr.write(f"[docker-plugin] {msg}\n")
     sys.stderr.flush()
 
+
 def get_config_path():
     appdata = os.getenv("APPDATA")
     if not appdata:
         raise Exception("APPDATA environment variable not found")
-    
+
     config_dir = os.path.join(appdata, "Docker")
     return os.path.join(config_dir, "settings.json")
+
 
 def read_json(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
-    
+
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             return data if isinstance(data, dict) else {}
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
         suffix = uuid.uuid4().hex[:8]
         backup_path = f"{file_path}.corrupted.{timestamp}.{suffix}"
@@ -38,12 +41,14 @@ def read_json(file_path: str) -> dict:
     except OSError as e:
         raise OSError(f"Could not read {file_path}: {e}") from e
 
+
 def write_json(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     temp_path = file_path + ".tmp"
     with open(temp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     os.replace(temp_path, file_path)
+
 
 def merge_settings(target: dict, source: dict) -> bool:
     changed = False
@@ -52,7 +57,7 @@ def merge_settings(target: dict, source: dict) -> bool:
             if key not in target or not isinstance(target.get(key), dict):
                 target[key] = {}
                 changed = True
-            
+
             # Recursive merge for deep dictionaries
             if merge_settings(target[key], value):
                 changed = True
@@ -61,6 +66,7 @@ def merge_settings(target: dict, source: dict) -> bool:
                 target[key] = value
                 changed = True
     return changed
+
 
 def check_installed(args: dict, request_id: str) -> dict:
     # Check for docker or docker.exe in PATH
@@ -72,6 +78,7 @@ def check_installed(args: dict, request_id: str) -> dict:
         "data": installed,
     }
 
+
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
     settings = args.get("settings", {})
@@ -79,7 +86,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
     try:
         config_path = get_config_path()
         current_config = read_json(config_path)
-        
+
         changed = merge_settings(current_config, settings)
 
         if not changed:
@@ -115,11 +122,12 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "error": str(e),
         }
 
+
 def main():
     input_data = sys.stdin.read()
     if not input_data:
         return
-        
+
     try:
         request = json.loads(input_data)
     except Exception as e:
@@ -157,6 +165,7 @@ def main():
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     main()

@@ -1,23 +1,26 @@
-import sys
+import datetime
 import json
 import os
 import shutil
-import datetime
-import uuid
+import sys
 import tempfile
+import uuid
+
 
 def log(msg):
     sys.stderr.write(f"[curl-plugin] {msg}\n")
     sys.stderr.flush()
 
+
 def get_config_path():
-    if os.name == 'nt':
+    if os.name == "nt":
         user_profile = os.getenv("USERPROFILE")
         if not user_profile:
             user_profile = os.path.expanduser("~")
         return os.path.join(user_profile, "_curlrc")
     else:
         return os.path.expanduser("~/.curlrc")
+
 
 def _backup_corrupt_config(file_path: str, reason: str):
     timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
@@ -28,6 +31,7 @@ def _backup_corrupt_config(file_path: str, reason: str):
         shutil.move(file_path, backup_path)
     except Exception as backup_e:
         log(f"Failed to backup corrupted config: {backup_e}")
+
 
 def parse_curlrc(lines: list) -> dict:
     config = {}
@@ -42,10 +46,11 @@ def parse_curlrc(lines: list) -> dict:
             config[line] = None
     return config
 
+
 def read_curlrc(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
-    
+
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -56,6 +61,7 @@ def read_curlrc(file_path: str) -> dict:
     except OSError as e:
         _backup_corrupt_config(file_path, f"OSError: {e}")
         return {}
+
 
 def build_curlrc_content(merged_config: dict) -> str:
     lines = []
@@ -69,6 +75,7 @@ def build_curlrc_content(merged_config: dict) -> str:
         else:
             lines.append(f"{key}={value}")
     return "\n".join(lines) + "\n"
+
 
 def write_curlrc(file_path: str, merged_config: dict) -> None:
     dir_path = os.path.dirname(file_path)
@@ -86,10 +93,12 @@ def write_curlrc(file_path: str, merged_config: dict) -> None:
             pass
         raise
 
+
 def _to_str(v):
     if v is None:
         return None
     return str(v).lower() if isinstance(v, bool) else str(v)
+
 
 def merge_settings(target: dict, source: dict) -> bool:
     changed = False
@@ -104,16 +113,17 @@ def merge_settings(target: dict, source: dict) -> bool:
                 changed = True
     return changed
 
+
 def check_installed(args: dict, request_id: str) -> dict:
-    installed = shutil.which("curl.exe") is not None or \
-                shutil.which("curl") is not None
-                
+    installed = shutil.which("curl.exe") is not None or shutil.which("curl") is not None
+
     return {
         "requestId": request_id,
         "success": True,
         "changed": False,
         "data": installed,
     }
+
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
@@ -122,7 +132,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
     try:
         config_path = get_config_path()
         current_config = read_curlrc(config_path)
-        
+
         changed = merge_settings(current_config, settings)
 
         if not changed:
@@ -130,7 +140,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
                 "requestId": request_id,
                 "success": True,
                 "changed": False,
-                "data": None
+                "data": None,
             }
 
         if dry_run:
@@ -139,7 +149,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
                 "requestId": request_id,
                 "success": True,
                 "changed": changed,
-                "data": None
+                "data": None,
             }
 
         write_curlrc(config_path, current_config)
@@ -149,7 +159,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "requestId": request_id,
             "success": True,
             "changed": True,
-            "data": None
+            "data": None,
         }
 
     except Exception as e:
@@ -159,8 +169,9 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "success": False,
             "changed": False,
             "error": str(e),
-            "data": None
+            "data": None,
         }
+
 
 def main():
     input_data = sys.stdin.read()
@@ -170,12 +181,12 @@ def main():
             "success": False,
             "changed": False,
             "error": "No input provided on stdin",
-            "data": None
+            "data": None,
         }
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
         return
-        
+
     try:
         request = json.loads(input_data)
     except Exception as e:
@@ -185,7 +196,7 @@ def main():
             "success": False,
             "changed": False,
             "error": f"Failed to parse JSON request: {str(e)}",
-            "data": None
+            "data": None,
         }
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
@@ -200,7 +211,7 @@ def main():
         "requestId": request_id,
         "success": False,
         "changed": False,
-        "data": None
+        "data": None,
     }
 
     try:
@@ -215,6 +226,7 @@ def main():
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     main()

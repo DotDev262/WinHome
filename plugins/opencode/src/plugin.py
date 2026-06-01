@@ -5,7 +5,6 @@ import shutil
 import sys
 from pathlib import Path
 
-
 PLUGIN_NAME = "opencode"
 CONFIG_DIR = os.path.join(".config", "opencode")
 CONFIG_FILE = "opencode.json"
@@ -124,19 +123,13 @@ def user_home() -> str:
 
 def get_config_path(args: dict, context: dict) -> str:
     explicit_path = (
-        args.get("configPath")
-        or args.get("config_path")
-        or context.get("configPath")
-        or context.get("config_path")
+        args.get("configPath") or args.get("config_path") or context.get("configPath") or context.get("config_path")
     )
     if explicit_path:
         return os.path.abspath(os.path.expandvars(os.path.expanduser(str(explicit_path))))
 
     project_root = (
-        args.get("projectRoot")
-        or args.get("project_root")
-        or context.get("projectRoot")
-        or context.get("project_root")
+        args.get("projectRoot") or args.get("project_root") or context.get("projectRoot") or context.get("project_root")
     )
     if project_root:
         return os.path.join(
@@ -154,21 +147,14 @@ def desired_config_from_args(args: dict) -> dict:
     if "settings" in args and isinstance(args["settings"], dict):
         return copy.deepcopy(args["settings"])
 
-    return {
-        key: copy.deepcopy(value)
-        for key, value in args.items()
-        if key not in PATH_ARG_KEYS
-    }
+    return {key: copy.deepcopy(value) for key, value in args.items() if key not in PATH_ARG_KEYS}
 
 
 def deep_merge(target: dict, source: dict) -> bool:
     changed = False
 
     for key, value in source.items():
-        if (
-            isinstance(value, dict)
-            and isinstance(target.get(key), dict)
-        ):
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
             changed = deep_merge(target[key], value) or changed
             continue
 
@@ -204,10 +190,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             return response(request_id, success=True, changed=False)
 
         if dry_run:
-            log(
-                "Would update "
-                f"{config_path} with keys: {', '.join(sorted(desired.keys()))}"
-            )
+            log(f"Would update {config_path} with keys: {', '.join(sorted(desired.keys()))}")
             return response(request_id, success=True, changed=True)
 
         write_json(config_path, next_config)

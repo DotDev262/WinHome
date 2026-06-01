@@ -4,7 +4,6 @@ import subprocess
 import sys
 import tempfile
 
-
 PLUGIN = os.path.abspath(
     os.path.join(
         os.path.dirname(__file__),
@@ -89,12 +88,14 @@ def apply_payload(request_id: str, dry_run: bool = False) -> dict:
 
 
 def test_check_installed():
-    res = run_plugin({
-        "requestId": "1",
-        "command": "check_installed",
-        "args": {},
-        "context": {},
-    })
+    res = run_plugin(
+        {
+            "requestId": "1",
+            "command": "check_installed",
+            "args": {},
+            "context": {},
+        }
+    )
 
     assert res["requestId"] == "1"
     assert res["success"] is True
@@ -124,7 +125,10 @@ def test_apply_config_creates_settings_file():
         assert settings["visual"]["progressBar"] == "rainbow"
         assert settings["visual"]["anonymizeDisplayedPaths"] is True
         assert settings["installBehavior"]["preferences"]["scope"] == "machine"
-        assert settings["installBehavior"]["preferences"]["architectures"] == ["x64", "arm64"]
+        assert settings["installBehavior"]["preferences"]["architectures"] == [
+            "x64",
+            "arm64",
+        ]
         assert settings["installBehavior"]["disableInstallNotes"] is True
         assert settings["telemetry"]["disable"] is True
         print("OK: apply_config_creates_settings_file")
@@ -135,23 +139,26 @@ def test_apply_config_deep_merges_existing_settings():
         path = settings_path(tmp)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
-            json.dump({
-                "visual": {
-                    "progressBar": "accent",
-                    "enableSixels": True,
-                },
-                "logging": {
-                    "level": "warning",
-                    "file": {
-                        "ageLimitInDays": 7,
+            json.dump(
+                {
+                    "visual": {
+                        "progressBar": "accent",
+                        "enableSixels": True,
+                    },
+                    "logging": {
+                        "level": "warning",
+                        "file": {
+                            "ageLimitInDays": 7,
+                        },
+                    },
+                    "installBehavior": {
+                        "preferences": {
+                            "locale": ["en-US"],
+                        },
                     },
                 },
-                "installBehavior": {
-                    "preferences": {
-                        "locale": ["en-US"],
-                    },
-                },
-            }, f)
+                f,
+            )
 
         res = run_plugin(apply_payload("4"), {"LOCALAPPDATA": tmp})
 
@@ -184,12 +191,15 @@ def test_idempotent_apply():
 
 def test_rejects_non_object_settings():
     with tempfile.TemporaryDirectory() as tmp:
-        res = run_plugin({
-            "requestId": "6",
-            "command": "apply",
-            "args": {"settings": ["not", "an", "object"]},
-            "context": {"dryRun": False},
-        }, {"LOCALAPPDATA": tmp})
+        res = run_plugin(
+            {
+                "requestId": "6",
+                "command": "apply",
+                "args": {"settings": ["not", "an", "object"]},
+                "context": {"dryRun": False},
+            },
+            {"LOCALAPPDATA": tmp},
+        )
 
         assert res["requestId"] == "6"
         assert res["success"] is False
@@ -198,12 +208,14 @@ def test_rejects_non_object_settings():
 
 
 def test_unknown_command():
-    res = run_plugin({
-        "requestId": "7",
-        "command": "explode",
-        "args": {},
-        "context": {},
-    })
+    res = run_plugin(
+        {
+            "requestId": "7",
+            "command": "explode",
+            "args": {},
+            "context": {},
+        }
+    )
 
     assert res["requestId"] == "7"
     assert res["success"] is False

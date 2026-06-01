@@ -3,7 +3,6 @@ import os
 import shutil
 import sys
 
-
 PACKAGE_FAMILY = "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"
 
 

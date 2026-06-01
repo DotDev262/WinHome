@@ -1,9 +1,9 @@
-import subprocess
+import configparser
 import json
 import os
+import subprocess
 import sys
 import tempfile
-import configparser
 
 PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
@@ -38,7 +38,12 @@ def write_global_ini(obs_dir, profile_name):
 def test_check_installed_false():
     with tempfile.TemporaryDirectory() as tmp:
         res = run_plugin(
-            {"requestId": "1", "command": "check_installed", "args": {}, "context": {}},
+            {
+                "requestId": "1",
+                "command": "check_installed",
+                "args": {},
+                "context": {},
+            },
             env={"OBS_INSTALL_DIR": tmp},
         )
         assert res["success"]
@@ -53,7 +58,12 @@ def test_check_installed_true():
         open(os.path.join(exe_dir, "obs64.exe"), "w").close()
 
         res = run_plugin(
-            {"requestId": "2", "command": "check_installed", "args": {}, "context": {}},
+            {
+                "requestId": "2",
+                "command": "check_installed",
+                "args": {},
+                "context": {},
+            },
             env={"OBS_INSTALL_DIR": tmp},
         )
         assert res["success"]
@@ -241,9 +251,7 @@ def test_apply_profile_explicit_name():
 
 
 def test_unknown_command():
-    res = run_plugin(
-        {"requestId": "10", "command": "explode", "args": {}, "context": {}}
-    )
+    res = run_plugin({"requestId": "10", "command": "explode", "args": {}, "context": {}})
     assert not res["success"]
     assert "error" in res
     print("PASS: unknown_command")

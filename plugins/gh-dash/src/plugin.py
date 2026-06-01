@@ -13,6 +13,7 @@ import sys
 
 try:
     import yaml as _yaml
+
     _HAS_PYYAML = True
 except ImportError:
     _yaml = None
@@ -134,7 +135,7 @@ def _scalar_str(val) -> str:
     if isinstance(val, (int, float)):
         return str(val)
     s = str(val)
-    if not s or re.search(r'[:#\[\]{}|>&*!,@`]', s) or s[0] in (' ', '"', "'"):
+    if not s or re.search(r"[:#\[\]{}|>&*!,@`]", s) or s[0] in (" ", '"', "'"):
         return f'"{s}"'
     return s
 
@@ -186,6 +187,7 @@ def _dumps_fallback(data: dict) -> str:
 
 
 # --- Config I/O ---
+
 
 def get_config_path() -> str:
     env_path = os.environ.get("GH_DASH_CONFIG")
@@ -258,7 +260,12 @@ def get_settings_from_args(args: dict) -> dict:
 
 def check_installed(request_id: str) -> dict:
     if shutil.which("gh-dash") is not None or shutil.which("gh-dash.exe") is not None:
-        return {"requestId": request_id, "success": True, "changed": False, "data": True}
+        return {
+            "requestId": request_id,
+            "success": True,
+            "changed": False,
+            "data": True,
+        }
 
     try:
         result = subprocess.run(
@@ -268,11 +275,21 @@ def check_installed(request_id: str) -> dict:
             timeout=5,
         )
         if "dlvhdr/gh-dash" in result.stdout:
-            return {"requestId": request_id, "success": True, "changed": False, "data": True}
+            return {
+                "requestId": request_id,
+                "success": True,
+                "changed": False,
+                "data": True,
+            }
     except Exception:
         pass
 
-    return {"requestId": request_id, "success": True, "changed": False, "data": False}
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": False,
+        "data": False,
+    }
 
 
 def apply_config(request_id: str, args: dict, context: dict) -> dict:
@@ -321,7 +338,9 @@ def main() -> None:
         result = handle(request)
     except Exception as error:
         result = {
-            "requestId": request.get("requestId", "unknown") if "request" in locals() and isinstance(request, dict) else "unknown",
+            "requestId": request.get("requestId", "unknown")
+            if "request" in locals() and isinstance(request, dict)
+            else "unknown",
             "success": False,
             "changed": False,
             "error": str(error),
