@@ -251,7 +251,19 @@ def apply_config(args, context, request_id):
 
 def main():
     input_data = sys.stdin.read()
+
     if not input_data:
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "error": "No input received",
+                }
+            )
+            + "\n"
+        )
+        sys.stdout.flush()
         return
 
     try:
