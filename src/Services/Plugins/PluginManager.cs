@@ -7,6 +7,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace WinHome.Services.Plugins
 {
+  /// <summary>Discovers plugins from the plugins directory and ensures their runtimes are available.</summary>
   public class PluginManager : IPluginManager
   {
     private readonly UvBootstrapper _uvBootstrapper;
@@ -15,6 +16,7 @@ namespace WinHome.Services.Plugins
     private readonly string _pluginsDir;
     private readonly IRuntimeResolver? _runtimeResolver;
 
+    /// <summary>Initializes a new instance of <see cref="PluginManager"/>.</summary>
     public PluginManager(
         UvBootstrapper uvBootstrapper,
         BunBootstrapper bunBootstrapper,
@@ -33,6 +35,7 @@ namespace WinHome.Services.Plugins
           "plugins");
     }
 
+    /// <summary>Scans the plugins directory for plugin.yaml manifests and returns them.</summary>
     public IEnumerable<PluginManifest> DiscoverPlugins()
     {
       if (!Directory.Exists(_pluginsDir))
@@ -68,6 +71,7 @@ namespace WinHome.Services.Plugins
       return plugins;
     }
 
+    /// <summary>Ensures the runtime required by the plugin type (Python/uv, TypeScript/bun, PowerShell) is installed.</summary>
     public async Task EnsureRuntimeAsync(PluginManifest plugin)
     {
       switch (plugin.Type.ToLower())

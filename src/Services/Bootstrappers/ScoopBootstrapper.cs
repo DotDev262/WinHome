@@ -3,16 +3,19 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
 {
+  /// <summary>Bootstraps the Scoop package manager using the official install script.</summary>
   public class ScoopBootstrapper : IPackageManagerBootstrapper
   {
     private readonly IProcessRunner _processRunner;
     public string Name => "Scoop";
 
+    /// <summary>Initializes a new instance of <see cref="ScoopBootstrapper"/>.</summary>
     public ScoopBootstrapper(IProcessRunner processRunner)
     {
       _processRunner = processRunner;
     }
 
+    /// <summary>Returns <c>true</c> if Scoop is installed (checks PATH and common install locations).</summary>
     public bool IsInstalled()
     {
       if (_processRunner.RunCommand("scoop", new[] { "--version" }, false)) return true;
@@ -33,6 +36,7 @@ namespace WinHome.Services.Bootstrappers
       return false;
     }
 
+    /// <summary>Installs Scoop via irm/get.scoop.sh. Retries on DNS errors.</summary>
     public void Install(bool dryRun)
     {
       if (dryRun)

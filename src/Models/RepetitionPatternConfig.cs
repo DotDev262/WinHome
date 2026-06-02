@@ -4,6 +4,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Configures how often a scheduled task repeats and for how long.</summary>
   public class RepetitionPatternConfig
   {
     [YamlMember(Alias = "interval")]

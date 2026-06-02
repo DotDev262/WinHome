@@ -4,6 +4,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Configuration for Windows Subsystem for Linux (WSL) settings and distros.</summary>
   public class WslConfig
   {
     [YamlMember(Alias = "defaultVersion")]

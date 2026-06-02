@@ -3,21 +3,25 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
 {
+  /// <summary>Bootstraps the uv Python package manager via Scoop.</summary>
   public class UvBootstrapper : IPackageManagerBootstrapper
   {
     private readonly IProcessRunner _processRunner;
     public string Name => "uv";
 
+    /// <summary>Initializes a new instance of <see cref="UvBootstrapper"/>.</summary>
     public UvBootstrapper(IProcessRunner processRunner)
     {
       _processRunner = processRunner;
     }
 
+    /// <summary>Returns <c>true</c> if uv is available on the system.</summary>
     public bool IsInstalled()
     {
       return _processRunner.RunCommand("uv", new[] { "--version" }, false);
     }
 
+    /// <summary>Installs uv via Scoop.</summary>
     public void Install(bool dryRun)
     {
       if (dryRun)

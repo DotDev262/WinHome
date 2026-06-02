@@ -9,8 +9,12 @@ using System.CommandLine.Parsing;
 
 namespace WinHome.Infrastructure
 {
+  /// <summary>Registers the `status` subcommand that displays the apply state from the state file.</summary>
   public static class StatusCommand
   {
+    /// <summary>Registers the status command onto the root command.</summary>
+    /// <param name="root">The root command to attach to.</param>
+    /// <param name="services">Service provider for resolving dependencies.</param>
     public static void Register(RootCommand root, IServiceProvider services)
     {
       var cmd = new Command("status") { Description = "Show apply status from .winhome-state.json" };

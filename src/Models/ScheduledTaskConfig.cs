@@ -5,6 +5,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Complete configuration for a Windows Scheduled Task including triggers and actions.</summary>
   public class ScheduledTaskConfig
   {
     [YamlMember(Alias = "name")]

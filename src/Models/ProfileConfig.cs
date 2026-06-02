@@ -3,6 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Represents a named profile containing environment variable and Git configuration overrides.</summary>
   public class ProfileConfig
   {
     [YamlMember(Alias = "git")]

@@ -4,6 +4,7 @@ using WinHome.Models;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Manages persistent state on disk with in-memory caching, atomic writes, and backward compatibility with legacy state format.</summary>
   public class StateService : IStateService
   {
     private readonly string _stateFilePath;
@@ -11,6 +12,7 @@ namespace WinHome.Services.System
     private readonly object _sync = new();
     private StateData _inMemoryState;
 
+    /// <summary>Initializes a new instance of <see cref="StateService"/>.</summary>
     public StateService(ILogger logger)
     {
       _logger = logger;

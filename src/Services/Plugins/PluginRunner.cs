@@ -6,17 +6,26 @@ using WinHome.Models.Plugins;
 
 namespace WinHome.Services.Plugins
 {
+  /// <summary>Executes plugin commands by spawning a child process and communicating via stdin/stdout JSON messages.</summary>
   public class PluginRunner : IPluginRunner
   {
     private readonly ILogger _logger;
     private readonly IRuntimeResolver _runtimeResolver;
 
+    /// <summary>Initializes a new instance of <see cref="PluginRunner"/>.</summary>
     public PluginRunner(ILogger logger, IRuntimeResolver runtimeResolver)
     {
       _logger = logger;
       _runtimeResolver = runtimeResolver;
     }
 
+    /// <summary>Executes a plugin command: sends a JSON request via stdin and reads the JSON response from stdout.</summary>
+    /// <param name="plugin">The plugin manifest to execute.</param>
+    /// <param name="command">The command name to run.</param>
+    /// <param name="args">Optional arguments for the command.</param>
+    /// <param name="context">Optional execution context.</param>
+    /// <param name="timeout">Optional timeout (default 30s, minimum 1s).</param>
+    /// <returns>A <see cref="PluginResult"/> from the plugin's response.</returns>
     public async Task<PluginResult> ExecuteAsync(PluginManifest plugin, string command, object? args, object? context, TimeSpan? timeout = null)
     {
       var actualTimeout = timeout ?? TimeSpan.FromSeconds(30);
@@ -142,6 +151,7 @@ namespace WinHome.Services.Plugins
       }
     }
 
+    /// <summary>Builds the process filename and arguments for executing a plugin based on its type.</summary>
     public (string FileName, string Arguments) BuildProcessStartInfo(PluginManifest plugin)
     {
       string mainPath = Path.Combine(plugin.DirectoryPath, plugin.Main);

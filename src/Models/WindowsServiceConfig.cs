@@ -3,6 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Configuration for managing a Windows service's state and startup type.</summary>
   public class WindowsServiceConfig
   {
     [YamlMember(Alias = "name")]

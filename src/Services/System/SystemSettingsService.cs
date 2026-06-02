@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Manages Windows system settings including registry tweaks, security presets, brightness, volume, power settings, and notifications.</summary>
   public class SystemSettingsService : ISystemSettingsService
   {
     private readonly IProcessRunner _processRunner;
@@ -59,6 +60,7 @@ namespace WinHome.Services.System
             }
     };
 
+    /// <summary>Initializes a new instance of <see cref="SystemSettingsService"/>.</summary>
     public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService, ILogger<SystemSettingsService> logger)
     {
       _processRunner = processRunner;
@@ -170,6 +172,7 @@ namespace WinHome.Services.System
                 new() { { "true", 1 }, { "false", 0 } }),
         };
 
+    /// <summary>Translates user-facing setting key/value pairs into the corresponding registry tweaks.</summary>
     public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings)
     {
       return await Task.Run(() =>
@@ -221,6 +224,7 @@ namespace WinHome.Services.System
       });
     }
 
+    /// <summary>Reads current registry values and maps them back to user-facing setting keys.</summary>
     public async Task<Dictionary<string, object>> GetCapturedSettingsAsync()
     {
       return await Task.Run(() =>
@@ -257,6 +261,7 @@ namespace WinHome.Services.System
       });
     }
 
+    /// <summary>Looks up the user-friendly setting key for the given registry path and value name.</summary>
     public string? GetFriendlyName(string registryPath, string registryName)
     {
       var match = _catalog.FirstOrDefault(d =>
@@ -266,6 +271,7 @@ namespace WinHome.Services.System
       return match?.SettingKey;
     }
 
+    /// <summary>Captures the original values of non-registry settings (brightness, volume) before applying changes.</summary>
     public async Task<Dictionary<string, object>> CaptureOriginalSettingsAsync(Dictionary<string, object> settings)
     {
       return await Task.Run(() =>
@@ -305,6 +311,7 @@ namespace WinHome.Services.System
       });
     }
 
+    /// <summary>Reverts a non-registry setting (brightness, volume) back to its original value.</summary>
     public async Task RevertSystemSettingAsync(string settingKey, object originalValue, bool dryRun)
     {
       await Task.Run(() =>
@@ -358,6 +365,7 @@ namespace WinHome.Services.System
       });
     }
 
+    /// <summary>Applies non-registry settings (brightness, volume, notifications, power settings).</summary>
     public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun)
     {
       if (settings == null) return Task.CompletedTask;

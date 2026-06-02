@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Deserialized model for a GitHub release from the API.</summary>
   public class GitHubRelease
   {
     [JsonPropertyName("tag_name")]
@@ -17,6 +18,7 @@ namespace WinHome.Models
     public string Body { get; set; } = string.Empty;
   }
 
+  /// <summary>Describes an asset attached to a GitHub release.</summary>
   public class GitHubAsset
   {
     [JsonPropertyName("name")]

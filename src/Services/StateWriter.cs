@@ -6,7 +6,7 @@ using WinHome.Models;
 
 namespace WinHome.Services
 {
-  // Simple resilient writer for the .winhome-state.json manifest
+  /// <summary>Thread-safe writer for the .winhome-state.json manifest that tracks apply step results.</summary>
   public class StateWriter
   {
     private readonly string _path;
@@ -14,6 +14,7 @@ namespace WinHome.Services
     private readonly JsonSerializerOptions _opts = new() { WriteIndented = true };
     private Dictionary<string, StepResult>? _cache;
 
+    /// <summary>Initializes the writer with an optional custom path. Defaults to %LOCALAPPDATA%/WinHome/.winhome-state.json.</summary>
     public StateWriter(string? path = null)
     {
       var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -23,6 +24,7 @@ namespace WinHome.Services
       _opts.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     }
 
+    /// <summary>Loads the persisted state from disk. Returns an empty dictionary if the file doesn't exist or is corrupted.</summary>
     public Dictionary<string, StepResult> Load()
     {
       lock (_lock)
@@ -57,6 +59,7 @@ namespace WinHome.Services
       }
     }
 
+    /// <summary>Records a step result to both cache and disk using atomic file replacement.</summary>
     public void RecordStep(StepResult result)
     {
       lock (_lock)
