@@ -32,5 +32,7 @@ namespace WinHome.Interfaces
     void LogError(string message);
     /// <summary>Sets the minimum log level; messages below this level are suppressed.</summary>
     void SetMinLevel(LogLevel level);
+    /// <summary>Writes log output to the specified file in addition to the console.</summary>
+    void SetLogFile(string? path);
   }
 }

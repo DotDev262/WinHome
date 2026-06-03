@@ -22,11 +22,11 @@ public class StateCommandTests
     _mockStateService = new Mock<IStateService>();
   }
 
-  private RootCommand BuildRealCommand(Func<string, string?, LogLevel, Task<int>> stateAction)
+  private RootCommand BuildRealCommand(Func<string, string?, LogLevel, FileInfo?, Task<int>> stateAction)
   {
     return CliBuilder.BuildRootCommand(
-        runAction: (file, dryRun, profile, debug, diff, json, update, forceReapply, continueOnError, logLevel) => Task.FromResult(0),
-        generateAction: (output, logLevel) => Task.FromResult(0),
+        runAction: (file, dryRun, profile, debug, diff, json, update, forceReapply, continueOnError, logLevel, logFile) => Task.FromResult(0),
+        generateAction: (output, logLevel, logFile) => Task.FromResult(0),
         stateAction: stateAction
     );
   }
@@ -39,7 +39,7 @@ public class StateCommandTests
     _mockStateService.Setup(s => s.ListItems()).Returns(items);
 
     string? capturedAction = null;
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       capturedAction = action;
       var result = _mockStateService.Object.ListItems();
@@ -73,7 +73,7 @@ public class StateCommandTests
     // Arrange
     _mockStateService.Setup(s => s.ListItems()).Returns(new HashSet<string>());
 
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       var result = _mockStateService.Object.ListItems();
       foreach (var item in result)
@@ -103,7 +103,7 @@ public class StateCommandTests
     string? capturedPath = null;
     _mockStateService.Setup(s => s.BackupState(targetPath));
 
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       if (action == "backup" && path != null)
       {
@@ -129,7 +129,7 @@ public class StateCommandTests
         .Setup(s => s.BackupState(restrictedPath))
         .Throws(new UnauthorizedAccessException("Access denied"));
 
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       try
       {
@@ -159,7 +159,7 @@ public class StateCommandTests
     _mockStateService.Setup(s => s.BackupState(backupPath));
     _mockStateService.Setup(s => s.RestoreState(backupPath));
 
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       if (path == null) return 1;
       if (action == "backup") { _mockStateService.Object.BackupState(path); return 0; }
@@ -184,7 +184,7 @@ public class StateCommandTests
         .Setup(s => s.RestoreState(missingPath))
         .Throws(new FileNotFoundException("Backup file not found"));
 
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       try
       {
@@ -215,7 +215,7 @@ public class StateCommandTests
         .Setup(s => s.RestoreState(corruptPath))
         .Throws(new InvalidDataException("Corrupted state"));
 
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       try
       {
@@ -243,7 +243,7 @@ public class StateCommandTests
   {
     // Arrange
     string? capturedAction = null;
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       capturedAction = action;
       return 0;
@@ -277,7 +277,7 @@ public class StateCommandTests
     LogLevel? capturedLevel = null;
     _mockStateService.Setup(s => s.ListItems()).Returns(new HashSet<string> { "item1" });
 
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       capturedLevel = logLevel;
       _mockStateService.Object.ListItems();
@@ -295,7 +295,7 @@ public class StateCommandTests
     LogLevel? capturedLevel = null;
     _mockStateService.Setup(s => s.ListItems()).Returns(new HashSet<string> { "item1" });
 
-    var root = BuildRealCommand(async (action, path, logLevel) =>
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) =>
     {
       capturedLevel = logLevel;
       _mockStateService.Object.ListItems();
@@ -310,7 +310,7 @@ public class StateCommandTests
   [Fact]
   public async Task StateList_VerboseAndQuiet_ReturnsConflictError()
   {
-    var root = BuildRealCommand(async (action, path, logLevel) => 0);
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) => 0);
 
     int exitCode = await root.Parse(new[] { "state", "list", "--verbose", "--quiet" }).InvokeAsync();
 
@@ -320,7 +320,7 @@ public class StateCommandTests
   [Fact]
   public async Task State_UnknownSubcommand_ReturnsNonZeroExit()
   {
-    var root = BuildRealCommand(async (action, path, logLevel) => 0);
+    var root = BuildRealCommand(async (action, path, logLevel, logFile) => 0);
 
     int exitCode = await root.Parse(new[] { "state", "unknownsubcmd" }).InvokeAsync();
 

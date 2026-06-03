@@ -18,9 +18,9 @@ public static class CliBuilder
   /// <param name="stateAction">Handler for the state subcommand (manages tracking state).</param>
   /// <returns>The configured root <see cref="RootCommand"/>.</returns>
   public static RootCommand BuildRootCommand(
-      Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
-      Func<FileInfo?, LogLevel, Task<int>> generateAction,
-      Func<string, string?, LogLevel, Task<int>> stateAction)
+      Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, FileInfo?, Task<int>> runAction,
+      Func<FileInfo?, LogLevel, FileInfo?, Task<int>> generateAction,
+      Func<string, string?, LogLevel, FileInfo?, Task<int>> stateAction)
   {
     var configOption = new Option<FileInfo>("--config");
     configOption.Description = "Path to the YAML configuration file";
@@ -67,6 +67,10 @@ public static class CliBuilder
     jsonOption.Description = "Output results as JSON";
     jsonOption.DefaultValueFactory = _ => false;
 
+    var logFileOption = new Option<FileInfo?>("--log-file");
+    logFileOption.Description = "Append log output to the specified file";
+    logFileOption.DefaultValueFactory = _ => null;
+
     var forceOption = new Option<bool>("--force") { Description = "Force reapply steps even if previously succeeded" };
     forceOption.DefaultValueFactory = _ => false;
 
@@ -83,6 +87,7 @@ public static class CliBuilder
     rootCommand.Options.Add(verboseOption);
     rootCommand.Options.Add(quietOption);
     rootCommand.Options.Add(jsonOption);
+    rootCommand.Options.Add(logFileOption);
     rootCommand.Options.Add(forceOption);
     rootCommand.Options.Add(continueOnErrorOption);
 
@@ -97,13 +102,14 @@ public static class CliBuilder
       bool verbose = result.GetValue(verboseOption);
       bool quiet = result.GetValue(quietOption);
       bool json = result.GetValue(jsonOption);
+      FileInfo? logFile = result.GetValue(logFileOption);
       bool force = result.GetValue(forceOption);
       bool continueOnError = result.GetValue(continueOnErrorOption);
 
       int conflict = RejectConflictingFlags(verbose, quiet);
       if (conflict != 0) return conflict;
 
-      return await runAction(file, dryRun, profile, debug, diff, json, update, force, continueOnError, ComputeLogLevel(quiet, verbose));
+      return await runAction(file, dryRun, profile, debug, diff, json, update, force, continueOnError, ComputeLogLevel(quiet, verbose), logFile);
     });
 
     // Generate Command
@@ -115,17 +121,19 @@ public static class CliBuilder
     generateCommand.Options.Add(outputOption);
     generateCommand.Options.Add(verboseOption);
     generateCommand.Options.Add(quietOption);
+    generateCommand.Options.Add(logFileOption);
 
     generateCommand.SetAction(async (ParseResult result) =>
     {
       FileInfo? output = result.GetValue(outputOption);
       bool verbose = result.GetValue(verboseOption);
       bool quiet = result.GetValue(quietOption);
+      FileInfo? logFile = result.GetValue(logFileOption);
 
       int conflict = RejectConflictingFlags(verbose, quiet);
       if (conflict != 0) return conflict;
 
-      return await generateAction(output, ComputeLogLevel(quiet, verbose));
+      return await generateAction(output, ComputeLogLevel(quiet, verbose), logFile);
     });
 
     rootCommand.Add(generateCommand);
@@ -135,18 +143,21 @@ public static class CliBuilder
     stateCommand.Description = "Manage the system state managed by WinHome";
     stateCommand.Options.Add(verboseOption);
     stateCommand.Options.Add(quietOption);
+    stateCommand.Options.Add(logFileOption);
 
     var listSubCommand = new Command("list");
     listSubCommand.Description = "List all items currently managed by WinHome";
     listSubCommand.Options.Add(verboseOption);
     listSubCommand.Options.Add(quietOption);
+    listSubCommand.Options.Add(logFileOption);
     listSubCommand.SetAction(async (ParseResult result) =>
     {
       bool verbose = result.GetValue(verboseOption);
       bool quiet = result.GetValue(quietOption);
+      FileInfo? logFile = result.GetValue(logFileOption);
       int conflict = RejectConflictingFlags(verbose, quiet);
       if (conflict != 0) return conflict;
-      return await stateAction("list", null, ComputeLogLevel(quiet, verbose));
+      return await stateAction("list", null, ComputeLogLevel(quiet, verbose), logFile);
     });
 
     var backupSubCommand = new Command("backup");
@@ -155,14 +166,16 @@ public static class CliBuilder
     backupSubCommand.Arguments.Add(backupPathArgument);
     backupSubCommand.Options.Add(verboseOption);
     backupSubCommand.Options.Add(quietOption);
+    backupSubCommand.Options.Add(logFileOption);
     backupSubCommand.SetAction(async (ParseResult result) =>
     {
       bool verbose = result.GetValue(verboseOption);
       bool quiet = result.GetValue(quietOption);
+      FileInfo? logFile = result.GetValue(logFileOption);
       int conflict = RejectConflictingFlags(verbose, quiet);
       if (conflict != 0) return conflict;
       var path = result.GetValue(backupPathArgument);
-      return await stateAction("backup", path, ComputeLogLevel(quiet, verbose));
+      return await stateAction("backup", path, ComputeLogLevel(quiet, verbose), logFile);
     });
 
     var restoreSubCommand = new Command("restore");
@@ -171,14 +184,16 @@ public static class CliBuilder
     restoreSubCommand.Arguments.Add(restorePathArgument);
     restoreSubCommand.Options.Add(verboseOption);
     restoreSubCommand.Options.Add(quietOption);
+    restoreSubCommand.Options.Add(logFileOption);
     restoreSubCommand.SetAction(async (ParseResult result) =>
     {
       bool verbose = result.GetValue(verboseOption);
       bool quiet = result.GetValue(quietOption);
+      FileInfo? logFile = result.GetValue(logFileOption);
       int conflict = RejectConflictingFlags(verbose, quiet);
       if (conflict != 0) return conflict;
       var path = result.GetValue(restorePathArgument);
-      return await stateAction("restore", path, ComputeLogLevel(quiet, verbose));
+      return await stateAction("restore", path, ComputeLogLevel(quiet, verbose), logFile);
     });
 
     // Clear SubCommand (New Feature)
@@ -186,10 +201,12 @@ public static class CliBuilder
     clearSubCommand.Description = "Force reset the WinHome tracking state";
     clearSubCommand.Options.Add(verboseOption);
     clearSubCommand.Options.Add(quietOption);
+    clearSubCommand.Options.Add(logFileOption);
     clearSubCommand.SetAction(async (ParseResult result) =>
     {
       bool verbose = result.GetValue(verboseOption);
       bool quiet = result.GetValue(quietOption);
+      FileInfo? logFile = result.GetValue(logFileOption);
       int conflict = RejectConflictingFlags(verbose, quiet);
       if (conflict != 0) return conflict;
 
@@ -199,7 +216,7 @@ public static class CliBuilder
       string? response = Console.ReadLine()?.Trim().ToLower();
       if (response == "y" || response == "yes")
       {
-        return await stateAction("clear", null, ComputeLogLevel(quiet, verbose));
+        return await stateAction("clear", null, ComputeLogLevel(quiet, verbose), logFile);
       }
       else
       {

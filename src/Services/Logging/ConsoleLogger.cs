@@ -6,6 +6,7 @@ namespace WinHome.Services.Logging
   public class ConsoleLogger : ILogger
   {
     private readonly object _consoleLock = new();
+    private readonly FileLogWriter _fileLogWriter = new();
     private volatile LogLevel _minLevel = LogLevel.Info;
 
     /// <summary>Sets the minimum log level; messages below this level are suppressed.</summary>
@@ -14,10 +15,18 @@ namespace WinHome.Services.Logging
       _minLevel = level;
     }
 
+    /// <summary>Writes log output to the specified file in append mode.</summary>
+    public void SetLogFile(string? path)
+    {
+      _fileLogWriter.SetLogFile(path);
+    }
+
     /// <summary>Logs a message at the given level with appropriate console coloring.</summary>
     public void Log(string message, LogLevel level)
     {
       if (level < _minLevel) return;
+
+      _fileLogWriter.Write(message, level);
 
       switch (level)
       {

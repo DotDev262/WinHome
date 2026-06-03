@@ -32,10 +32,11 @@ class Program
 
       var rootCommand = CliBuilder.BuildRootCommand(
           // Run Action
-          async (file, dryRun, profile, debug, diff, json, update, force, continueOnError, minLogLevel) =>
+          async (file, dryRun, profile, debug, diff, json, update, force, continueOnError, minLogLevel, logFile) =>
           {
             var logger = host.Services.GetRequiredService<ILogger>();
             logger.SetMinLevel(minLogLevel);
+            if (!ConfigureLogFile(logger, logFile)) return 1;
 
             if (update)
             {
@@ -61,10 +62,11 @@ class Program
             return exitCode;
           },
           // Generate Action
-          async (outputFile, minLogLevel) =>
+          async (outputFile, minLogLevel, logFile) =>
           {
             var logger = host.Services.GetRequiredService<ILogger>();
             logger.SetMinLevel(minLogLevel);
+            if (!ConfigureLogFile(logger, logFile)) return 1;
             var generator = host.Services.GetRequiredService<IGeneratorService>();
 
             try
@@ -96,10 +98,11 @@ class Program
             }
           },
           // State Action
-          async (command, path, minLogLevel) =>
+          async (command, path, minLogLevel, logFile) =>
           {
             var logger = host.Services.GetRequiredService<ILogger>();
             logger.SetMinLevel(minLogLevel);
+            if (!ConfigureLogFile(logger, logFile)) return 1;
             var stateService = host.Services.GetRequiredService<IStateService>();
 
             switch (command)
@@ -171,6 +174,22 @@ class Program
       }
       Console.ResetColor();
       return 1;
+    }
+  }
+
+  private static bool ConfigureLogFile(ILogger logger, FileInfo? logFile)
+  {
+    if (logFile is null) return true;
+
+    try
+    {
+      logger.SetLogFile(logFile.FullName);
+      return true;
+    }
+    catch (IOException ex)
+    {
+      Console.Error.WriteLine($"Error: {ex.Message}");
+      return false;
     }
   }
 }

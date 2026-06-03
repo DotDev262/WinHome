@@ -10,20 +10,20 @@ namespace WinHome.Tests;
 
 public class CliBuilderTests
 {
-  private static Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, Task<int>> NoOpRunAction()
+  private static Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, FileInfo?, Task<int>> NoOpRunAction()
   {
-    return (_, _, _, _, _, _, _, _, _, _) => Task.FromResult(0);
+    return (_, _, _, _, _, _, _, _, _, _, _) => Task.FromResult(0);
   }
 
   private static RootCommand BuildRootCommand(
-      Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
-      Func<FileInfo?, LogLevel, Task<int>>? generateAction = null,
-      Func<string, string?, LogLevel, Task<int>>? stateAction = null)
+      Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, FileInfo?, Task<int>> runAction,
+      Func<FileInfo?, LogLevel, FileInfo?, Task<int>>? generateAction = null,
+      Func<string, string?, LogLevel, FileInfo?, Task<int>>? stateAction = null)
   {
     return CliBuilder.BuildRootCommand(
         runAction: runAction,
-        generateAction: generateAction ?? ((output, level) => Task.FromResult(0)),
-        stateAction: stateAction ?? ((command, path, level) => Task.FromResult(0))
+        generateAction: generateAction ?? ((output, level, logFile) => Task.FromResult(0)),
+        stateAction: stateAction ?? ((command, path, level, logFile) => Task.FromResult(0))
     );
   }
 
@@ -41,8 +41,9 @@ public class CliBuilderTests
     bool capturedForce = false;
     bool capturedContinueOnError = false;
     LogLevel capturedLevel = LogLevel.Info;
+    FileInfo? capturedLogFile = null;
 
-    var root = BuildRootCommand((file, dryRun, profile, debug, diff, json, update, force, continueOnError, level) =>
+    var root = BuildRootCommand((file, dryRun, profile, debug, diff, json, update, force, continueOnError, level, logFile) =>
     {
       capturedFile = file;
       capturedDryRun = dryRun;
@@ -54,6 +55,7 @@ public class CliBuilderTests
       capturedForce = force;
       capturedContinueOnError = continueOnError;
       capturedLevel = level;
+      capturedLogFile = logFile;
       return Task.FromResult(0);
     });
 
@@ -69,7 +71,8 @@ public class CliBuilderTests
             "--update",
             "--force",
             "--continue-on-error",
-            "--verbose"
+            "--verbose",
+            "--log-file", "winhome.log"
         }).InvokeAsync();
 
     // Assert
@@ -85,6 +88,8 @@ public class CliBuilderTests
     Assert.True(capturedForce);
     Assert.True(capturedContinueOnError);
     Assert.Equal(LogLevel.Trace, capturedLevel);
+    Assert.NotNull(capturedLogFile);
+    Assert.EndsWith($"{Path.DirectorySeparatorChar}winhome.log", capturedLogFile.FullName);
   }
 
   [Fact]
@@ -95,7 +100,7 @@ public class CliBuilderTests
     string? capturedProfile = null;
     bool capturedUpdate = false;
 
-    var root = BuildRootCommand((_, dryRun, profile, _, _, _, update, _, _, _) =>
+    var root = BuildRootCommand((_, dryRun, profile, _, _, _, update, _, _, _, _) =>
     {
       capturedDryRun = dryRun;
       capturedProfile = profile;
@@ -123,7 +128,7 @@ public class CliBuilderTests
     // Arrange
     LogLevel capturedLevel = LogLevel.Info;
 
-    var root = BuildRootCommand((_, _, _, _, _, _, _, _, _, level) =>
+    var root = BuildRootCommand((_, _, _, _, _, _, _, _, _, level, _) =>
     {
       capturedLevel = level;
       return Task.FromResult(0);
@@ -151,7 +156,7 @@ public class CliBuilderTests
     bool capturedContinueOnError = true;
     LogLevel capturedLevel = LogLevel.Trace;
 
-    var root = BuildRootCommand((file, dryRun, profile, debug, diff, json, update, force, continueOnError, level) =>
+    var root = BuildRootCommand((file, dryRun, profile, debug, diff, json, update, force, continueOnError, level, _) =>
     {
       capturedDryRun = dryRun;
       capturedProfile = profile;
@@ -191,7 +196,7 @@ public class CliBuilderTests
       Environment.SetEnvironmentVariable("WINHOME_CONFIG_PATH", "env-config.yaml");
       FileInfo? capturedFile = null;
 
-      var root = BuildRootCommand((file, _, _, _, _, _, _, _, _, _) =>
+      var root = BuildRootCommand((file, _, _, _, _, _, _, _, _, _, _) =>
       {
         capturedFile = file;
         return Task.FromResult(0);
@@ -220,7 +225,7 @@ public class CliBuilderTests
       Environment.SetEnvironmentVariable("WINHOME_CONFIG_PATH", null);
       FileInfo? capturedFile = null;
 
-      var root = BuildRootCommand((file, _, _, _, _, _, _, _, _, _) =>
+      var root = BuildRootCommand((file, _, _, _, _, _, _, _, _, _, _) =>
       {
         capturedFile = file;
         return Task.FromResult(0);
@@ -245,7 +250,7 @@ public class CliBuilderTests
     // Arrange
     bool runCalled = false;
 
-    var root = BuildRootCommand((_, _, _, _, _, _, _, _, _, _) =>
+    var root = BuildRootCommand((_, _, _, _, _, _, _, _, _, _, _) =>
     {
       runCalled = true;
       return Task.FromResult(0);
@@ -294,7 +299,7 @@ public class CliBuilderTests
 
     var root = BuildRootCommand(
         runAction: NoOpRunAction(),
-        generateAction: (output, level) =>
+        generateAction: (output, level, logFile) =>
         {
           capturedOutput = output;
           capturedLevel = level;
@@ -320,7 +325,7 @@ public class CliBuilderTests
 
     var root = BuildRootCommand(
         runAction: NoOpRunAction(),
-        generateAction: (output, level) =>
+        generateAction: (output, level, logFile) =>
         {
           capturedOutput = output;
           capturedLevel = level;
@@ -344,7 +349,7 @@ public class CliBuilderTests
 
     var root = BuildRootCommand(
         runAction: NoOpRunAction(),
-        generateAction: (output, level) =>
+        generateAction: (output, level, logFile) =>
         {
           capturedOutput = output;
           return Task.FromResult(0);
@@ -367,7 +372,7 @@ public class CliBuilderTests
 
     var root = BuildRootCommand(
         runAction: NoOpRunAction(),
-        generateAction: (output, level) =>
+        generateAction: (output, level, logFile) =>
         {
           generateCalled = true;
           return Task.FromResult(0);
@@ -391,7 +396,7 @@ public class CliBuilderTests
 
     var root = BuildRootCommand(
         runAction: NoOpRunAction(),
-        stateAction: (command, path, level) =>
+        stateAction: (command, path, level, logFile) =>
         {
           capturedCommand = command;
           capturedPath = path;

@@ -38,6 +38,87 @@ namespace WinHome.Tests
     }
 
     [Fact]
+    public void LogFile_CreatesFileWithTimestampedOutput()
+    {
+      var path = Path.Combine(Path.GetTempPath(), $"winhome-{Guid.NewGuid():N}.log");
+      try
+      {
+        var logger = new ConsoleLogger();
+        logger.SetLogFile(path);
+
+        logger.LogInfo("info msg");
+
+        var result = File.ReadAllText(path);
+        Assert.Matches(@"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \[INFO\] info msg", result);
+      }
+      finally
+      {
+        if (File.Exists(path)) File.Delete(path);
+      }
+    }
+
+    [Fact]
+    public void LogFile_DoesNotSuppressConsoleOutput()
+    {
+      var path = Path.Combine(Path.GetTempPath(), $"winhome-{Guid.NewGuid():N}.log");
+      var output = new StringWriter();
+      var originalOut = Console.Out;
+      Console.SetOut(output);
+
+      try
+      {
+        var logger = new ConsoleLogger();
+        logger.SetLogFile(path);
+
+        logger.LogInfo("console msg");
+
+        Assert.Contains("console msg", output.ToString());
+        Assert.Contains("console msg", File.ReadAllText(path));
+      }
+      finally
+      {
+        Console.SetOut(originalOut);
+        if (File.Exists(path)) File.Delete(path);
+      }
+    }
+
+    [Fact]
+    public void LogFile_AppendsAcrossRuns()
+    {
+      var path = Path.Combine(Path.GetTempPath(), $"winhome-{Guid.NewGuid():N}.log");
+      try
+      {
+        var first = new ConsoleLogger();
+        first.SetLogFile(path);
+        first.LogInfo("first run");
+
+        var second = new ConsoleLogger();
+        second.SetLogFile(path);
+        second.LogInfo("second run");
+
+        var result = File.ReadAllText(path);
+        Assert.Contains("first run", result);
+        Assert.Contains("second run", result);
+      }
+      finally
+      {
+        if (File.Exists(path)) File.Delete(path);
+      }
+    }
+
+    [Fact]
+    public void LogFile_InvalidPathThrowsClearError()
+    {
+      var logger = new ConsoleLogger();
+      var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "winhome.log");
+
+      var ex = Assert.Throws<IOException>(() => logger.SetLogFile(path));
+
+      Assert.Contains("Unable to open log file", ex.Message);
+      Assert.Contains(path, ex.Message);
+    }
+
+    [Fact]
     public void Verbose_ShowsAllLevels()
     {
       var logger = new ConsoleLogger();
@@ -147,6 +228,27 @@ namespace WinHome.Tests
       Assert.DoesNotContain("success msg", json);
       Assert.Contains("warning msg", json);
       Assert.Contains("error msg", json);
+    }
+
+    [Fact]
+    public void LogFile_WritesHumanReadableOutput()
+    {
+      var path = Path.Combine(Path.GetTempPath(), $"winhome-{Guid.NewGuid():N}.log");
+      try
+      {
+        var logger = new JsonLogger();
+        logger.SetLogFile(path);
+
+        logger.LogWarning("json warning");
+
+        var result = File.ReadAllText(path);
+        Assert.Matches(@"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \[WARNING\] json warning", result);
+        Assert.Contains("json warning", logger.ToJson());
+      }
+      finally
+      {
+        if (File.Exists(path)) File.Delete(path);
+      }
     }
   }
 }
