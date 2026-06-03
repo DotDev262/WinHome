@@ -17,6 +17,7 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | `chocolatey` | Manages Chocolatey client configuration and feature flags. | `config_provider` | [Details](#chocolatey) |
 | `npm` | Manages user-level `.npmrc` settings. | `config_provider` | [Details](#npm) |
 | `pip` | Manages `pip.ini` settings for Python package installs. | `config_provider` | [Details](#pip) |
+| `scoop` | Manages Scoop client `config.json`, separate from package installation. | `config_provider` | [Details](#scoop) |
 | `winget` | Manages Winget CLI `settings.json`, separate from package installation. | `config_provider` | [Details](#winget) |
 
 ### Editors And Knowledge Tools
@@ -147,7 +148,12 @@ Helpful references:
 Config key: `extensions.cargo`
 
 Merges Cargo settings into `%USERPROFILE%\.cargo\config.toml`.
+<a id="scoop"></a>
+#### scoop
 
+Config key: `extensions.scoop`
+
+Deep-merges settings into `%USERPROFILE%\.config\scoop\config.json` (or `%XDG_CONFIG_HOME%\scoop\config.json`). For package installs, see [Scoop module docs](../modules/scoop.md). Full plugin guide: [scoop.md](scoop.md).
 <a id="chocolatey"></a>
 #### chocolatey
 
