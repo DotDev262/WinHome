@@ -40,6 +40,8 @@
   href: rclone.md
 - name: Rustup
   href: rustup.md
+- name: Scoop
+  href: scoop.md
 - name: Sharex
   href: sharex.md
 - name: Starship
