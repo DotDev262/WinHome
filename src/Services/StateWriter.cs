@@ -118,6 +118,6 @@ namespace WinHome.Services
         }
       }
     }
-    }
+  }
 }
 
