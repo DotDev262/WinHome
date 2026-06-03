@@ -1,9 +1,8 @@
-import sys
 import json
 import os
 import shutil
+import sys
 import urllib.request
-from pathlib import Path
 
 # Official Obsidian releases url for community plugins
 OBSIDIAN_RELEASES_URL = "https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
@@ -30,17 +29,17 @@ SETTING_FILE_MAP = {
 
 # Helpers
 
+
 def log(msg):
     sys.stderr.write(f"[obsidian-plugin] {msg}\n")
     sys.stderr.flush()
 
+
 def make_request(url: str):
     """Make an HTTP request to the given URL with a user agent"""
-    req = urllib.request.Request(
-        url, 
-        headers={"User-Agent": "WinHome-Environment-Manager/1.0"}
-    )
+    req = urllib.request.Request(url, headers={"User-Agent": "WinHome-Environment-Manager/1.0"})
     return urllib.request.urlopen(req)
+
 
 def read_json(file_path: str) -> dict:
     if not os.path.exists(file_path):
@@ -52,10 +51,12 @@ def read_json(file_path: str) -> dict:
         log(f"Warning: could not parse {file_path}: {e}")
         return {}
 
+
 def write_json(file_path: str, data) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
 
 def merge_settings(target: dict, source: dict) -> bool:
     """Merge settings from source into target and return True if any changes were made"""
@@ -65,6 +66,7 @@ def merge_settings(target: dict, source: dict) -> bool:
             target[key] = value
             changed = True
     return changed
+
 
 def group_settings_by_file(settings: dict) -> dict:
     """Seperates settings into app.json and appearance.json"""
@@ -76,14 +78,16 @@ def group_settings_by_file(settings: dict) -> dict:
         grouped[file_name][key] = value
     return grouped
 
+
 # Vault-wise settings
+
 
 def apply_vault_settings(vault_path: str, settings: dict, dry_run: bool) -> dict:
     """Apply settings to a vault"""
     obsidian_dir = os.path.join(vault_path, ".obsidian")
     grouped = group_settings_by_file(settings)
     overall_changed = False
-    
+
     for file_name, desired_values in grouped.items():
         file_path = os.path.join(obsidian_dir, file_name)
         current = read_json(file_path)
@@ -98,11 +102,17 @@ def apply_vault_settings(vault_path: str, settings: dict, dry_run: bool) -> dict
             log(f"Updated {file_path}")
             overall_changed = True
         except Exception as e:
-            return {"success": False, "changed": overall_changed, "error": str(e)}
-    
-    return {"success": True, "changed" : overall_changed}
+            return {
+                "success": False,
+                "changed": overall_changed,
+                "error": str(e),
+            }
+
+    return {"success": True, "changed": overall_changed}
+
 
 # Community Plugins
+
 
 def get_enabled_plugins(vault_path: str) -> list:
     """Get list of enabled community plugins"""
@@ -117,10 +127,12 @@ def get_enabled_plugins(vault_path: str) -> list:
         log(f"Warning: could not read {file_path}: {e}")
         return []
 
+
 def save_enabled_plugins(vault_path: str, plugins: list) -> None:
     """Overwrites community-plugins.json with the given list of plugins"""
     file_path = os.path.join(vault_path, ".obsidian", "community-plugins.json")
     write_json(file_path, plugins)
+
 
 def fetch_plugin_repo(plugin_id: str):
     """Fetches the github repo of a plugin"""
@@ -136,6 +148,7 @@ def fetch_plugin_repo(plugin_id: str):
         log(f"Warning: could not fetch community plugin registry: {e}")
         return None
 
+
 def fetch_latest_version(repo: str):
     """Fetches the latest version of a plugin from GitHub"""
     try:
@@ -146,6 +159,7 @@ def fetch_latest_version(repo: str):
     except Exception as e:
         log(f"Failed to fetch latest release tag for {repo}: {e}")
         return None
+
 
 def download_plugin(vault_path: str, plugin_id: str, repo: str, version: str) -> None:
     """Downloads a plugin to the vault"""
@@ -160,7 +174,7 @@ def download_plugin(vault_path: str, plugin_id: str, repo: str, version: str) ->
     for file in files:
         success = False
         last_error = None
-        
+
         for v in versions_to_try:
             url = f"https://github.com/{repo}/releases/download/{v}/{file}"
             try:
@@ -175,19 +189,26 @@ def download_plugin(vault_path: str, plugin_id: str, repo: str, version: str) ->
             except Exception as e:
                 last_error = e
                 continue
-        
+
         if not success and file != "styles.css":
             raise Exception(f"Failed to download required asset '{file}' for {plugin_id}: {last_error}")
 
 
 # Apply Changes
 
+
 def check_installed(args: dict, request_id: str) -> dict:
     """Checks if a plugin is installed and enabled"""
     vault_path = args["vaultPath"]
     plugin_id = args["pluginId"]
     enabled = get_enabled_plugins(vault_path)
-    return {"requestId": request_id, "success": True, "changed": False, "data": plugin_id in enabled}
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": False,
+        "data": plugin_id in enabled,
+    }
+
 
 def install_plugin(args: dict, context: dict, request_id: str) -> dict:
     """Installs a plugin to the vault"""
@@ -200,31 +221,47 @@ def install_plugin(args: dict, context: dict, request_id: str) -> dict:
     if already_installed:
         log(f"Plugin {plugin_id} already installed and enabled.")
         return {"requestId": request_id, "success": True, "changed": False}
-    
+
     if context.get("dryRun"):
         log(f"Would install {plugin_id}")
         return {"requestId": request_id, "success": True, "changed": False}
-    
+
     try:
         repo = fetch_plugin_repo(plugin_id)
         if not repo:
-            return {"requestId": request_id, "success": False, "changed": False, "error": f"Plugin not found in registry: {plugin_id}"}
-        
+            return {
+                "requestId": request_id,
+                "success": False,
+                "changed": False,
+                "error": f"Plugin not found in registry: {plugin_id}",
+            }
+
         version = fetch_latest_version(repo)
         if not version:
-            return {"requestId": request_id, "success": False, "changed": False, "error": f"Could not determine version for {plugin_id}"}
+            return {
+                "requestId": request_id,
+                "success": False,
+                "changed": False,
+                "error": f"Could not determine version for {plugin_id}",
+            }
 
         download_plugin(vault_path, plugin_id, repo, version)
 
         if plugin_id not in enabled:
             enabled.append(plugin_id)
             save_enabled_plugins(vault_path, enabled)
-            
+
         log(f"Installed and enabled plugin: {plugin_id} version {version}")
         return {"requestId": request_id, "success": True, "changed": True}
     except Exception as e:
         log(f"Error installing plugin {plugin_id}: {e}")
-        return {"requestId": request_id, "success": False, "changed": False, "error": str(e)}
+        return {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": str(e),
+        }
+
 
 def uninstall_plugin(args: dict, context: dict, request_id: str) -> dict:
     """Uninstalls a plugin from the vault"""
@@ -233,20 +270,20 @@ def uninstall_plugin(args: dict, context: dict, request_id: str) -> dict:
     enabled = get_enabled_plugins(vault_path)
     plugin_dir = os.path.join(vault_path, ".obsidian", "plugins", plugin_id)
     is_installed = plugin_id in enabled or os.path.exists(plugin_dir)
-    
+
     if not is_installed:
         log(f"Plugin {plugin_id} not installed.")
         return {"requestId": request_id, "success": True, "changed": False}
-    
+
     if context.get("dryRun"):
         log(f"Would uninstall {plugin_id}")
         return {"requestId": request_id, "success": True, "changed": False}
-    
+
     try:
         if os.path.exists(plugin_dir):
             shutil.rmtree(plugin_dir)
             log(f"Removed plugin directory: {plugin_id}")
-        
+
         updated = [p for p in enabled if p != plugin_id]
         save_enabled_plugins(vault_path, updated)
 
@@ -254,13 +291,18 @@ def uninstall_plugin(args: dict, context: dict, request_id: str) -> dict:
         return {"requestId": request_id, "success": True, "changed": True}
     except Exception as e:
         log(f"Error uninstalling plugin {plugin_id}: {e}")
-        return {"requestId": request_id, "success": False, "changed": False, "error": str(e)}
+        return {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": str(e),
+        }
 
-        
+
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     overall_success = True
     overall_changed = False
-    
+
     for vault in args.get("vaults", []):
         vault_path = vault.get("path")
         if not vault_path:
@@ -280,15 +322,25 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
                 log(f"Vault settings error ({vault_path}): {res['error']}")
 
         for plugin_id in vault.get("plugins", []):
-            res = install_plugin({"vaultPath": vault_path, "pluginId": plugin_id}, context, request_id)
+            res = install_plugin(
+                {"vaultPath": vault_path, "pluginId": plugin_id},
+                context,
+                request_id,
+            )
             if not res["success"]:
                 overall_success = False
             if res["changed"]:
                 overall_changed = True
 
-    return {"requestId": request_id, "success": overall_success, "changed": overall_changed}
+    return {
+        "requestId": request_id,
+        "success": overall_success,
+        "changed": overall_changed,
+    }
 
-# Main 
+
+# Main
+
 
 def main():
     input_data = sys.stdin.read()
@@ -324,6 +376,7 @@ def main():
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     main()

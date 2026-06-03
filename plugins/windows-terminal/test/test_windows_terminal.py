@@ -1,6 +1,6 @@
 import json
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import plugin
@@ -61,14 +61,17 @@ def test_apply_merges_settings(tmp_path):
 
 def test_unknown_command_via_main(monkeypatch, capsys):
     import json
+
     import plugin
 
-    request = json.dumps({
-        "requestId": "test-999",
-        "command": "unknown_cmd",
-        "args": {},
-        "context": {}
-    })
+    request = json.dumps(
+        {
+            "requestId": "test-999",
+            "command": "unknown_cmd",
+            "args": {},
+            "context": {},
+        }
+    )
     monkeypatch.setattr("sys.stdin", __import__("io").StringIO(request))
     plugin.main()
     out = capsys.readouterr().out

@@ -5,70 +5,71 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
-    public class Configuration
-    {
-        [YamlMember(Alias = "version")]
-        [JsonPropertyName("version")]
-        public string Version { get; set; } = "1.0";
+  /// <summary>Top-level configuration model for WinHome. Maps directly from YAML/JSON config files.</summary>
+  public class Configuration
+  {
+    [YamlMember(Alias = "version")]
+    [JsonPropertyName("version")]
+    public string Version { get; set; } = "1.0";
 
-        [YamlMember(Alias = "apps")]
-        [JsonPropertyName("apps")]
-        public List<AppConfig> Apps { get; set; } = new();
+    [YamlMember(Alias = "apps")]
+    [JsonPropertyName("apps")]
+    public List<AppConfig> Apps { get; set; } = new();
 
-        [YamlMember(Alias = "registryTweaks")]
-        [JsonPropertyName("registryTweaks")]
-        public List<RegistryTweak> RegistryTweaks { get; set; } = new();
+    [YamlMember(Alias = "registryTweaks")]
+    [JsonPropertyName("registryTweaks")]
+    public List<RegistryTweak> RegistryTweaks { get; set; } = new();
 
-        [YamlMember(Alias = "dotfiles")]
-        [JsonPropertyName("dotfiles")]
-        public List<DotfileConfig> Dotfiles { get; set; } = new();
+    [YamlMember(Alias = "dotfiles")]
+    [JsonPropertyName("dotfiles")]
+    public List<DotfileConfig> Dotfiles { get; set; } = new();
 
-        [YamlMember(Alias = "systemSettings")]
-        [JsonPropertyName("systemSettings")]
-        public Dictionary<string, object> SystemSettings { get; set; } = new();
+    [YamlMember(Alias = "systemSettings")]
+    [JsonPropertyName("systemSettings")]
+    public Dictionary<string, object> SystemSettings { get; set; } = new();
 
-        [YamlMember(Alias = "wsl")]
-        [JsonPropertyName("wsl")]
-        public WslConfig? Wsl { get; set; }
+    [YamlMember(Alias = "wsl")]
+    [JsonPropertyName("wsl")]
+    public WslConfig? Wsl { get; set; }
 
-        [YamlMember(Alias = "git")]
-        [JsonPropertyName("git")]
-        public GitConfig? Git { get; set; }
+    [YamlMember(Alias = "git")]
+    [JsonPropertyName("git")]
+    public GitConfig? Git { get; set; }
 
-        [YamlMember(Alias = "profiles")]
-        [JsonPropertyName("profiles")]
-        public Dictionary<string, ProfileConfig> Profiles { get; set; } = new();
+    [YamlMember(Alias = "profiles")]
+    [JsonPropertyName("profiles")]
+    public Dictionary<string, ProfileConfig> Profiles { get; set; } = new();
 
-        [YamlMember(Alias = "envVars")]
-        [JsonPropertyName("envVars")]
-        public List<EnvVarConfig> EnvVars { get; set; } = new();
+    [YamlMember(Alias = "envVars")]
+    [JsonPropertyName("envVars")]
+    public List<EnvVarConfig> EnvVars { get; set; } = new();
 
-        [YamlMember(Alias = "services")]
-        [JsonPropertyName("services")]
-        public List<WindowsServiceConfig> Services { get; set; } = new();
+    [YamlMember(Alias = "services")]
+    [JsonPropertyName("services")]
+    public List<WindowsServiceConfig> Services { get; set; } = new();
 
-        [YamlMember(Alias = "scheduledTasks")]
-        [JsonPropertyName("scheduledTasks")]
-        public List<ScheduledTaskConfig> ScheduledTasks { get; set; } = new();
+    [YamlMember(Alias = "scheduledTasks")]
+    [JsonPropertyName("scheduledTasks")]
+    public List<ScheduledTaskConfig> ScheduledTasks { get; set; } = new();
 
-        [YamlMember(Alias = "extensions")]
-        [JsonPropertyName("extensions")]
-        public Dictionary<string, object> Extensions { get; set; } = new();
+    [YamlMember(Alias = "extensions")]
+    [JsonPropertyName("extensions")]
+    public Dictionary<string, object> Extensions { get; set; } = new();
 
-        [YamlMember(Alias = "vim")]
-        [JsonPropertyName("vim")]
-        public object? Vim { get; set; }
+    [YamlMember(Alias = "vim")]
+    [JsonPropertyName("vim")]
+    public object? Vim { get; set; }
 
-        [YamlMember(Alias = "vscode")]
-        [JsonPropertyName("vscode")]
-        public object? Vscode { get; set; }
+    [YamlMember(Alias = "vscode")]
+    [JsonPropertyName("vscode")]
+    public object? Vscode { get; set; }
 
-        [YamlMember(Alias = "obsidian")]
-        [JsonPropertyName("obsidian")]
-        public object? Obsidian { get; set; }
+    [YamlMember(Alias = "obsidian")]
+    [JsonPropertyName("obsidian")]
+    public object? Obsidian { get; set; }
 
-        [YamlMember(Alias = "ohmyposh")]
-        [JsonPropertyName("ohmyposh")]
-        public object? Ohmyposh { get; set; }
-    }
+    [YamlMember(Alias = "ohmyposh")]
+    [JsonPropertyName("ohmyposh")]
+    public object? Ohmyposh { get; set; }
+  }
 }

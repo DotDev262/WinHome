@@ -1,0 +1,154 @@
+name: Test Plugins
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      python_plugins: ${{ steps.find.outputs.python_plugins }}
+      js_plugins:     ${{ steps.find.outputs.js_plugins }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Discover plugins
+        id: find
+        shell: bash
+        run: |
+          PY_PLUGINS=()
+          for test_file in plugins/*/test/test_*.py; do
+            [ -f "$test_file" ] || continue
+            if grep -q 'if __name__ == "__main__"' "$test_file"; then
+              plugin=$(echo "$test_file" | cut -d'/' -f2)
+              PY_PLUGINS+=("$plugin")
+            fi
+          done
+
+          JS_PLUGINS=()
+          for pkg in plugins/*/package.json; do
+            [ -f "$pkg" ] || continue
+            plugin=$(echo "$pkg" | cut -d'/' -f2)
+            JS_PLUGINS+=("$plugin")
+          done
+
+          if [ ${#PY_PLUGINS[@]} -eq 0 ]; then
+            PY_JSON="[]"
+          else
+            PY_JSON=$(printf '%s\n' "${PY_PLUGINS[@]}" | jq -R . | jq -sc .)
+          fi
+
+          if [ ${#JS_PLUGINS[@]} -eq 0 ]; then
+            JS_JSON="[]"
+          else
+            JS_JSON=$(printf '%s\n' "${JS_PLUGINS[@]}" | jq -R . | jq -sc .)
+          fi
+
+          echo "python_plugins=$PY_JSON" >> "$GITHUB_OUTPUT"
+          echo "js_plugins=$JS_JSON"     >> "$GITHUB_OUTPUT"
+
+          echo "Python plugins found: $PY_JSON"
+          echo "JS plugins found:     $JS_JSON"
+
+  test-python:
+    needs: discover
+    if: ${{ needs.discover.outputs.python_plugins != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJson(needs.discover.outputs.python_plugins) }}
+
+    name: "Python › ${{ matrix.plugin }}"
+    env:
+      APPDATA: /home/runner/appdata
+      LOCALAPPDATA: /home/runner/localappdata
+      USERPROFILE: /home/runner
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup environment
+        run: |
+          mkdir -p $APPDATA $LOCALAPPDATA
+
+      - name: Install uv
+        shell: bash
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          uv --version
+
+      - name: Run plugin test
+        shell: bash
+        working-directory: plugins/${{ matrix.plugin }}
+        run: |
+          TEST_FILE="test/test_${{ matrix.plugin }}.py"
+
+          if [ ! -f "$TEST_FILE" ]; then
+            echo "⚠️  Test file not found: $TEST_FILE — skipping."
+            exit 0
+          fi
+
+          echo "▶ Running $TEST_FILE"
+          chmod +x "$TEST_FILE"
+          uv run "$TEST_FILE"
+
+      - name: Annotate failure
+        if: failure()
+        run: |
+          echo "::error title=Plugin test failed::Plugin '${{ matrix.plugin }}' test failed. See logs above."
+
+  test-js:
+    needs: discover
+    if: ${{ needs.discover.outputs.js_plugins != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJson(needs.discover.outputs.js_plugins) }}
+
+    name: "JS › ${{ matrix.plugin }}"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Bun
+        shell: bash
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.bun/bin:$PATH"
+          bun --version
+
+      - name: Install dependencies
+        shell: bash
+        working-directory: plugins/${{ matrix.plugin }}
+        run: |
+          export PATH="$HOME/.bun/bin:$PATH"
+          bun install
+
+      - name: Run plugin test
+        shell: bash
+        working-directory: plugins/${{ matrix.plugin }}
+        run: |
+          export PATH="$HOME/.bun/bin:$PATH"
+          if cat package.json | jq -e '.scripts.test' > /dev/null 2>&1; then
+            bun run test
+          else
+            TEST_FILES=$(ls test/test_*.ts test/test_*.js 2>/dev/null)
+            if [ -n "$TEST_FILES" ]; then
+              for TEST_FILE in $TEST_FILES; do
+                echo "▶ Running $TEST_FILE"
+                bun run "$TEST_FILE"
+              done
+            else
+              echo "⚠️  No test script or test file found — skipping."
+            fi
+          fi
+
+      - name: Annotate failure
+        if: failure()
+        run: |
+          echo "::error title=Plugin test failed::Plugin '${{ matrix.plugin }}' test failed. See logs above."

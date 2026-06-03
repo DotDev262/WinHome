@@ -3,20 +3,20 @@ using Xunit;
 
 namespace WinHome.Tests
 {
-    public class ConfigValidatorTests
+  public class ConfigValidatorTests
+  {
+    private readonly ConfigValidator _validator;
+
+    public ConfigValidatorTests()
     {
-        private readonly ConfigValidator _validator;
+      _validator = new ConfigValidator();
+    }
 
-        public ConfigValidatorTests()
-        {
-            _validator = new ConfigValidator();
-        }
-
-        [Fact]
-        public void Validate_ReturnsTrue_ForValidConfig()
-        {
-            // Arrange
-            string validYaml = @"
+    [Fact]
+    public void Validate_ReturnsTrue_ForValidConfig()
+    {
+      // Arrange
+      string validYaml = @"
 apps:
   - id: vscode
     manager: winget
@@ -24,47 +24,47 @@ dotfiles:
   - repo: https://github.com/user/dotfiles.git
     target: ~/.config
 ";
-            // Act
-            var result = _validator.Validate(validYaml);
+      // Act
+      var result = _validator.Validate(validYaml);
 
-            // Assert
-            Assert.True(result.IsValid);
-            Assert.Empty(result.Errors);
-        }
+      // Assert
+      Assert.True(result.IsValid);
+      Assert.Empty(result.Errors);
+    }
 
-        [Fact]
-        public void Validate_ReturnsFalse_ForInvalidType()
-        {
-            // Arrange
-            string invalidYaml = @"
+    [Fact]
+    public void Validate_ReturnsFalse_ForInvalidType()
+    {
+      // Arrange
+      string invalidYaml = @"
 apps:
   - id: vscode
     manager: [1, 2]  # Should be string, is array
 ";
-            // Act
-            var result = _validator.Validate(invalidYaml);
+      // Act
+      var result = _validator.Validate(invalidYaml);
 
-            // Assert
-            Assert.False(result.IsValid);
-            Assert.NotEmpty(result.Errors);
-        }
+      // Assert
+      Assert.False(result.IsValid);
+      Assert.NotEmpty(result.Errors);
+    }
 
-        [Fact]
-        public void Validate_ReturnsFalse_ForInvalidYaml()
-        {
-            // Arrange
-            string invalidYaml = @"
+    [Fact]
+    public void Validate_ReturnsFalse_ForInvalidYaml()
+    {
+      // Arrange
+      string invalidYaml = @"
 apps:
   - id: vscode
     manager: winget
   [invalid syntax]
 ";
-            // Act
-            var result = _validator.Validate(invalidYaml);
+      // Act
+      var result = _validator.Validate(invalidYaml);
 
-            // Assert
-            Assert.False(result.IsValid);
-            Assert.Contains(result.Errors, e => e.StartsWith("YAML Parsing Error"));
-        }
+      // Assert
+      Assert.False(result.IsValid);
+      Assert.Contains(result.Errors, e => e.StartsWith("YAML Parsing Error"));
     }
+  }
 }

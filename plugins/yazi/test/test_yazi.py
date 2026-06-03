@@ -1,22 +1,15 @@
-import subprocess
 import json
 import os
-import tempfile
+import subprocess
 import sys
+import tempfile
 
 try:
     import tomllib
 except ImportError:
     tomllib = None
 
-PLUGIN = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "src",
-        "plugin.py"
-    )
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -24,7 +17,7 @@ def run_plugin(payload: dict) -> dict:
         [sys.executable, PLUGIN],
         input=json.dumps(payload),
         capture_output=True,
-        text=True
+        text=True,
     )
 
     return json.loads(result.stdout.strip())
@@ -39,12 +32,14 @@ def read_toml(path: str) -> dict:
 
 
 def test_check_installed():
-    res = run_plugin({
-        "requestId": "1",
-        "command": "check_installed",
-        "args": {},
-        "context": {}
-    })
+    res = run_plugin(
+        {
+            "requestId": "1",
+            "command": "check_installed",
+            "args": {},
+            "context": {},
+        }
+    )
 
     assert res["success"]
     assert "data" in res
@@ -57,29 +52,20 @@ def test_apply_config_dry_run():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["APPDATA"] = tmp
 
-        res = run_plugin({
-            "requestId": "2",
-            "command": "apply",
-            "args": {
-                "manager": {
-                    "show_hidden": True
-                }
-            },
-            "context": {
-                "dryRun": True
+        res = run_plugin(
+            {
+                "requestId": "2",
+                "command": "apply",
+                "args": {"manager": {"show_hidden": True}},
+                "context": {"dryRun": True},
             }
-        })
+        )
 
         assert res["success"]
         assert res["changed"]
         assert res["data"]["wouldChange"] is True
 
-        config_path = os.path.join(
-            tmp,
-            "yazi",
-            "config",
-            "yazi.toml"
-        )
+        config_path = os.path.join(tmp, "yazi", "config", "yazi.toml")
 
         assert not os.path.exists(config_path)
 
@@ -90,30 +76,18 @@ def test_apply_config_routing_and_write():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["APPDATA"] = tmp
 
-        res = run_plugin({
-            "requestId": "3",
-            "command": "apply",
-            "args": {
-                "manager": {
-                    "show_hidden": True
+        res = run_plugin(
+            {
+                "requestId": "3",
+                "command": "apply",
+                "args": {
+                    "manager": {"show_hidden": True},
+                    "keymap": {"prepend_keymap": [{"on": ["g", "h"], "run": "cd ~", "desc": "Go home"}]},
+                    "theme": {"type": "catppuccin-mocha"},
                 },
-                "keymap": {
-                    "prepend_keymap": [
-                        {
-                            "on": ["g", "h"],
-                            "run": "cd ~",
-                            "desc": "Go home"
-                        }
-                    ]
-                },
-                "theme": {
-                    "type": "catppuccin-mocha"
-                }
-            },
-            "context": {
-                "dryRun": False
+                "context": {"dryRun": False},
             }
-        })
+        )
 
         assert res["success"]
         assert res["changed"]
@@ -145,14 +119,8 @@ def test_idempotent_apply():
         payload = {
             "requestId": "4",
             "command": "apply",
-            "args": {
-                "manager": {
-                    "show_hidden": True
-                }
-            },
-            "context": {
-                "dryRun": False
-            }
+            "args": {"manager": {"show_hidden": True}},
+            "context": {"dryRun": False},
         }
 
         run_plugin(payload)
@@ -167,12 +135,7 @@ def test_idempotent_apply():
 
 
 def test_unknown_command():
-    res = run_plugin({
-        "requestId": "5",
-        "command": "explode",
-        "args": {},
-        "context": {}
-    })
+    res = run_plugin({"requestId": "5", "command": "explode", "args": {}, "context": {}})
 
     assert not res["success"]
     assert "error" in res

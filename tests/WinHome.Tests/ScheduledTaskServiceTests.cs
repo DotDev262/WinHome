@@ -9,35 +9,35 @@ using System;
 
 namespace WinHome.Tests
 {
-    public class ScheduledTaskServiceTests
+  public class ScheduledTaskServiceTests
+  {
+    private readonly Mock<ILogger<ScheduledTaskService>> _mockLogger;
+    private readonly ScheduledTaskService _service;
+
+    public ScheduledTaskServiceTests()
     {
-        private readonly Mock<ILogger<ScheduledTaskService>> _mockLogger;
-        private readonly ScheduledTaskService _service;
+      _mockLogger = new Mock<ILogger<ScheduledTaskService>>();
+      _service = new ScheduledTaskService(_mockLogger.Object);
+    }
 
-        public ScheduledTaskServiceTests()
-        {
-            _mockLogger = new Mock<ILogger<ScheduledTaskService>>();
-            _service = new ScheduledTaskService(_mockLogger.Object);
-        }
-
-        [Fact]
-        public void Apply_ShouldCreateScheduledTask()
-        {
-            // Arrange
-            var taskConfig = new ScheduledTaskConfig
-            {
-                Name = "Test Task",
-                Path = "TestTask",
-                Description = "A test task",
-                Author = "Test Author",
-                Triggers = new()
+    [Fact]
+    public void Apply_ShouldCreateScheduledTask()
+    {
+      // Arrange
+      var taskConfig = new ScheduledTaskConfig
+      {
+        Name = "Test Task",
+        Path = "TestTask",
+        Description = "A test task",
+        Author = "Test Author",
+        Triggers = new()
                 {
                     new TriggerConfig
                     {
                         Type = "Daily"
                     }
                 },
-                Actions = new()
+        Actions = new()
                 {
                     new ActionConfig
                     {
@@ -46,41 +46,41 @@ namespace WinHome.Tests
                         Arguments = "/c echo Test"
                     }
                 }
-            };
+      };
 
-            // Act
-            _service.Apply(taskConfig, false);
+      // Act
+      _service.Apply(taskConfig, false);
 
-            // Assert
-            using (var ts = new TaskService())
-            {
-                var task = ts.FindTask("TestTask");
-                Assert.NotNull(task);
-                Assert.Equal("A test task", task.Definition.RegistrationInfo.Description);
-                Assert.Equal("Test Author", task.Definition.RegistrationInfo.Author);
-                ts.RootFolder.DeleteTask("TestTask");
-            }
-        }
-
-        [Fact]
-        public void Apply_DryRun_ShouldNotCreateScheduledTask()
-        {
-            // Arrange
-            var taskConfig = new ScheduledTaskConfig
-            {
-                Name = "Test Task",
-                Path = "TestTask",
-            };
-
-            // Act
-            _service.Apply(taskConfig, true);
-
-            // Assert
-            using (var ts = new TaskService())
-            {
-                var task = ts.FindTask("TestTask");
-                Assert.Null(task);
-            }
-        }
+      // Assert
+      using (var ts = new TaskService())
+      {
+        var task = ts.FindTask("TestTask");
+        Assert.NotNull(task);
+        Assert.Equal("A test task", task.Definition.RegistrationInfo.Description);
+        Assert.Equal("Test Author", task.Definition.RegistrationInfo.Author);
+        ts.RootFolder.DeleteTask("TestTask");
+      }
     }
+
+    [Fact]
+    public void Apply_DryRun_ShouldNotCreateScheduledTask()
+    {
+      // Arrange
+      var taskConfig = new ScheduledTaskConfig
+      {
+        Name = "Test Task",
+        Path = "TestTask",
+      };
+
+      // Act
+      _service.Apply(taskConfig, true);
+
+      // Assert
+      using (var ts = new TaskService())
+      {
+        var task = ts.FindTask("TestTask");
+        Assert.Null(task);
+      }
+    }
+  }
 }

@@ -6,3 +6,47 @@
   href: tutorial.md
 - name: Development Guide
   href: development-guide.md
+- name: Alacritty
+  href: alacritty.md
+- name: Autohotkey
+  href: autohotkey.md
+- name: Bat
+  href: bat.md
+- name: Cargo
+  href: cargo.md
+- name: Chezmoi
+  href: chezmoi.md
+- name: Chocolatey
+  href: chocolatey.md
+- name: Curl
+  href: curl.md
+- name: Gh Dash
+  href: gh-dash.md
+- name: Gh
+  href: gh.md
+- name: Mise
+  href: mise.md
+- name: Npm
+  href: npm.md
+- name: Ohmyposh
+  href: ohmyposh.md
+- name: Pip
+  href: pip.md
+- name: Powershell
+  href: powershell.md
+- name: Powertoys
+  href: powertoys.md
+- name: Rclone
+  href: rclone.md
+- name: Rustup
+  href: rustup.md
+- name: Sharex
+  href: sharex.md
+- name: Starship
+  href: starship.md
+- name: Winget
+  href: winget.md
+- name: Yazi
+  href: yazi.md
+- name: Zoxide
+  href: zoxide.md

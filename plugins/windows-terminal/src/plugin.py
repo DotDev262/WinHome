@@ -1,7 +1,7 @@
-import sys
 import json
 import os
 import shutil
+import sys
 
 
 def log(msg):
@@ -15,9 +15,27 @@ def get_settings_paths():
     paths = []
     if local_app_data:
         paths += [
-            os.path.join(local_app_data, "Packages", "Microsoft.WindowsTerminal_8wekyb3d8bbwe", "LocalState", "settings.json"),
-            os.path.join(local_app_data, "Packages", "Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe", "LocalState", "settings.json"),
-            os.path.join(local_app_data, "Packages", "Microsoft.WindowsTerminalDev_8wekyb3d8bbwe", "LocalState", "settings.json"),
+            os.path.join(
+                local_app_data,
+                "Packages",
+                "Microsoft.WindowsTerminal_8wekyb3d8bbwe",
+                "LocalState",
+                "settings.json",
+            ),
+            os.path.join(
+                local_app_data,
+                "Packages",
+                "Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe",
+                "LocalState",
+                "settings.json",
+            ),
+            os.path.join(
+                local_app_data,
+                "Packages",
+                "Microsoft.WindowsTerminalDev_8wekyb3d8bbwe",
+                "LocalState",
+                "settings.json",
+            ),
         ]
     if user_profile:
         paths.append(os.path.join(user_profile, ".config", "wt", "settings.json"))

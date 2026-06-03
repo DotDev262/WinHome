@@ -1,17 +1,20 @@
-import sys
 import json
 import os
 import shutil
+import sys
+
 
 def log(msg):
     sys.stderr.write(f"[npm-plugin] {msg}\n")
     sys.stderr.flush()
+
 
 def get_npmrc_path():
     user_profile = os.getenv("USERPROFILE")
     if user_profile:
         return os.path.join(user_profile, ".npmrc")
     return None
+
 
 def read_npmrc(file_path):
     config = {}
@@ -30,6 +33,7 @@ def read_npmrc(file_path):
         log(f"Warning: could not read {file_path}: {e}")
     return config
 
+
 def write_npmrc(file_path, config):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     temp_path = file_path + ".tmp"
@@ -43,6 +47,7 @@ def write_npmrc(file_path, config):
             os.remove(temp_path)
         raise
 
+
 def merge_config(target, source):
     changed = False
     for key, value in source.items():
@@ -51,11 +56,12 @@ def merge_config(target, source):
             value = "true" if value else "false"
         else:
             value = str(value)
-            
+
         if key not in target or target[key] != value:
             target[key] = value
             changed = True
     return changed
+
 
 def check_installed(args, request_id):
     installed = shutil.which("npm.cmd") is not None or shutil.which("npm") is not None
@@ -65,6 +71,7 @@ def check_installed(args, request_id):
         "changed": False,
         "data": installed,
     }
+
 
 def apply_config(args, context, request_id):
     dry_run = context.get("dryRun", False)
@@ -109,6 +116,7 @@ def apply_config(args, context, request_id):
             "error": str(e),
         }
 
+
 def main():
     input_data = sys.stdin.read()
     if not input_data:
@@ -144,6 +152,7 @@ def main():
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     main()

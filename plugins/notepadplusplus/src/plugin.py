@@ -1,6 +1,7 @@
-import sys
 import json
 import os
+import sys
+
 # from pathlib import Path
 
 
@@ -97,10 +98,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             }
 
         if dry_run:
-            log(
-                f"Would update {config_path} with: "
-                f"{json.dumps(settings)}"
-            )
+            log(f"Would update {config_path} with: {json.dumps(settings)}")
 
             return {
                 "requestId": request_id,
@@ -160,14 +158,10 @@ def main():
             response = apply_config(args, context, request_id)
 
         else:
-            response["error"] = (
-                f"Unknown command: {command}"
-            )
+            response["error"] = f"Unknown command: {command}"
 
     except Exception as fatal_err:
-        response["error"] = (
-            f"Internal Script Error: {str(fatal_err)}"
-        )
+        response["error"] = f"Internal Script Error: {str(fatal_err)}"
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()

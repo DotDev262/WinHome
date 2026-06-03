@@ -1,6 +1,5 @@
-import json
-import sys
 import os
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -11,7 +10,10 @@ import plugin
 
 class TestCheckInstalled(unittest.TestCase):
     def test_cargo_in_path(self):
-        with patch("shutil.which", side_effect=lambda x: "/usr/bin/cargo" if x == "cargo" else None):
+        with patch(
+            "shutil.which",
+            side_effect=lambda x: "/usr/bin/cargo" if x == "cargo" else None,
+        ):
             result = plugin.check_installed({}, "req-1")
         self.assertTrue(result["success"])
         self.assertTrue(result["data"])
@@ -88,11 +90,7 @@ class TestApplyConfig(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = os.path.join(tmpdir, ".cargo", "config.toml")
             with patch("plugin.get_config_path", return_value=config_path):
-                result = plugin.apply_config(
-                    {"settings": {"build": {"jobs": 4}}},
-                    {},
-                    "req-10"
-                )
+                result = plugin.apply_config({"settings": {"build": {"jobs": 4}}}, {}, "req-10")
             self.assertTrue(result["success"])
             self.assertTrue(result["changed"])
             self.assertTrue(os.path.exists(config_path))
@@ -102,13 +100,9 @@ class TestApplyConfig(unittest.TestCase):
             config_path = os.path.join(tmpdir, ".cargo", "config.toml")
             os.makedirs(os.path.dirname(config_path))
             with open(config_path, "w") as f:
-                f.write('[build]\njobs = 4\n')
+                f.write("[build]\njobs = 4\n")
             with patch("plugin.get_config_path", return_value=config_path):
-                result = plugin.apply_config(
-                    {"settings": {"build": {"jobs": 4}}},
-                    {},
-                    "req-11"
-                )
+                result = plugin.apply_config({"settings": {"build": {"jobs": 4}}}, {}, "req-11")
             self.assertTrue(result["success"])
             self.assertFalse(result["changed"])
 
@@ -119,7 +113,7 @@ class TestApplyConfig(unittest.TestCase):
                 result = plugin.apply_config(
                     {"settings": {"term": {"color": "always"}}},
                     {"dryRun": True},
-                    "req-12"
+                    "req-12",
                 )
             self.assertTrue(result["success"])
             self.assertTrue(result["changed"])
@@ -138,28 +132,30 @@ class TestApplyConfig(unittest.TestCase):
 
 class TestProtocol(unittest.TestCase):
     def test_unknown_command(self):
-        result = plugin.handle({
-            "requestId": "req-20",
-            "command": "unknown",
-            "args": {},
-            "context": {}
-        })
+        result = plugin.handle(
+            {
+                "requestId": "req-20",
+                "command": "unknown",
+                "args": {},
+                "context": {},
+            }
+        )
         self.assertFalse(result["success"])
         self.assertIn("Unknown command", result["error"])
 
     def test_check_installed_via_handle(self):
         with patch("shutil.which", return_value="/usr/bin/cargo"):
-            result = plugin.handle({
-                "requestId": "req-21",
-                "command": "check_installed",
-                "args": {},
-                "context": {}
-            })
+            result = plugin.handle(
+                {
+                    "requestId": "req-21",
+                    "command": "check_installed",
+                    "args": {},
+                    "context": {},
+                }
+            )
         self.assertTrue(result["success"])
         self.assertEqual(result["requestId"], "req-21")
 
 
 if __name__ == "__main__":
     unittest.main()
-    
-

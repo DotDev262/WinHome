@@ -6,16 +6,17 @@ using Microsoft.Extensions.Logging;
 
 namespace WinHome.Services.System
 {
-    public class SystemSettingsService : ISystemSettingsService
-    {
-        private readonly IProcessRunner _processRunner;
-        private readonly IRegistryService _registryService;
-        private readonly ILogger<SystemSettingsService> _logger;
-        private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification", "screen_timeout_ac", "screen_timeout_dc", "sleep_timeout_ac", "sleep_timeout_dc" };
+  /// <summary>Manages Windows system settings including registry tweaks, security presets, brightness, volume, power settings, and notifications.</summary>
+  public class SystemSettingsService : ISystemSettingsService
+  {
+    private readonly IProcessRunner _processRunner;
+    private readonly IRegistryService _registryService;
+    private readonly ILogger<SystemSettingsService> _logger;
+    private readonly List<string> _nonRegistryKeys = new() { "brightness", "volume", "notification", "screen_timeout_ac", "screen_timeout_dc", "sleep_timeout_ac", "sleep_timeout_dc" };
 
-        private readonly Dictionary<string, List<RegistryTweak>> _securityPresets = new()
-        {
-            ["baseline"] = new()
+    private readonly Dictionary<string, List<RegistryTweak>> _securityPresets = new()
+    {
+      ["baseline"] = new()
             {
                 // Enable SmartScreen for apps and files
                 new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost", Name = "EnableWebContentEvaluation", Value = 1, Type = "dword" },
@@ -24,7 +25,7 @@ namespace WinHome.Services.System
                 // Disable LLMNR (Local Link Multicast Name Resolution)
                 new RegistryTweak { Path = @"HKLM\Software\Policies\Microsoft\Windows NT\DNSClient", Name = "EnableMulticast", Value = 0, Type = "dword" }
             },
-            ["strict"] = new()
+      ["strict"] = new()
             {
                 // Include baseline
                 new RegistryTweak { Path = @"HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost", Name = "EnableWebContentEvaluation", Value = 1, Type = "dword" },
@@ -38,7 +39,7 @@ namespace WinHome.Services.System
                 // Disable NetBIOS over TCP/IP (prevent LLMNR/NBT-NS poisoning)
                 new RegistryTweak { Path = @"HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces", Name = "NetbiosOptions", Value = 2, Type = "dword" }
             },
-            ["privacy"] = new()
+      ["privacy"] = new()
             {
                 // Disable Windows Telemetry data collection
                 new RegistryTweak { Path = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", Name = "AllowTelemetry", Value = 0, Type = "dword" },
@@ -57,24 +58,25 @@ namespace WinHome.Services.System
                 // Disable contact harvesting for handwriting recognition
                 new RegistryTweak { Path = @"HKCU\Software\Microsoft\InputPersonalization\TrainedDataStore", Name = "HarvestContacts", Value = 0, Type = "dword" }
             }
-        };
+    };
 
-        public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService, ILogger<SystemSettingsService> logger)
-        {
-            _processRunner = processRunner;
-            _registryService = registryService;
-            _logger = logger;
-        }
+    /// <summary>Initializes a new instance of <see cref="SystemSettingsService"/>.</summary>
+    public SystemSettingsService(IProcessRunner processRunner, IRegistryService registryService, ILogger<SystemSettingsService> logger)
+    {
+      _processRunner = processRunner;
+      _registryService = registryService;
+      _logger = logger;
+    }
 
-        private record SettingDefinition(
-            string SettingKey,
-            string RegistryPath,
-            string RegistryName,
-            string RegistryType,
-            Dictionary<string, object> ValueMap
-        );
+    private record SettingDefinition(
+        string SettingKey,
+        string RegistryPath,
+        string RegistryName,
+        string RegistryType,
+        Dictionary<string, object> ValueMap
+    );
 
-        private readonly List<SettingDefinition> _catalog = new()
+    private readonly List<SettingDefinition> _catalog = new()
         {
             new("dark_mode",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", "dword",
@@ -170,275 +172,281 @@ namespace WinHome.Services.System
                 new() { { "true", 1 }, { "false", 0 } }),
         };
 
-        public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings)
+    /// <summary>Translates user-facing setting key/value pairs into the corresponding registry tweaks.</summary>
+    public async Task<IEnumerable<RegistryTweak>> GetTweaksAsync(Dictionary<string, object>? settings)
+    {
+      return await Task.Run(() =>
+      {
+        var tweaks = new List<RegistryTweak>();
+        if (settings == null) return tweaks;
+
+        foreach (var userSetting in settings)
         {
-            return await Task.Run(() =>
+          string key = userSetting.Key.ToLower();
+          string val = userSetting.Value.ToString()?.ToLower() ?? "";
+
+          if (key == "security_preset")
+          {
+            if (_securityPresets.TryGetValue(val, out var presetTweaks))
             {
-                var tweaks = new List<RegistryTweak>();
-                if (settings == null) return tweaks;
-
-                foreach (var userSetting in settings)
-                {
-                    string key = userSetting.Key.ToLower();
-                    string val = userSetting.Value.ToString()?.ToLower() ?? "";
-
-                    if (key == "security_preset")
-                    {
-                        if (_securityPresets.TryGetValue(val, out var presetTweaks))
-                        {
-                            tweaks.AddRange(presetTweaks);
-                        }
-                        else
-                        {
-                            _logger.LogWarning("[Warning] Unknown security preset '{Preset}'. Allowed: {Allowed}", val, string.Join(", ", _securityPresets.Keys));
-                        }
-                        continue;
-                    }
-
-                    if (_nonRegistryKeys.Contains(key)) continue;
-
-                    var matches = _catalog.Where(d => d.SettingKey == key);
-
-                    foreach (var def in matches)
-                    {
-                        if (def.ValueMap.TryGetValue(val, out object? regValue))
-                        {
-                            tweaks.Add(new RegistryTweak
-                            {
-                                Path = def.RegistryPath,
-                                Name = def.RegistryName,
-                                Value = regValue,
-                                Type = def.RegistryType
-                            });
-                        }
-                        else
-                        {
-                            _logger.LogWarning("[Warning] Invalid value '{Value}' for setting '{Key}'. Allowed: {Allowed}", val, key, string.Join(", ", def.ValueMap.Keys));
-                        }
-                    }
-                }
-                return tweaks;
-            });
-        }
-
-        public async Task<Dictionary<string, object>> GetCapturedSettingsAsync()
-        {
-            return await Task.Run(() =>
-            {
-                var captured = new Dictionary<string, object>();
-
-                foreach (var def in _catalog)
-                {
-                    try
-                    {
-                        var regValue = _registryService.Read(def.RegistryPath, def.RegistryName);
-                        if (regValue != null)
-                        {
-                            var match = def.ValueMap.FirstOrDefault(kvp =>
-                            {
-                                if (kvp.Value is byte[] kvpBytes && regValue is byte[] regBytes)
-                                    return kvpBytes.SequenceEqual(regBytes);
-                                return kvp.Value?.ToString() == regValue?.ToString();
-                            });
-                            if (!match.Equals(default(KeyValuePair<string, object>)))
-                            {
-                                object val = match.Key;
-                                if (bool.TryParse(match.Key, out bool bVal)) val = bVal;
-                                else if (int.TryParse(match.Key, out int iVal)) val = iVal;
-
-                                captured[def.SettingKey] = val;
-                            }
-                        }
-                    }
-                    catch { /* Ignore read errors */ }
-                }
-
-                return captured;
-            });
-        }
-
-        public string? GetFriendlyName(string registryPath, string registryName)
-        {
-            var match = _catalog.FirstOrDefault(d =>
-                d.RegistryPath.Equals(registryPath, StringComparison.OrdinalIgnoreCase) &&
-                d.RegistryName.Equals(registryName, StringComparison.OrdinalIgnoreCase));
-
-            return match?.SettingKey;
-        }
-
-        public async Task<Dictionary<string, object>> CaptureOriginalSettingsAsync(Dictionary<string, object> settings)
-        {
-            return await Task.Run(() =>
-            {
-                var originals = new Dictionary<string, object>();
-                if (settings == null) return originals;
-
-                foreach (var setting in settings.Where(s => _nonRegistryKeys.Contains(s.Key.ToLower())))
-                {
-                    string key = setting.Key.ToLower();
-                    try
-                    {
-                        switch (key)
-                        {
-                            case "brightness":
-                                string brightCommand = "(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness";
-                                var brightResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", brightCommand });
-                                if (int.TryParse(brightResult?.Trim(), out int currentBrightness))
-                                    originals["brightness"] = currentBrightness;
-                                break;
-
-                            case "volume":
-                                string volCommand = @"[Math]::Round((New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar * 100)";
-                                var volResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", volCommand });
-                                if (int.TryParse(volResult?.Trim(), out int currentVolume))
-                                    originals["volume"] = currentVolume;
-                                break;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[Warning] Could not capture original value for '{key}': {ex.Message}");
-                    }
-                }
-
-                return originals;
-            });
-        }
-
-        public async Task RevertSystemSettingAsync(string settingKey, object originalValue, bool dryRun)
-        {
-            await Task.Run(() =>
-            {
-                try
-                {
-                    string key = settingKey.ToLower();
-                    switch (key)
-                    {
-                        case "brightness":
-                            if (int.TryParse(originalValue?.ToString(), out int brightness))
-                            {
-                                string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
-                                if (dryRun)
-                                {
-                                    Console.ForegroundColor = ConsoleColor.Yellow;
-                                    Console.WriteLine($"[DryRun] Would revert brightness to {brightness}");
-                                    Console.ResetColor();
-                                }
-                                else
-                                {
-                                    _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
-                                    Console.WriteLine($"[System Settings] Reverted brightness to {brightness}");
-                                }
-                            }
-                            break;
-
-                        case "volume":
-                            if (int.TryParse(originalValue?.ToString(), out int volume))
-                            {
-                                string command = $@"$vol = [Math]::Round({volume} / 100.0, 2); (New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar = $vol";
-                                if (dryRun)
-                                {
-                                    Console.ForegroundColor = ConsoleColor.Yellow;
-                                    Console.WriteLine($"[DryRun] Would revert volume to {volume}");
-                                    Console.ResetColor();
-                                }
-                                else
-                                {
-                                    _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
-                                    Console.WriteLine($"[System Settings] Reverted volume to {volume}");
-                                }
-                            }
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Error] Failed to revert {settingKey}: {ex.Message}");
-                }
-            });
-        }
-
-        public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun)
-        {
-            if (settings == null) return Task.CompletedTask;
-
-            foreach (var userSetting in settings.Where(s => _nonRegistryKeys.Contains(s.Key.ToLower())))
-            {
-                string key = userSetting.Key.ToLower();
-                switch (key)
-                {
-                    case "brightness":
-                        if (userSetting.Value == null) break;
-                        if (!int.TryParse(userSetting.Value.ToString(), out int brightness))
-                        {
-                            _logger.LogWarning("Brightness value '{Value}' is not a valid integer.", userSetting.Value);
-                            break;
-                        }
-                        if (brightness < 0 || brightness > 100)
-                        {
-                            _logger.LogWarning("Brightness value '{Value}' is out of range (0-100).", brightness);
-                            break;
-                        }
-                        _processRunner.RunCommand("powershell", $"-Command \"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})\"", dryRun);
-                        break;
-
-                    case "volume":
-                        if (userSetting.Value == null) break;
-                        if (!int.TryParse(userSetting.Value.ToString(), out int volume))
-                        {
-                            _logger.LogWarning("Volume value '{Value}' is not a valid integer.", userSetting.Value);
-                            break;
-                        }
-                        if (volume < 0 || volume > 100)
-                        {
-                            _logger.LogWarning("Volume value '{Value}' is out of range (0-100).", volume);
-                            break;
-                        }
-                        string volCommand = $@"$vol = [Math]::Round({volume} / 100.0, 2); (New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar = $vol";
-                        _processRunner.RunCommand("powershell", $"-Command \"{volCommand}\"", dryRun);
-                        break;
-                    case "notification":
-                        if (userSetting.Value is Dictionary<object, object> notificationConfig)
-                        {
-                            var title = notificationConfig.GetValueOrDefault((object)"title")?.ToString() ?? "";
-                            var message = notificationConfig.GetValueOrDefault((object)"message")?.ToString() ?? "";
-                            string command = $"New-BurntToastNotification -Text '{title}', '{message}'";
-                            _processRunner.RunCommand("powershell", $"-Command \"{command}\"", dryRun);
-                        }
-                        break;
-                    case "screen_timeout_ac":
-                        ApplyPowerSetting("monitor-timeout-ac", userSetting.Value, dryRun);
-                        break;
-                    case "screen_timeout_dc":
-                        ApplyPowerSetting("monitor-timeout-dc", userSetting.Value, dryRun);
-                        break;
-                    case "sleep_timeout_ac":
-                        ApplyPowerSetting("standby-timeout-ac", userSetting.Value, dryRun);
-                        break;
-                    case "sleep_timeout_dc":
-                        ApplyPowerSetting("standby-timeout-dc", userSetting.Value, dryRun);
-                        break;
-                }
+              tweaks.AddRange(presetTweaks);
             }
-
-            return Task.CompletedTask;
-        }
-
-        private void ApplyPowerSetting(string powercfgArg, object? value, bool dryRun)
-        {
-            if (value?.ToString() is string valStr && int.TryParse(valStr, out int minutes))
+            else
             {
-                if (minutes < 0)
-                {
-                    _logger.LogWarning($"[Settings] Power setting value '{minutes}' cannot be negative. Skipping.");
-                    return;
-                }
-                _processRunner.RunCommand("powercfg", $"/change {powercfgArg} {minutes}", dryRun);
+              _logger.LogWarning("[Warning] Unknown security preset '{Preset}'. Allowed: {Allowed}", val, string.Join(", ", _securityPresets.Keys));
             }
-            else if (value != null)
+            continue;
+          }
+
+          if (_nonRegistryKeys.Contains(key)) continue;
+
+          var matches = _catalog.Where(d => d.SettingKey == key);
+
+          foreach (var def in matches)
+          {
+            if (def.ValueMap.TryGetValue(val, out object? regValue))
             {
-                _logger.LogWarning($"[Settings] Power setting value '{value}' is not a valid integer. Skipping.");
+              tweaks.Add(new RegistryTweak
+              {
+                Path = def.RegistryPath,
+                Name = def.RegistryName,
+                Value = regValue,
+                Type = def.RegistryType
+              });
             }
+            else
+            {
+              _logger.LogWarning("[Warning] Invalid value '{Value}' for setting '{Key}'. Allowed: {Allowed}", val, key, string.Join(", ", def.ValueMap.Keys));
+            }
+          }
         }
+        return tweaks;
+      });
     }
+
+    /// <summary>Reads current registry values and maps them back to user-facing setting keys.</summary>
+    public async Task<Dictionary<string, object>> GetCapturedSettingsAsync()
+    {
+      return await Task.Run(() =>
+      {
+        var captured = new Dictionary<string, object>();
+
+        foreach (var def in _catalog)
+        {
+          try
+          {
+            var regValue = _registryService.Read(def.RegistryPath, def.RegistryName);
+            if (regValue != null)
+            {
+              var match = def.ValueMap.FirstOrDefault(kvp =>
+                    {
+                      if (kvp.Value is byte[] kvpBytes && regValue is byte[] regBytes)
+                        return kvpBytes.SequenceEqual(regBytes);
+                      return kvp.Value?.ToString() == regValue?.ToString();
+                    });
+              if (!match.Equals(default(KeyValuePair<string, object>)))
+              {
+                object val = match.Key;
+                if (bool.TryParse(match.Key, out bool bVal)) val = bVal;
+                else if (int.TryParse(match.Key, out int iVal)) val = iVal;
+
+                captured[def.SettingKey] = val;
+              }
+            }
+          }
+          catch { /* Ignore read errors */ }
+        }
+
+        return captured;
+      });
+    }
+
+    /// <summary>Looks up the user-friendly setting key for the given registry path and value name.</summary>
+    public string? GetFriendlyName(string registryPath, string registryName)
+    {
+      var match = _catalog.FirstOrDefault(d =>
+          d.RegistryPath.Equals(registryPath, StringComparison.OrdinalIgnoreCase) &&
+          d.RegistryName.Equals(registryName, StringComparison.OrdinalIgnoreCase));
+
+      return match?.SettingKey;
+    }
+
+    /// <summary>Captures the original values of non-registry settings (brightness, volume) before applying changes.</summary>
+    public async Task<Dictionary<string, object>> CaptureOriginalSettingsAsync(Dictionary<string, object> settings)
+    {
+      return await Task.Run(() =>
+      {
+        var originals = new Dictionary<string, object>();
+        if (settings == null) return originals;
+
+        foreach (var setting in settings.Where(s => _nonRegistryKeys.Contains(s.Key.ToLower())))
+        {
+          string key = setting.Key.ToLower();
+          try
+          {
+            switch (key)
+            {
+              case "brightness":
+                string brightCommand = "(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness";
+                var brightResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", brightCommand });
+                if (int.TryParse(brightResult?.Trim(), out int currentBrightness))
+                  originals["brightness"] = currentBrightness;
+                break;
+
+              case "volume":
+                string volCommand = @"[Math]::Round((New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar * 100)";
+                var volResult = _processRunner.RunCommandWithOutput("powershell", new[] { "-Command", volCommand });
+                if (int.TryParse(volResult?.Trim(), out int currentVolume))
+                  originals["volume"] = currentVolume;
+                break;
+            }
+          }
+          catch (Exception ex)
+          {
+            Console.WriteLine($"[Warning] Could not capture original value for '{key}': {ex.Message}");
+          }
+        }
+
+        return originals;
+      });
+    }
+
+    /// <summary>Reverts a non-registry setting (brightness, volume) back to its original value.</summary>
+    public async Task RevertSystemSettingAsync(string settingKey, object originalValue, bool dryRun)
+    {
+      await Task.Run(() =>
+      {
+        try
+        {
+          string key = settingKey.ToLower();
+          switch (key)
+          {
+            case "brightness":
+              if (int.TryParse(originalValue?.ToString(), out int brightness))
+              {
+                string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
+                if (dryRun)
+                {
+                  Console.ForegroundColor = ConsoleColor.Yellow;
+                  Console.WriteLine($"[DryRun] Would revert brightness to {brightness}");
+                  Console.ResetColor();
+                }
+                else
+                {
+                  _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
+                  Console.WriteLine($"[System Settings] Reverted brightness to {brightness}");
+                }
+              }
+              break;
+
+            case "volume":
+              if (int.TryParse(originalValue?.ToString(), out int volume))
+              {
+                string command = $@"$vol = [Math]::Round({volume} / 100.0, 2); (New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar = $vol";
+                if (dryRun)
+                {
+                  Console.ForegroundColor = ConsoleColor.Yellow;
+                  Console.WriteLine($"[DryRun] Would revert volume to {volume}");
+                  Console.ResetColor();
+                }
+                else
+                {
+                  _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
+                  Console.WriteLine($"[System Settings] Reverted volume to {volume}");
+                }
+              }
+              break;
+          }
+        }
+        catch (Exception ex)
+        {
+          Console.WriteLine($"[Error] Failed to revert {settingKey}: {ex.Message}");
+        }
+      });
+    }
+
+    /// <summary>Applies non-registry settings (brightness, volume, notifications, power settings).</summary>
+    public Task ApplyNonRegistrySettingsAsync(Dictionary<string, object>? settings, bool dryRun)
+    {
+      if (settings == null) return Task.CompletedTask;
+
+      foreach (var userSetting in settings.Where(s => _nonRegistryKeys.Contains(s.Key.ToLower())))
+      {
+        string key = userSetting.Key.ToLower();
+        switch (key)
+        {
+          case "brightness":
+            if (userSetting.Value == null) break;
+            if (!int.TryParse(userSetting.Value.ToString(), out int brightness))
+            {
+              _logger.LogWarning("Brightness value '{Value}' is not a valid integer.", userSetting.Value);
+              break;
+            }
+            if (brightness < 0 || brightness > 100)
+            {
+              _logger.LogWarning("Brightness value '{Value}' is out of range (0-100).", brightness);
+              break;
+            }
+            _processRunner.RunCommand("powershell", new[] { "-Command", $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})" }, dryRun);
+            break;
+
+          case "volume":
+            if (userSetting.Value == null) break;
+            if (!int.TryParse(userSetting.Value.ToString(), out int volume))
+            {
+              _logger.LogWarning("Volume value '{Value}' is not a valid integer.", userSetting.Value);
+              break;
+            }
+            if (volume < 0 || volume > 100)
+            {
+              _logger.LogWarning("Volume value '{Value}' is out of range (0-100).", volume);
+              break;
+            }
+            string volCommand = $@"$vol = [Math]::Round({volume} / 100.0, 2); (New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar = $vol";
+            _processRunner.RunCommand("powershell", new[] { "-Command", volCommand }, dryRun);
+            break;
+          case "notification":
+            if (userSetting.Value is Dictionary<object, object> notificationConfig)
+            {
+              var title = notificationConfig.GetValueOrDefault((object)"title")?.ToString() ?? "";
+              var message = notificationConfig.GetValueOrDefault((object)"message")?.ToString() ?? "";
+              string command = $"New-BurntToastNotification -Text '{title}', '{message}'";
+              _processRunner.RunCommand("powershell", new[] { "-Command", command }, dryRun);
+            }
+            break;
+          case "screen_timeout_ac":
+            ApplyPowerSetting("monitor-timeout-ac", userSetting.Value, dryRun);
+            break;
+          case "screen_timeout_dc":
+            ApplyPowerSetting("monitor-timeout-dc", userSetting.Value, dryRun);
+            break;
+          case "sleep_timeout_ac":
+            ApplyPowerSetting("standby-timeout-ac", userSetting.Value, dryRun);
+            break;
+          case "sleep_timeout_dc":
+            ApplyPowerSetting("standby-timeout-dc", userSetting.Value, dryRun);
+            break;
+        }
+      }
+
+      return Task.CompletedTask;
+    }
+
+    private void ApplyPowerSetting(string powercfgArg, object? value, bool dryRun)
+    {
+      if (value?.ToString() is string valStr && int.TryParse(valStr, out int minutes))
+      {
+        if (minutes < 0)
+        {
+          _logger.LogWarning($"[Settings] Power setting value '{minutes}' cannot be negative. Skipping.");
+          return;
+        }
+        _processRunner.RunCommand("powercfg", new[] { "/change", powercfgArg, minutes.ToString() }, dryRun);
+      }
+      else if (value != null)
+      {
+        _logger.LogWarning($"[Settings] Power setting value '{value}' is not a valid integer. Skipping.");
+      }
+    }
+  }
 }

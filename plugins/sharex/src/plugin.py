@@ -1,13 +1,15 @@
-import sys
+import datetime
 import json
 import os
 import shutil
-import datetime
+import sys
 import uuid
+
 
 def log(msg):
     sys.stderr.write(f"[sharex-plugin] {msg}\n")
     sys.stderr.flush()
+
 
 def get_config_path():
     appdata = os.getenv("APPDATA")
@@ -15,13 +17,14 @@ def get_config_path():
         raise Exception("APPDATA environment variable not found")
     return os.path.join(appdata, "ShareX", "ShareX.json")
 
+
 def read_json(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
         suffix = uuid.uuid4().hex[:8]
         backup_path = f"{file_path}.corrupted.{timestamp}.{suffix}"
@@ -34,6 +37,7 @@ def read_json(file_path: str) -> dict:
     except OSError as e:
         raise OSError(f"Could not read {file_path}: {e}") from e
 
+
 def write_json(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), mode=0o700, exist_ok=True)
     tmp_path = file_path + ".tmp"
@@ -41,6 +45,7 @@ def write_json(file_path: str, data: dict) -> None:
         json.dump(data, f, indent=2)
         f.write("\n")
     os.replace(tmp_path, file_path)
+
 
 def deep_merge(target: dict, source: dict) -> bool:
     changed = False
@@ -54,6 +59,7 @@ def deep_merge(target: dict, source: dict) -> bool:
                 changed = True
     return changed
 
+
 def check_installed(args: dict, request_id: str) -> dict:
     installed = False
     if shutil.which("ShareX.exe") or shutil.which("ShareX"):
@@ -62,13 +68,14 @@ def check_installed(args: dict, request_id: str) -> dict:
         program_files = os.getenv("PROGRAMFILES", "C:\\Program Files")
         if os.path.exists(os.path.join(program_files, "ShareX", "ShareX.exe")):
             installed = True
-            
+
     return {
         "requestId": request_id,
         "success": True,
         "changed": False,
         "data": installed,
     }
+
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
@@ -77,7 +84,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
     try:
         config_path = get_config_path()
         current_config = read_json(config_path)
-        
+
         changed = deep_merge(current_config, settings)
 
         if not changed:
@@ -113,11 +120,12 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "error": str(e),
         }
 
+
 def main():
     input_data = sys.stdin.read()
     if not input_data:
         return
-        
+
     try:
         request = json.loads(input_data)
     except Exception as e:
@@ -155,6 +163,7 @@ def main():
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     main()

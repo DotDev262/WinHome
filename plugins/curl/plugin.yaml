@@ -1,0 +1,6 @@
+name: curl
+description: Manage curl HTTP client settings
+author: VIDYANKSHINI
+version: 1.0.0
+type: config_provider
+entrypoint: python src/plugin.py
