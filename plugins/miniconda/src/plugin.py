@@ -48,7 +48,8 @@ def main():
         send_response("unknown", error="Invalid JSON input")
         return
 
-    request_id = request.get("requestId", "unknown")
+    # FIX: Using 'or' instead of a default parameter!
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
 

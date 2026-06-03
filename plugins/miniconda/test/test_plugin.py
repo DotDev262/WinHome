@@ -5,8 +5,11 @@ import unittest
 from io import StringIO
 from unittest.mock import patch
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+# FIX: Using append() and remove() per project convention!
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src'))
+sys.path.append(src_path)
 import plugin
+sys.path.remove(src_path)
 
 class TestMinicondaPlugin(unittest.TestCase):
     
@@ -36,3 +39,4 @@ class TestMinicondaPlugin(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+    
