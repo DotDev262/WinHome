@@ -3,6 +3,7 @@ import json
 import os
 import uuid
 import shutil
+import tempfile
 from pathlib import Path
 
 SETTING_MAP = {
@@ -48,7 +49,6 @@ def main():
         send_response("unknown", error="Invalid JSON input")
         return
 
-    # FIX: Using 'or' instead of a default parameter!
     request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
@@ -97,9 +97,16 @@ def main():
                 backup_path = condarc_path.with_name(f".condarc.bak.{uuid.uuid4().hex}")
                 shutil.copy2(condarc_path, backup_path)
             
-            with open(condarc_path, "w", encoding="utf-8", newline="\n") as f:
-                yaml.dump(current_config, f, default_flow_style=False)
-                f.write("\n") 
+            # FIX: Atomic file write using mkstemp and os.replace
+            fd, tmp_path = tempfile.mkstemp(dir=str(condarc_path.parent), text=True)
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+                    yaml.dump(current_config, f, default_flow_style=False)
+                    f.write("\n") 
+                os.replace(tmp_path, condarc_path)
+            except Exception:
+                os.remove(tmp_path)
+                raise
 
         send_response(request_id, data={"status": "success"}, changed=changed)
         return
@@ -108,4 +115,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
