@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 import sys
-import uuid
+import tempfile
 import xml.etree.ElementTree as ET
 
 
@@ -28,7 +28,7 @@ def read_xml(file_path):
     try:
         return ET.parse(file_path)
     except Exception as e:
-        backup_path = f"{file_path}.corrupted.{uuid.uuid4().hex[:8]}.bak"
+        backup_path = f"{file_path}.corrupted.bak"
         try:
             shutil.copy2(file_path, backup_path)
             log(f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}.")
@@ -45,7 +45,8 @@ def read_xml(file_path):
 
 def write_xml(file_path, tree):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    tmp = f"{file_path}.{uuid.uuid4().hex[:8]}.tmp"
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(file_path))
+    os.close(fd)
     tree.write(tmp, encoding="utf-8", xml_declaration=True)
     os.replace(tmp, file_path)
 
@@ -194,12 +195,7 @@ def check_installed(args, request_id):
         or shutil.which("dotnet") is not None
         or os.path.exists(config_path)
     )
-    return {
-        "requestId": request_id,
-        "success": True,
-        "changed": False,
-        "data": installed,
-    }
+    return installed
 
 
 def apply_config(args, context, request_id):
@@ -279,7 +275,7 @@ def main():
         sys.stdout.flush()
         return
 
-    request_id = request.get("requestId", "unknown")
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
     context = request.get("context", {})
