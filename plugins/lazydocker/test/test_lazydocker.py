@@ -18,6 +18,7 @@ spec = importlib.util.spec_from_file_location("plugin", plugin_path)
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
+
 class TestLazyDockerPlugin(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
@@ -120,6 +121,7 @@ class TestLazyDockerPlugin(unittest.TestCase):
         self.assertFalse(response["success"])
         self.assertIn("Expecting value", response["error"])
         self.assertEqual(response["requestId"], "unknown")
+
 
 if __name__ == "__main__":
     unittest.main()

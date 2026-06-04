@@ -21,9 +21,7 @@ def log(message: str) -> None:
     sys.stderr.flush()
 
 
-def response(
-    request_id: str, success: bool, changed: bool, error=None, data=None
-) -> dict:
+def response(request_id: str, success: bool, changed: bool, error=None, data=None) -> dict:
     result = {
         "requestId": request_id,
         "success": success,
@@ -74,11 +72,7 @@ def strip_jsonc_comments(text: str) -> str:
         if char == "/" and next_char == "*":
             index += 2
             while index < len(text):
-                if (
-                    text[index] == "*"
-                    and index + 1 < len(text)
-                    and text[index + 1] == "/"
-                ):
+                if text[index] == "*" and index + 1 < len(text) and text[index + 1] == "/":
                     index += 2
                     break
                 index += 1
@@ -105,9 +99,7 @@ def read_jsonc(file_path: str) -> dict:
         if isinstance(parsed, dict):
             return parsed
 
-        log(
-            f"Warning: expected object in {file_path}, got {type(parsed).__name__}"
-        )
+        log(f"Warning: expected object in {file_path}, got {type(parsed).__name__}")
         return {}
     except Exception as exc:
         log(f"Warning: could not parse {file_path}: {exc}")
@@ -131,27 +123,17 @@ def user_home() -> str:
 
 def get_config_path(args: dict, context: dict) -> str:
     explicit_path = (
-        args.get("configPath")
-        or args.get("config_path")
-        or context.get("configPath")
-        or context.get("config_path")
+        args.get("configPath") or args.get("config_path") or context.get("configPath") or context.get("config_path")
     )
     if explicit_path:
-        return os.path.abspath(
-            os.path.expandvars(os.path.expanduser(str(explicit_path)))
-        )
+        return os.path.abspath(os.path.expandvars(os.path.expanduser(str(explicit_path))))
 
     project_root = (
-        args.get("projectRoot")
-        or args.get("project_root")
-        or context.get("projectRoot")
-        or context.get("project_root")
+        args.get("projectRoot") or args.get("project_root") or context.get("projectRoot") or context.get("project_root")
     )
     if project_root:
         return os.path.join(
-            os.path.abspath(
-                os.path.expandvars(os.path.expanduser(str(project_root)))
-            ),
+            os.path.abspath(os.path.expandvars(os.path.expanduser(str(project_root)))),
             CONFIG_FILE,
         )
 
@@ -165,11 +147,7 @@ def desired_config_from_args(args: dict) -> dict:
     if "settings" in args and isinstance(args["settings"], dict):
         return copy.deepcopy(args["settings"])
 
-    return {
-        key: copy.deepcopy(value)
-        for key, value in args.items()
-        if key not in PATH_ARG_KEYS
-    }
+    return {key: copy.deepcopy(value) for key, value in args.items() if key not in PATH_ARG_KEYS}
 
 
 def deep_merge(target: dict, source: dict) -> bool:
@@ -212,10 +190,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             return response(request_id, success=True, changed=False)
 
         if dry_run:
-            log(
-                "Would update "
-                f"{config_path} with keys: {', '.join(sorted(desired.keys()))}"
-            )
+            log(f"Would update {config_path} with keys: {', '.join(sorted(desired.keys()))}")
             return response(request_id, success=True, changed=True)
 
         write_json(config_path, next_config)
@@ -225,9 +200,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
     except Exception as exc:
         log(f"Failed to apply config: {exc}")
-        return response(
-            request_id, success=False, changed=False, error=str(exc)
-        )
+        return response(request_id, success=False, changed=False, error=str(exc))
 
 
 def process_request(request: dict) -> dict:
@@ -258,9 +231,7 @@ def main() -> None:
     input_data = sys.stdin.read()
 
     if not input_data:
-        result = response(
-            "unknown", success=False, changed=False, error="Empty input"
-        )
+        result = response("unknown", success=False, changed=False, error="Empty input")
         sys.stdout.write(json.dumps(result) + "\n")
         sys.stdout.flush()
         return
@@ -270,9 +241,7 @@ def main() -> None:
         result = process_request(request)
     except Exception as exc:
         log(f"Internal Script Error: {exc}")
-        result = response(
-            "unknown", success=False, changed=False, error=str(exc)
-        )
+        result = response("unknown", success=False, changed=False, error=str(exc))
 
     sys.stdout.write(json.dumps(result) + "\n")
     sys.stdout.flush()

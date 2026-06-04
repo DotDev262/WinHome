@@ -1,0 +1,8 @@
+name: "irfanview"
+version: "1.0.0"
+type: "python"
+main: "src/plugin.py"
+capabilities:
+  - apply
+  - check_installed
+author: "DotDev262"

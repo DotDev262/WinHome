@@ -4,6 +4,7 @@ using WinHome.Services.Bootstrappers;
 
 namespace WinHome.Services.Managers
 {
+  /// <summary>Manages package operations via Windows Package Manager (winget).</summary>
   public class WingetService : IPackageManager
   {
     private string _wingetPath = "winget";
@@ -14,6 +15,7 @@ namespace WinHome.Services.Managers
     private readonly IRuntimeResolver _resolver;
     public IPackageManagerBootstrapper Bootstrapper { get; }
 
+    /// <summary>Initializes a new instance of <see cref="WingetService"/>.</summary>
     public WingetService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
     {
       _processRunner = processRunner;
@@ -58,12 +60,14 @@ namespace WinHome.Services.Managers
       _sourceUpdated = true;
     }
 
+    /// <summary>Returns <c>true</c> if winget is available on the system.</summary>
     public bool IsAvailable()
     {
       ResolveWingetPath();
       return Bootstrapper.IsInstalled();
     }
 
+    /// <summary>Installs a package via winget. Updates sources and skips if already installed.</summary>
     public void Install(AppConfig app, bool dryRun)
     {
       ResolveWingetPath();
@@ -112,6 +116,7 @@ namespace WinHome.Services.Managers
       _logger.LogSuccess($"[Success] Installed {app.Id}");
     }
 
+    /// <summary>Uninstalls a package via winget.</summary>
     public void Uninstall(string appId, bool dryRun)
     {
       ResolveWingetPath();
@@ -131,6 +136,7 @@ namespace WinHome.Services.Managers
       _logger.LogSuccess($"[Success] Uninstalled {appId}");
     }
 
+    /// <summary>Checks whether a package is installed via winget.</summary>
     public bool IsInstalled(string appId)
     {
       ResolveWingetPath();

@@ -4,9 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -56,12 +54,7 @@ def test_deep_merge():
     with tempfile.TemporaryDirectory() as tmp:
         settings_path = os.path.join(tmp, "settings.json")
 
-        initial = {
-            "theme": "dark",
-            "plugins": {
-                "pluginA": True
-            }
-        }
+        initial = {"theme": "dark", "plugins": {"pluginA": True}}
 
         with open(settings_path, "w", encoding="utf-8") as f:
             json.dump(initial, f)
@@ -69,11 +62,7 @@ def test_deep_merge():
         with open(settings_path, "r", encoding="utf-8") as f:
             current = json.load(f)
 
-        updates = {
-            "plugins": {
-                "pluginB": True
-            }
-        }
+        updates = {"plugins": {"pluginB": True}}
 
         current["plugins"].update(updates["plugins"])
 
@@ -88,19 +77,13 @@ def test_dry_run():
         {
             "requestId": "3",
             "command": "apply",
-            "args": {
-                "settings": {
-                    "theme": "dark"
-                }
-            },
-            "context": {
-                "dryRun": True
-            },
+            "args": {"settings": {"theme": "dark"}},
+            "context": {"dryRun": True},
         }
     )
 
     assert res["success"]
-    assert not res["changed"]
+    assert res["changed"]
 
     print("✓ dry_run")
 
@@ -110,17 +93,8 @@ def test_apply():
         {
             "requestId": "4",
             "command": "apply",
-            "args": {
-                "settings": {
-                    "theme": "dark",
-                    "plugins_enabled": [
-                        "pluginA"
-                    ]
-                }
-            },
-            "context": {
-                "dryRun": False
-            },
+            "args": {"settings": {"theme": "dark", "plugins_enabled": ["pluginA"]}},
+            "context": {"dryRun": False},
         }
     )
 

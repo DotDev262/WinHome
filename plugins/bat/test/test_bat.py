@@ -8,7 +8,6 @@ from pathlib import Path
 # In this execution environment, pytest may not be installed.
 
 
-
 PLUGIN = Path(__file__).resolve().parents[1] / "src" / "plugin.py"
 
 
@@ -198,4 +197,3 @@ def test_dry_run_does_not_write_or_backup(tmp_path):
     assert config_file.read_text(encoding="utf-8") == original
     backups = list(tmp_path.glob(".config/bat/config.corrupt.*"))
     assert backups == []
-

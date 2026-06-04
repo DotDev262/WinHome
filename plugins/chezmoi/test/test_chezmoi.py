@@ -26,9 +26,7 @@ def mock_context():
 @patch("plugin.shutil.which")
 def test_check_installed_true(mock_which):
     mock_which.return_value = "/usr/local/bin/chezmoi"
-    result = plugin.handle(
-        {"requestId": "req-1", "command": "check_installed", "args": {}}
-    )
+    result = plugin.handle({"requestId": "req-1", "command": "check_installed", "args": {}})
 
     assert result["success"] is True
     assert result["data"] is True
@@ -37,9 +35,7 @@ def test_check_installed_true(mock_which):
 @patch("plugin.shutil.which")
 def test_check_installed_false(mock_which):
     mock_which.return_value = None
-    result = plugin.handle(
-        {"requestId": "req-1", "command": "check_installed", "args": {}}
-    )
+    result = plugin.handle({"requestId": "req-1", "command": "check_installed", "args": {}})
 
     assert result["success"] is True
     assert result["data"] is False

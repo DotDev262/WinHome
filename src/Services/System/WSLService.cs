@@ -4,6 +4,7 @@ using System.Runtime.Versioning;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Configures Windows Subsystem for Linux: installs distros, sets defaults, runs provisioning scripts.</summary>
   [SupportedOSPlatform("windows")]
   public class WslService : IWslService
   {

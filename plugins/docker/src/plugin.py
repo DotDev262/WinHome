@@ -29,14 +29,10 @@ def read_json(file_path: str) -> dict:
             data = json.load(f)
             return data if isinstance(data, dict) else {}
     except json.JSONDecodeError:
-        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
-            "%Y%m%d%H%M%S"
-        )
+        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
         suffix = uuid.uuid4().hex[:8]
         backup_path = f"{file_path}.corrupted.{timestamp}.{suffix}"
-        log(
-            f"Config corrupted. Backing up to {backup_path} and starting fresh."
-        )
+        log(f"Config corrupted. Backing up to {backup_path} and starting fresh.")
         try:
             shutil.move(file_path, backup_path)
         except Exception as backup_e:
@@ -74,10 +70,7 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 def check_installed(args: dict, request_id: str) -> dict:
     # Check for docker or docker.exe in PATH
-    installed = (
-        shutil.which("docker.exe") is not None
-        or shutil.which("docker") is not None
-    )
+    installed = shutil.which("docker.exe") is not None or shutil.which("docker") is not None
     return {
         "requestId": request_id,
         "success": True,

@@ -8,6 +8,9 @@ namespace WinHome.Infrastructure.Helpers
   {
     internal static Func<bool> IsSystemUser = () => WindowsIdentity.GetCurrent().IsSystem;
 
+    /// <summary>Validates that the registry operation is safe. Blocks HKCU modifications when running as SYSTEM.</summary>
+    /// <param name="keyPath">The registry key path to validate.</param>
+    /// <exception cref="InvalidOperationException">Thrown when attempting to modify HKCU under the SYSTEM account.</exception>
     public static void ValidateContext(string keyPath)
     {
       if (string.IsNullOrEmpty(keyPath)) return;
@@ -24,6 +27,7 @@ namespace WinHome.Infrastructure.Helpers
       }
     }
 
+    /// <summary>Resets the system user check delegate to its default implementation (used for testing).</summary>
     internal static void ResetSystemUserCheck()
     {
       IsSystemUser = () => WindowsIdentity.GetCurrent().IsSystem;

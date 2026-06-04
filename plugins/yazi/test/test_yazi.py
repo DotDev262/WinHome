@@ -9,9 +9,7 @@ try:
 except ImportError:
     tomllib = None
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -84,11 +82,7 @@ def test_apply_config_routing_and_write():
                 "command": "apply",
                 "args": {
                     "manager": {"show_hidden": True},
-                    "keymap": {
-                        "prepend_keymap": [
-                            {"on": ["g", "h"], "run": "cd ~", "desc": "Go home"}
-                        ]
-                    },
+                    "keymap": {"prepend_keymap": [{"on": ["g", "h"], "run": "cd ~", "desc": "Go home"}]},
                     "theme": {"type": "catppuccin-mocha"},
                 },
                 "context": {"dryRun": False},
@@ -141,9 +135,7 @@ def test_idempotent_apply():
 
 
 def test_unknown_command():
-    res = run_plugin(
-        {"requestId": "5", "command": "explode", "args": {}, "context": {}}
-    )
+    res = run_plugin({"requestId": "5", "command": "explode", "args": {}, "context": {}})
 
     assert not res["success"]
     assert "error" in res

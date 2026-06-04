@@ -11,6 +11,7 @@ namespace WinHome.Services.System
   {
     private readonly IRegistryWrapper _registryWrapper;
 
+    /// <summary>Initializes a new instance of <see cref="RegistryService"/>.</summary>
     public RegistryService(IRegistryWrapper registryWrapper)
     {
       _registryWrapper = registryWrapper;

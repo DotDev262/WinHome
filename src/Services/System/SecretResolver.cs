@@ -5,14 +5,12 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Resolves secret placeholders ({{ env:VAR }}, {{ file:path }}, {{ vault:cred }}) in configuration values.</summary>
   public class SecretResolver : ISecretResolver
   {
     private readonly ILogger _logger;
-    // Regex to match {{ provider:key }}
-    // Captures: 1=provider, 2=key
     private static readonly Regex SecretPattern = new Regex(@"{{\s*(\w+):(.+?)\s*}}", RegexOptions.Compiled);
 
-    // P/Invoke declarations for Windows Credential Manager
     [DllImport("advapi32.dll", EntryPoint = "CredReadW", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern bool CredRead(string target, uint type, uint flags, out IntPtr credential);
 
@@ -36,6 +34,7 @@ namespace WinHome.Services.System
       public string UserName;
     }
 
+    /// <summary>Initializes a new instance of <see cref="SecretResolver"/>.</summary>
     public SecretResolver(ILogger logger)
     {
       _logger = logger;

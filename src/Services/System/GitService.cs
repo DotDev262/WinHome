@@ -3,11 +3,13 @@ using WinHome.Models;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Configures Git global settings (user name, email, signing key, and arbitrary settings) with idempotency.</summary>
   public class GitService : IGitService
   {
     private readonly IProcessRunner _processRunner;
     private readonly ILogger _logger;
 
+    /// <summary>Initializes a new instance of <see cref="GitService"/>.</summary>
     public GitService(IProcessRunner processRunner, ILogger logger)
     {
       _processRunner = processRunner;

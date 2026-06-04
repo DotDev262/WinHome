@@ -4,9 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -52,12 +50,8 @@ def test_apply_settings():
         assert res["success"], res
         assert res["changed"]
 
-        app = json.loads(
-            open(os.path.join(vault, ".obsidian", "app.json")).read()
-        )
-        appearance = json.loads(
-            open(os.path.join(vault, ".obsidian", "appearance.json")).read()
-        )
+        app = json.loads(open(os.path.join(vault, ".obsidian", "app.json")).read())
+        appearance = json.loads(open(os.path.join(vault, ".obsidian", "appearance.json")).read())
         assert app["spellcheck"] == True
         assert appearance["accentColor"] == "#002aff"
         print("✓ apply_settings")
@@ -69,9 +63,7 @@ def test_idempotent():
         payload = {
             "requestId": "2",
             "command": "apply",
-            "args": {
-                "vaults": [{"path": vault, "settings": {"spellcheck": True}}]
-            },
+            "args": {"vaults": [{"path": vault, "settings": {"spellcheck": True}}]},
             "context": {"dryRun": False},
         }
         run_plugin(payload)
@@ -88,11 +80,7 @@ def test_dry_run():
             {
                 "requestId": "3",
                 "command": "apply",
-                "args": {
-                    "vaults": [
-                        {"path": vault, "settings": {"spellcheck": True}}
-                    ]
-                },
+                "args": {"vaults": [{"path": vault, "settings": {"spellcheck": True}}]},
                 "context": {"dryRun": True},
             }
         )
@@ -140,9 +128,7 @@ def test_nonexistent_vault():
 
 
 def test_unknown_command():
-    res = run_plugin(
-        {"requestId": "6", "command": "explode", "args": {}, "context": {}}
-    )
+    res = run_plugin({"requestId": "6", "command": "explode", "args": {}, "context": {}})
     assert not res["success"]
     assert "error" in res
     print("✓ unknown_command")
@@ -166,11 +152,7 @@ def test_install_plugin():
         assert os.path.exists(os.path.join(plugin_dir, "main.js"))
         assert os.path.exists(os.path.join(plugin_dir, "manifest.json"))
 
-        enabled = json.loads(
-            open(
-                os.path.join(vault, ".obsidian", "community-plugins.json")
-            ).read()
-        )
+        enabled = json.loads(open(os.path.join(vault, ".obsidian", "community-plugins.json")).read())
         assert "obsidian-git" in enabled
         print("✓ install_plugin")
 
@@ -224,11 +206,7 @@ def test_uninstall_plugin():
         plugin_dir = os.path.join(vault, ".obsidian", "plugins", "obsidian-git")
         assert not os.path.exists(plugin_dir)
 
-        enabled = json.loads(
-            open(
-                os.path.join(vault, ".obsidian", "community-plugins.json")
-            ).read()
-        )
+        enabled = json.loads(open(os.path.join(vault, ".obsidian", "community-plugins.json")).read())
         assert "obsidian-git" not in enabled
         print("✓ uninstall_plugin")
 

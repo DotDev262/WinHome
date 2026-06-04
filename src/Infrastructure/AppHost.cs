@@ -11,11 +11,14 @@ using WinHome.Services;
 
 namespace WinHome.Infrastructure;
 
+/// <summary>Configures the dependency injection container and builds the application host.</summary>
 public static class AppHost
 {
+  /// <summary>Creates and configures the application <see cref="IHost"/> with all services registered.</summary>
+  /// <param name="args">Command-line arguments used to detect early flags (e.g. --json).</param>
+  /// <returns>A configured <see cref="IHost"/> ready for service resolution.</returns>
   public static IHost CreateHost(string[] args)
   {
-    // Check for --json flag in args to force JSON logging early
     bool isJson = args.Contains("--json");
 
     return Host.CreateDefaultBuilder(args)
@@ -26,6 +29,10 @@ public static class AppHost
         .Build();
   }
 
+  /// <summary>Registers all application services into the DI container.</summary>
+  /// <param name="configuration">Application configuration source.</param>
+  /// <param name="services">The service collection to register into.</param>
+  /// <param name="isJsonForce">If <c>true</c>, forces JSON logging regardless of configuration.</param>
   public static void ConfigureServices(IConfiguration configuration, IServiceCollection services, bool isJsonForce = false)
   {
     var isJsonConfig = configuration.GetValue<bool>("json");

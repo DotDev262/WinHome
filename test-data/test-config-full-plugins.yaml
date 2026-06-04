@@ -1,0 +1,239 @@
+version: "1.0"
+apps:
+  - id: 7zip
+    manager: scoop
+  - id: git
+    manager: scoop
+  - id: wget
+    manager: choco
+  - id: "tpope/vim-fugitive"
+    manager: "vim"
+  - id: "esbenp.prettier-vscode"
+    manager: "vscode"
+  - id: "vscode"
+    manager: "choco"
+envVars:
+  - variable: "WINHOME_TEST"
+    value: "true"
+    action: "set"
+dotfiles:
+  - src: "README.md"
+    target: "test-dotfile.md"
+registryTweaks:
+  - path: 'HKCU\Software\WinHomeTest'
+    name: "TestValue"
+    value: 123
+    type: "dword"
+systemSettings:
+  show_file_extensions: true
+git:
+  userName: "WinHome Test"
+  userEmail: "test@winhome.local"
+  settings:
+    init.defaultBranch: main
+extensions:
+  alacritty:
+    settings:
+      window:
+        opacity: 0.9
+        padding:
+          x: 5
+          y: 5
+      font:
+        size: 12.0
+  autohotkey:
+    script_path: "%USERPROFILE%\\Documents\\AutoHotkey\\main.ahk"
+    settings:
+      persistent: true
+    hotkeys:
+      "#n": 'Run "notepad.exe"'
+  bat:
+    settings:
+      "--theme": "gruvbox-dark"
+      "--style": "numbers,changes,header"
+  betterdiscord:
+    settings:
+      theme: "DarkerDiscord"
+      plugins:
+        BetterFormatting: true
+  cargo:
+    settings:
+      build:
+        jobs: 4
+      net:
+        retry: 2
+  chezmoi:
+    settings:
+      data:
+        email: "test@example.com"
+  chocolatey:
+    settings:
+      useFinishedEvent: true
+  curl:
+    settings:
+      "--connect-timeout": "10"
+      "--user-agent": "Mozilla/5.0"
+  docker:
+    settings:
+      skipTermOfServiceCheck: true
+      displayDeviceSharingNotifications: false
+  espanso:
+    matches:
+      - trigger: ":br"
+        replace: "Best regards,"
+  fzf:
+    settings:
+      FZF_DEFAULT_OPTS: "--reverse --height 40%"
+      border: "rounded"
+  gh-dash:
+    settings:
+      prs:
+        filters: "is:open author:@me"
+  gh:
+    settings:
+      aliases:
+        co: "pr checkout"
+      editor: "nvim"
+  helix-editor:
+    settings:
+      editor:
+        cursor-shape:
+          insert: "bar"
+  keepassxc:
+    settings:
+      GUI:
+        ShowTrayIcon: true
+  lazydocker:
+    settings:
+      gui:
+        showBottomLine: false
+  lazygit:
+    settings:
+      gui:
+        theme:
+          lightTheme: false
+  mise:
+    settings:
+      experimental: true
+  notepadplusplus:
+    settings:
+      AppPath: "C:\\Program Files\\Notepad++"
+  npm:
+    settings:
+      "save-exact": true
+  obs-studio:
+    general:
+      theme: "Acri"
+  obsidian:
+    vaults:
+      - path: "C:\\Users\\test\\Documents\\Vault"
+        settings:
+          vimMode: true
+          spellcheck: true
+        plugins:
+          - "obsidian-git"
+  ohmyposh:
+    profile: "C:\\Users\\test\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1"
+    settings:
+      theme: "bubbles"
+  opencode:
+    settings:
+      terminal:
+        integrated:
+          fontSize: 14
+    projectRoot: "C:\\projects"
+  openssh:
+    settings:
+      ForwardAgent: "yes"
+    hosts:
+      lab:
+        HostName: "192.168.1.10"
+        User: "admin"
+  pip:
+    settings:
+      global:
+        index-url: "https://pypi.org/simple"
+  powershell:
+    aliases:
+      g: "git"
+    modules:
+      Terminal-Icons: {}
+  powertoys:
+    settings:
+      FancyZones:
+        enabled: true
+      PowerRename:
+        enabled: true
+  rclone:
+    settings:
+      stats: "10s"
+    remotes:
+      mydrive:
+        type: "drive"
+        scope: "drive.readonly"
+  ripgrep:
+    settings:
+      "max-columns": 150
+      "smart-case": true
+  scoop:
+    settings:
+      aria2-enabled: true
+  sharex:
+    settings:
+      HotkeySettings:
+        CaptureRegion: "Ctrl+PrintScreen"
+  spicetify:
+    settings:
+      Setting:
+        current_theme: "Dribbblish"
+  starship:
+    settings:
+      character:
+        success_symbol: "[âžœ](bold green)"
+      add_newline: false
+  test-powershell:
+    message: "Testing PowerShell Plugin"
+  vim:
+    settings:
+      number: true
+      relativenumber: true
+      mouse: "a"
+      tabstop: 4
+  vscode:
+    settings:
+      "editor.formatOnSave": true
+      "workbench.colorTheme": "Default Dark Modern"
+      "telemetry.enableTelemetry": false
+    extensions:
+      - "esbenp.prettier-vscode"
+      - "dbaeumer.vscode-eslint"
+  windows-terminal:
+    settings:
+      profiles:
+        defaults:
+          font:
+            face: "Fira Code"
+  winget:
+    settings:
+      visual:
+        progressBar: rainbow
+      installBehavior:
+        preferences:
+          scope: user
+  yasb:
+    settings:
+      bar:
+        blur: true
+  yazi:
+    manager:
+      sort_by: "mtime"
+      sort_reverse: true
+  zed:
+    settings:
+      theme: "One Dark"
+      font_size: 16
+      vim_mode: true
+  zoxide:
+    init:
+      cmd: "j"
+

@@ -4,6 +4,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Represents Git configuration settings (user name, email, signing, and arbitrary git config key-value pairs).</summary>
   public class GitConfig
   {
     // Convenience properties (Common stuff)

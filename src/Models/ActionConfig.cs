@@ -3,6 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Describes a single action to execute (used in scheduled tasks).</summary>
   public class ActionConfig
   {
     [YamlMember(Alias = "type")]

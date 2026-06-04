@@ -115,7 +115,7 @@ namespace WinHome.Tests.Services.Plugins
       var runner = CreateRunner(mockLogger);
 
       var manifest = CreateCrossPlatformManifest("test-stderr-slow",
-          "powershell -NoProfile -Command \"[Console]::Error.WriteLine('Warning: Doing some work before sleeping'); [Console]::Error.Flush(); Start-Sleep -Seconds 5\"",
+          "echo Warning: Doing some work before sleeping 1>&2\npowershell -NoProfile -Command \"Start-Sleep -Seconds 5\"",
           "echo 'Warning: Doing some work before sleeping' >&2\nsleep 5");
 
       // Act
@@ -137,8 +137,8 @@ namespace WinHome.Tests.Services.Plugins
       var runner = CreateRunner(mockLogger);
 
       var manifest = CreateCrossPlatformManifest("test-fast-zero",
-          "set /p dummy=\necho {\"success\": true, \"changed\": false, \"data\": null}",
-          "read dummy\necho '{\"success\": true, \"changed\": false, \"data\": null}'");
+          "echo {\"success\": true, \"changed\": false, \"data\": null}",
+          "echo '{\"success\": true, \"changed\": false, \"data\": null}'");
 
       // Act - set timeout to Zero
       var result = await runner.ExecuteAsync(manifest, "test", null, null, TimeSpan.Zero);

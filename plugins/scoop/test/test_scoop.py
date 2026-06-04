@@ -3,9 +3,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-_src_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src")
-)
+_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 try:
     sys.path.append(_src_path)
     import plugin
@@ -94,9 +92,7 @@ class TestScoopPlugin(unittest.TestCase):
 
         self.assertTrue(res["success"])
         self.assertTrue(res["changed"])
-        mock_write.assert_called_once_with(
-            "dummy.json", {"aria2-enabled": True}
-        )
+        mock_write.assert_called_once_with("dummy.json", {"aria2-enabled": True})
 
     @patch("plugin.read_json")
     @patch("plugin.write_json")
@@ -134,9 +130,7 @@ class TestScoopPlugin(unittest.TestCase):
         read_data="{invalid_json",
     )
     @patch("shutil.move")
-    def test_read_json_corrupted_backup(
-        self, mock_move, mock_file, mock_exists
-    ):
+    def test_read_json_corrupted_backup(self, mock_move, mock_file, mock_exists):
         mock_exists.return_value = True
 
         # Test JSONDecodeError path
@@ -166,9 +160,7 @@ class TestScoopPlugin(unittest.TestCase):
     @patch("plugin.os.replace")
     @patch("plugin.os.makedirs")
     @patch("plugin.os.fdopen")
-    def test_write_json_uses_mkstemp(
-        self, mock_fdopen, mock_makedirs, mock_replace, mock_mkstemp
-    ):
+    def test_write_json_uses_mkstemp(self, mock_fdopen, mock_makedirs, mock_replace, mock_mkstemp):
         mock_mkstemp.return_value = (5, "/tmp/scoop-abc123")
         mock_fdopen.return_value.__enter__ = lambda s: s
         mock_fdopen.return_value.__exit__ = lambda s, *a: False
@@ -182,9 +174,7 @@ class TestScoopPlugin(unittest.TestCase):
             call_kwargs.kwargs.get("prefix") or call_kwargs[1].get("prefix"),
             "scoop-",
         )
-        mock_replace.assert_called_once_with(
-            "/tmp/scoop-abc123", "/fake/path/config.json"
-        )
+        mock_replace.assert_called_once_with("/tmp/scoop-abc123", "/fake/path/config.json")
 
     def test_write_json_atomic_real(self):
         import json as js

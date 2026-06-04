@@ -62,6 +62,15 @@ Example: `Feat: Add support for transparency effects in SystemSettings`
 - **New Features**: Every new feature or bug fix must include corresponding unit tests in the `tests/WinHome.Tests/` directory.
 - **Mocks**: When working on Windows-specific services, use the `Moq` framework to ensure tests remain runnable on Linux/macOS.
 
+
+### Plugin Tests
+If you add or modify a plugin in `plugins/`, ensure it has a test file:
+- **Python plugins**: `plugins/<name>/test/test_<name>.py` with `if __name__ == "__main__":` at the bottom
+- **JS/TS plugins**: a `test` script defined in `package.json`
+
+Plugin tests run automatically via the **Test Plugins** CI workflow on every push and PR to `main`.
+
+
 ## 📝 Pull Request Guidelines
 - **Template**: Fill out the PR template completely.
 - **Issue Link**: Always link the PR to the relevant GitHub issue (e.g., `Closes #38`).

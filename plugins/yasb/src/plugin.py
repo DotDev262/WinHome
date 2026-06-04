@@ -75,6 +75,7 @@ def write_yaml(file_path: str, data: dict) -> None:
             except OSError:
                 pass
 
+
 def merge_settings(target: dict, source: dict) -> bool:
     """Deep-merge `source` into `target`.
 
@@ -102,14 +103,9 @@ def merge_settings(target: dict, source: dict) -> bool:
     return changed
 
 
-
-
-
 def check_installed(request_id: str) -> dict:
     installed = (
-        shutil.which("yasb") is not None
-        or shutil.which("yasb.exe") is not None
-        or os.path.isdir(get_config_dir())
+        shutil.which("yasb") is not None or shutil.which("yasb.exe") is not None or os.path.isdir(get_config_dir())
     )
 
     return {

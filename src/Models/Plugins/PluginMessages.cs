@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace WinHome.Models.Plugins
 {
+  /// <summary>Message sent from WinHome to a plugin process requesting command execution.</summary>
   public class PluginRequest
   {
     [JsonPropertyName("requestId")]
@@ -17,6 +18,7 @@ namespace WinHome.Models.Plugins
     public object? Context { get; set; }
   }
 
+  /// <summary>Response from a plugin process after executing a command.</summary>
   public class PluginResult
   {
     [JsonPropertyName("requestId")]

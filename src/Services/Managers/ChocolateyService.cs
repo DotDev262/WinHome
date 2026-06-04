@@ -4,6 +4,7 @@ using WinHome.Services.Bootstrappers;
 
 namespace WinHome.Services.Managers
 {
+  /// <summary>Manages package operations via Chocolatey (choco).</summary>
   public class ChocolateyService : IPackageManager
   {
     private readonly IProcessRunner _processRunner;
@@ -11,6 +12,7 @@ namespace WinHome.Services.Managers
     private readonly IRuntimeResolver _resolver;
     public IPackageManagerBootstrapper Bootstrapper { get; }
 
+    /// <summary>Initializes a new instance of <see cref="ChocolateyService"/>.</summary>
     public ChocolateyService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
     {
       _processRunner = processRunner;
@@ -24,6 +26,7 @@ namespace WinHome.Services.Managers
       return _resolver.Resolve("choco");
     }
 
+    /// <summary>Returns <c>true</c> if Chocolatey is available on the system.</summary>
     public bool IsAvailable()
     {
       return Bootstrapper.IsInstalled();
@@ -36,6 +39,7 @@ namespace WinHome.Services.Managers
       _logger.LogInfo($"[Choco:{context}] {line}");
     }
 
+    /// <summary>Installs a package via Chocolatey. Skips if already installed.</summary>
     public void Install(AppConfig app, bool dryRun)
     {
       string executable = GetChocoExecutable();
@@ -79,6 +83,7 @@ namespace WinHome.Services.Managers
       _logger.LogSuccess($"[Success] Installed {app.Id}");
     }
 
+    /// <summary>Uninstalls a package via Chocolatey.</summary>
     public void Uninstall(string appId, bool dryRun)
     {
       string executable = GetChocoExecutable();
@@ -99,6 +104,7 @@ namespace WinHome.Services.Managers
       _logger.LogSuccess($"[Success] Uninstalled {appId}");
     }
 
+    /// <summary>Checks whether a package is installed via Chocolatey.</summary>
     public bool IsInstalled(string appId)
     {
       string executable = GetChocoExecutable();

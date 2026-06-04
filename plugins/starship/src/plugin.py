@@ -37,9 +37,7 @@ def read_toml(file_path: str) -> dict:
             log(f"Warning: could not parse {file_path} using tomllib: {e}")
             return {}
     else:
-        log(
-            "Warning: tomllib not available (requires Python 3.11+). Starting with empty config."
-        )
+        log("Warning: tomllib not available (requires Python 3.11+). Starting with empty config.")
         return {}
 
 
@@ -99,10 +97,7 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 
 def check_installed(args: dict, request_id: str) -> dict:
-    installed = (
-        shutil.which("starship.exe") is not None
-        or shutil.which("starship") is not None
-    )
+    installed = shutil.which("starship.exe") is not None or shutil.which("starship") is not None
     return {
         "requestId": request_id,
         "success": True,

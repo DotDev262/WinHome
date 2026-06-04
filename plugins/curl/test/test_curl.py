@@ -4,9 +4,7 @@ import sys
 from io import StringIO
 from unittest.mock import patch
 
-_src_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src")
-)
+_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 sys.path.append(_src_path)
 import plugin
 

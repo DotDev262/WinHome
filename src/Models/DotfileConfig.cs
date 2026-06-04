@@ -3,6 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Represents a dotfile or directory to symlink or copy from source to target.</summary>
   public class DotfileConfig
   {
     [YamlMember(Alias = "src")]

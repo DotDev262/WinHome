@@ -26,14 +26,10 @@ def read_text(file_path: str) -> str:
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
     except (OSError, UnicodeDecodeError) as e:
-        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
-            "%Y%m%d%H%M%S"
-        )
+        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
         suffix_str = uuid.uuid4().hex[:8]
         backup_path = f"{file_path}.corrupted.{timestamp}.{suffix_str}"
-        log(
-            f"Config corrupted. Backing up to {backup_path} and starting fresh. Error: {e}"
-        )
+        log(f"Config corrupted. Backing up to {backup_path} and starting fresh. Error: {e}")
         try:
             shutil.move(file_path, backup_path)
         except Exception as backup_e:
@@ -79,18 +75,14 @@ def parse_ini(text: str) -> tuple:
         if match_kv:
             key = match_kv.group(1).strip()
             val = match_kv.group(2).strip()
-            current_block["lines"].append(
-                {"type": "kv", "raw": line, "key": key, "val": val}
-            )
+            current_block["lines"].append({"type": "kv", "raw": line, "key": key, "val": val})
         else:
             current_block["lines"].append({"type": "unknown", "raw": line})
 
     return blocks, has_trailing_newline, is_crlf
 
 
-def serialize_ini(
-    blocks: list, has_trailing_newline: bool, is_crlf: bool
-) -> str:
+def serialize_ini(blocks: list, has_trailing_newline: bool, is_crlf: bool) -> str:
     lines = []
     for b in blocks:
         for line in b["lines"]:
@@ -132,9 +124,7 @@ def merge_kv(block: dict, key: str, val) -> bool:
 
                 line["val"] = target_val_str
                 original_key = line.get("key", key)
-                line["raw"] = (
-                    f"{indent}{original_key}{eq_str}{target_val_str}{suffix}"
-                )
+                line["raw"] = f"{indent}{original_key}{eq_str}{target_val_str}{suffix}"
                 return True
             return False
 
@@ -166,16 +156,10 @@ def merge_settings(blocks: list, args: dict) -> bool:
 
         if not block:
             block = {"name": section_name, "lines": []}
-            if (
-                blocks
-                and blocks[-1]["lines"]
-                and blocks[-1]["lines"][-1]["type"] != "empty"
-            ):
+            if blocks and blocks[-1]["lines"] and blocks[-1]["lines"][-1]["type"] != "empty":
                 blocks[-1]["lines"].append({"type": "empty", "raw": ""})
 
-            block["lines"].append(
-                {"type": "section", "raw": f"[{section_name}]"}
-            )
+            block["lines"].append({"type": "section", "raw": f"[{section_name}]"})
             blocks.append(block)
             changed = True
 
@@ -196,9 +180,7 @@ def check_installed(args: dict, request_id: str) -> dict:
 
         paths_to_check = [
             os.path.join(program_files, "KeePassXC", "KeePassXC.exe"),
-            os.path.join(local_appdata, "KeePassXC", "KeePassXC.exe")
-            if local_appdata
-            else "",
+            os.path.join(local_appdata, "KeePassXC", "KeePassXC.exe") if local_appdata else "",
         ]
 
         for p in paths_to_check:

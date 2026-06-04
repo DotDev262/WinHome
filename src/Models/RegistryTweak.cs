@@ -3,6 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Represents a single Windows Registry value to create, modify, or delete.</summary>
   public class RegistryTweak
   {
     [YamlMember(Alias = "path")]

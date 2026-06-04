@@ -10,9 +10,7 @@ PLUGIN_PATH = Path(__file__).resolve().parents[1] / "src" / "plugin.py"
 
 
 def load_plugin_module():
-    spec = importlib.util.spec_from_file_location(
-        "autohotkey_plugin", PLUGIN_PATH
-    )
+    spec = importlib.util.spec_from_file_location("autohotkey_plugin", PLUGIN_PATH)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
@@ -36,9 +34,7 @@ def test_check_installed_reports_true_when_executable_is_found(monkeypatch):
     plugin = load_plugin_module()
 
     monkeypatch.setattr(plugin.shutil, "which", lambda name: None)
-    monkeypatch.setattr(
-        plugin.os.path, "exists", lambda path: path.endswith("AutoHotkey64.exe")
-    )
+    monkeypatch.setattr(plugin.os.path, "exists", lambda path: path.endswith("AutoHotkey64.exe"))
     monkeypatch.setenv("PROGRAMFILES", r"C:\Program Files")
     monkeypatch.setenv("PROGRAMFILES(X86)", r"C:\Program Files (x86)")
     monkeypatch.setenv("LOCALAPPDATA", r"C:\Users\Test\AppData\Local")
@@ -247,9 +243,7 @@ def test_all_responses_include_request_id_and_errors_return_error_field(
     monkeypatch.setattr(
         plugin,
         "apply_config",
-        lambda args, context, request_id: (_ for _ in ()).throw(
-            RuntimeError("boom")
-        ),
+        lambda args, context, request_id: (_ for _ in ()).throw(RuntimeError("boom")),
     )
     error_response = plugin.process_request(
         {

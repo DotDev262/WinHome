@@ -3,9 +3,10 @@ import os
 import sys
 import tempfile
 
-SETTINGS_PATH = os.path.expandvars(
-    r"%APPDATA%\BetterDiscord\data\settings.json"
-)
+
+def get_settings_path():
+    appdata = os.environ.get("APPDATA", "")
+    return os.path.join(appdata, "BetterDiscord", "data", "settings.json")
 
 
 def log(msg):
@@ -14,7 +15,7 @@ def log(msg):
 
 
 def read_json(file_path: str) -> dict:
-    if not os.path.exists(file_path):
+    if not file_path or not os.path.exists(file_path):
         return {}
 
     try:
@@ -40,11 +41,7 @@ def read_json(file_path: str) -> dict:
 
 def deep_merge(original: dict, updates: dict) -> dict:
     for key, value in updates.items():
-        if (
-            key in original
-            and isinstance(original[key], dict)
-            and isinstance(value, dict)
-        ):
+        if key in original and isinstance(original[key], dict) and isinstance(value, dict):
             deep_merge(original[key], value)
         else:
             original[key] = value
@@ -71,7 +68,8 @@ def write_json_atomic(file_path: str, data: dict):
 
 
 def check_installed(args: dict, request_id: str) -> dict:
-    install_path = os.path.expandvars(r"%APPDATA%\BetterDiscord")
+    appdata = os.environ.get("APPDATA", "")
+    install_path = os.path.join(appdata, "BetterDiscord")
 
     return {
         "requestId": request_id,
@@ -90,12 +88,13 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "success": False,
             "changed": False,
             "data": None,
-            "error": "settings must be an object"
+            "error": "settings must be an object",
         }
 
     dry_run = context.get("dryRun", False)
 
-    current = read_json(SETTINGS_PATH)
+    settings_path = get_settings_path()
+    current = read_json(settings_path)
 
     updated = json.loads(json.dumps(current))
     deep_merge(updated, settings)
@@ -121,7 +120,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         }
 
     try:
-        write_json_atomic(SETTINGS_PATH, updated)
+        write_json_atomic(settings_path, updated)
 
         return {
             "requestId": request_id,
@@ -144,59 +143,54 @@ def main():
     input_data = sys.stdin.read()
 
     if not input_data:
-        print(json.dumps({
-            "requestId": "unknown",
-            "success": False,
-            "changed": False,
-            "data": None,
-            "error": "No input received on stdin",
-        }))
-
-        sys.stdout.flush()
+        print(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "changed": False,
+                    "data": None,
+                    "error": "No input received on stdin",
+                }
+            )
+        )
         return
 
     try:
         request = json.loads(input_data)
-
     except Exception as e:
-        response = {
-            "requestId": "unknown",
-            "success": False,
-            "changed": False,
-            "data": None,
-            "error": f"Failed to parse request: {str(e)}",
-        }
-
-        sys.stdout.write(json.dumps(response) + "\n")
-        sys.stdout.flush()
+        print(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "success": False,
+                    "changed": False,
+                    "data": None,
+                    "error": f"Failed to parse request: {e}",
+                }
+            )
+        )
         return
 
-    request_id = request.get("requestId", "unknown")
     command = request.get("command")
     args = request.get("args", {})
     context = request.get("context", {})
+    request_id = request.get("requestId", "unknown")
 
-    response = {
-        "requestId": request_id,
-        "success": False,
-        "changed": False,
-        "data": None,
-    }
+    if command == "check_installed":
+        response = check_installed(args, request_id)
+    elif command == "apply":
+        response = apply_config(args, context, request_id)
+    else:
+        response = {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "data": None,
+            "error": f"Unknown command: {command}",
+        }
 
-    try:
-        if command == "check_installed":
-            response = check_installed(args, request_id)
-
-        elif command == "apply":
-            response = apply_config(args, context, request_id)
-
-        else:
-            response["error"] = f"Unknown command: {command}"
-
-    except Exception as e:
-        response["error"] = f"Internal Script Error: {str(e)}"
-
-    sys.stdout.write(json.dumps(response) + "\n")
+    print(json.dumps(response))
     sys.stdout.flush()
 
 

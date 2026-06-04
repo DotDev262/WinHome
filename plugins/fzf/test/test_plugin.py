@@ -110,9 +110,7 @@ def test_check_installed(tmp_path):
 
     payload = {"requestId": "check-1", "command": "check_installed"}
     installed, _ = run_plugin(payload, env=plugin_env(tmp_path, bin_dir))
-    missing, _ = run_plugin(
-        payload, env=plugin_env(tmp_path, tmp_path / "missing")
-    )
+    missing, _ = run_plugin(payload, env=plugin_env(tmp_path, tmp_path / "missing"))
 
     assert_schema(installed, success=True, changed=False)
     assert installed["data"] is True
@@ -129,9 +127,7 @@ def test_empty_stdin(tmp_path):
 
 
 def test_malformed_json(tmp_path):
-    response, result = run_plugin(
-        env=plugin_env(tmp_path), raw_input="{ not json"
-    )
+    response, result = run_plugin(env=plugin_env(tmp_path), raw_input="{ not json")
 
     assert result.returncode == 0
     assert_schema(response, success=False, changed=False)
@@ -178,9 +174,7 @@ def test_parse_existing_config(tmp_path):
 def test_corrupted_config_backup(tmp_path):
     env = plugin_env(tmp_path)
     config_file = fzfrc_path(tmp_path)
-    config_file.write_text(
-        'export FZF_DEFAULT_OPTS="unterminated\n', encoding="utf-8"
-    )
+    config_file.write_text('export FZF_DEFAULT_OPTS="unterminated\n', encoding="utf-8")
     payload = {
         "requestId": "corrupt-1",
         "command": "apply",
@@ -192,13 +186,8 @@ def test_corrupted_config_backup(tmp_path):
     assert_schema(response, success=True, changed=True)
     backups = list(tmp_path.glob(f"{config_file.name}.bak.*"))
     assert len(backups) == 1
-    assert (
-        backups[0].read_text(encoding="utf-8")
-        == 'export FZF_DEFAULT_OPTS="unterminated\n'
-    )
-    assert 'export FZF_DEFAULT_OPTS="--height 60%"' in config_file.read_text(
-        encoding="utf-8"
-    )
+    assert backups[0].read_text(encoding="utf-8") == 'export FZF_DEFAULT_OPTS="unterminated\n'
+    assert 'export FZF_DEFAULT_OPTS="--height 60%"' in config_file.read_text(encoding="utf-8")
     assert "Backed up corrupted fzf config" in result.stderr
     assert response["data"]["corrupted"] is True
     assert "backupPath" in response["data"]
@@ -220,9 +209,7 @@ def test_utf8_decode_failure_backup(tmp_path):
     backups = list(tmp_path.glob(f"{config_file.name}.bak.*"))
     assert len(backups) == 1
     assert backups[0].read_bytes() == b"\xff\xfe\xfa"
-    assert 'export FZF_DEFAULT_OPTS="--height 70%"' in config_file.read_text(
-        encoding="utf-8"
-    )
+    assert 'export FZF_DEFAULT_OPTS="--height 70%"' in config_file.read_text(encoding="utf-8")
 
 
 def test_shell_escaping_round_trip(tmp_path):
