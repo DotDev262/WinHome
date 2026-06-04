@@ -89,7 +89,7 @@ def apply_config(args):
 
 def main():
     input_data = sys.stdin.read()
-    if not input_data:
+    if not input_data.strip():
         response = {"requestId": "unknown", "error": "No input received"}
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
