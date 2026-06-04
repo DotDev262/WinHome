@@ -5,6 +5,7 @@ import sys
 import subprocess
 import importlib.util
 from unittest import mock
+import pytest
 
 PLUGIN_SCRIPT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/plugin.py'))
 
@@ -107,3 +108,6 @@ def test_apply_config_real_run():
             data = json.load(f)
             assert data["theme"] == "Dark"
             assert data["hotkey"] == "Alt+Space"
+
+if __name__ == '__main__':
+    sys.exit(pytest.main(["-v", __file__]))
