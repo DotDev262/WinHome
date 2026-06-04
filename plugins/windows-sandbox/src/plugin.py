@@ -58,11 +58,12 @@ def write_xml(path: str, root: ET.Element) -> None:
         raise
 
 
-def check_installed(args: dict, request_id: str) -> dict:
-    windir = os.environ.get("WINDIR", "C:\\Windows")
+def check_installed() -> bool:
+    windir = os.environ.get("WINDIR", r"C:\Windows")
+
     sandbox_path = os.path.join(windir, "System32", "WindowsSandbox.exe")
 
-    return {"requestId": request_id, "success": True, "changed": False, "data": os.path.exists(sandbox_path)}
+    return os.path.exists(sandbox_path)
 
 
 def merge_settings(root: ET.Element, settings: dict) -> bool:
@@ -147,16 +148,13 @@ def merge_settings(root: ET.Element, settings: dict) -> bool:
 
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
-    dry_run = context.get("dryRun", False)
+    dry_run = args.get("dryRun", False)
     settings = args.get("settings", {})
 
     if not isinstance(settings, dict):
         return {
             "requestId": request_id,
-            "success": False,
-            "changed": False,
             "error": "settings must be a dictionary",
-            "data": None,
         }
 
     try:
@@ -166,15 +164,24 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         changed = merge_settings(root, settings)
 
         if dry_run:
-            return {"requestId": request_id, "success": True, "changed": changed, "data": None}
+            return {
+                "requestId": request_id,
+                "changed": changed,
+            }
 
         if changed:
             write_xml(config_path, root)
 
-        return {"requestId": request_id, "success": True, "changed": changed, "data": None}
+        return {
+            "requestId": request_id,
+            "changed": changed,
+        }
 
     except Exception as e:
-        return {"requestId": request_id, "success": False, "changed": False, "error": str(e), "data": None}
+        return {
+            "requestId": request_id,
+            "error": str(e),
+        }
 
 
 def main():
@@ -183,10 +190,7 @@ def main():
     if not input_data:
         response = {
             "requestId": "unknown",
-            "success": False,
-            "changed": False,
             "error": "No input received",
-            "data": None,
         }
         sys.stdout.write(json.dumps(response) + "\n")
         return
@@ -196,20 +200,19 @@ def main():
     except Exception as e:
         response = {
             "requestId": "unknown",
-            "success": False,
-            "changed": False,
             "error": f"Invalid JSON: {e}",
-            "data": None,
         }
         sys.stdout.write(json.dumps(response) + "\n")
         return
 
-    request_id = request.get("requestId", "unknown")
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
 
     if command == "check_installed":
-        response = check_installed(args, request_id)
+        installed = check_installed()
+
+        response = {"requestId": request_id, "installed": installed}
 
     elif command == "apply":
         response = apply_config(args, request.get("context", {}), request_id)
@@ -217,10 +220,7 @@ def main():
     else:
         response = {
             "requestId": request_id,
-            "success": False,
-            "changed": False,
             "error": f"Unknown command: {command}",
-            "data": None,
         }
 
     sys.stdout.write(json.dumps(response) + "\n")
