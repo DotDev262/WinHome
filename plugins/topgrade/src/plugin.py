@@ -31,6 +31,7 @@ def get_topgrade_config_path():
     # Default to main path if neither exists
     return main_path
 
+
 def merge_dict(target, source):
     """Recursively merge source dictionary into target tomlkit document/table."""
     for k, v in source.items():
@@ -44,15 +45,11 @@ def merge_dict(target, source):
         else:
             target[k] = v
 
+
 def handle_check_installed():
     topgrade_path = shutil.which("topgrade")
-    return {
-        "success": True,
-        "changed": False,
-        "data": {
-            "installed": topgrade_path is not None
-        }
-    }
+    return {"success": True, "changed": False, "data": {"installed": topgrade_path is not None}}
+
 
 def handle_apply(args, context):
     settings = args.get("settings", {})
@@ -81,7 +78,7 @@ def handle_apply(args, context):
     merge_dict(doc, settings)
 
     new_content = doc.as_string()
-    changed = (orig_content != new_content)
+    changed = orig_content != new_content
 
     if changed and not dry_run:
         try:
@@ -94,6 +91,7 @@ def handle_apply(args, context):
         sys.stderr.write(f"Would update topgrade config at {config_path}\n")
 
     return {"success": True, "changed": changed}
+
 
 def main():
     raw_input = sys.stdin.read()
@@ -111,11 +109,7 @@ def main():
     args = request.get("args", {})
     context = request.get("context", {})
 
-    response = {
-        "requestId": req_id,
-        "success": False,
-        "changed": False
-    }
+    response = {"requestId": req_id, "success": False, "changed": False}
 
     if cmd == "check_installed":
         res = handle_check_installed()
@@ -127,6 +121,7 @@ def main():
         response["error"] = f"Unknown command: {cmd}"
 
     print(json.dumps(response))
+
 
 if __name__ == "__main__":
     main()
