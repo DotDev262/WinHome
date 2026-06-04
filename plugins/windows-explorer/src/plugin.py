@@ -26,29 +26,25 @@ def read_registry_values():
         log(f"Error reading registry: {e}")
     return values
 
-def check_installed(request_id):
-    return {
-        "requestId": request_id,
-        "success": True,
-        "changed": False,
-        "data": True
-    }
+def check_installed():
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_READ):
+            return True
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return False
 
-def apply_config(args, context, request_id):
-    dry_run = context.get("dryRun", False)
+def apply_config(args):
+    dry_run = args.get("dryRun", False)
     settings = args.get("settings", {})
     
     if not settings:
-        return {
-            "requestId": request_id,
-            "success": True,
-            "changed": False
-        }
+        return {}
 
     current_values = read_registry_values()
     updates = {}
 
-    # Map configuration settings to registry values
     mappings = {
         "HideFileExt": "HideFileExt",
         "ShowSuperHidden": "ShowSuperHidden",
@@ -63,12 +59,10 @@ def apply_config(args, context, request_id):
     for config_key, reg_key in mappings.items():
         if config_key in settings:
             val = settings[config_key]
-            # Convert bool to 1 or 0 for DWORD
             expected = 1 if val else 0
             if current_values.get(reg_key) != expected:
                 updates[reg_key] = expected
 
-    # Special handling for 'Hidden'
     if "Hidden" in settings:
         hidden_val = settings["Hidden"]
         if hidden_val in (1, 2):
@@ -89,48 +83,41 @@ def apply_config(args, context, request_id):
                     winreg.SetValueEx(key, k, 0, winreg.REG_DWORD, v)
                     log(f"Updated registry key {k} to {v}")
         except Exception as e:
-            return {
-                "requestId": request_id,
-                "success": False,
-                "changed": False,
-                "error": f"Failed to write to registry: {e}"
-            }
+            return {"error": f"Failed to write to registry: {e}"}
 
-    return {
-        "requestId": request_id,
-        "success": True,
-        "changed": changed
-    }
+    return {}
 
 def main():
     input_data = sys.stdin.read()
     if not input_data:
+        response = {"requestId": "unknown", "error": "No input received"}
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
         return
 
     try:
         request = json.loads(input_data)
     except Exception as e:
-        log(f"Failed to parse request: {e}")
-        sys.exit(1)
+        response = {"requestId": "unknown", "error": f"Failed to parse JSON request: {e}"}
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
+        return
 
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
-    context = request.get("context", {})
-    request_id = request.get("requestId", "")
+
+    response = {"requestId": request_id}
 
     if command == "apply":
-        response = apply_config(args, context, request_id)
+        apply_res = apply_config(args)
+        response.update(apply_res)
     elif command == "check_installed":
-        response = check_installed(request_id)
+        result = check_installed()
+        response["installed"] = result
     else:
-        response = {
-            "requestId": request_id,
-            "success": False,
-            "changed": False,
-            "error": f"Unknown command: {command}"
-        }
+        response["error"] = f"Unknown command: {command}"
 
-    # Use \n as trailing newline instead of \r\n explicitly
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
 
