@@ -1,8 +1,7 @@
-import os
 import json
+import os
 import subprocess
-import sys
-import pytest
+
 import tomlkit
 
 PLUGIN_SCRIPT = os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
@@ -34,7 +33,7 @@ def test_check_installed():
 def test_apply_new_file(monkeypatch, tmp_path):
     # Set APPDATA to a temporary directory
     monkeypatch.setenv("APPDATA", str(tmp_path))
-    
+
     settings = {
         "disable": ["pip", "npm"],
         "set_title": True,
@@ -42,7 +41,7 @@ def test_apply_new_file(monkeypatch, tmp_path):
             "~/Projects/dotfiles": "main"
         }
     }
-    
+
     req = {
         "requestId": "456",
         "command": "apply",
@@ -50,30 +49,30 @@ def test_apply_new_file(monkeypatch, tmp_path):
             "settings": settings
         }
     }
-    
+
     resp, stderr = run_plugin(req)
     assert resp is not None
     assert resp["requestId"] == "456"
     assert resp["success"] is True
     assert resp["changed"] is True
-    
+
     config_file = tmp_path / "topgrade" / "topgrade.toml"
     assert config_file.exists()
-    
+
     with open(config_file, "r", encoding="utf-8") as f:
         doc = tomlkit.load(f)
-        
+
     assert doc["disable"] == ["pip", "npm"]
     assert doc["set_title"] is True
     assert doc["git_repos"]["~/Projects/dotfiles"] == "main"
 
 def test_apply_merge_existing(monkeypatch, tmp_path):
     monkeypatch.setenv("APPDATA", str(tmp_path))
-    
+
     config_dir = tmp_path / "topgrade"
     config_dir.mkdir(parents=True, exist_ok=True)
     config_file = config_dir / "topgrade.toml"
-    
+
     initial_content = """
 disable = ["gem"]
 display_time = true
@@ -83,14 +82,14 @@ display_time = true
 """
     with open(config_file, "w", encoding="utf-8") as f:
         f.write(initial_content)
-        
+
     settings = {
         "disable": ["pip", "npm"],
         "git_repos": {
             "~/Projects/dotfiles": "main"
         }
     }
-    
+
     req = {
         "requestId": "789",
         "command": "apply",
@@ -98,15 +97,15 @@ display_time = true
             "settings": settings
         }
     }
-    
+
     resp, stderr = run_plugin(req)
     assert resp is not None
     assert resp["success"] is True
     assert resp["changed"] is True
-    
+
     with open(config_file, "r", encoding="utf-8") as f:
         doc = tomlkit.load(f)
-        
+
     assert doc["disable"] == ["pip", "npm"]
     assert doc["display_time"] is True
     assert doc["git_repos"]["~/Projects/old"] == "master"
