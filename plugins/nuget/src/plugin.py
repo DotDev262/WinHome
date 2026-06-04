@@ -3,6 +3,7 @@ import os
 import shutil
 import sys
 import tempfile
+import uuid
 import xml.etree.ElementTree as ET
 
 
@@ -28,7 +29,7 @@ def read_xml(file_path):
     try:
         return ET.parse(file_path)
     except Exception as e:
-        backup_path = f"{file_path}.corrupted.bak"
+        backup_path = f"{file_path}.corrupted.{uuid.uuid4().hex}.bak"
         try:
             shutil.copy2(file_path, backup_path)
             log(f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}.")
@@ -288,7 +289,8 @@ def main():
 
     try:
         if command == "check_installed":
-            response = check_installed(args, request_id)
+            installed = check_installed(args, request_id)
+            response = {"requestId": request_id, "data": installed, "changed": False}
         elif command == "apply":
             response = apply_config(args, context, request_id)
         else:
