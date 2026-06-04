@@ -1,0 +1,67 @@
+﻿name: greenshot
+version: "1.0.0"
+description: Configuration provider plugin for Greenshot screenshot tool
+author: DotDev262
+language: python
+entrypoint: src/plugin.py
+
+platform:
+  - windows
+
+config:
+  path: "%APPDATA%\\Greenshot\\Greenshot.ini"
+  format: ini
+  method: configparser
+
+capabilities:
+  - check_installed
+  - apply
+  - dry_run
+
+settings:
+  Capture:
+    CaptureMode:
+      type: string
+      description: "Capture mode: Region, Fullscreen, Window, LastRegion"
+      allowed: [Region, Fullscreen, Window, LastRegion]
+    CaptureMousepointer:
+      type: bool
+      description: Capture mouse cursor in screenshot
+    CaptureDelay:
+      type: int
+      description: Delay in milliseconds before capture
+      min: 0
+      max: 10000
+
+  Destination:
+    FileSavePath:
+      type: string
+      description: Default directory for saved screenshots
+    FileSaveAs:
+      type: bool
+      description: Open save-as dialog instead of auto-saving
+    CopyToClipboard:
+      type: bool
+      description: Automatically copy screenshot to clipboard
+
+  Output:
+    FileFormat:
+      type: string
+      description: "Output file format: png, jpg, bmp, gif"
+      allowed: [png, jpg, bmp, gif]
+    JpgQuality:
+      type: int
+      description: JPEG compression quality (0-100)
+      min: 0
+      max: 100
+    OutputFilePath:
+      type: string
+      description: Directory for output files
+    OutputFileFilenamePattern:
+      type: string
+      description: "Filename pattern, e.g. ${title}_${date}_${time}"
+
+  General:
+    Language:
+      type: string
+      description: UI language code (e.g. en-US, de-DE)
