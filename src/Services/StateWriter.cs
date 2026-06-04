@@ -52,7 +52,18 @@ namespace WinHome.Services
         }
         catch
         {
-          // Do not throw on corrupted/invalid JSON; return empty state to allow recovery
+          try
+          {
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+            var uuid = Guid.NewGuid().ToString("N");
+            var backupPath = $"{_path}.corrupted.{timestamp}.{uuid}.bak";
+            File.Move(_path, backupPath);
+          }
+          catch
+          {
+            // Best-effort backup; continue with empty state if backup fails
+          }
+
           _cache = new Dictionary<string, StepResult>();
           return new Dictionary<string, StepResult>(_cache);
         }
