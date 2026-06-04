@@ -47,8 +47,6 @@ extensions:
 
 - The plugin deep-merges settings – existing config entries and features not mentioned in the user's
   config are preserved.
-- If the configuration file is corrupted or non-processable, the plugin automatically backs it up
-  with a unique suffix and starts fresh.
 - It supports dryRun mode – logs what would change in the config path without actually writing to
   disk.
 
