@@ -21,7 +21,7 @@ namespace WinHome.Tests
     public void IsInstalled_ReturnsTrue_WhenUvIsAvailable()
     {
       // Arrange
-      _mockProcessRunner.Setup(pr => pr.RunCommand("uv", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+      _mockProcessRunner.Setup(pr => pr.RunCommand("uv", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true);
 
       // Act
       bool isInstalled = _uvBootstrapper.IsInstalled();
@@ -34,7 +34,7 @@ namespace WinHome.Tests
     public void IsInstalled_ReturnsFalse_WhenUvIsNotAvailable()
     {
       // Arrange
-      _mockProcessRunner.Setup(pr => pr.RunCommand("uv", "--version", false, It.IsAny<Action<string>>())).Returns(false);
+      _mockProcessRunner.Setup(pr => pr.RunCommand("uv", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(false);
 
       // Act
       bool isInstalled = _uvBootstrapper.IsInstalled();

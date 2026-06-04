@@ -4,12 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
-
 # Note: these tests are written for the repository's expected testing environment.
 # In this execution environment, pytest may not be installed.
-
 
 
 PLUGIN = Path(__file__).resolve().parents[1] / "src" / "plugin.py"
@@ -52,7 +48,6 @@ def test_empty_stdin_returns_json_error(tmp_path):
 
 
 def test_check_installed_returns_bare_bool(tmp_path):
-    env = plugin_env(tmp_path)
     # Simulate bat present by creating a fake bat in a temp PATH.
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
@@ -174,7 +169,7 @@ def test_corrupted_backup_created_and_response_warns(tmp_path):
 
     assert res["success"] is True
     assert res["changed"] is True
-    backups = list(tmp_path.glob(f".config/bat/config.corrupt.*"))
+    backups = list(tmp_path.glob(".config/bat/config.corrupt.*"))
     assert len(backups) == 1
     assert "backupPath" in res["data"]
     assert "--theme=Dracula" in config_file.read_text(encoding="utf-8")
@@ -200,6 +195,5 @@ def test_dry_run_does_not_write_or_backup(tmp_path):
     assert res["success"] is True
     assert res["changed"] is True
     assert config_file.read_text(encoding="utf-8") == original
-    backups = list(tmp_path.glob(f".config/bat/config.corrupt.*"))
+    backups = list(tmp_path.glob(".config/bat/config.corrupt.*"))
     assert backups == []
-

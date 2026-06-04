@@ -3,17 +3,20 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Logging
 {
+  /// <summary>Logs messages as JSON entries for structured output consumption (e.g. CI, tooling).</summary>
   public class JsonLogger : ILogger
   {
     private readonly object _lock = new();
     private readonly List<LogEntry> _logEntries = new();
     private volatile LogLevel _minLevel = LogLevel.Info;
 
+    /// <summary>Sets the minimum log level; messages below this level are suppressed.</summary>
     public void SetMinLevel(LogLevel level)
     {
       _minLevel = level;
     }
 
+    /// <summary>Records a JSON log entry at the given level.</summary>
     public void Log(string message, LogLevel level)
     {
       if (level < _minLevel) return;
@@ -44,6 +47,7 @@ namespace WinHome.Services.Logging
       Log(message, LogLevel.Warning);
     }
 
+    /// <summary>Serializes all accumulated log entries as a JSON string.</summary>
     public string ToJson()
     {
       lock (_lock)
@@ -53,5 +57,6 @@ namespace WinHome.Services.Logging
     }
   }
 
+  /// <summary>Represents a single log entry with message and severity level.</summary>
   public record LogEntry(string Message, LogLevel Level);
 }

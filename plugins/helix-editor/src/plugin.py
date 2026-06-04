@@ -41,9 +41,7 @@ def read_toml(file_path: str) -> dict:
             log(f"Warning: could not parse {file_path} using tomllib: {e}")
             return {}
     else:
-        log(
-            "Warning: tomllib not available (requires Python 3.11+). Starting with empty config."
-        )
+        log("Warning: tomllib not available (requires Python 3.11+). Starting with empty config.")
         return {}
 
 
@@ -64,9 +62,7 @@ def dump_value(v):
 def _dump_dict_recursive(d: dict, prefix: str, lines: list):
     # Primitives first
     for k, v in d.items():
-        if not isinstance(v, dict) and not (
-            isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict)
-        ):
+        if not isinstance(v, dict) and not (isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict)):
             lines.append(f"{k} = {dump_value(v)}")
 
     # Array of Tables
@@ -111,11 +107,7 @@ def merge_settings(target: dict, source: dict) -> bool:
             # Recursive merge for deep dictionaries
             if merge_settings(target[key], value):
                 changed = True
-        elif (
-            isinstance(value, list)
-            and len(value) > 0
-            and isinstance(value[0], dict)
-        ):
+        elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], dict):
             # Array of tables merge (e.g., [[language]])
             if key not in target:
                 target[key] = []
@@ -124,12 +116,7 @@ def merge_settings(target: dict, source: dict) -> bool:
             for item in value:
                 if "name" in item:
                     existing_item = next(
-                        (
-                            i
-                            for i in target[key]
-                            if isinstance(i, dict)
-                            and i.get("name") == item["name"]
-                        ),
+                        (i for i in target[key] if isinstance(i, dict) and i.get("name") == item["name"]),
                         None,
                     )
                     if existing_item:
@@ -150,9 +137,7 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 
 def check_installed(args: dict, request_id: str) -> dict:
-    installed = (
-        shutil.which("hx.exe") is not None or shutil.which("hx") is not None
-    )
+    installed = shutil.which("hx.exe") is not None or shutil.which("hx") is not None
     return {
         "requestId": request_id,
         "success": True,

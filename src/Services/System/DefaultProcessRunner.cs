@@ -3,6 +3,7 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Default implementation of <see cref="IProcessRunner"/> that spawns real OS processes.</summary>
   public class DefaultProcessRunner : IProcessRunner
   {
     [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
@@ -131,6 +132,24 @@ namespace WinHome.Services.System
         UseShellExecute = false,
         CreateNoWindow = true
       };
+      return RunProcessWithOutputInternal(startInfo, standardInput);
+    }
+
+    public string RunCommandWithOutput(string fileName, IEnumerable<string> args, string? standardInput)
+    {
+      var startInfo = new ProcessStartInfo
+      {
+        FileName = fileName,
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        RedirectStandardInput = standardInput != null,
+        UseShellExecute = false,
+        CreateNoWindow = true
+      };
+      foreach (var arg in args)
+      {
+        startInfo.ArgumentList.Add(arg);
+      }
       return RunProcessWithOutputInternal(startInfo, standardInput);
     }
 

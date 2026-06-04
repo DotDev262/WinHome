@@ -23,9 +23,7 @@ class TestDockerPlugin(unittest.TestCase):
 
     @patch("plugin.shutil.which")
     def test_check_installed(self, mock_which):
-        mock_which.return_value = (
-            "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe"
-        )
+        mock_which.return_value = "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe"
 
         response = plugin.check_installed({}, "req-1")
 
@@ -133,11 +131,7 @@ class TestDockerPlugin(unittest.TestCase):
 
         # Verify backup was created
         dir_name = os.path.dirname(self.config_path)
-        backups = [
-            f
-            for f in os.listdir(dir_name)
-            if f.startswith("settings.json.corrupted.")
-        ]
+        backups = [f for f in os.listdir(dir_name) if f.startswith("settings.json.corrupted.")]
         self.assertEqual(len(backups), 1)
 
 

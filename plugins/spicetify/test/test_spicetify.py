@@ -4,23 +4,11 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "src",
-        "plugin.py"
-    )
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
-    result = subprocess.run(
-        [sys.executable, PLUGIN],
-        input=json.dumps(payload),
-        capture_output=True,
-        text=True
-    )
+    result = subprocess.run([sys.executable, PLUGIN], input=json.dumps(payload), capture_output=True, text=True)
 
     return json.loads(result.stdout.strip())
 
@@ -29,12 +17,7 @@ def test_check_installed_absent():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["USERPROFILE"] = tmp
 
-        res = run_plugin({
-            "requestId": "1",
-            "command": "check_installed",
-            "args": {},
-            "context": {}
-        })
+        res = run_plugin({"requestId": "1", "command": "check_installed", "args": {}, "context": {}})
 
         assert res["requestId"] == "1"
         assert res["success"]
@@ -45,22 +28,14 @@ def test_apply_config_dry_run():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["USERPROFILE"] = tmp
 
-        res = run_plugin({
-            "requestId": "2",
-            "command": "apply",
-            "args": {
-                "settings": {
-                    "Setting": {
-                        "theme": "Catppuccin",
-                        "color_scheme": "mocha",
-                        "inject_css": True
-                    }
-                }
-            },
-            "context": {
-                "dryRun": True
+        res = run_plugin(
+            {
+                "requestId": "2",
+                "command": "apply",
+                "args": {"settings": {"Setting": {"theme": "Catppuccin", "color_scheme": "mocha", "inject_css": True}}},
+                "context": {"dryRun": True},
             }
-        })
+        )
 
         config_path = os.path.join(tmp, ".spicetify", "config.ini")
 
@@ -74,25 +49,19 @@ def test_apply_config_creates_file():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["USERPROFILE"] = tmp
 
-        res = run_plugin({
-            "requestId": "3",
-            "command": "apply",
-            "args": {
-                "settings": {
-                    "Setting": {
-                        "theme": "Catppuccin",
-                        "color_scheme": "mocha",
-                        "inject_css": True
-                    },
-                    "AdditionalOptions": {
-                        "sidebar_config": "1"
+        res = run_plugin(
+            {
+                "requestId": "3",
+                "command": "apply",
+                "args": {
+                    "settings": {
+                        "Setting": {"theme": "Catppuccin", "color_scheme": "mocha", "inject_css": True},
+                        "AdditionalOptions": {"sidebar_config": "1"},
                     }
-                }
-            },
-            "context": {
-                "dryRun": False
+                },
+                "context": {"dryRun": False},
             }
-        })
+        )
 
         config_path = os.path.join(tmp, ".spicetify", "config.ini")
 
@@ -121,20 +90,14 @@ def test_preserves_unknown_sections():
         with open(config_path, "w", encoding="utf-8") as f:
             f.write("[CustomSection]\nunknown = keep\n")
 
-        res = run_plugin({
-            "requestId": "4",
-            "command": "apply",
-            "args": {
-                "settings": {
-                    "Setting": {
-                        "theme": "Dribbblish"
-                    }
-                }
-            },
-            "context": {
-                "dryRun": False
+        res = run_plugin(
+            {
+                "requestId": "4",
+                "command": "apply",
+                "args": {"settings": {"Setting": {"theme": "Dribbblish"}}},
+                "context": {"dryRun": False},
             }
-        })
+        )
 
         assert res["success"]
 
@@ -154,16 +117,8 @@ def test_idempotent_apply():
         payload = {
             "requestId": "5",
             "command": "apply",
-            "args": {
-                "settings": {
-                    "Setting": {
-                        "theme": "Catppuccin"
-                    }
-                }
-            },
-            "context": {
-                "dryRun": False
-            }
+            "args": {"settings": {"Setting": {"theme": "Catppuccin"}}},
+            "context": {"dryRun": False},
         }
 
         first = run_plugin(payload)
@@ -176,14 +131,7 @@ def test_idempotent_apply():
 
 
 def test_invalid_settings_returns_error():
-    res = run_plugin({
-        "requestId": "6",
-        "command": "apply",
-        "args": {
-            "settings": None
-        },
-        "context": {}
-    })
+    res = run_plugin({"requestId": "6", "command": "apply", "args": {"settings": None}, "context": {}})
 
     assert res["requestId"] == "6"
     assert not res["success"]

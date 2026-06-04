@@ -84,14 +84,16 @@
 - @priyanshi-coder-2: warned for spamming — no assignments until #236 resolved.
 - @A-adilajaleel: has #228 assigned, warned for mass-requesting.
 - @Pratikshya32, @Exodus2004: warned for mass-requesting #247/#248 — must pick one each.
+  - @Pratikshya32: **final warning** — filed 3 more off-topic issues (#308/#309/#310 closed) with no templates/labels after prior warning. Further violations reported to GSSoC.
 - @juhi13912-maker: assigned #231, has PR #285.
-- @Akanksha-2712: has 1 open PR (#284) — must address remaining 4 issues.
+- @Akanksha-2712: has 1 open PR (#284) — must address remaining 4 issues. Unassigned from #186 (topgrade).
 - @gaurav123-4: warned for mass-requesting #287/#291/#301 — assigned #291.
 - @sachin-mahato25: PR #314 open — cannot take new work until merged.
 - @A-adilajaleel: has #228 assigned, PR #319 open, warned for mass-requesting.
 - @Exodus2004: PR #318 open — cannot take new work until merged.
-- @Pratikshya32: warned for spamming — no assignments until #236 resolved.
+- @Pratikshya32: warned for spamming — no assignments. Final warning issued for off-topic issues #308/#309/#310.
 - @gaurav123-4: assigned #291, no PR yet — mass-requesting #287/#310 denied.
+- @enoshdev: unassigned from #130/#131 after 1 week with no PR/no response. Two-issue violation.
 
 ## Eligible
 - @VIDYANKSHINI: 9 merged PRs (#220, #257, #267, #269, #272, #275, #277, #279, #281). Most productive. Needs new issue provided.
@@ -164,9 +166,11 @@
 
 ## Next Steps
 - Monitor open PRs for author fixes after latest flags.
-- @Akanksha-2712: 1 open PR (#284) — must address remaining 4 issues.
+- @Akanksha-2712: 1 open PR (#284) — must address remaining 4 issues. Unassigned from #186 (topgrade).
 - @juhi13912-maker: PR #285 reviewed — needs scope clarification and formatting fixes.
 - @krushnanirmalkar: waiting on delete-after-failed-backup fix on #252.
 - @Achiever199: assigned #295 (Audacity) — mass-request warning resolved.
 - @Srishti-Gupta74: assigned #296 (SDKMAN) — new assignment.
 - @mahi-bansal: assigned #311 (Docker multi-stage) — new contributor.
+- Send reminder to @anishachoudhary5 on #181 (Syncthing) — 5 days, no PR yet, approaching 1-week deadline.
+- **#83** (Docs XML comments), **#186** (Topgrade plugin), **#202** (Rainmeter plugin) — reopened after unassigning stale assignees.

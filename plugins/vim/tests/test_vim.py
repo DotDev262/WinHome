@@ -24,13 +24,9 @@ class TestVimPlugin(unittest.TestCase):
     @patch("os.path.exists")
     @patch("os.makedirs")
     @patch("builtins.open", new_callable=mock_open)
-    def test_apply_config_generates_correct_lua(
-        self, mock_file, mock_makedirs, mock_exists
-    ):
+    def test_apply_config_generates_correct_lua(self, mock_file, mock_makedirs, mock_exists):
         mock_exists.return_value = False
-        config = {
-            "settings": {"number": True, "theme": "gruvbox", "shiftwidth": 4}
-        }
+        config = {"settings": {"number": True, "theme": "gruvbox", "shiftwidth": 4}}
         context = {"dryRun": False}
 
         result = main.apply_config(config, context)
@@ -39,9 +35,7 @@ class TestVimPlugin(unittest.TestCase):
         self.assertTrue(result["changed"])
 
         # Verify content
-        written_content = "".join(
-            call.args[0] for call in mock_file().write.call_args_list
-        )
+        written_content = "".join(call.args[0] for call in mock_file().write.call_args_list)
         self.assertIn("vim.opt.number = true", written_content)
         self.assertIn("vim.cmd('colorscheme gruvbox')", written_content)
         self.assertIn("vim.opt.shiftwidth = 4", written_content)

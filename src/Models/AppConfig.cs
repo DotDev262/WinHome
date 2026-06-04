@@ -3,6 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Describes an application to install via a package manager.</summary>
   public class AppConfig
   {
     [YamlMember(Alias = "id")]

@@ -4,6 +4,7 @@ using WinHome.Models;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Scans the current system state and generates a <see cref="Configuration"/> for reproduction.</summary>
   public class GeneratorService : IGeneratorService
   {
     private readonly IPackageManager _winget;
@@ -11,6 +12,7 @@ namespace WinHome.Services.System
     private readonly ILogger _logger;
     private readonly IProcessRunner _processRunner;
 
+    /// <summary>Initializes a new instance of <see cref="GeneratorService"/>.</summary>
     public GeneratorService(
         Dictionary<string, IPackageManager> managers,
         ISystemSettingsService systemSettings,
@@ -23,6 +25,7 @@ namespace WinHome.Services.System
       _logger = logger;
     }
 
+    /// <summary>Scans installed apps, system settings, and git config to produce a complete <see cref="Configuration"/>.</summary>
     public async Task<Configuration> GenerateAsync()
     {
       var config = new Configuration
@@ -56,20 +59,20 @@ namespace WinHome.Services.System
         {
           // export to temp file
           // winget export -o <file> --source winget --accept-source-agreements
-          bool success = _processRunner.RunCommand("winget", $"export -o \"{tempFile}\" --source winget --accept-source-agreements", false);
+          bool success = _processRunner.RunCommand("winget", new[] { "export", "-o", tempFile, "--source", "winget", "--accept-source-agreements" }, false);
 
           if (success && File.Exists(tempFile))
           {
             string json = File.ReadAllText(tempFile);
             apps = ParseWingetExport(json);
           }
-          string scoopOutput = _processRunner.RunCommandWithOutput("scoop", "list");
+          string scoopOutput = _processRunner.RunCommandWithOutput("scoop", new[] { "list" });
           if (!string.IsNullOrWhiteSpace(scoopOutput))
           {
             apps.AddRange(ParseScoopList(scoopOutput));
           }
 
-          string chocoOutput = _processRunner.RunCommandWithOutput("choco", "list --local-only");
+          string chocoOutput = _processRunner.RunCommandWithOutput("choco", new[] { "list", "--local-only" });
           if (!string.IsNullOrWhiteSpace(chocoOutput))
           {
             apps.AddRange(ParseChocolateyList(chocoOutput));
@@ -91,6 +94,7 @@ namespace WinHome.Services.System
       });
     }
 
+    /// <summary>Parses the JSON output from <c>winget export</c> into <see cref="AppConfig"/> items.</summary>
     public static List<AppConfig> ParseWingetExport(string json)
     {
       var apps = new List<AppConfig>();
@@ -129,6 +133,7 @@ namespace WinHome.Services.System
       }
       return apps;
     }
+    /// <summary>Parses the plain-text output from <c>scoop list</c> into <see cref="AppConfig"/> items.</summary>
     public static List<AppConfig> ParseScoopList(string output)
     {
       var apps = new List<AppConfig>();
@@ -164,6 +169,7 @@ namespace WinHome.Services.System
       return apps;
     }
 
+    /// <summary>Parses the plain-text output from <c>choco list --local-only</c> into <see cref="AppConfig"/> items.</summary>
     public static List<AppConfig> ParseChocolateyList(string output)
     {
       var apps = new List<AppConfig>();

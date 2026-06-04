@@ -35,9 +35,7 @@ def _parse_scalar(val: str):
         return True
     if val.lower() == "false":
         return False
-    if (val.startswith('"') and val.endswith('"')) or (
-        val.startswith("'") and val.endswith("'")
-    ):
+    if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
         return val[1:-1]
     try:
         return int(val)
@@ -76,10 +74,7 @@ def _parse_mapping(lines: list, i: int, base_indent: int) -> tuple:
             j = i + 1
             while j < len(lines) and not lines[j].strip():
                 j += 1
-            if (
-                j < len(lines)
-                and (len(lines[j]) - len(lines[j].lstrip())) > indent
-            ):
+            if j < len(lines) and (len(lines[j]) - len(lines[j].lstrip())) > indent:
                 child_indent = len(lines[j]) - len(lines[j].lstrip())
                 if lines[j].lstrip().startswith("- "):
                     result[key], i = _parse_sequence(lines, j, child_indent)
@@ -115,17 +110,11 @@ def _parse_sequence(lines: list, i: int, base_indent: int) -> tuple:
                 if not craw.strip() or craw.strip().startswith("#"):
                     j += 1
                     continue
-                if (
-                    len(craw) - len(craw.lstrip())
-                ) < cont_indent or craw.lstrip().startswith("- "):
+                if (len(craw) - len(craw.lstrip())) < cont_indent or craw.lstrip().startswith("- "):
                     break
                 cm = _KEY_RE.match(craw.lstrip())
                 if cm:
-                    item_dict[cm.group(1).strip()] = (
-                        _parse_scalar(cm.group(2).strip())
-                        if cm.group(2).strip()
-                        else None
-                    )
+                    item_dict[cm.group(1).strip()] = _parse_scalar(cm.group(2).strip()) if cm.group(2).strip() else None
                 j += 1
             i = j
             items.append(item_dict)
@@ -228,11 +217,7 @@ def write_yaml(file_path: str, data: dict) -> None:
     parent = os.path.dirname(file_path)
     if parent:
         os.makedirs(parent, exist_ok=True)
-    text = (
-        _yaml.dump(data, default_flow_style=False, sort_keys=False)
-        if _HAS_PYYAML
-        else _dumps_fallback(data)
-    )
+    text = _yaml.dump(data, default_flow_style=False, sort_keys=False) if _HAS_PYYAML else _dumps_fallback(data)
     tmp = file_path + ".tmp"
     try:
         with open(tmp, "w", encoding="utf-8") as fh:
@@ -274,10 +259,7 @@ def get_settings_from_args(args: dict) -> dict:
 
 
 def check_installed(request_id: str) -> dict:
-    if (
-        shutil.which("gh-dash") is not None
-        or shutil.which("gh-dash.exe") is not None
-    ):
+    if shutil.which("gh-dash") is not None or shutil.which("gh-dash.exe") is not None:
         return {
             "requestId": request_id,
             "success": True,
@@ -319,9 +301,7 @@ def apply_config(request_id: str, args: dict, context: dict) -> dict:
     changed = merge_settings(current_config, settings)
 
     if dry_run:
-        log(
-            f"dry_run: {'would update' if changed else 'no changes for'} {config_path}"
-        )
+        log(f"dry_run: {'would update' if changed else 'no changes for'} {config_path}")
         return {"requestId": request_id, "success": True, "changed": changed}
 
     if changed:

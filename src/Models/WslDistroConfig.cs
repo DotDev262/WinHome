@@ -3,6 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
+  /// <summary>Configuration for a single WSL distribution (distro).</summary>
   public class WslDistroConfig
   {
     [YamlMember(Alias = "name")]

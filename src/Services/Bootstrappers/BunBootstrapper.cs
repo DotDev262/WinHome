@@ -3,21 +3,25 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
 {
+  /// <summary>Bootstraps the Bun JavaScript/TypeScript runtime via Scoop.</summary>
   public class BunBootstrapper : IPackageManagerBootstrapper
   {
     private readonly IProcessRunner _processRunner;
     public string Name => "bun";
 
+    /// <summary>Initializes a new instance of <see cref="BunBootstrapper"/>.</summary>
     public BunBootstrapper(IProcessRunner processRunner)
     {
       _processRunner = processRunner;
     }
 
+    /// <summary>Returns <c>true</c> if Bun is available on the system.</summary>
     public bool IsInstalled()
     {
-      return _processRunner.RunCommand("bun", "--version", false);
+      return _processRunner.RunCommand("bun", new[] { "--version" }, false);
     }
 
+    /// <summary>Installs Bun via Scoop.</summary>
     public void Install(bool dryRun)
     {
       if (dryRun)

@@ -90,9 +90,7 @@ def apply_module_config(desired, current):
     if "settings" in desired and not isinstance(desired.get("settings"), dict):
         return False, False, "Module config settings must be a dictionary."
 
-    if "properties" in desired and not isinstance(
-        desired.get("properties"), dict
-    ):
+    if "properties" in desired and not isinstance(desired.get("properties"), dict):
         return False, False, "Module config properties must be a dictionary."
 
     changed = False
@@ -119,9 +117,7 @@ def apply_module_config(desired, current):
     if isinstance(desired.get("raw"), dict):
         changed = merge_dict(current, desired.get("raw")) or changed
 
-    if not any(
-        k in desired for k in ("enabled", "settings", "properties", "raw")
-    ):
+    if not any(k in desired for k in ("enabled", "settings", "properties", "raw")):
         changed = merge_dict(current, desired) or changed
 
     return True, changed, None
@@ -163,9 +159,7 @@ def apply_config(args, context, request_id):
             if first_error is None:
                 first_error = error
         else:
-            success, general_changed, error = apply_general_config(
-                general_config, current_general
-            )
+            success, general_changed, error = apply_general_config(general_config, current_general)
             if not success:
                 log(error)
                 overall_success = False
@@ -173,9 +167,7 @@ def apply_config(args, context, request_id):
                     first_error = error
             elif general_changed:
                 if dry_run:
-                    log(
-                        f"Would update general settings at {GENERAL_SETTINGS_PATH}"
-                    )
+                    log(f"Would update general settings at {GENERAL_SETTINGS_PATH}")
                 else:
                     try:
                         write_settings(GENERAL_SETTINGS_PATH, current_general)
@@ -235,11 +227,7 @@ def apply_config(args, context, request_id):
             if first_error is None:
                 first_error = error
 
-    if (
-        overall_changed
-        and not dry_run
-        and os.path.exists(GENERAL_SETTINGS_PATH)
-    ):
+    if overall_changed and not dry_run and os.path.exists(GENERAL_SETTINGS_PATH):
         try:
             # Touch the general settings so PowerToys notices module-only changes.
             os.utime(GENERAL_SETTINGS_PATH, None)
@@ -264,9 +252,7 @@ def check_installed(args, request_id):
             "data": False,
         }
     module_key = args.get("module", "")
-    path = (
-        get_settings_path(module_key) if module_key else GENERAL_SETTINGS_PATH
-    )
+    path = get_settings_path(module_key) if module_key else GENERAL_SETTINGS_PATH
     exists = path is not None and os.path.exists(path)
     return {
         "requestId": request_id,

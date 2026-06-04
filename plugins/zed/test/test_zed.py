@@ -197,10 +197,7 @@ def test_apply_backs_up_corrupt_settings_before_replacing():
         )
 
         backups = [
-            name
-            for name in os.listdir(zed_dir)
-            if name.startswith("settings.json.corrupt-")
-            and name.endswith(".bak")
+            name for name in os.listdir(zed_dir) if name.startswith("settings.json.corrupt-") and name.endswith(".bak")
         ]
 
         assert res["success"]

@@ -70,9 +70,7 @@ def find_ahk_executable() -> bool:
 
     local_app_data = os.getenv("LOCALAPPDATA")
     if local_app_data:
-        search_roots.append(
-            os.path.join(local_app_data, "Programs", "AutoHotkey")
-        )
+        search_roots.append(os.path.join(local_app_data, "Programs", "AutoHotkey"))
 
     executable_names = ["AutoHotkey64.exe", "AutoHotkey.exe"]
 
@@ -127,9 +125,7 @@ def build_hotkey_block(trigger: str, action: str) -> list[str]:
 
 
 def build_hotstring_lines(trigger: str, replacement: str) -> list[str]:
-    normalized_replacement = replacement.replace("\r\n", "\n").replace(
-        "\r", "\n"
-    )
+    normalized_replacement = replacement.replace("\r\n", "\n").replace("\r", "\n")
 
     if "\n" not in normalized_replacement:
         return [
@@ -209,11 +205,7 @@ def strip_managed_content(existing_text: str) -> str:
             i += 1
             continue
 
-        if (
-            stripped.endswith("::")
-            and i + 1 < len(lines)
-            and lines[i + 1].strip() == "{"
-        ):
+        if stripped.endswith("::") and i + 1 < len(lines) and lines[i + 1].strip() == "{":
             i += 2
             depth = 1
             while i < len(lines) and depth > 0:
@@ -225,11 +217,7 @@ def strip_managed_content(existing_text: str) -> str:
                 i += 1
             continue
 
-        if (
-            stripped.endswith("::")
-            and i + 1 < len(lines)
-            and lines[i + 1].strip() == "("
-        ):
+        if stripped.endswith("::") and i + 1 < len(lines) and lines[i + 1].strip() == "(":
             i += 2
             while i < len(lines) and lines[i].strip() != ")":
                 i += 1

@@ -1,13 +1,19 @@
+#!/usr/bin/env python3
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
+
 import json
 import os
+import sys
 import tempfile
 import unittest
 from io import StringIO
 from unittest.mock import patch
 
 import yaml
-
-import sys
 
 _SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 sys.path.append(_SRC_DIR)
@@ -41,7 +47,9 @@ class TestYasbPlugin(unittest.TestCase):
             os.makedirs(config_dir, exist_ok=True)
 
             with patch.dict(os.environ, {"USERPROFILE": tmp_dir}), patch("plugin.shutil.which", return_value=None):
-                response = self.run_main({"requestId": "req-2", "command": "check_installed", "args": {}, "context": {}})
+                response = self.run_main(
+                    {"requestId": "req-2", "command": "check_installed", "args": {}, "context": {}}
+                )
 
         self.assertTrue(response["success"])
         self.assertTrue(response["data"])
@@ -199,7 +207,9 @@ class TestYasbPlugin(unittest.TestCase):
                 response = self.run_main(payload)
 
             backup_dir = os.path.dirname(config_path)
-            backups = [name for name in os.listdir(backup_dir) if name.startswith("config.yaml.") and name.endswith(".bak")]
+            backups = [
+                name for name in os.listdir(backup_dir) if name.startswith("config.yaml.") and name.endswith(".bak")
+            ]
 
             self.assertTrue(response["success"])
             self.assertTrue(response["changed"])

@@ -3,9 +3,7 @@ import sys
 import unittest
 from unittest.mock import mock_open, patch
 
-_src_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src")
-)
+_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 sys.path.append(_src_path)
 import plugin
 
@@ -90,9 +88,7 @@ class TestRclonePlugin(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertTrue(res["changed"])
         self.assertEqual(res["requestId"], "req-3")
-        mock_write.assert_called_once_with(
-            "dummy.conf", "tpslimit = 10\n[drive]\ntype = drive\n"
-        )
+        mock_write.assert_called_once_with("dummy.conf", "tpslimit = 10\n[drive]\ntype = drive\n")
 
     @patch("plugin.get_config_path")
     @patch("plugin.read_text")
@@ -118,12 +114,8 @@ class TestRclonePlugin(unittest.TestCase):
         with patch("plugin.open", m_open):
             plugin.write_text(file_path, data)
 
-        mock_makedirs.assert_called_once_with(
-            "dummy", mode=0o700, exist_ok=True
-        )
-        m_open.assert_called_once_with(
-            file_path + ".tmp", "w", encoding="utf-8"
-        )
+        mock_makedirs.assert_called_once_with("dummy", mode=0o700, exist_ok=True)
+        m_open.assert_called_once_with(file_path + ".tmp", "w", encoding="utf-8")
         handle = m_open()
         handle.write.assert_called_with(data)
         mock_replace.assert_called_once_with(file_path + ".tmp", file_path)

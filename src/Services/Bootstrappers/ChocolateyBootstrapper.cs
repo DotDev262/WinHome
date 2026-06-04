@@ -3,16 +3,19 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
 {
+  /// <summary>Bootstraps Chocolatey package manager using the official PowerShell install script.</summary>
   public class ChocolateyBootstrapper : IPackageManagerBootstrapper
   {
     private readonly IProcessRunner _processRunner;
     public string Name => "Chocolatey";
 
+    /// <summary>Initializes a new instance of <see cref="ChocolateyBootstrapper"/>.</summary>
     public ChocolateyBootstrapper(IProcessRunner processRunner)
     {
       _processRunner = processRunner;
     }
 
+    /// <summary>Returns <c>true</c> if Chocolatey is installed on the system.</summary>
     public bool IsInstalled()
     {
       if (_processRunner.RunCommand("choco", new[] { "--version" }, false)) return true;
@@ -21,6 +24,7 @@ namespace WinHome.Services.Bootstrappers
       return File.Exists(chocoPath);
     }
 
+    /// <summary>Installs Chocolatey via the community PowerShell install script. Retries on network errors.</summary>
     public void Install(bool dryRun)
     {
       if (dryRun)

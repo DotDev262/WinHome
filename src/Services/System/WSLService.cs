@@ -4,6 +4,7 @@ using System.Runtime.Versioning;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Configures Windows Subsystem for Linux: installs distros, sets defaults, runs provisioning scripts.</summary>
   [SupportedOSPlatform("windows")]
   public class WslService : IWslService
   {
@@ -34,13 +35,13 @@ namespace WinHome.Services.System
       if (config.Update)
       {
         if (dryRun) _logger.LogWarning("[DryRun] Would run 'wsl --update'");
-        else _processRunner.RunCommand("wsl", "--update", false);
+        else _processRunner.RunCommand("wsl", new[] { "--update" }, false);
       }
 
       if (config.DefaultVersion > 0)
       {
         if (dryRun) _logger.LogWarning($"[DryRun] Would set WSL default version to {config.DefaultVersion}");
-        else _processRunner.RunCommand("wsl", $"--set-default-version {config.DefaultVersion}", false);
+        else _processRunner.RunCommand("wsl", new[] { "--set-default-version", config.DefaultVersion.ToString() }, false);
       }
 
       if (config.Distros.Any())
@@ -53,7 +54,7 @@ namespace WinHome.Services.System
           if (!string.IsNullOrEmpty(config.DefaultDistro) && config.DefaultDistro == distro.Name)
           {
             if (dryRun) _logger.LogWarning($"[DryRun] Would set default distro to '{distro.Name}'");
-            else _processRunner.RunCommand("wsl", $"--set-default {distro.Name}", false);
+            else _processRunner.RunCommand("wsl", new[] { "--set-default", distro.Name }, false);
           }
 
           if (installed || dryRun)
@@ -80,7 +81,7 @@ namespace WinHome.Services.System
       _logger.LogInfo($"[WSL] Installing {distro.Name}...");
       _logger.LogInfo("[WSL] NOTE: A new window will open for you to create your UNIX username/password.");
 
-      if (_processRunner.RunCommand("wsl", $"--install -d {distro.Name}", false))
+      if (_processRunner.RunCommand("wsl", new[] { "--install", "-d", distro.Name }, false))
       {
         _logger.LogSuccess($"[Success] {distro.Name} installed.");
         return true;
@@ -114,7 +115,7 @@ namespace WinHome.Services.System
       try
       {
         string scriptContent = File.ReadAllText(localScriptPath).Replace("\r\n", "\n");
-        var output = _processRunner.RunCommandWithOutput("wsl", $"-d {distro.Name} -- bash -s", scriptContent);
+        var output = _processRunner.RunCommandWithOutput("wsl", new[] { "-d", distro.Name, "--", "bash", "-s" }, scriptContent);
 
         if (!string.IsNullOrEmpty(output))
         {
@@ -134,13 +135,13 @@ namespace WinHome.Services.System
 
     private bool IsDistroInstalled(string distroName)
     {
-      string output = _processRunner.RunCommandWithOutput("wsl", "--list --verbose");
+      string output = _processRunner.RunCommandWithOutput("wsl", new[] { "--list", "--verbose" });
       return output.Contains(distroName, StringComparison.OrdinalIgnoreCase);
     }
 
     private bool IsWslInstalled()
     {
-      return _processRunner.RunCommand("wsl", "--status", false);
+      return _processRunner.RunCommand("wsl", new[] { "--status" }, false);
     }
   }
 }

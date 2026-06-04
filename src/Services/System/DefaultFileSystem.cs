@@ -3,6 +3,7 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Default implementation of <see cref="IFileSystem"/> that delegates directly to <see cref="System.IO.File"/> and <see cref="System.IO.Directory"/>.</summary>
   public class DefaultFileSystem : IFileSystem
   {
     public bool FileExists(string path)

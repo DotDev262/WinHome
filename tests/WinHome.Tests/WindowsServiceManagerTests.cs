@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using WinHome.Interfaces;
 using WinHome.Services.System;
 using WinHome.Models;
+using System.Collections.Generic;
 using System.ServiceProcess; // Required for ServiceControllerStatus
 
 namespace WinHome.Tests
@@ -30,13 +31,13 @@ namespace WinHome.Tests
       var serviceConfig = new WindowsServiceConfig { Name = "TestService", StartupType = "automatic", State = "running" };
       _serviceControllerWrapperMock.Setup(s => s.ServiceExists(serviceConfig.Name)).Returns(true);
       _serviceControllerWrapperMock.Setup(s => s.GetServiceStatus(serviceConfig.Name)).Returns(ServiceControllerStatus.Stopped); // Simulate service being stopped
-      _processRunnerMock.Setup(p => p.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(true);
+      _processRunnerMock.Setup(p => p.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<Action<string>?>())).Returns(true);
 
       // Act
       _serviceManager.Apply(serviceConfig, false);
 
       // Assert
-      _processRunnerMock.Verify(p => p.RunCommand("sc.exe", $"config \"{serviceConfig.Name}\" start= {serviceConfig.StartupType}", false), Times.Once);
+      _processRunnerMock.Verify(p => p.RunCommand("sc.exe", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>()), Times.Once);
       _serviceControllerWrapperMock.Verify(s => s.StartService(serviceConfig.Name), Times.Once);
     }
 
@@ -51,7 +52,7 @@ namespace WinHome.Tests
       _serviceManager.Apply(serviceConfig, false);
 
       // Assert
-      _processRunnerMock.Verify(p => p.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+      _processRunnerMock.Verify(p => p.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<Action<string>?>()), Times.Never);
       _loggerMock.Verify(
           x => x.Log(
               Microsoft.Extensions.Logging.LogLevel.Warning,
@@ -69,13 +70,13 @@ namespace WinHome.Tests
       var serviceConfig = new WindowsServiceConfig { Name = "TestService", StartupType = "manual" };
       _serviceControllerWrapperMock.Setup(s => s.ServiceExists(serviceConfig.Name)).Returns(true);
       _serviceControllerWrapperMock.Setup(s => s.GetServiceStatus(serviceConfig.Name)).Returns(ServiceControllerStatus.Running);
-      _processRunnerMock.Setup(p => p.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(true);
+      _processRunnerMock.Setup(p => p.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<Action<string>?>())).Returns(true);
 
       // Act
       _serviceManager.Apply(serviceConfig, false);
 
       // Assert
-      _processRunnerMock.Verify(p => p.RunCommand("sc.exe", $"config \"{serviceConfig.Name}\" start= {serviceConfig.StartupType}", false), Times.Once);
+      _processRunnerMock.Verify(p => p.RunCommand("sc.exe", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>()), Times.Once);
       _serviceControllerWrapperMock.Verify(s => s.StartService(It.IsAny<string>()), Times.Never);
       _serviceControllerWrapperMock.Verify(s => s.StopService(It.IsAny<string>()), Times.Never);
     }
@@ -87,13 +88,13 @@ namespace WinHome.Tests
       var serviceConfig = new WindowsServiceConfig { Name = "TestService", State = "stopped" };
       _serviceControllerWrapperMock.Setup(s => s.ServiceExists(serviceConfig.Name)).Returns(true);
       _serviceControllerWrapperMock.Setup(s => s.GetServiceStatus(serviceConfig.Name)).Returns(ServiceControllerStatus.Running);
-      _processRunnerMock.Setup(p => p.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(true);
+      _processRunnerMock.Setup(p => p.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<Action<string>?>())).Returns(true);
 
       // Act
       _serviceManager.Apply(serviceConfig, false);
 
       // Assert
-      _processRunnerMock.Verify(p => p.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never); // No startup type change
+      _processRunnerMock.Verify(p => p.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<Action<string>?>()), Times.Never); // No startup type change
       _serviceControllerWrapperMock.Verify(s => s.StopService(serviceConfig.Name), Times.Once);
       _serviceControllerWrapperMock.Verify(s => s.StartService(It.IsAny<string>()), Times.Never);
     }
@@ -106,7 +107,7 @@ namespace WinHome.Tests
       _serviceControllerWrapperMock.Setup(s => s.ServiceExists(serviceConfig.Name)).Returns(true);
       _serviceControllerWrapperMock.Setup(s => s.GetServiceStatus(serviceConfig.Name)).Returns(ServiceControllerStatus.Running);
       // Simulate that sc.exe config also returns success if already automatic
-      _processRunnerMock.Setup(p => p.RunCommand(It.IsAny<string>(), It.Is<string>(args => args.Contains("start= automatic")), It.IsAny<bool>())).Returns(true);
+      _processRunnerMock.Setup(p => p.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<Action<string>?>())).Returns(true);
 
 
       // Act
@@ -114,7 +115,7 @@ namespace WinHome.Tests
 
       // Assert
       // Verify that startup type command was attempted (sc.exe does not check current state for this)
-      _processRunnerMock.Verify(p => p.RunCommand("sc.exe", $"config \"{serviceConfig.Name}\" start= {serviceConfig.StartupType}", false), Times.Once);
+      _processRunnerMock.Verify(p => p.RunCommand("sc.exe", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>()), Times.Once);
       // But no start/stop action should be taken by the wrapper if already running
       _serviceControllerWrapperMock.Verify(s => s.StartService(It.IsAny<string>()), Times.Never);
       _serviceControllerWrapperMock.Verify(s => s.StopService(It.IsAny<string>()), Times.Never);

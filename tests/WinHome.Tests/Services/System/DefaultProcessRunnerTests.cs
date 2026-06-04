@@ -18,7 +18,7 @@ namespace WinHome.Tests.Services.System
       string exe = "zzz-no-such-exe-" + Guid.NewGuid().ToString("N");
 
       // Act
-      bool result = runner.RunCommand(exe, "--version", true);
+      bool result = runner.RunCommand(exe, new[] { "--version" }, true);
 
       // Assert
       Assert.True(result);
@@ -32,7 +32,7 @@ namespace WinHome.Tests.Services.System
       var runner = new DefaultProcessRunner();
 
       // Act
-      bool result = runner.RunCommand("dotnet", "--version", false);
+      bool result = runner.RunCommand("dotnet", new[] { "--version" }, false);
 
       // Assert
       Assert.True(result);
@@ -62,7 +62,7 @@ namespace WinHome.Tests.Services.System
       string exe = "zzz-no-such-exe-" + Guid.NewGuid().ToString("N");
 
       // Act
-      bool result = runner.RunCommand(exe, "--version", false);
+      bool result = runner.RunCommand(exe, new[] { "--version" }, false);
 
       // Assert
       Assert.False(result);
@@ -130,7 +130,7 @@ namespace WinHome.Tests.Services.System
       var runner = new DefaultProcessRunner();
 
       // Act
-      bool result = runner.RunCommand("dotnet", "--version", false, null);
+      bool result = runner.RunCommand("dotnet", new[] { "--version" }, false, null);
 
       // Assert
       Assert.True(result);
@@ -144,7 +144,7 @@ namespace WinHome.Tests.Services.System
       var runner = new DefaultProcessRunner();
 
       // Act
-      string output = runner.RunCommandWithOutput("dotnet", "--version").Trim();
+      string output = runner.RunCommandWithOutput("dotnet", new[] { "--version" }).Trim();
 
       // Assert
       Assert.False(string.IsNullOrWhiteSpace(output));
@@ -160,7 +160,7 @@ namespace WinHome.Tests.Services.System
       string exe = "zzz-no-such-exe-" + Guid.NewGuid().ToString("N");
 
       // Act
-      string output = runner.RunCommandWithOutput(exe, "--version");
+      string output = runner.RunCommandWithOutput(exe, new[] { "--version" });
 
       // Assert
       Assert.Equal(string.Empty, output);
@@ -174,17 +174,17 @@ namespace WinHome.Tests.Services.System
       var runner = new DefaultProcessRunner();
       string marker = "hello-output";
       string exe;
-      string args;
+      string[] args;
 
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
         exe = "cmd";
-        args = $"/c echo {marker} & exit 1";
+        args = new[] { "/c", $"echo {marker} & exit 1" };
       }
       else
       {
         exe = "sh";
-        args = $"-c \"echo {marker}; exit 1\"";
+        args = new[] { "-c", $"echo {marker}; exit 1" };
       }
 
       // Act
@@ -203,17 +203,17 @@ namespace WinHome.Tests.Services.System
       // findstr requires at least one non-empty line to avoid hanging.
       string input = "stdin-echo";
       string exe;
-      string args;
+      string[] args;
 
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
         exe = "findstr";
-        args = ".";
+        args = new[] { "." };
       }
       else
       {
         exe = "cat";
-        args = string.Empty;
+        args = Array.Empty<string>();
       }
 
       // Act
@@ -231,7 +231,7 @@ namespace WinHome.Tests.Services.System
       var runner = new DefaultProcessRunner();
 
       // Act
-      string output = runner.RunAndCapture("dotnet", "--version");
+      string output = runner.RunAndCapture("dotnet", new[] { "--version" });
 
       // Assert
       Assert.False(string.IsNullOrWhiteSpace(output));
@@ -248,7 +248,7 @@ namespace WinHome.Tests.Services.System
       string exe = "zzz-no-such-exe-" + Guid.NewGuid().ToString("N");
 
       // Act
-      string output = runner.RunAndCapture(exe, "--version");
+      string output = runner.RunAndCapture(exe, new[] { "--version" });
 
       // Assert
       Assert.Equal(string.Empty, output);
@@ -327,35 +327,35 @@ namespace WinHome.Tests.Services.System
     }
 
 
-    private static (string exe, string args) Echo(string text)
+    private static (string exe, string[] args) Echo(string text)
     {
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
-        return ("cmd", $"/c echo {text}");
+        return ("cmd", new[] { "/c", "echo", text });
       }
 
-      return ("sh", $"-c \"echo {text}\"");
+      return ("sh", new[] { "-c", $"echo {text}" });
     }
 
-    private static (string exe, string args) WriteToStderr(string text)
+    private static (string exe, string[] args) WriteToStderr(string text)
     {
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
         // Use cmd to reliably and quickly write to stderr across environments
-        return ("cmd", $"/c echo {text} 1>&2");
+        return ("cmd", new[] { "/c", "echo", text, "1>&2" });
       }
 
-      return ("sh", $"-c \"echo {text} >&2\"");
+      return ("sh", new[] { "-c", $"echo {text} >&2" });
     }
 
-    private static (string exe, string args) ExitNonZero()
+    private static (string exe, string[] args) ExitNonZero()
     {
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
-        return ("cmd", "/c exit 1");
+        return ("cmd", new[] { "/c", "exit 1" });
       }
 
-      return ("sh", "-c \"exit 1\"");
+      return ("sh", new[] { "-c", "exit 1" });
     }
   }
 }

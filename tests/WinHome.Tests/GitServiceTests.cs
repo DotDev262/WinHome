@@ -3,6 +3,8 @@ using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Services.System;
 using Xunit;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace WinHome.Tests
 {
@@ -24,7 +26,7 @@ namespace WinHome.Tests
     {
       // Arrange
       var config = new GitConfig();
-      _processRunnerMock.Setup(p => p.RunCommand("git", "--version", false, It.IsAny<Action<string>>())).Returns(false);
+      _processRunnerMock.Setup(p => p.RunCommand("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "--version" })), false, It.IsAny<Action<string>?>())).Returns(false);
 
       // Act
       _gitService.Configure(config, false);
@@ -38,16 +40,16 @@ namespace WinHome.Tests
     {
       // Arrange
       var config = new GitConfig { UserName = "Test User", UserEmail = "test@example.com" };
-      _processRunnerMock.Setup(p => p.RunCommand("git", "--version", false, It.IsAny<Action<string>>())).Returns(true);
-      _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", "config --global --get user.name")).Returns("");
-      _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", "config --global --get user.email")).Returns("");
+      _processRunnerMock.Setup(p => p.RunCommand("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "--version" })), false, It.IsAny<Action<string>?>())).Returns(true);
+      _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "config", "--global", "--get", "user.name" })))).Returns("");
+      _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "config", "--global", "--get", "user.email" })))).Returns("");
 
       // Act
       _gitService.Configure(config, false);
 
       // Assert
-      _processRunnerMock.Verify(p => p.RunCommand("git", "config --global user.name \"Test User\"", false, It.IsAny<Action<string>>()), Times.Once);
-      _processRunnerMock.Verify(p => p.RunCommand("git", "config --global user.email \"test@example.com\"", false, It.IsAny<Action<string>>()), Times.Once);
+      _processRunnerMock.Verify(p => p.RunCommand("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "config", "--global", "user.name", "Test User" })), false, It.IsAny<Action<string>?>()), Times.Once);
+      _processRunnerMock.Verify(p => p.RunCommand("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "config", "--global", "user.email", "test@example.com" })), false, It.IsAny<Action<string>?>()), Times.Once);
     }
 
     [Fact]
@@ -55,15 +57,15 @@ namespace WinHome.Tests
     {
       // Arrange
       var config = new GitConfig { UserName = "Test User" };
-      _processRunnerMock.Setup(p => p.RunCommand("git", "--version", false, It.IsAny<Action<string>>())).Returns(true);
-      _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", "config --global --get user.name")).Returns("");
+      _processRunnerMock.Setup(p => p.RunCommand("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "--version" })), false, It.IsAny<Action<string>?>())).Returns(true);
+      _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "config", "--global", "--get", "user.name" })))).Returns("");
 
       // Act
       _gitService.Configure(config, true);
 
       // Assert
       _loggerMock.Verify(l => l.LogWarning(It.Is<string>(s => s.Contains("Would set git config"))), Times.Once);
-      _processRunnerMock.Verify(p => p.RunCommand(It.IsAny<string>(), It.IsAny<string>(), true, It.IsAny<Action<string>>()), Times.Never);
+      _processRunnerMock.Verify(p => p.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), true, It.IsAny<Action<string>?>()), Times.Never);
     }
 
     [Fact]
@@ -71,14 +73,14 @@ namespace WinHome.Tests
     {
       // Arrange
       var config = new GitConfig { UserName = "Test User" };
-      _processRunnerMock.Setup(p => p.RunCommand("git", "--version", false, It.IsAny<Action<string>>())).Returns(true);
-      _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", "config --global --get user.name")).Returns("Test User");
+      _processRunnerMock.Setup(p => p.RunCommand("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "--version" })), false, It.IsAny<Action<string>?>())).Returns(true);
+      _processRunnerMock.Setup(p => p.RunCommandWithOutput("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "config", "--global", "--get", "user.name" })))).Returns("Test User");
 
       // Act
       _gitService.Configure(config, false);
 
       // Assert
-      _processRunnerMock.Verify(p => p.RunCommand("git", "config --global user.name \"Test User\"", false, It.IsAny<Action<string>>()), Times.Never);
+      _processRunnerMock.Verify(p => p.RunCommand("git", It.Is<IEnumerable<string>>(a => a.SequenceEqual(new[] { "config", "--global", "user.name", "Test User" })), false, It.IsAny<Action<string>?>()), Times.Never);
     }
   }
 }

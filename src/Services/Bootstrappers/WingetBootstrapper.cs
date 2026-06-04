@@ -6,18 +6,21 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Bootstrappers
 {
+  /// <summary>Bootstraps the Winget package manager by downloading from GitHub Releases.</summary>
   public class WingetBootstrapper : IPackageManagerBootstrapper
   {
     private readonly IProcessRunner _processRunner;
     private readonly ILogger _logger;
     public string Name => "Winget";
 
+    /// <summary>Initializes a new instance of <see cref="WingetBootstrapper"/>.</summary>
     public WingetBootstrapper(IProcessRunner processRunner, ILogger logger)
     {
       _processRunner = processRunner;
       _logger = logger;
     }
 
+    /// <summary>Returns <c>true</c> if winget is available (checks PATH and WindowsApps location).</summary>
     public bool IsInstalled()
     {
       if (_processRunner.RunCommand("winget", new[] { "--version" }, false)) return true;
@@ -29,6 +32,7 @@ namespace WinHome.Services.Bootstrappers
       return exists;
     }
 
+    /// <summary>Downloads and installs Winget from the latest GitHub release, including dependencies.</summary>
     public void Install(bool dryRun)
     {
       if (dryRun)
@@ -134,6 +138,7 @@ namespace WinHome.Services.Bootstrappers
       }
     }
 
+    /// <summary>Gets the latest winget-cli version tag from GitHub Releases API.</summary>
     private string GetLatestVersion()
     {
       using var client = new HttpClient();
@@ -142,9 +147,10 @@ namespace WinHome.Services.Bootstrappers
       var response = client.GetAsync("https://api.github.com/repos/microsoft/winget-cli/releases/latest").GetAwaiter().GetResult();
       response.EnsureSuccessStatusCode();
       var json = JsonDocument.Parse(response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
-      return json.RootElement.GetProperty("tag_name").GetString() ?? "v1.12.460"; // Fallback to provided version
+      return json.RootElement.GetProperty("tag_name").GetString() ?? "v1.12.460";
     }
 
+    /// <summary>Downloads a file from a URL to the specified path with a long timeout for large files.</summary>
     private async Task DownloadFile(string url, string path)
     {
       _logger.LogInfo($"[Bootstrapper] Downloading {url}...");
@@ -156,12 +162,13 @@ namespace WinHome.Services.Bootstrappers
       await response.Content.CopyToAsync(fs);
     }
 
+    /// <summary>Installs an .appx/.msix package via PowerShell's Add-AppxPackage.</summary>
     private void InstallAppPackage(string path)
     {
       // Use Add-AppxPackage via PowerShell
       string command = $"Add-AppxPackage -Path \"{path}\"";
       string output = "";
-      if (!_processRunner.RunCommand("powershell.exe", $"-NoProfile -NonInteractive -Command \"{command}\"", false, line => output += line + "\n"))
+      if (!_processRunner.RunCommand("powershell.exe", new[] { "-NoProfile", "-NonInteractive", "-Command", command }, false, line => output += line + "\n"))
       {
         _logger.LogWarning($"[Bootstrapper] Warning: Package {Path.GetFileName(path)} failed to install.");
         if (!string.IsNullOrWhiteSpace(output))

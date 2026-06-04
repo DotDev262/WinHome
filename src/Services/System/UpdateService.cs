@@ -5,6 +5,7 @@ using WinHome.Models;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Checks for and applies WinHome self-updates by downloading the latest GitHub release and performing a self-replacement dance.</summary>
   public class UpdateService : IUpdateService
   {
     private readonly ILogger _logger;

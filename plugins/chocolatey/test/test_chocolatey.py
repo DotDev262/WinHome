@@ -87,21 +87,13 @@ def test_apply_merges_config(tmp_path, monkeypatch):
     # Assert file modified
     parsed = ET.parse(config_file).getroot()
     add_els = parsed.findall(f".//{{{plugin.CHOCO_NS}}}add")
-    cache_val = next(
-        el.get("value") for el in add_els if el.get("key") == "cacheLocation"
-    )
-    newkey_val = next(
-        el.get("value") for el in add_els if el.get("key") == "newKey"
-    )
+    cache_val = next(el.get("value") for el in add_els if el.get("key") == "cacheLocation")
+    newkey_val = next(el.get("value") for el in add_els if el.get("key") == "newKey")
     assert cache_val == "new_cache"
     assert newkey_val == "new_val"
 
     feat_els = parsed.findall(f".//{{{plugin.CHOCO_NS}}}feature")
-    feat_val = next(
-        el.get("enabled")
-        for el in feat_els
-        if el.get("name") == "checksumFiles"
-    )
+    feat_val = next(el.get("enabled") for el in feat_els if el.get("name") == "checksumFiles")
     assert feat_val == "true"
 
 
@@ -146,9 +138,7 @@ def test_apply_creates_file(tmp_path, monkeypatch):
 
     parsed = ET.parse(config_file).getroot()
     add_els = parsed.findall(f".//{{{plugin.CHOCO_NS}}}add")
-    cache_val = next(
-        el.get("value") for el in add_els if el.get("key") == "cacheLocation"
-    )
+    cache_val = next(el.get("value") for el in add_els if el.get("key") == "cacheLocation")
     assert cache_val == "D:\\choco-cache"
 
 
@@ -161,9 +151,7 @@ def test_unknown_command_via_main(monkeypatch, capsys):
             "context": {},
         }
     )
-    monkeypatch.setattr(
-        "sys.stdin", type("StdinMock", (), {"read": lambda self: request})()
-    )
+    monkeypatch.setattr("sys.stdin", type("StdinMock", (), {"read": lambda self: request})())
     plugin.main()
     out = capsys.readouterr().out
     response = json.loads(out)
@@ -188,9 +176,7 @@ def test_corrupted_xml_recovery(tmp_path, monkeypatch):
     # Assert new valid XML
     parsed = ET.parse(config_file).getroot()
     add_els = parsed.findall(f".//{{{plugin.CHOCO_NS}}}add")
-    cache_val = next(
-        el.get("value") for el in add_els if el.get("key") == "cacheLocation"
-    )
+    cache_val = next(el.get("value") for el in add_els if el.get("key") == "cacheLocation")
     assert cache_val == "recovered_cache"
 
     # Assert backup exists
@@ -217,11 +203,7 @@ def test_feature_enabled_false(tmp_path, monkeypatch):
 
     parsed = ET.parse(config_file).getroot()
     feat_els = parsed.findall(f".//{{{plugin.CHOCO_NS}}}feature")
-    feat_val = next(
-        el.get("enabled")
-        for el in feat_els
-        if el.get("name") == "checksumFiles"
-    )
+    feat_val = next(el.get("enabled") for el in feat_els if el.get("name") == "checksumFiles")
     assert feat_val == "false"
 
 

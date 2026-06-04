@@ -106,9 +106,7 @@ def test_check_installed():
 
 def test_apply_config_dry_run_does_not_create_file():
     with tempfile.TemporaryDirectory() as tmp:
-        res = run_plugin(
-            apply_payload("2", dry_run=True), {"LOCALAPPDATA": tmp}
-        )
+        res = run_plugin(apply_payload("2", dry_run=True), {"LOCALAPPDATA": tmp})
 
         assert res["success"] is True
         assert res["changed"] is True

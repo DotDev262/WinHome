@@ -7,10 +7,12 @@ using YamlDotNet.Serialization;
 
 namespace WinHome.Services.System;
 
+/// <summary>Validates YAML configuration against a generated JSON Schema derived from the <see cref="Configuration"/> model.</summary>
 public class ConfigValidator : IConfigValidator
 {
   private readonly JsonSchema _schema;
 
+  /// <summary>Initializes a new instance of <see cref="ConfigValidator"/> and builds the schema from the model.</summary>
   public ConfigValidator()
   {
     _schema = new JsonSchemaBuilder()
@@ -18,6 +20,9 @@ public class ConfigValidator : IConfigValidator
         .Build();
   }
 
+  /// <summary>Validates YAML text against the configuration schema.</summary>
+  /// <param name="yamlText">Raw YAML string to validate.</param>
+  /// <returns>A tuple with <c>IsValid</c> and a list of <c>Errors</c>.</returns>
   public (bool IsValid, List<string> Errors) Validate(string yamlText)
   {
     try

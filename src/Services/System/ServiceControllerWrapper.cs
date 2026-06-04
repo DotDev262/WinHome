@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Wraps <see cref="ServiceController"/> for managing Windows services.</summary>
   public class ServiceControllerWrapper : IServiceControllerWrapper
   {
     public bool ServiceExists(string serviceName)

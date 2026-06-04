@@ -5,9 +5,7 @@ import unittest
 from unittest.mock import patch
 
 # Add src directory to path to import plugin
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import plugin
 
 
@@ -65,9 +63,7 @@ Host dev-server
         self.assertIn("AddKeysToAgent yes", text)
 
     def test_merge_settings_new_host(self):
-        blocks, has_tn = plugin.parse_ssh_config(
-            "Host github.com\n    User git\n"
-        )
+        blocks, has_tn = plugin.parse_ssh_config("Host github.com\n    User git\n")
         args = {
             "hosts": {
                 "github.com": {"HostName": "github.com", "User": "admin"},

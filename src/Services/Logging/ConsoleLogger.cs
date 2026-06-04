@@ -2,16 +2,19 @@ using WinHome.Interfaces;
 
 namespace WinHome.Services.Logging
 {
+  /// <summary>Logs messages to the console with color-coded output for each severity level.</summary>
   public class ConsoleLogger : ILogger
   {
     private readonly object _consoleLock = new();
     private volatile LogLevel _minLevel = LogLevel.Info;
 
+    /// <summary>Sets the minimum log level; messages below this level are suppressed.</summary>
     public void SetMinLevel(LogLevel level)
     {
       _minLevel = level;
     }
 
+    /// <summary>Logs a message at the given level with appropriate console coloring.</summary>
     public void Log(string message, LogLevel level)
     {
       if (level < _minLevel) return;

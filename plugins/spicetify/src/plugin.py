@@ -6,7 +6,6 @@ import sys
 import tempfile
 import uuid
 
-
 CONFIG_DIR = ".spicetify"
 CONFIG_FILE = "config.ini"
 
@@ -14,6 +13,7 @@ CONFIG_FILE = "config.ini"
 def log(msg):
     sys.stderr.write(f"[spicetify-plugin] {msg}\n")
     sys.stderr.flush()
+
 
 def backup_corrupt_config(file_path: str):
     if not os.path.exists(file_path):

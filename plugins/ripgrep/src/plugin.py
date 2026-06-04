@@ -1,10 +1,10 @@
-import sys
+import datetime
 import json
 import os
 import shutil
-import datetime
-import uuid
+import sys
 import tempfile
+import uuid
 
 
 def log(msg):

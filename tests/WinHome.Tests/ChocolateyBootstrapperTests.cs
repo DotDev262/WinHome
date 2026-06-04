@@ -22,7 +22,7 @@ namespace WinHome.Tests
     [Fact]
     public void IsInstalled_ReturnsTrue_WhenCommandSucceeds()
     {
-      _mockProcessRunner.Setup(pr => pr.RunCommand("choco", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>>())).Returns(true);
+      _mockProcessRunner.Setup(pr => pr.RunCommand("choco", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>?>())).Returns(true);
       Assert.True(_bootstrapper.IsInstalled());
     }
 
@@ -32,12 +32,12 @@ namespace WinHome.Tests
       // Note: Since File.Exists fallback is hard to mock reliably across systems,
       // we at least ensure RunCommand is called. If the fallback file exists on the CI
       // machine, this test might incorrectly return true. But it's sufficient for basic coverage.
-      _mockProcessRunner.Setup(pr => pr.RunCommand("choco", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>>())).Returns(false);
+      _mockProcessRunner.Setup(pr => pr.RunCommand("choco", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>?>())).Returns(false);
 
       bool result = _bootstrapper.IsInstalled();
 
       // Note: Cannot assert Assert.False(result) reliably without abstracting File.Exists
-      _mockProcessRunner.Verify(pr => pr.RunCommand("choco", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>>()), Times.Once);
+      _mockProcessRunner.Verify(pr => pr.RunCommand("choco", It.Is<IEnumerable<string>>(a => a.Contains("--version")), false, It.IsAny<Action<string>?>()), Times.Once);
     }
 
     [Fact]

@@ -9,8 +9,12 @@ using WinHome.Services.System;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
+/// <summary>Main entry point for the WinHome CLI application.</summary>
 class Program
 {
+  /// <summary>Parses CLI arguments and dispatches to the appropriate command handler.</summary>
+  /// <param name="args">Command-line arguments.</param>
+  /// <returns>Exit code (0 for success, non-zero for errors).</returns>
   static async Task<int> Main(string[] args)
   {
     try

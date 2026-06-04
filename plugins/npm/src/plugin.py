@@ -64,9 +64,7 @@ def merge_config(target, source):
 
 
 def check_installed(args, request_id):
-    installed = (
-        shutil.which("npm.cmd") is not None or shutil.which("npm") is not None
-    )
+    installed = shutil.which("npm.cmd") is not None or shutil.which("npm") is not None
     return {
         "requestId": request_id,
         "success": True,

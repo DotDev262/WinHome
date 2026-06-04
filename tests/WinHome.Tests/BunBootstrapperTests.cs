@@ -21,7 +21,7 @@ namespace WinHome.Tests
     public void IsInstalled_ReturnsTrue_WhenBunIsAvailable()
     {
       // Arrange
-      _mockProcessRunner.Setup(pr => pr.RunCommand("bun", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+      _mockProcessRunner.Setup(pr => pr.RunCommand("bun", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true);
 
       // Act
       bool isInstalled = _bunBootstrapper.IsInstalled();
@@ -34,7 +34,7 @@ namespace WinHome.Tests
     public void IsInstalled_ReturnsFalse_WhenBunIsNotAvailable()
     {
       // Arrange
-      _mockProcessRunner.Setup(pr => pr.RunCommand("bun", "--version", false, It.IsAny<Action<string>>())).Returns(false);
+      _mockProcessRunner.Setup(pr => pr.RunCommand("bun", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(false);
 
       // Act
       bool isInstalled = _bunBootstrapper.IsInstalled();

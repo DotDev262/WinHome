@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Moq;
 using WinHome.Interfaces;
@@ -20,7 +21,7 @@ namespace WinHome.Tests
       var fileSystem = new Mock<IFileSystem>();
 
       processRunner
-          .Setup(r => r.RunCommandWithOutput("where.exe", runtimeName))
+          .Setup(r => r.RunCommandWithOutput("where.exe", It.IsAny<IEnumerable<string>>()))
           .Returns(output);
       fileSystem
           .Setup(fs => fs.FileExists(It.IsAny<string>()))
@@ -48,7 +49,7 @@ namespace WinHome.Tests
       var fileSystem = new Mock<IFileSystem>();
 
       processRunner
-          .Setup(r => r.RunCommandWithOutput("where.exe", runtimeName))
+          .Setup(r => r.RunCommandWithOutput("where.exe", It.IsAny<IEnumerable<string>>()))
           .Returns(string.Empty);
       fileSystem
           .Setup(fs => fs.FileExists(It.IsAny<string>()))
@@ -80,7 +81,7 @@ namespace WinHome.Tests
       var fileSystem = new Mock<IFileSystem>();
 
       processRunner
-          .Setup(r => r.RunCommandWithOutput("where.exe", runtimeName))
+          .Setup(r => r.RunCommandWithOutput("where.exe", It.IsAny<IEnumerable<string>>()))
           .Returns(string.Empty);
       fileSystem
           .Setup(fs => fs.FileExists(It.IsAny<string>()))
@@ -109,7 +110,7 @@ namespace WinHome.Tests
       var fileSystem = new Mock<IFileSystem>();
 
       processRunner
-          .Setup(r => r.RunCommandWithOutput("where.exe", runtimeName))
+          .Setup(r => r.RunCommandWithOutput("where.exe", It.IsAny<IEnumerable<string>>()))
           .Returns(string.Empty);
       fileSystem
           .Setup(fs => fs.FileExists(It.IsAny<string>()))
@@ -137,7 +138,7 @@ namespace WinHome.Tests
       var fileSystem = new Mock<IFileSystem>();
 
       processRunner
-          .Setup(r => r.RunCommandWithOutput("where.exe", runtimeName))
+          .Setup(r => r.RunCommandWithOutput("where.exe", It.IsAny<IEnumerable<string>>()))
           .Returns(string.Empty);
       fileSystem
           .Setup(fs => fs.FileExists(It.IsAny<string>()))
@@ -162,7 +163,7 @@ namespace WinHome.Tests
       var fileSystem = new Mock<IFileSystem>();
 
       processRunner
-          .Setup(r => r.RunCommandWithOutput("where.exe", runtimeName))
+          .Setup(r => r.RunCommandWithOutput("where.exe", It.IsAny<IEnumerable<string>>()))
           .Returns(string.Empty);
       fileSystem
           .Setup(fs => fs.FileExists(It.IsAny<string>()))
@@ -183,7 +184,7 @@ namespace WinHome.Tests
       var fileSystem = new Mock<IFileSystem>();
 
       processRunner
-          .Setup(r => r.RunCommandWithOutput("where.exe", runtimeName))
+          .Setup(r => r.RunCommandWithOutput("where.exe", It.IsAny<IEnumerable<string>>()))
           .Returns("INFO: Could not find files for the given pattern(s).");
       fileSystem
           .Setup(fs => fs.FileExists(It.IsAny<string>()))

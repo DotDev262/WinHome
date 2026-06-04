@@ -6,6 +6,7 @@ using System.Runtime.Versioning;
 
 namespace WinHome.Services.System
 {
+  /// <summary>Manages Windows service configuration (startup type and running state) idempotently.</summary>
   [SupportedOSPlatform("windows")]
   public class WindowsServiceManager : IWindowsServiceManager
   {
@@ -13,6 +14,7 @@ namespace WinHome.Services.System
     private readonly IProcessRunner _processRunner;
     private readonly IServiceControllerWrapper _serviceControllerWrapper;
 
+    /// <summary>Initializes a new instance of <see cref="WindowsServiceManager"/>.</summary>
     public WindowsServiceManager(
         ILogger<WindowsServiceManager> logger,
         IProcessRunner processRunner,
@@ -23,6 +25,7 @@ namespace WinHome.Services.System
       _serviceControllerWrapper = serviceControllerWrapper;
     }
 
+    /// <summary>Applies the desired startup type and/or state to a Windows service.</summary>
     public void Apply(WindowsServiceConfig service, bool dryRun)
     {
       _logger.LogInformation($"Processing service: {service.Name}");
@@ -48,8 +51,7 @@ namespace WinHome.Services.System
     {
       _logger.LogInformation($"{(dryRun ? "[Dry Run] " : "")}Setting startup type of service '{serviceName}' to '{startupType}'");
       // sc.exe config "serviceName" start= auto/demand/disabled
-      var args = $"config \"{serviceName}\" start= {startupType}";
-      if (!_processRunner.RunCommand("sc.exe", args, dryRun))
+      if (!_processRunner.RunCommand("sc.exe", new[] { "config", serviceName, "start=", startupType }, dryRun))
       {
         _logger.LogError($"Failed to set startup type for service '{serviceName}'.");
       }
@@ -114,8 +116,10 @@ namespace WinHome.Services.System
     }
   }
 
+  /// <summary>Extension methods for string manipulation used by the service layer.</summary>
   public static class StringExtensions
   {
+    /// <summary>Capitalizes the first character of the string.</summary>
     public static string Capitalize(this string input)
     {
       if (string.IsNullOrEmpty(input))

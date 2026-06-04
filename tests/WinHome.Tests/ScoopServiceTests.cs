@@ -34,10 +34,10 @@ namespace WinHome.Tests
       var app = new AppConfig { Id = "testapp" };
       bool dryRun = false;
 
-      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>())).Returns(true); // IsInstalled check
+      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true); // IsInstalled check
       _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
                        .Returns(""); // Not installed
-      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
+      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>?>()))
                        .Returns(false); // Fails
 
       // Act & Assert
@@ -52,12 +52,12 @@ namespace WinHome.Tests
       var app = new AppConfig { Id = "testapp" };
       bool dryRun = false;
 
-      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>())).Returns(true);
+      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true);
       _mockProcessRunner.Setup(pr => pr.RunCommandWithOutput(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
                        .Returns(""); // Not installed
 
-      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
-                       .Callback<string, IEnumerable<string>, bool, Action<string>>((_, _, _, onOutput) =>
+      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>?>()))
+                       .Callback<string, IEnumerable<string>, bool, Action<string>?>((_, _, _, onOutput) =>
                        {
                          onOutput?.Invoke($"ERROR '{app.Id}' is already installed.");
                        })
@@ -75,8 +75,8 @@ namespace WinHome.Tests
       string appId = "testapp";
       bool dryRun = false;
 
-      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", "--version", false, It.IsAny<Action<string>>())).Returns(true); // IsInstalled check
-      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>>()))
+      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop", It.IsAny<IEnumerable<string>>(), false, It.IsAny<Action<string>?>())).Returns(true); // IsInstalled check
+      _mockProcessRunner.Setup(pr => pr.RunCommand("scoop.cmd", It.IsAny<IEnumerable<string>>(), dryRun, It.IsAny<Action<string>?>()))
                        .Returns(false); // Fails
 
       // Act & Assert

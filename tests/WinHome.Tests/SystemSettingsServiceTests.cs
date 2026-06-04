@@ -39,7 +39,7 @@ namespace WinHome.Tests
       await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
       _mockProcessRunner.Verify(
-          r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("WmiSetBrightness(1, 80)")), false),
+          r => r.RunCommand("powershell", It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("WmiSetBrightness(1, 80)")), false),
           Times.Once);
     }
 
@@ -53,7 +53,7 @@ namespace WinHome.Tests
       await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
       _mockProcessRunner.Verify(
-          r => r.RunCommand("powershell", It.Is<string>(s => s.Contains($"WmiSetBrightness(1, {value})")), false),
+          r => r.RunCommand("powershell", It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains($"WmiSetBrightness(1, {value})")), false),
           Times.Once);
       _mockLogger.Verify(
           l => l.Log(
@@ -85,7 +85,7 @@ namespace WinHome.Tests
               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
           Times.Once);
       _mockProcessRunner.Verify(
-          r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+          r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
           Times.Never);
     }
 
@@ -107,7 +107,7 @@ namespace WinHome.Tests
               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
           Times.Once);
       _mockProcessRunner.Verify(
-          r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+          r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
           Times.Never);
     }
 
@@ -127,7 +127,7 @@ namespace WinHome.Tests
               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
           Times.Never);
       _mockProcessRunner.Verify(
-          r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+          r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
           Times.Never);
     }
 
@@ -142,7 +142,7 @@ namespace WinHome.Tests
       await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
       _mockProcessRunner.Verify(
-          r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar")), false),
+          r => r.RunCommand("powershell", It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("MasterVolumeLevelScalar")), false),
           Times.Once);
     }
 
@@ -156,7 +156,7 @@ namespace WinHome.Tests
       await _service.ApplyNonRegistrySettingsAsync(settings, false);
 
       _mockProcessRunner.Verify(
-          r => r.RunCommand("powershell", It.Is<string>(s => s.Contains("MasterVolumeLevelScalar")), false),
+          r => r.RunCommand("powershell", It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("MasterVolumeLevelScalar")), false),
           Times.Once);
 
       _mockLogger.Verify(
@@ -189,7 +189,7 @@ namespace WinHome.Tests
               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
           Times.Once);
       _mockProcessRunner.Verify(
-          r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+          r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
           Times.Never);
     }
 
@@ -211,7 +211,7 @@ namespace WinHome.Tests
               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
           Times.Once);
       _mockProcessRunner.Verify(
-          r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+          r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
           Times.Never);
     }
 
@@ -231,7 +231,7 @@ namespace WinHome.Tests
               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
           Times.Never);
       _mockProcessRunner.Verify(
-          r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+          r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
           Times.Never);
     }
 
@@ -247,7 +247,7 @@ namespace WinHome.Tests
 
       _mockProcessRunner.Verify(
           r => r.RunCommand("powershell",
-              It.Is<string>(s => s.Contains("New-BurntToastNotification -Text 'Test Title', 'Test Message'")),
+              It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("New-BurntToastNotification -Text 'Test Title', 'Test Message'")),
               false),
           Times.Once);
     }
@@ -262,7 +262,7 @@ namespace WinHome.Tests
       var settings = new Dictionary<string, object> { { key, 15 } };
       await _service.ApplyNonRegistrySettingsAsync(settings, false);
       _mockProcessRunner.Verify(
-          r => r.RunCommand("powercfg", $"/change {powercfgArg} 15", false),
+          r => r.RunCommand("powercfg", It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains($"/change {powercfgArg} 15")), false),
           Times.Once);
     }
 
@@ -284,7 +284,7 @@ namespace WinHome.Tests
               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
           Times.Once);
       _mockProcessRunner.Verify(
-          r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+          r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
           Times.Never);
     }
 
@@ -304,7 +304,7 @@ namespace WinHome.Tests
               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
           Times.Once);
       _mockProcessRunner.Verify(
-          r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+          r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
           Times.Never);
     }
 
@@ -322,7 +322,7 @@ namespace WinHome.Tests
               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
           Times.Never);
       _mockProcessRunner.Verify(
-          r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+          r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
           Times.Never);
     }
 
@@ -741,7 +741,7 @@ namespace WinHome.Tests
 
       await _service.RevertSystemSettingAsync("brightness", originalBrightness, true);
 
-      _mockProcessRunner.Verify(r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+      _mockProcessRunner.Verify(r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()), Times.Never);
     }
 
     [Fact]
@@ -751,7 +751,7 @@ namespace WinHome.Tests
 
       await _service.RevertSystemSettingAsync("volume", originalVolume, true);
 
-      _mockProcessRunner.Verify(r => r.RunCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+      _mockProcessRunner.Verify(r => r.RunCommand(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()), Times.Never);
     }
 
     [Fact]
@@ -778,7 +778,7 @@ namespace WinHome.Tests
       _mockProcessRunner
           .Setup(r => r.RunCommandWithOutput("powershell",
               It.Is<IEnumerable<string>>(args => string.Join(" ", args).Contains("CurrentBrightness"))))
-          .Returns((string?)null);
+          .Returns(string.Empty);
 
       var originals = await _service.CaptureOriginalSettingsAsync(settings);
 

@@ -34,13 +34,9 @@ def read_xml(file_path):
         backup_path = f"{file_path}.corrupted.{uuid.uuid4().hex[:8]}.bak"
         try:
             shutil.copy2(file_path, backup_path)
-            log(
-                f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}. Starting with default."
-            )
+            log(f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}. Starting with default.")
         except Exception:
-            log(
-                f"Warning: could not parse {file_path}: {e}. Starting with default."
-            )
+            log(f"Warning: could not parse {file_path}: {e}. Starting with default.")
         root = ET.Element(f"{{{CHOCO_NS}}}chocolatey")
         ET.SubElement(root, f"{{{CHOCO_NS}}}config")
         ET.SubElement(root, f"{{{CHOCO_NS}}}features")
@@ -64,11 +60,7 @@ def merge_settings(tree, source):
             if value is None:
                 continue
 
-            str_val = (
-                str(value)
-                if not isinstance(value, bool)
-                else ("true" if value else "false")
-            )
+            str_val = str(value) if not isinstance(value, bool) else ("true" if value else "false")
 
             if config_el is None:
                 config_el = ET.SubElement(root, f"{{{CHOCO_NS}}}config")
@@ -126,10 +118,7 @@ def merge_settings(tree, source):
 
 
 def check_installed(args, request_id):
-    installed = (
-        shutil.which("choco.exe") is not None
-        or shutil.which("choco") is not None
-    )
+    installed = shutil.which("choco.exe") is not None or shutil.which("choco") is not None
     return {
         "requestId": request_id,
         "success": True,

@@ -43,9 +43,7 @@ def get_config_root() -> str:
             appdata = os.path.join(user_profile, "AppData", "Roaming")
 
     if not appdata:
-        raise Exception(
-            "APPDATA and USERPROFILE environment variables not found"
-        )
+        raise Exception("APPDATA and USERPROFILE environment variables not found")
 
     return os.path.join(appdata, YAZI_DIR, CONFIG_DIR)
 
@@ -124,9 +122,7 @@ def serialize_toml(data: dict) -> str:
 
     def serialize_inline(value) -> str:
         if isinstance(value, dict):
-            items = ", ".join(
-                f"{k} = {serialize_value(v)}" for k, v in value.items()
-            )
+            items = ", ".join(f"{k} = {serialize_value(v)}" for k, v in value.items())
             return f"{{ {items} }}"
         return serialize_value(value)
 

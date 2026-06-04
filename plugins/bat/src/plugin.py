@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-
 MANAGED_PREFIX = "--"
 
 
@@ -121,15 +120,12 @@ def parse_line(line: str) -> ConfigLine:
     return ConfigLine(raw=line, key=None, value=None, managed=False)
 
 
-
 def parse_config(text: str) -> Tuple[List[ConfigLine], bool]:
     """Returns (lines, corrupted)."""
     # This parser is line-based and should be resilient.
     # Mark corrupted only for situations we truly cannot proceed with.
     try:
-        lines: List[ConfigLine] = [parse_line(l.rstrip("\n")) for l in text.splitlines(True)]
         # Re-parse with correct raw retention: splitlines(True) keeps newlines.
-        # We'll adjust ConfigLine.raw below.
         fixed: List[ConfigLine] = []
         for original in text.splitlines(True):
             # Keep original raw including newline.
@@ -160,8 +156,6 @@ def build_setting_line(key: str, value: Any) -> str:
 
 
 def merge_settings(lines: List[ConfigLine], settings: Dict[str, Any]) -> Tuple[List[ConfigLine], bool]:
-    managed_keys = set(settings.keys())
-
     # Normalize incoming keys to ensure they start with --
     normalized: Dict[str, Any] = {}
     for k, v in settings.items():
@@ -224,7 +218,6 @@ def merge_settings(lines: List[ConfigLine], settings: Dict[str, Any]) -> Tuple[L
     # Normalize any managed line with malformed content? Keep unknown/unmanaged untouched.
     # NOTE: merge_settings does not mark corruption; corruption is handled at file-load time.
     return lines, changed
-
 
 
 def backup_corrupt_config(config_path: Path) -> Path:
@@ -352,9 +345,7 @@ def dispatch(request: dict) -> Any:
     if command == "set":
         return handle_set(request)
 
-    return make_response(
-        request.get("requestId"), False, False, {}, f"Unknown command: {command}"
-    )
+    return make_response(request.get("requestId"), False, False, {}, f"Unknown command: {command}")
 
 
 def main() -> None:
@@ -408,4 +399,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

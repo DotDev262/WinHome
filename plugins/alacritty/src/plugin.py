@@ -111,10 +111,7 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 
 def check_installed(args: dict, request_id: str) -> dict:
-    installed = (
-        shutil.which("alacritty.exe") is not None
-        or shutil.which("alacritty") is not None
-    )
+    installed = shutil.which("alacritty.exe") is not None or shutil.which("alacritty") is not None
     return {
         "requestId": request_id,
         "success": True,

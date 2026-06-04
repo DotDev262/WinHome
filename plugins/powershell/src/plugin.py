@@ -22,13 +22,9 @@ def get_profile_paths():
         ps5_dir = os.path.join(user_profile, "Documents", "WindowsPowerShell")
 
         if os.path.exists(ps7_dir):
-            paths.append(
-                os.path.join(ps7_dir, "Microsoft.PowerShell_profile.ps1")
-            )
+            paths.append(os.path.join(ps7_dir, "Microsoft.PowerShell_profile.ps1"))
         if os.path.exists(ps5_dir):
-            paths.append(
-                os.path.join(ps5_dir, "Microsoft.PowerShell_profile.ps1")
-            )
+            paths.append(os.path.join(ps5_dir, "Microsoft.PowerShell_profile.ps1"))
 
         if paths:
             return paths
@@ -37,9 +33,7 @@ def get_profile_paths():
     if os.name == "nt":
         fallback_dir = os.path.join(str(Path.home()), "Documents", "PowerShell")
         os.makedirs(fallback_dir, exist_ok=True)
-        paths.append(
-            os.path.join(fallback_dir, "Microsoft.PowerShell_profile.ps1")
-        )
+        paths.append(os.path.join(fallback_dir, "Microsoft.PowerShell_profile.ps1"))
     else:
         fallback_dir = os.path.join(str(Path.home()), ".config", "powershell")
         os.makedirs(fallback_dir, exist_ok=True)
@@ -59,11 +53,7 @@ def read_profile(file_path: str):
         if MARKER_START in content and MARKER_END in content:
             parts = content.split(MARKER_START)
             before = parts[0]
-            after = (
-                parts[1].split(MARKER_END)[1]
-                if len(parts[1].split(MARKER_END)) > 1
-                else ""
-            )
+            after = parts[1].split(MARKER_END)[1] if len(parts[1].split(MARKER_END)) > 1 else ""
             return before, after
         return content, ""
     except Exception as e:
@@ -82,27 +72,19 @@ def generate_script(settings: dict) -> str:
             if " " in v:
                 lines.append(f"function {k} {{ {v} @args }}")
             else:
-                lines.append(
-                    f"Set-Alias -Name '{k_esc}' -Value '{v_esc}' -Force"
-                )
+                lines.append(f"Set-Alias -Name '{k_esc}' -Value '{v_esc}' -Force")
 
     modules = settings.get("modules", {})
     if modules:
         for k, v in modules.items():
-            lines.append(
-                f"Import-Module -Name '{k}' -ErrorAction SilentlyContinue"
-            )
+            lines.append(f"Import-Module -Name '{k}' -ErrorAction SilentlyContinue")
             if "init" in v:
                 cmd = v["init"].get("cmd", "")
                 hook = v["init"].get("hook", "")
                 if cmd and hook:
-                    lines.append(
-                        f"Invoke-Expression (& {k} init powershell --cmd {cmd} --hook {hook} | Out-String)"
-                    )
+                    lines.append(f"Invoke-Expression (& {k} init powershell --cmd {cmd} --hook {hook} | Out-String)")
                 else:
-                    lines.append(
-                        f"Invoke-Expression (& {k} init powershell | Out-String)"
-                    )
+                    lines.append(f"Invoke-Expression (& {k} init powershell | Out-String)")
 
     prompt = settings.get("prompt", {})
     if prompt:
@@ -110,17 +92,13 @@ def generate_script(settings: dict) -> str:
         if p_type == "oh-my-posh":
             theme = prompt.get("theme", "")
             if theme:
-                lines.append(
-                    f"oh-my-posh init powershell --config '{theme}' | Invoke-Expression"
-                )
+                lines.append(f"oh-my-posh init powershell --config '{theme}' | Invoke-Expression")
             else:
                 lines.append("oh-my-posh init powershell | Invoke-Expression")
 
     psreadline = settings.get("psreadline", {})
     if psreadline:
-        lines.append(
-            "Import-Module -Name PSReadLine -ErrorAction SilentlyContinue"
-        )
+        lines.append("Import-Module -Name PSReadLine -ErrorAction SilentlyContinue")
         for k, v in psreadline.items():
             k_camel = "".join(word.capitalize() for word in k.split("_"))
             v_esc = str(v).replace("'", "''")
