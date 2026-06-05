@@ -40,7 +40,7 @@ def apply_config(args):
     settings = args.get("settings", {})
     
     if not settings:
-        return {}
+        return {"changed": False}
 
     current_values = read_registry_values()
     updates = {}
@@ -69,7 +69,7 @@ def apply_config(args):
             if current_values.get("Hidden") != hidden_val:
                 updates["Hidden"] = hidden_val
         else:
-            log(f"Invalid value for Hidden: {hidden_val}. Must be 1 or 2.")
+            return {"error": f"Invalid value for Hidden: {hidden_val}. Must be 1 or 2."}
 
     changed = len(updates) > 0
 
@@ -85,7 +85,7 @@ def apply_config(args):
         except Exception as e:
             return {"error": f"Failed to write to registry: {e}"}
 
-    return {}
+    return {"changed": changed}
 
 def main():
     input_data = sys.stdin.read()
