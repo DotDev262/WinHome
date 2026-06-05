@@ -94,10 +94,7 @@ def test_apply_merges_and_preserves_comments(tmp_path):
     settings_path = tmp_path / "AppData" / "Roaming" / "nvm" / "settings.txt"
     settings_path.parent.mkdir(parents=True, exist_ok=True)
     settings_path.write_text(
-        "# nvm settings\n"
-        "root = C:\\nvm\n"
-        "path=C:\\node\n"
-        "; keep this comment\n",
+        "# nvm settings\nroot = C:\\nvm\npath=C:\\node\n; keep this comment\n",
         encoding="utf-8",
     )
 
@@ -127,9 +124,7 @@ def test_apply_preserves_inline_comment_suffix(tmp_path):
     env = make_env(tmp_path)
     settings_path = tmp_path / "AppData" / "Roaming" / "nvm" / "settings.txt"
     settings_path.parent.mkdir(parents=True, exist_ok=True)
-    settings_path.write_text(
-        "root=C:\\nvm  # install directory\n", encoding="utf-8"
-    )
+    settings_path.write_text("root=C:\\nvm  # install directory\n", encoding="utf-8")
 
     response = run_plugin(
         {
@@ -143,9 +138,7 @@ def test_apply_preserves_inline_comment_suffix(tmp_path):
 
     assert response["success"] is True
     assert response["changed"] is True
-    assert settings_path.read_text(encoding="utf-8") == (
-        "root=D:\\tools\\nvm  # install directory\n"
-    )
+    assert settings_path.read_text(encoding="utf-8") == ("root=D:\\tools\\nvm  # install directory\n")
 
 
 def test_apply_dry_run_does_not_write(tmp_path):
@@ -195,9 +188,7 @@ def test_apply_creates_missing_file(tmp_path):
     assert response["changed"] is True
     assert settings_path.exists()
     assert settings_path.read_text(encoding="utf-8") == (
-        "root=C:\\nvm\n"
-        "path=C:\\Program Files\\nodejs\n"
-        "npm_mirror=https://registry.npmjs.org/\n"
+        "root=C:\\nvm\npath=C:\\Program Files\\nodejs\nnpm_mirror=https://registry.npmjs.org/\n"
     )
 
 

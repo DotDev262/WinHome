@@ -202,9 +202,7 @@ def write_atomic(file_path: str, content: str) -> None:
 
 def check_installed(_args: dict, request_id: str) -> dict:
     installed = (
-        os.path.exists(get_settings_path())
-        or shutil.which("nvm.exe") is not None
-        or shutil.which("nvm") is not None
+        os.path.exists(get_settings_path()) or shutil.which("nvm.exe") is not None or shutil.which("nvm") is not None
     )
 
     return {
