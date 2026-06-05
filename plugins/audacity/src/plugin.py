@@ -36,22 +36,12 @@ def get_app_dir():
 
 # ---------------------------------------------------------------------------
 # Audacity config parsing
-#
-# audacity.cfg is INI-like but has a top-level [root] section for keys that
-# appear before any section header, which configparser would reject.
-# We normalise by inserting a synthetic [root] header when needed, then
-# strip it back out on write so the file stays Audacity-compatible.
 # ---------------------------------------------------------------------------
 
 _SYNTHETIC_SECTION = "__root__"
 
 
 def read_cfg(file_path: str) -> configparser.RawConfigParser:
-    """Parse audacity.cfg into a RawConfigParser.
-
-    Keys that appear before the first section header are placed under the
-    synthetic section _SYNTHETIC_SECTION so configparser can handle them.
-    """
     parser = configparser.RawConfigParser()
     parser.optionxform = str  # preserve key case
 
@@ -61,7 +51,6 @@ def read_cfg(file_path: str) -> configparser.RawConfigParser:
     with open(file_path, "r", encoding="utf-8") as f:
         raw = f.read()
 
-    # If the file starts with content before the first '[', prepend a header.
     lines = raw.splitlines(keepends=True)
     needs_synthetic = lines and not lines[0].lstrip().startswith("[")
 
@@ -77,12 +66,6 @@ def read_cfg(file_path: str) -> configparser.RawConfigParser:
 
 
 def write_cfg(file_path: str, parser: configparser.RawConfigParser) -> None:
-    """Write a RawConfigParser back to an audacity.cfg file atomically.
-
-    The synthetic root section header is omitted so the output matches
-    Audacity's expected format.  All other section headers are preserved.
-    Atomic: write to a temp file next to the target then os.replace().
-    """
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     dir_name = os.path.dirname(file_path)
@@ -92,7 +75,6 @@ def write_cfg(file_path: str, parser: configparser.RawConfigParser) -> None:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             for section in parser.sections():
                 if section == _SYNTHETIC_SECTION:
-                    # Write bare key=value lines (no section header)
                     for key, value in parser.items(section):
                         f.write(f"{key}={value}\n")
                 else:
@@ -104,7 +86,6 @@ def write_cfg(file_path: str, parser: configparser.RawConfigParser) -> None:
         os.replace(tmp_path, file_path)
 
     except Exception:
-        # Clean up temp file on failure
         try:
             os.unlink(tmp_path)
         except OSError:
@@ -113,7 +94,6 @@ def write_cfg(file_path: str, parser: configparser.RawConfigParser) -> None:
 
 
 def _cast_value(value) -> str:
-    """Convert a Python value to the string form Audacity stores."""
     if isinstance(value, bool):
         return "1" if value else "0"
     return str(value)
@@ -123,11 +103,6 @@ def merge_settings(
     parser: configparser.RawConfigParser,
     settings: dict,
 ) -> bool:
-    """Merge a two-level settings dict (section/key) into the parser.
-
-    Settings keys use the form ``"Section/Key"`` (e.g. ``"AudioIO/SampleRate"``).
-    Returns True if any value was actually changed.
-    """
     changed = False
 
     for dotted_key, value in settings.items():
@@ -158,50 +133,28 @@ def merge_settings(
 # ---------------------------------------------------------------------------
 
 
-def check_installed(args: dict, request_id: str) -> dict:
-    """Return True if the Audacity config directory exists OR audacity.exe
-    is on the PATH — whichever is found first."""
+# FIX 4: check_installed returns bare bool; main() wraps it
+def check_installed(args: dict) -> bool:
     app_dir = get_app_dir()
 
     if app_dir is None:
-        return {
-            "requestId": request_id,
-            "success": False,
-            "changed": False,
-            "error": "APPDATA environment variable not found",
-        }
+        return False
 
-    # Check 1: %APPDATA%\audacity\ directory exists
     if os.path.isdir(app_dir):
-        return {
-            "requestId": request_id,
-            "success": True,
-            "changed": False,
-            "data": True,
-        }
+        return True
 
-    # Check 2: audacity.exe present anywhere on PATH
     path_dirs = os.environ.get("PATH", "").split(os.pathsep)
     for directory in path_dirs:
         candidate = os.path.join(directory, "audacity.exe")
         if os.path.isfile(candidate):
-            return {
-                "requestId": request_id,
-                "success": True,
-                "changed": False,
-                "data": True,
-            }
+            return True
 
-    return {
-        "requestId": request_id,
-        "success": True,
-        "changed": False,
-        "data": False,
-    }
+    return False
 
 
-def apply_config(args: dict, context: dict, request_id: str) -> dict:
-    dry_run = context.get("dryRun", False)
+def apply_config(args: dict, request_id: str) -> dict:
+    # FIX 6: dryRun comes from args, not context
+    dry_run = args.get("dryRun", False)
     settings = args.get("settings", {})
 
     try:
@@ -214,7 +167,6 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         if not changed:
             return {
                 "requestId": request_id,
-                "success": True,
                 "changed": False,
             }
 
@@ -223,8 +175,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
             return {
                 "requestId": request_id,
-                "success": True,
-                "changed": False,
+                "changed": True,
             }
 
         write_cfg(config_path, parser)
@@ -233,7 +184,6 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
         return {
             "requestId": request_id,
-            "success": True,
             "changed": True,
         }
 
@@ -242,8 +192,6 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
         return {
             "requestId": request_id,
-            "success": False,
-            "changed": False,
             "error": str(e),
         }
 
@@ -256,38 +204,68 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 def main():
     input_data = sys.stdin.read()
 
+    # FIX 1: empty stdin returns JSON error response, never silent
     if not input_data:
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "error": "No input received",
+                }
+            )
+            + "\n"
+        )
+        sys.stdout.flush()
         return
+
+    # FIX 5: use plain dict key access so missing key gives None, not "unknown"
+    request_id = None
 
     try:
         request = json.loads(input_data)
+        # FIX 5: request.get("requestId") returns None when missing/null;
+        # fall back to "unknown" only when truly absent
+        request_id = request.get("requestId") or "unknown"
+        command = request.get("command")
+        args = request.get("args", {})
     except Exception as e:
+        # FIX 2: JSON parse error returns JSON response, never sys.exit(1)
         log(f"Failed to parse request: {e}")
-        sys.exit(1)
-
-    request_id = request.get("requestId", "unknown")
-    command = request.get("command")
-    args = request.get("args", {})
-    context = request.get("context", {})
-
-    response = {
-        "requestId": request_id,
-        "success": False,
-        "changed": False,
-    }
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "requestId": request_id or "unknown",
+                    "error": f"Failed to parse request: {e}",
+                }
+            )
+            + "\n"
+        )
+        sys.stdout.flush()
+        return
 
     try:
         if command == "check_installed":
-            response = check_installed(args, request_id)
+            # FIX 4: wrap bare bool result into standard response envelope
+            installed = check_installed(args)
+            response = {
+                "requestId": request_id,
+                "installed": installed,
+            }
 
         elif command == "apply":
-            response = apply_config(args, context, request_id)
+            response = apply_config(args, request_id)
 
         else:
-            response["error"] = f"Unknown command: {command}"
+            response = {
+                "requestId": request_id,
+                "error": f"Unknown command: {command}",
+            }
 
     except Exception as fatal_err:
-        response["error"] = f"Internal Script Error: {str(fatal_err)}"
+        response = {
+            "requestId": request_id,
+            "error": f"Internal Script Error: {str(fatal_err)}",
+        }
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()

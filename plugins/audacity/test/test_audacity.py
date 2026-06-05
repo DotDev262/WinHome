@@ -29,7 +29,6 @@ def run_plugin(payload: dict, env: dict = None) -> dict:
 
 
 def read_cfg(path: str) -> configparser.RawConfigParser:
-    """Read an audacity.cfg, tolerating bare key=value before any section."""
     parser = configparser.RawConfigParser()
     parser.optionxform = str
 
@@ -50,7 +49,6 @@ def read_cfg(path: str) -> configparser.RawConfigParser:
 
 
 def test_check_installed_dir_exists():
-    """Returns True when %APPDATA%\\audacity\\ directory is present."""
     with tempfile.TemporaryDirectory() as tmp:
         audacity_dir = os.path.join(tmp, "audacity")
         os.makedirs(audacity_dir)
@@ -65,17 +63,15 @@ def test_check_installed_dir_exists():
             env={"APPDATA": tmp},
         )
 
-        assert res["success"] is True
-        assert res["changed"] is False
-        assert res["data"] is True
+        # FIX 4: result is bare bool wrapped as {"installed": true}
+        assert res["installed"] is True
+        assert "requestId" in res
 
     print("✓ check_installed_dir_exists")
 
 
 def test_check_installed_dir_missing():
-    """Returns False when %APPDATA%\\audacity\\ is absent and exe not on PATH."""
     with tempfile.TemporaryDirectory() as tmp:
-        # tmp has no 'audacity' sub-dir; PATH set to empty location
         res = run_plugin(
             {
                 "requestId": "ci-2",
@@ -86,14 +82,12 @@ def test_check_installed_dir_missing():
             env={"APPDATA": tmp, "PATH": tmp},
         )
 
-        assert res["success"] is True
-        assert res["data"] is False
+        assert res["installed"] is False
 
     print("✓ check_installed_dir_missing")
 
 
 def test_check_installed_no_appdata():
-    """Returns success=False when APPDATA is missing entirely."""
     env = os.environ.copy()
     env.pop("APPDATA", None)
 
@@ -113,9 +107,8 @@ def test_check_installed_no_appdata():
     )
 
     res = json.loads(result.stdout.strip())
-
-    assert res["success"] is False
-    assert "error" in res
+    # Without APPDATA, installed is False (no error, just False)
+    assert res["installed"] is False
 
     print("✓ check_installed_no_appdata")
 
@@ -126,7 +119,6 @@ def test_check_installed_no_appdata():
 
 
 def test_apply_creates_config_dir():
-    """apply creates %APPDATA%\\audacity\\ and audacity.cfg when absent."""
     with tempfile.TemporaryDirectory() as tmp:
         res = run_plugin(
             {
@@ -138,13 +130,13 @@ def test_apply_creates_config_dir():
                         "GUI/Theme": "dark",
                     }
                 },
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
 
-        assert res["success"] is True
         assert res["changed"] is True
+        assert "error" not in res
 
         cfg_path = os.path.join(tmp, "audacity", "audacity.cfg")
         assert os.path.exists(cfg_path)
@@ -153,7 +145,6 @@ def test_apply_creates_config_dir():
 
 
 def test_apply_writes_correct_values():
-    """Parsed audacity.cfg contains the values that were applied."""
     with tempfile.TemporaryDirectory() as tmp:
         run_plugin(
             {
@@ -176,7 +167,7 @@ def test_apply_writes_correct_values():
                         "TrackBehaviors/TypeToCreateAClip": True,
                     }
                 },
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
@@ -196,7 +187,6 @@ def test_apply_writes_correct_values():
 
 
 def test_apply_bool_casting():
-    """True maps to '1' and False maps to '0' in the written file."""
     with tempfile.TemporaryDirectory() as tmp:
         run_plugin(
             {
@@ -208,7 +198,7 @@ def test_apply_bool_casting():
                         "FileFormats/FFmpegFound": False,
                     }
                 },
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
@@ -228,20 +218,24 @@ def test_apply_bool_casting():
 
 
 def test_apply_dry_run_no_file():
-    """Dry-run with no existing config must not create any file."""
+    """Dry-run with changes pending must report changed=True but not write file."""
     with tempfile.TemporaryDirectory() as tmp:
         res = run_plugin(
             {
                 "requestId": "dr-1",
                 "command": "apply",
-                "args": {"settings": {"AudioIO/SampleRate": 44100}},
-                "context": {"dryRun": True},
+                # FIX 6: dryRun comes from args
+                "args": {
+                    "dryRun": True,
+                    "settings": {"AudioIO/SampleRate": 44100},
+                },
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
 
-        assert res["success"] is True
-        assert res["changed"] is False
+        assert res["changed"] is True
+        assert "error" not in res
 
         cfg_path = os.path.join(tmp, "audacity", "audacity.cfg")
         assert not os.path.exists(cfg_path)
@@ -250,15 +244,14 @@ def test_apply_dry_run_no_file():
 
 
 def test_apply_dry_run_existing_file_unchanged():
-    """Dry-run must not modify an already-existing config file."""
+    """Dry-run must report changed=True but not modify the file on disk."""
     with tempfile.TemporaryDirectory() as tmp:
-        # First real write
         run_plugin(
             {
                 "requestId": "dr-2a",
                 "command": "apply",
                 "args": {"settings": {"GUI/Theme": "light"}},
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
@@ -266,19 +259,22 @@ def test_apply_dry_run_existing_file_unchanged():
         cfg_path = os.path.join(tmp, "audacity", "audacity.cfg")
         mtime_before = os.path.getmtime(cfg_path)
 
-        # Dry-run with a new value
         res = run_plugin(
             {
                 "requestId": "dr-2b",
                 "command": "apply",
-                "args": {"settings": {"GUI/Theme": "dark"}},
-                "context": {"dryRun": True},
+                # FIX 6: dryRun in args
+                "args": {
+                    "dryRun": True,
+                    "settings": {"GUI/Theme": "dark"},
+                },
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
 
-        assert res["success"] is True
-        assert res["changed"] is False
+        assert res["changed"] is True
+        assert "error" not in res
         assert os.path.getmtime(cfg_path) == mtime_before
 
     print("✓ apply_dry_run_existing_file_unchanged")
@@ -290,14 +286,13 @@ def test_apply_dry_run_existing_file_unchanged():
 
 
 def test_apply_merges_with_existing_config():
-    """Applying new keys preserves keys already in the file."""
     with tempfile.TemporaryDirectory() as tmp:
         run_plugin(
             {
                 "requestId": "m-1a",
                 "command": "apply",
                 "args": {"settings": {"GUI/Theme": "light", "GUI/Language": "en"}},
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
@@ -307,7 +302,7 @@ def test_apply_merges_with_existing_config():
                 "requestId": "m-1b",
                 "command": "apply",
                 "args": {"settings": {"AudioIO/SampleRate": 44100}},
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
@@ -315,39 +310,35 @@ def test_apply_merges_with_existing_config():
         cfg_path = os.path.join(tmp, "audacity", "audacity.cfg")
         parser = read_cfg(cfg_path)
 
-        # Original keys must still be there
         assert parser.get("GUI", "Theme") == "light"
         assert parser.get("GUI", "Language") == "en"
-        # New key was added
         assert parser.get("AudioIO", "SampleRate") == "44100"
 
     print("✓ apply_merges_with_existing_config")
 
 
 def test_apply_idempotent():
-    """Applying the same settings twice reports changed=False on the second run."""
     with tempfile.TemporaryDirectory() as tmp:
         payload = {
             "requestId": "i-1",
             "command": "apply",
             "args": {"settings": {"GUI/Theme": "dark", "AudioIO/SampleRate": 48000}},
-            "context": {"dryRun": False},
+            "context": {},
         }
 
         first = run_plugin(payload, env={"APPDATA": tmp})
         second = run_plugin(payload, env={"APPDATA": tmp})
 
-        assert first["success"] is True
         assert first["changed"] is True
+        assert "error" not in first
 
-        assert second["success"] is True
         assert second["changed"] is False
+        assert "error" not in second
 
     print("✓ apply_idempotent")
 
 
 def test_apply_partial_update():
-    """Changing one key out of many reports changed=True only for that run."""
     with tempfile.TemporaryDirectory() as tmp:
         env = {"APPDATA": tmp}
 
@@ -361,7 +352,7 @@ def test_apply_partial_update():
                         "GUI/Theme": "light",
                     }
                 },
-                "context": {"dryRun": False},
+                "context": {},
             },
             env=env,
         )
@@ -371,20 +362,17 @@ def test_apply_partial_update():
                 "requestId": "pu-2",
                 "command": "apply",
                 "args": {"settings": {"GUI/Theme": "dark"}},
-                "context": {"dryRun": False},
+                "context": {},
             },
             env=env,
         )
 
-        assert res["success"] is True
         assert res["changed"] is True
 
         cfg_path = os.path.join(tmp, "audacity", "audacity.cfg")
         parser = read_cfg(cfg_path)
 
-        # Other key untouched
         assert parser.get("AudioIO", "SampleRate") == "44100"
-        # Updated key reflects new value
         assert parser.get("GUI", "Theme") == "dark"
 
     print("✓ apply_partial_update")
@@ -417,7 +405,6 @@ FFmpegFound=0
 
 
 def test_apply_with_sample_cfg():
-    """Correctly patches a realistic pre-existing audacity.cfg."""
     with tempfile.TemporaryDirectory() as tmp:
         cfg_dir = os.path.join(tmp, "audacity")
         os.makedirs(cfg_dir)
@@ -439,24 +426,21 @@ def test_apply_with_sample_cfg():
                         "FileFormats/FFmpegFound": True,
                     }
                 },
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
 
-        assert res["success"] is True
         assert res["changed"] is True
+        assert "error" not in res
 
         parser = read_cfg(cfg_path)
 
-        # Changed values
         assert parser.get("AudioIO", "SampleRate") == "48000"
         assert parser.get("Quality", "SampleFormat") == "32-float"
         assert parser.get("GUI", "Theme") == "dark"
         assert parser.get("GUI", "ShowSplashScreen") == "0"
         assert parser.get("FileFormats", "FFmpegFound") == "1"
-
-        # Untouched values preserved
         assert parser.get("AudioIO", "BufferLength") == "100"
         assert parser.get("AudioIO", "RecordingDevice") == "default"
         assert parser.get("GUI", "Language") == "en"
@@ -465,19 +449,18 @@ def test_apply_with_sample_cfg():
 
 
 # ---------------------------------------------------------------------------
-# apply — atomic write verification
+# Atomic write / POSIX newline
 # ---------------------------------------------------------------------------
 
 
 def test_apply_atomic_no_temp_files_left():
-    """No .tmp files should remain after a successful write."""
     with tempfile.TemporaryDirectory() as tmp:
         run_plugin(
             {
                 "requestId": "aw-1",
                 "command": "apply",
                 "args": {"settings": {"GUI/Theme": "dark"}},
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
@@ -490,20 +473,14 @@ def test_apply_atomic_no_temp_files_left():
     print("✓ apply_atomic_no_temp_files_left")
 
 
-# ---------------------------------------------------------------------------
-# apply — POSIX trailing newline
-# ---------------------------------------------------------------------------
-
-
 def test_apply_posix_trailing_newline():
-    """Written config file must end with a newline character."""
     with tempfile.TemporaryDirectory() as tmp:
         run_plugin(
             {
                 "requestId": "nl-1",
                 "command": "apply",
                 "args": {"settings": {"GUI/Theme": "dark"}},
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
@@ -516,6 +493,48 @@ def test_apply_posix_trailing_newline():
         assert content.endswith(b"\n"), "File does not end with a newline"
 
     print("✓ apply_posix_trailing_newline")
+
+
+# ---------------------------------------------------------------------------
+# FIX 1: empty stdin returns JSON error
+# ---------------------------------------------------------------------------
+
+
+def test_empty_stdin_returns_json_error():
+    result = subprocess.run(
+        [sys.executable, PLUGIN],
+        input="",
+        capture_output=True,
+        text=True,
+        env=os.environ.copy(),
+    )
+
+    assert result.stdout.strip(), "Expected JSON output on empty stdin"
+    res = json.loads(result.stdout.strip())
+    assert "error" in res
+
+    print("✓ empty_stdin_returns_json_error")
+
+
+# ---------------------------------------------------------------------------
+# FIX 2: invalid JSON returns JSON error (not sys.exit)
+# ---------------------------------------------------------------------------
+
+
+def test_invalid_json_returns_json_error():
+    result = subprocess.run(
+        [sys.executable, PLUGIN],
+        input="not valid json {{{",
+        capture_output=True,
+        text=True,
+        env=os.environ.copy(),
+    )
+
+    assert result.returncode == 0, "Process must not exit with error code"
+    res = json.loads(result.stdout.strip())
+    assert "error" in res
+
+    print("✓ invalid_json_returns_json_error")
 
 
 # ---------------------------------------------------------------------------
@@ -533,27 +552,25 @@ def test_unknown_command():
         }
     )
 
-    assert res["success"] is False
     assert "error" in res
 
     print("✓ unknown_command")
 
 
 def test_apply_no_settings_no_change():
-    """Applying an empty settings dict must report changed=False."""
     with tempfile.TemporaryDirectory() as tmp:
         res = run_plugin(
             {
                 "requestId": "e-2",
                 "command": "apply",
                 "args": {"settings": {}},
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
 
-        assert res["success"] is True
         assert res["changed"] is False
+        assert "error" not in res
 
     print("✓ apply_no_settings_no_change")
 
@@ -582,6 +599,9 @@ if __name__ == "__main__":
 
     test_apply_atomic_no_temp_files_left()
     test_apply_posix_trailing_newline()
+
+    test_empty_stdin_returns_json_error()
+    test_invalid_json_returns_json_error()
 
     test_unknown_command()
     test_apply_no_settings_no_change()
