@@ -6,7 +6,7 @@ using WinHome.Services;
 namespace WinHome
 {
   /// <summary>Main orchestrator for WinHome configuration application. Coordinates all services: apps, registry, WSL, Git, env vars, services, scheduled tasks, dotfiles, plugins, and system settings.</summary>
-  public class Engine
+  public class Engine : IEngine
   {
     private readonly Dictionary<string, IPackageManager> _managers;
     private readonly IDotfileService _dotfiles;
