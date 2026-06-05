@@ -94,8 +94,7 @@ def process_request():
         print(json.dumps({
             "requestId": request_id,
             "installed": check_installed(),
-            "status": "dry_run",
-            "updated": True
+            "changed": True
         }))
         return
 
@@ -115,8 +114,7 @@ def process_request():
     print(json.dumps({
         "requestId": request_id,
         "installed": check_installed(),
-        "status": "success",
-        "written": True
+        "changed": True
     }))
 
 if __name__ == "__main__":
