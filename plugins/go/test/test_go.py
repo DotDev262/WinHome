@@ -112,7 +112,9 @@ class TestGoApply(unittest.TestCase):
 
     def test_noop_when_values_already_match(self):
         with patch.object(plugin, "go_executable", return_value="/usr/bin/go"):
-            with patch.object(plugin.subprocess, "run", return_value=completed(stdout="https://proxy.golang.org,direct\n")):
+            with patch.object(
+                plugin.subprocess, "run", return_value=completed(stdout="https://proxy.golang.org,direct\n")
+            ):
                 result = plugin.apply_config(
                     {"settings": {"GOPROXY": "https://proxy.golang.org,direct"}},
                     {},
