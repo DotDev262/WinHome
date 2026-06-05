@@ -30,7 +30,7 @@ The plugin accepts a top-level YAML object with a single supported field:
 
 ### Example 1 - Configure UI theme and auto-fetch
 
-````yaml
+```yaml
 extensions:
   lazygit:
     settings:
@@ -73,4 +73,4 @@ For this, user have to open its terminal:
 
 ```bash
 lazygit
-````
+```

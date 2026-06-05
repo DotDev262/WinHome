@@ -60,7 +60,7 @@ extensions:
 
 ### Example 3 - Add a multi-line template (e.g., Email signature or Code boilerplate)
 
-````yaml
+```yaml
 extensions:
   espanso:
     settings:
@@ -87,4 +87,4 @@ For this user has to open its terminal and type:
 
 ```bash
 espanso status
-````
+```
