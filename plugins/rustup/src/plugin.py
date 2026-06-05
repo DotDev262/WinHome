@@ -27,9 +27,6 @@ def process_request():
     if not raw_input:
         print(json.dumps({
             "requestId": "unknown",
-            "changed": False,
-            "installed": False,
-            "data": {},
             "error": "Empty stdin configuration request received"
         }))
         return
@@ -39,9 +36,6 @@ def process_request():
     except json.JSONDecodeError:
         print(json.dumps({
             "requestId": "unknown",
-            "changed": False,
-            "installed": False,
-            "data": {},
             "error": "Invalid JSON formatting in configuration payload"
         }))
         return
@@ -56,7 +50,6 @@ def process_request():
     if command == "check_installed":
         print(json.dumps({
             "requestId": request_id,
-            "changed": False,
             "installed": check_installed()
         }))
         return
@@ -100,9 +93,9 @@ def process_request():
     if dry_run:
         print(json.dumps({
             "requestId": request_id,
-            "changed": True,
             "installed": check_installed(),
-            "data": {"status": "dry_run", "updated": True}
+            "status": "dry_run",
+            "updated": True
         }))
         return
 
@@ -115,18 +108,15 @@ def process_request():
     except Exception as err:
         print(json.dumps({
             "requestId": request_id,
-            "changed": False,
-            "installed": check_installed(),
-            "data": {},
             "error": f"Failed executing atomic write operations: {str(err)}"
         }))
         return
 
     print(json.dumps({
         "requestId": request_id,
-        "changed": True,
         "installed": check_installed(),
-        "data": {"status": "success", "written": True}
+        "status": "success",
+        "written": True
     }))
 
 if __name__ == "__main__":

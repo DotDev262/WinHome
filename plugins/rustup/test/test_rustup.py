@@ -2,10 +2,8 @@ import os
 import sys
 import unittest
 
-# Compute absolute path to the src directory safely
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src'))
 
-# Use the project's standard append/remove track for imports
 sys.path.append(src_path)
 import plugin
 sys.path.remove(src_path)
