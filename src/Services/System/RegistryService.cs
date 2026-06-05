@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using System.Linq;
 using System.Runtime.Versioning;
 using WinHome.Interfaces;
 using WinHome.Models;
@@ -30,10 +31,16 @@ namespace WinHome.Services.System
         {
           object? currentValue = key?.GetValue(tweak.Name);
 
-          if (currentValue != null && currentValue.ToString() == tweak.Value?.ToString())
+          if (currentValue != null)
           {
-            Console.WriteLine($"[Registry] Skipped: {tweak.Name} (Already set)");
-            return true;
+            bool alreadySet = currentValue is byte[] currentBytes && tweak.Value is byte[] targetBytes
+                ? currentBytes.SequenceEqual(targetBytes)
+                : currentValue.ToString() == tweak.Value?.ToString();
+            if (alreadySet)
+            {
+              Console.WriteLine($"[Registry] Skipped: {tweak.Name} (Already set)");
+              return true;
+            }
           }
 
           if (dryRun)
