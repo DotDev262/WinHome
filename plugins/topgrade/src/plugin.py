@@ -13,27 +13,28 @@ import sys
 import tomlkit
 
 
+def log(msg):
+    sys.stderr.write(f"[topgrade-plugin] {msg}\n")
+    sys.stderr.flush()
+
+
 def get_topgrade_config_path():
     appdata = os.environ.get("APPDATA")
     if not appdata:
         return None
 
-    # Try %APPDATA%\topgrade.toml
-    fallback_path = os.path.join(appdata, "topgrade.toml")
-    # Try %APPDATA%\topgrade\topgrade.toml
     main_path = os.path.join(appdata, "topgrade", "topgrade.toml")
+    fallback_path = os.path.join(appdata, "topgrade.toml")
 
     if os.path.exists(main_path):
         return main_path
-    elif os.path.exists(fallback_path):
+    if os.path.exists(fallback_path):
         return fallback_path
 
-    # Default to main path if neither exists
     return main_path
 
 
 def merge_dict(target, source):
-    """Recursively merge source dictionary into target tomlkit document/table."""
     for k, v in source.items():
         if isinstance(v, dict):
             if k not in target:
@@ -46,81 +47,143 @@ def merge_dict(target, source):
             target[k] = v
 
 
-def handle_check_installed():
-    topgrade_path = shutil.which("topgrade")
-    return {"success": True, "changed": False, "data": {"installed": topgrade_path is not None}}
+def check_installed(args, request_id):
+    installed = shutil.which("topgrade") is not None
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": False,
+        "data": installed,
+    }
 
 
-def handle_apply(args, context):
+def apply_config(args, request_id):
+    dry_run = args.get("dryRun", False)
     settings = args.get("settings", {})
-    if not settings:
-        return {"success": True, "changed": False}
+
+    if not isinstance(settings, dict):
+        return {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": "settings must be an object",
+            "data": None,
+        }
 
     config_path = get_topgrade_config_path()
     if not config_path:
-        return {"success": False, "changed": False, "error": "APPDATA environment variable not set"}
+        return {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": "APPDATA environment variable not set",
+            "data": None,
+        }
 
-    dry_run = context.get("dryRun", False)
-
-    if os.path.exists(config_path):
-        with open(config_path, "r", encoding="utf-8") as f:
-            try:
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding="utf-8") as f:
                 doc = tomlkit.load(f)
-            except Exception as e:
-                return {"success": False, "changed": False, "error": f"Failed to parse topgrade config: {str(e)}"}
-    else:
-        doc = tomlkit.document()
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        else:
+            doc = tomlkit.document()
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
-    orig_content = doc.as_string()
+        orig_content = doc.as_string()
+        merge_dict(doc, settings)
+        new_content = doc.as_string()
+        changed = orig_content != new_content
 
-    merge_dict(doc, settings)
+        if not changed:
+            return {
+                "requestId": request_id,
+                "success": True,
+                "changed": False,
+                "data": None,
+            }
 
-    new_content = doc.as_string()
-    changed = orig_content != new_content
+        if dry_run:
+            log(f"Would update {config_path}")
+            return {
+                "requestId": request_id,
+                "success": True,
+                "changed": True,
+                "data": {"path": config_path, "settings": settings},
+            }
 
-    if changed and not dry_run:
-        try:
-            with open(config_path, "w", encoding="utf-8") as f:
-                f.write(new_content)
-        except Exception as e:
-            return {"success": False, "changed": False, "error": f"Failed to write config: {str(e)}"}
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(new_content)
 
-    if changed and dry_run:
-        sys.stderr.write(f"Would update topgrade config at {config_path}\n")
+        log(f"Updated topgrade config: {config_path}")
+        return {
+            "requestId": request_id,
+            "success": True,
+            "changed": True,
+            "data": {"path": config_path},
+        }
 
-    return {"success": True, "changed": changed}
+    except Exception as e:
+        log(f"Failed to apply config: {e}")
+        return {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": str(e),
+            "data": None,
+        }
 
 
 def main():
-    raw_input = sys.stdin.read()
-    if not raw_input:
+    input_data = sys.stdin.read()
+
+    if not input_data:
+        response = {
+            "requestId": "unknown",
+            "success": False,
+            "changed": False,
+            "error": "No input received",
+            "data": None,
+        }
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
         return
 
     try:
-        request = json.loads(raw_input)
-    except json.JSONDecodeError:
-        sys.stderr.write("Failed to parse JSON input\n")
+        request = json.loads(input_data)
+    except Exception as e:
+        response = {
+            "requestId": "unknown",
+            "success": False,
+            "changed": False,
+            "error": f"Failed to parse JSON request: {str(e)}",
+            "data": None,
+        }
+        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
         return
 
-    cmd = request.get("command")
-    req_id = request.get("requestId")
+    request_id = request.get("requestId") or "unknown"
+    command = request.get("command")
     args = request.get("args", {})
-    context = request.get("context", {})
 
-    response = {"requestId": req_id, "success": False, "changed": False}
+    response = {
+        "requestId": request_id,
+        "success": False,
+        "changed": False,
+        "data": None,
+    }
 
-    if cmd == "check_installed":
-        res = handle_check_installed()
-        response.update(res)
-    elif cmd == "apply":
-        res = handle_apply(args, context)
-        response.update(res)
-    else:
-        response["error"] = f"Unknown command: {cmd}"
+    try:
+        if command == "check_installed":
+            response = check_installed(args, request_id)
+        elif command == "apply":
+            response = apply_config(args, request_id)
+        else:
+            response["error"] = f"Unknown command: {command}"
+    except Exception as fatal_err:
+        response["error"] = f"Internal error: {str(fatal_err)}"
 
-    print(json.dumps(response))
+    sys.stdout.write(json.dumps(response) + "\n")
+    sys.stdout.flush()
 
 
 if __name__ == "__main__":
