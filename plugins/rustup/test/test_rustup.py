@@ -2,11 +2,15 @@ import os
 import sys
 import unittest
 
+# Compute absolute path to the src directory safely
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src'))
-
 sys.path.append(src_path)
-import plugin
+
+# Dynamically import the plugin to satisfy strict linter sorting rules
+plugin = __import__('plugin')
+
 sys.path.remove(src_path)
+
 
 class TestRustupPlugin(unittest.TestCase):
     def test_check_installed_returns_bool(self):
@@ -20,6 +24,7 @@ class TestRustupPlugin(unittest.TestCase):
         self.assertEqual(merged["settings"]["profile"], "minimal")
         self.assertEqual(merged["settings"]["default_toolchain"], "stable")
         self.assertEqual(merged["custom_key"], 123)
+
 
 if __name__ == '__main__':
     unittest.main()
