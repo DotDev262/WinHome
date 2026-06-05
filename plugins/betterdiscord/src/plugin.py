@@ -154,7 +154,6 @@ def main():
                 }
             )
         )
-        sys.stdout.flush()
         return
 
     try:
