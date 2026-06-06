@@ -175,6 +175,37 @@ def test_unknown_command():
     print("✓ unknown_command")
 
 
+def test_empty_stdin_returns_error():
+    result = subprocess.run(
+        [sys.executable, PLUGIN],
+        input="",
+        capture_output=True,
+        text=True,
+    )
+
+    res = json.loads(result.stdout.strip())
+
+    assert res["requestId"] == "unknown"
+    assert "error" in res
+
+    print("✓ empty_stdin_returns_error")
+
+
+def test_invalid_json_returns_error():
+    result = subprocess.run(
+        [sys.executable, PLUGIN],
+        input="{invalid json",
+        capture_output=True,
+        text=True,
+    )
+
+    res = json.loads(result.stdout.strip())
+
+    assert res["requestId"] == "unknown"
+    assert "error" in res
+
+    print("✓ invalid_json_returns_error")
+
 if __name__ == "__main__":
     test_check_installed()
     test_apply_config_dry_run()
@@ -182,5 +213,6 @@ if __name__ == "__main__":
     test_nested_merge()
     test_idempotent_apply()
     test_unknown_command()
-
+    test_invalid_json_returns_error()
+    test_empty_stdin_returns_error()
     print("\nAll tests passed.")
