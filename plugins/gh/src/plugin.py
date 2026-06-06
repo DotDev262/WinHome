@@ -16,7 +16,17 @@ except ImportError:
 
 
 def get_config_path() -> str:
-    return os.path.join(os.environ.get("APPDATA", ""), "GitHub CLI", "config.yml")
+    appdata = os.environ.get("APPDATA")
+
+    if appdata:
+        return os.path.join(appdata, "GitHub CLI", "config.yml")
+
+    return os.path.join(
+        os.path.expanduser("~"),
+        ".config",
+        "gh",
+        "config.yml",
+    )
 
 
 def log(message: str) -> None:
@@ -32,8 +42,10 @@ def read_yaml(file_path: str) -> dict:
         return {}
 
     with open(file_path, "r", encoding="utf-8") as file_handle:
-        data = yaml.safe_load(file_handle)
-        return data if isinstance(data, dict) else {}
+        data = yaml.safe_load(file_handle) or {}
+        if not isinstance(data, dict):
+            return {}
+        return data
 
 
 def write_yaml(file_path: str, data: dict) -> None:
@@ -49,7 +61,7 @@ def merge_settings(target: dict, source: dict) -> bool:
     changed = False
 
     for key, value in source.items():
-        if value == "":
+        if value == None:
             continue
 
         current_value = target.get(key)
@@ -87,7 +99,7 @@ def check_installed(request_id: str) -> dict:
 
 def apply_config(request_id: str, args: dict, context: dict) -> dict:
     dry_run = bool(context.get("dryRun", False))
-    updates = {key: value for key, value in args.items() if key != "dry_run"}
+    updates = {key: value for key, value in args.items() if key != "dryRun"}
 
     config_path = get_config_path()
     if yaml is None:
