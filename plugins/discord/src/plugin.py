@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import tempfile
 
 # from pathlib import Path
 
@@ -40,8 +41,21 @@ def read_json(file_path: str) -> dict:
 def write_json(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    fd, temp_path = tempfile.mkstemp(
+        dir=os.path.dirname(file_path),
+        suffix=".tmp",
+    )
+
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+        os.replace(temp_path, file_path)
+
+    except Exception:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
 
 
 def merge_settings(target: dict, source: dict) -> bool:
@@ -68,28 +82,24 @@ def check_installed(args: dict, request_id: str) -> dict:
     appdata = os.getenv("APPDATA")
 
     if not appdata:
-        return {
-            "requestId": request_id,
-            "success": False,
-            "changed": False,
-            "error": "APPDATA environment variable not found",
-        }
+        return False
 
     discord_path = os.path.join(appdata, "discord")
     installed = os.path.exists(discord_path)
 
-    return {
-        "requestId": request_id,
-        "success": True,
-        "changed": False,
-        "data": installed,
-    }
+    return installed
 
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
-    dry_run = context.get("dryRun", False)
+    dry_run = args.get("dryRun", False)
 
     settings = args.get("settings", {})
+
+    if not isinstance(settings, dict):
+        return {
+            "requestId": request_id,
+            "error": "settings must be a dictionary",
+        }
 
     try:
         config_path = get_config_path()
@@ -101,7 +111,6 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         if not changed:
             return {
                 "requestId": request_id,
-                "success": True,
                 "changed": False,
             }
 
@@ -110,8 +119,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
             return {
                 "requestId": request_id,
-                "success": True,
-                "changed": False,
+                "changed": True,
             }
 
         write_json(config_path, current_config)
@@ -120,7 +128,6 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
         return {
             "requestId": request_id,
-            "success": True,
             "changed": True,
         }
 
@@ -129,8 +136,6 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
         return {
             "requestId": request_id,
-            "success": False,
-            "changed": False,
             "error": str(e),
         }
 
@@ -139,28 +144,52 @@ def main():
     input_data = sys.stdin.read()
 
     if not input_data:
+        sys.stdout.write(
+          json.dumps(
+              {
+                  "requestId": "unknown",
+                  "error": "No input received",
+              }
+          )
+          + "\n"
+        )
+        sys.stdout.flush()
         return
 
     try:
         request = json.loads(input_data)
     except Exception as e:
         log(f"Failed to parse request: {e}")
-        sys.exit(1)
+        sys.stdout.write(
+            json.dumps(
+                {
+                  "requestId": "unknown",
+                  "error": f"Failed to parse request: {e}",
+                }
+              )
+          + "\n"
+        )
 
-    request_id = request.get("requestId", "unknown")
+        sys.stdout.flush()
+        return
+
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
     context = request.get("context", {})
 
     response = {
         "requestId": request_id,
-        "success": False,
-        "changed": False,
     }
 
     try:
         if command == "check_installed":
-            response = check_installed(args, request_id)
+            installed = check_installed(args, request_id)
+
+            response = {
+              "requestId": request_id,
+              "installed": installed,
+            }
 
         elif command == "apply":
             response = apply_config(args, context, request_id)

@@ -26,11 +26,11 @@ def test_check_installed():
             "requestId": "1",
             "command": "check_installed",
             "args": {},
-            "context": {},
         }
     )
 
-    assert "success" in res
+    assert res["requestId"] == "1"
+    assert isinstance(res["installed"], bool)
     print("✓ check_installed")
 
 
@@ -40,19 +40,18 @@ def test_apply_config_dry_run():
 
         res = run_plugin(
             {
-                "requestId": "2",
-                "command": "apply",
-                "args": {
-                    "settings": {
-                        "enableHardwareAcceleration": False
-                    }
-                },
-                "context": {"dryRun": True},
+              "requestId": "2",
+              "command": "apply",
+              "args": {
+                  "settings": {
+                      "enableHardwareAcceleration": False
+                  },
+                  "dryRun": True,
+              },
             }
         )
 
-        assert res["success"]
-        assert not res["changed"]
+        assert res["changed"] is True
 
         print("✓ apply_config_dry_run")
 
@@ -71,12 +70,11 @@ def test_apply_config():
                         "IS_MAXIMIZED": True,
                     }
                 },
-                "context": {"dryRun": False},
             }
         )
 
-        assert res["success"]
-        assert res["changed"]
+        assert res["requestId"] == "3"
+        assert res["changed"] is True
 
         config_path = os.path.join(tmp, "discord", "settings.json")
 
@@ -124,11 +122,10 @@ def test_nested_merge():
                         }
                     }
                 },
-                "context": {"dryRun": False},
             }
         )
 
-        assert res["success"]
+        assert res["changed"] is True
 
         with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
@@ -153,15 +150,13 @@ def test_idempotent_apply():
                     "enableHardwareAcceleration": False
                 }
             },
-            "context": {"dryRun": False},
         }
 
         run_plugin(payload)
 
         res = run_plugin(payload)
 
-        assert res["success"]
-        assert not res["changed"]
+        assert res["changed"] is False
 
         print("✓ idempotent_apply")
 
@@ -172,11 +167,9 @@ def test_unknown_command():
             "requestId": "6",
             "command": "explode",
             "args": {},
-            "context": {},
         }
     )
 
-    assert not res["success"]
     assert "error" in res
 
     print("✓ unknown_command")
