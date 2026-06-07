@@ -71,13 +71,13 @@ def test_apply_settings():
                         "play_sound": True,
                         "show_tray_icon": True,
                     },
-                    "dryRun": False,  
+                    "dryRun": False,
                 },
                 "context": {},
             },
             env={"APPDATA": tmp},
         )
-       
+
         assert "error" not in res
         assert res["changed"]
 
@@ -93,7 +93,7 @@ def test_idempotent():
         payload = {
             "requestId": "4",
             "command": "apply",
-            "args": {"settings": {"max_clipboards": 100}, "dryRun": False},  
+            "args": {"settings": {"max_clipboards": 100}, "dryRun": False},
             "context": {},
         }
         run_plugin(payload, env={"APPDATA": tmp})
@@ -111,7 +111,7 @@ def test_dry_run():
             {
                 "requestId": "5",
                 "command": "apply",
-                "args": {"settings": {"max_clipboards": 200}, "dryRun": True},  
+                "args": {"settings": {"max_clipboards": 200}, "dryRun": True},
                 "context": {},
             },
             env={"APPDATA": tmp},
