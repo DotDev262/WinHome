@@ -146,8 +146,8 @@ def main() -> None:
     if not raw: 
         sys.stdout.write( 
             json.dumps({ "requestId": "unknown", "error": "No input received", }) + "\n" ) 
-    sys.stdout.flush() 
-    return
+        sys.stdout.flush() 
+        return
 
     try:
         request = json.loads(raw)
