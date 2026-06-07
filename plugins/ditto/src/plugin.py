@@ -45,7 +45,7 @@ def merge_settings(target: dict, source: dict) -> bool:
     return changed
 
 
-def check_installed(args: dict, request_id: str) -> dict:
+def check_installed(args: dict, request_id: str) -> bool:
     appdata = os.environ.get("APPDATA", "")
     exe_path = os.path.join(appdata, "Ditto", "Ditto.exe")
 
@@ -57,38 +57,32 @@ def check_installed(args: dict, request_id: str) -> dict:
                 installed = True
                 break
 
-    return {
-        "requestId": request_id,
-        "success": True,
-        "changed": False,
-        "data": installed,
-    }
+    return installed
 
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     new_settings = args.get("settings", {})
-    dry_run = context.get("dryRun", False)
+    dry_run = args.get("dryRun", False)
 
     current = read_json(CONFIG_PATH)
     changed = merge_settings(current, new_settings)
 
     if not changed:
         log("No changes needed.")
-        return {"requestId": request_id, "success": True, "changed": False}
+        return {"requestId": request_id, "changed": False}
 
     if dry_run:
         log(f"Would update {CONFIG_PATH} with: {json.dumps(new_settings)}")
-        return {"requestId": request_id, "success": True, "changed": True}
+        return {"requestId": request_id, "changed": True}
 
     try:
         write_json_atomic(CONFIG_PATH, current)
         log(f"Updated {CONFIG_PATH}")
-        return {"requestId": request_id, "success": True, "changed": True}
+        return {"requestId": request_id, "changed": True}
     except Exception as e:
         log(f"Error writing config: {e}")
         return {
             "requestId": request_id,
-            "success": False,
             "changed": False,
             "error": str(e),
         }
@@ -97,7 +91,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 def main():
     input_data = sys.stdin.read()
     if not input_data:
-        response = {"requestId": "unknown", "success": False, "error": "Empty stdin"}
+        response = {"requestId": "unknown", "error": "Empty stdin"}
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
         return
@@ -106,7 +100,7 @@ def main():
         request = json.loads(input_data)
     except Exception as e:
         log(f"Failed to parse request: {e}")
-        response = {"requestId": "unknown", "success": False, "error": f"Invalid JSON: {str(e)}"}
+        response = {"requestId": "unknown", "error": f"Invalid JSON: {str(e)}"}
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
         return
@@ -116,17 +110,21 @@ def main():
     args = request.get("args", {})
     context = request.get("context", {})
 
-    response = {"requestId": request_id, "success": False, "changed": False}
-
     try:
         if command == "check_installed":
-            response = check_installed(args, request_id)
+            # Return bare bool as requested by admin
+            installed = check_installed(args, request_id)
+            sys.stdout.write(json.dumps(installed) + "\n")
+            sys.stdout.flush()
+            return
+
         elif command == "apply":
             response = apply_config(args, context, request_id)
         else:
-            response["error"] = f"Unknown command: {command}"
+            response = {"requestId": request_id, "error": f"Unknown command: {command}"}
+
     except Exception as fatal_err:
-        response["error"] = f"Internal Script Error: {str(fatal_err)}"
+        response = {"requestId": request_id, "error": f"Internal Script Error: {str(fatal_err)}"}
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()

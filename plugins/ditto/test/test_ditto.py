@@ -32,8 +32,8 @@ def test_check_installed_false():
             },
             env={"APPDATA": tmp, "PATH": ""},
         )
-        assert res["success"]
-        assert res["data"] == False
+        # ✅ check_installed returns bare bool, not a dict with "data"
+        assert res == False  # Changed from assert res["success"] and res["data"]
         print("✓ check_installed_false")
 
 
@@ -52,8 +52,8 @@ def test_check_installed_true():
             },
             env={"APPDATA": tmp, "PATH": ""},
         )
-        assert res["success"]
-        assert res["data"] == True
+        # ✅ check_installed returns bare bool
+        assert res == True  # Changed from assert res["success"] and res["data"]
         print("✓ check_installed_true")
 
 
@@ -70,13 +70,15 @@ def test_apply_settings():
                         "max_clipboards": 500,
                         "play_sound": True,
                         "show_tray_icon": True,
-                    }
+                    },
+                    "dryRun": False,  
                 },
-                "context": {"dryRun": False},
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
-        assert res["success"], res
+       
+        assert "error" not in res
         assert res["changed"]
 
         saved = json.loads(open(config_path).read())
@@ -91,12 +93,12 @@ def test_idempotent():
         payload = {
             "requestId": "4",
             "command": "apply",
-            "args": {"settings": {"max_clipboards": 100}},
-            "context": {"dryRun": False},
+            "args": {"settings": {"max_clipboards": 100}, "dryRun": False},  
+            "context": {},
         }
         run_plugin(payload, env={"APPDATA": tmp})
         res = run_plugin(payload, env={"APPDATA": tmp})
-        assert res["success"]
+        assert "error" not in res  # Changed from assert res["success"]
         assert not res["changed"]
         print("✓ idempotent")
 
@@ -109,12 +111,12 @@ def test_dry_run():
             {
                 "requestId": "5",
                 "command": "apply",
-                "args": {"settings": {"max_clipboards": 200}},
-                "context": {"dryRun": True},
+                "args": {"settings": {"max_clipboards": 200}, "dryRun": True},  
+                "context": {},
             },
             env={"APPDATA": tmp},
         )
-        assert res["success"]
+        assert "error" not in res  # Changed from assert res["success"]
         assert res["changed"]
         assert not os.path.exists(config_path)
         print("✓ dry_run")
@@ -122,8 +124,8 @@ def test_dry_run():
 
 def test_unknown_command():
     res = run_plugin({"requestId": "6", "command": "explode", "args": {}, "context": {}})
-    assert not res["success"]
-    assert "error" in res
+    assert "error" in res  # Changed from assert not res["success"]
+    assert "success" not in res  # ✅ Verify no success field
     print("✓ unknown_command")
 
 
