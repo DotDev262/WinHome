@@ -1,35 +1,13 @@
-# Stage 1: Build dependencies environment securely
-FROM python:3.11-slim AS builder
+# Stage 1: Build the C# application using the SDK environment
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY WinHome.sln .
+COPY src/ src/
+RUN dotnet restore
+RUN dotnet publish -c Release -o /app
 
+# Stage 2: Runtime layer using a slim .NET execution framework
+FROM mcr.microsoft.com/dotnet/runtime:10.0 AS runtime
 WORKDIR /app
-
-# Install system compilation packages if needed
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements list and install user dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
-
-# Stage 2: Ultra-lightweight production execution layer
-FROM python:3.11-slim AS runner
-
-WORKDIR /app
-
-# Create a non-privileged system user profile for container execution safety
-RUN groupadd -g 999 appuser && \
-    useradd -r -u 999 -g appuser appuser
-
-# Copy over compiled dependencies from the builder environment stage
-COPY --from=builder /root/.local /home/appuser/.local
-COPY . .
-
-# Adjust execution paths and set user profile authorization settings
-ENV PATH=/home/appuser/.local/bin:$PATH
-RUN chown -R appuser:appuser /app
-
-USER appuser
-
-EXPOSE 8000
-ENTRYPOINT ["python", "main.py"]
+COPY --from=build /app .
+ENTRYPOINT ["./WinHome"]
