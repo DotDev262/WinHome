@@ -13,7 +13,6 @@ def get_config_paths():
     ]
 
 def deep_merge(target, source):
-    """Recursively deep merges source into target and returns True if any value changed."""
     any_changed = False
     for key, value in source.items():
         if key in target and isinstance(target[key], dict) and isinstance(value, dict):
@@ -26,12 +25,14 @@ def deep_merge(target, source):
     return any_changed
 
 def check_installed() -> bool:
-    """Strictly returns a bare boolean indicating system installation state."""
     return any(os.path.exists(path) for path in get_config_paths())
 
-def apply(args):
+def apply(request_id, args):
     settings = args.get("settings", {})
     dry_run = args.get("dryRun", False)
+    
+    if not isinstance(settings, dict):
+        return {"requestId": request_id, "error": "settings must be a dictionary"}
     
     target_path = None
     for path in get_config_paths():
@@ -54,10 +55,10 @@ def apply(args):
     has_changes = deep_merge(existing_config, settings)
     
     if dry_run:
-        return {"status": "success", "dryRun": True, "changed": has_changes, "path": target_path}
+        return {"requestId": request_id, "dryRun": True, "changed": has_changes, "path": target_path}
 
     if not has_changes:
-        return {"status": "success", "changed": False, "path": target_path}
+        return {"requestId": request_id, "changed": False, "path": target_path}
 
     try:
         if not os.path.exists(config_dir):
@@ -72,42 +73,38 @@ def apply(args):
             if os.path.exists(temp_path):
                 os.remove(temp_path)
             raise e
-        return {"status": "success", "changed": True, "path": target_path}
+        return {"requestId": request_id, "changed": True, "path": target_path}
     except Exception as err:
-        return {"status": "error", "message": str(err), "changed": False}
+        return {"requestId": request_id, "error": str(err)}
 
 def main():
     request_id = "unknown"
     try:
         input_data = sys.stdin.read().strip()
         if not input_data:
-            print(json.dumps({"requestId": request_id, "status": "error", "message": "Empty standard input data container."}))
+            print(json.dumps({"requestId": request_id, "error": "No input received"}))
             return
         request = json.loads(input_data)
     except Exception as e:
-        print(json.dumps({"requestId": request_id, "status": "error", "message": f"Malformed JSON envelope: {str(e)}"}))
+        print(json.dumps({"requestId": request_id, "error": f"Invalid JSON: {str(e)}"}))
         return
         
-    request_id = request.get("requestId", "unknown")
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
-    args = request.get("args", {}) if request.get("args") is not None else request
+    args = request.get("args", {})
 
     if command == "check_installed":
         print(json.dumps({
             "requestId": request_id,
-            "status": "success",
             "installed": check_installed()
         }))
     elif command == "apply":
-        result = apply(args)
-        response = {"requestId": request_id}
-        response.update(result)
-        print(json.dumps(response))
+        result = apply(request_id, args)
+        print(json.dumps(result))
     else:
         print(json.dumps({
             "requestId": request_id,
-            "status": "error",
-            "message": f"Unsupported protocol token: {command}"
+            "error": f"Unsupported protocol token: {command}"
         }))
 
 if __name__ == "__main__":
