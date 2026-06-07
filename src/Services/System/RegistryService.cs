@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Infrastructure.Helpers;
+using System.Linq;
 
 namespace WinHome.Services.System
 {
@@ -29,7 +30,20 @@ namespace WinHome.Services.System
         {
           object? currentValue = key?.GetValue(tweak.Name);
 
-          if (currentValue != null && currentValue.ToString() == tweak.Value?.ToString())
+          bool alreadySet = false;
+          if (currentValue != null)
+          {
+            if (currentValue is byte[] currentBytes && tweak.Value is byte[] desiredBytes)
+            {
+              alreadySet = currentBytes.SequenceEqual(desiredBytes);
+            }
+            else
+            {
+              alreadySet = currentValue.ToString() == tweak.Value?.ToString();
+            }
+          }
+
+          if (alreadySet)
           {
             Console.WriteLine($"[Registry] Skipped: {tweak.Name} (Already set)");
             return true;
