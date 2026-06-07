@@ -13,6 +13,7 @@ def get_config_paths():
     ]
 
 def deep_merge(target, source):
+    """Recursively deep merges source into target and returns True if any value changed."""
     any_changed = False
     for key, value in source.items():
         if key in target and isinstance(target[key], dict) and isinstance(value, dict):
@@ -25,6 +26,7 @@ def deep_merge(target, source):
     return any_changed
 
 def check_installed() -> bool:
+    """Strictly returns a bare boolean indicating system installation state."""
     return any(os.path.exists(path) for path in get_config_paths())
 
 def apply(request_id, args):
@@ -104,7 +106,7 @@ def main():
     else:
         print(json.dumps({
             "requestId": request_id,
-            "error": f"Unsupported protocol token: {command}"
+            "error": f"Unknown command: {command}"
         }))
 
 if __name__ == "__main__":
