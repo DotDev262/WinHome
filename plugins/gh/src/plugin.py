@@ -61,7 +61,7 @@ def merge_settings(target: dict, source: dict) -> bool:
     changed = False
 
     for key, value in source.items():
-        if value == None:
+        if value is None:
             continue
 
         current_value = target.get(key)
@@ -91,9 +91,14 @@ def check_installed() -> bool:
     return ( shutil.which("gh") is not None or shutil.which("gh.exe") is not None )
 
 
-def apply_config(request_id: str, args: dict, context: dict) -> dict:
-    dry_run = bool(args.get("dryRun", False))
-    updates = {key: value for key, value in args.items() if key != "dryRun"}
+def apply_config(request_id: str, args: dict) -> dict: 
+    dry_run = bool(args.get("dryRun", False)) 
+    settings = args.get("settings", {}) 
+    if not isinstance(settings, dict): 
+        return { "requestId": request_id, 
+                "error": "settings must be a dictionary", 
+        }
+    updates = {key: value for key, value in settings.items()}
 
     config_path = get_config_path()
     if yaml is None:
@@ -131,14 +136,17 @@ def handle(request: dict) -> dict:
     if command == "check_installed": 
         installed = check_installed() 
         return { "requestId": request_id, "installed": installed, }
-    if command == "apply":
-        if not isinstance(args, dict):
-            raise ValueError("args must be an object")
-        if not isinstance(context, dict):
-            raise ValueError("context must be an object")
-        return apply_config(request_id, args, context)
+    if command == "apply": 
+        if not isinstance(args, dict): 
+            return { "requestId": request_id, 
+                    "error": "args must be a dictionary", 
+            } 
+        return apply_config(request_id, args)
 
-    raise ValueError(f"Unknown command: {command}")
+    return {
+    "requestId": request_id,
+    "error": f"Unknown command: {command}",
+    }
 
 
 def main() -> None:
@@ -157,8 +165,6 @@ def main() -> None:
             "requestId": request.get("requestId", "unknown")
             if "request" in locals() and isinstance(request, dict)
             else "unknown",
-            "success": False,
-            "changed": False,
             "error": str(error),
         }
 
