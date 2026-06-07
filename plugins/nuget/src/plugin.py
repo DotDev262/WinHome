@@ -268,8 +268,6 @@ def main():
     except Exception as e:
         response = {
             "requestId": "unknown",
-            "success": False,
-            "changed": False,
             "error": f"Failed to parse request: {e}",
         }
         sys.stdout.write(json.dumps(response) + "\n")
@@ -284,13 +282,12 @@ def main():
     response = {
         "requestId": request_id,
         "success": False,
-        "changed": False,
     }
 
     try:
         if command == "check_installed":
             installed = check_installed(args, request_id)
-            response = {"requestId": request_id, "data": installed, "changed": False}
+            response = {"requestId": request_id, "installed": installed}
         elif command == "apply":
             response = apply_config(args, context, request_id)
         else:
