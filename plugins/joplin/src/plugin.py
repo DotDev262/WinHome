@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 
 
 COMMON_PATHS = [
@@ -52,25 +53,24 @@ def load_settings():
 
         return json.loads(content)
 
+
 def save_settings(settings):
     ensure_config_exists()
 
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as file:
+    fd, temp_path = tempfile.mkstemp(
+        dir=CONFIG_DIR,
+        suffix=".tmp"
+    )
+
+    os.close(fd)
+
+    with open(temp_path, "w", encoding="utf-8") as file:
         json.dump(settings, file, indent=2)
 
-
-def handle_check_installed():
-    installed = is_joplin_installed()
-
-    return {
-        "success": True,
-        "data": {
-            "installed": installed
-        }
-    }
+    os.replace(temp_path, SETTINGS_FILE)
 
 
-def handle_apply(args, dry_run=False):
+def handle_apply(settings, dry_run=False):
     current_settings = load_settings()
 
     new_settings = current_settings.copy()
@@ -78,11 +78,12 @@ def handle_apply(args, dry_run=False):
     changed = False
     changes = {}
 
-    for key, value in args.items():
+    for key, value in settings.items():
         old_value = current_settings.get(key)
 
         if old_value != value:
             changed = True
+
             changes[key] = {
                 "old": old_value,
                 "new": value
@@ -94,12 +95,8 @@ def handle_apply(args, dry_run=False):
         save_settings(new_settings)
 
     return {
-        "success": True,
         "changed": changed,
-        "dry_run": dry_run,
-        "data": {
-            "changes": changes
-        }
+        "changes": changes
     }
 
 
@@ -108,19 +105,32 @@ def main():
         raw_input = sys.stdin.read()
         request = json.loads(raw_input)
 
+        request_id = request.get("requestId") or "unknown"
+
         command = request.get("command")
         args = request.get("args", {})
-        dry_run = request.get("dry_run", False)
 
         if command == "check_installed":
-            response = handle_check_installed()
+            response = {
+                "requestId": request_id,
+                "installed": is_joplin_installed()
+            }
 
         elif command == "apply":
-            response = handle_apply(args, dry_run)
+            dry_run = args.get("dryRun", False)
+            settings = args.get("settings", {})
+
+            result = handle_apply(settings, dry_run)
+
+            response = {
+                "requestId": request_id,
+                "changed": result["changed"],
+                "changes": result["changes"]
+            }
 
         else:
             response = {
-                "success": False,
+                "requestId": request_id,
                 "error": f"Unknown command: {command}"
             }
 
@@ -128,7 +138,7 @@ def main():
 
     except Exception as e:
         send_response({
-            "success": False,
+            "requestId": "unknown",
             "error": str(e)
         })
 

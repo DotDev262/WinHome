@@ -1,11 +1,15 @@
 import json
 import tempfile
 from pathlib import Path
-
 import sys
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
+
+plugin_path = str(Path(__file__).resolve().parents[1] / "src")
+
+sys.path.append(plugin_path)
 
 import plugin
+
+sys.path.remove(plugin_path)
 
 
 def test_save_and_load_settings():
@@ -19,9 +23,7 @@ def test_save_and_load_settings():
         }
 
         plugin.save_settings(test_settings)
-
         loaded_settings = plugin.load_settings()
-
         assert loaded_settings == test_settings
 
 
@@ -34,11 +36,8 @@ def test_handle_apply_changes():
             "theme": 2
         })
 
-        assert result["success"] is True
         assert result["changed"] is True
-
         settings = plugin.load_settings()
-
         assert settings["theme"] == 2
 
 
@@ -54,10 +53,6 @@ def test_handle_apply_dry_run():
         result = plugin.handle_apply({
             "theme": 2
         }, dry_run=True)
-
-        assert result["success"] is True
         assert result["changed"] is True
-
         settings = plugin.load_settings()
-
         assert settings["theme"] == 1
