@@ -12,9 +12,16 @@ namespace WinHome.Services.System
         return null;
       }
 
-      string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
+      string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd-HHmmss");
 
       string backupPath = $"{path}.{timestamp}.bak";
+
+      int counter = 1;
+ 
+      while (File.Exists(backupPath))
+      {
+        backupPath = $"{path}.{timestamp}.{counter++}.bak";
+      }
 
       File.Copy(path, backupPath, overwrite: false);
 
