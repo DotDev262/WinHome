@@ -1,9 +1,9 @@
-import sys
 import json
 import os
-import uuid
 import shutil
+import sys
 import tempfile
+import uuid
 from pathlib import Path
 
 SETTING_MAP = {
@@ -20,29 +20,28 @@ SETTING_MAP = {
     "pipInteropEnabled": "pip_interop_enabled",
     "maxParallelDownloads": "max_parallel_downloads",
     "privateEnvs": "private_envs",
-    "modifyPath": "modify_path"
+    "modifyPath": "modify_path",
 }
 
+
 def send_response(request_id, data=None, changed=False, error=None):
-    response = {
-        "requestId": request_id,
-        "data": data,
-        "changed": changed
-    }
+    response = {"requestId": request_id, "data": data, "changed": changed}
     if error:
         response["error"] = error
-        
+
     print(json.dumps(response))
+
 
 def check_installed():
     return shutil.which("conda") is not None
+
 
 def main():
     input_data = sys.stdin.read().strip()
     if not input_data:
         send_response("unknown", error="Empty input received from host.")
         return
-        
+
     try:
         request = json.loads(input_data)
     except json.JSONDecodeError:
@@ -60,7 +59,7 @@ def main():
 
     if command == "apply":
         try:
-            import yaml 
+            import yaml
         except ImportError:
             send_response(request_id, error="PyYAML is missing. Please install it.")
             return
@@ -68,7 +67,7 @@ def main():
         condarc_path = Path.home() / ".condarc"
         dry_run = args.get("dryRun", False)
         settings = args.get("settings", {})
-        
+
         if not isinstance(settings, dict):
             send_response(request_id, error="Settings must be a dictionary.")
             return
@@ -96,13 +95,13 @@ def main():
             if condarc_path.exists():
                 backup_path = condarc_path.with_name(f".condarc.bak.{uuid.uuid4().hex}")
                 shutil.copy2(condarc_path, backup_path)
-            
+
             # FIX: Atomic file write using mkstemp and os.replace
             fd, tmp_path = tempfile.mkstemp(dir=str(condarc_path.parent), text=True)
             try:
                 with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
                     yaml.dump(current_config, f, default_flow_style=False)
-                    f.write("\n") 
+                    f.write("\n")
                 os.replace(tmp_path, condarc_path)
             except Exception:
                 os.remove(tmp_path)
@@ -112,6 +111,7 @@ def main():
         return
 
     send_response(request_id, error=f"Unknown command: {command}")
+
 
 if __name__ == "__main__":
     main()

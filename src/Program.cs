@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.IO;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
+using WinHome.Models;
 using WinHome.Services.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;

@@ -11,13 +11,15 @@ def check_installed():
     """Check if syncthing.exe is installed and in the system PATH."""
     return shutil.which("syncthing.exe") is not None
 
+
 def get_config_path():
     """Find the Syncthing config file path."""
-    if os.name == 'nt':
-        base = os.environ.get('LOCALAPPDATA', '~\\AppData\\Local')
+    if os.name == "nt":
+        base = os.environ.get("LOCALAPPDATA", "~\\AppData\\Local")
         return Path(base) / "Syncthing" / "config.xml"
     else:
         return Path("~/.config/syncthing/config.xml").expanduser()
+
 
 def update_element(parent, tag, new_data):
     """Safely update an XML element."""
@@ -41,6 +43,7 @@ def update_element(parent, tag, new_data):
             changed = True
 
     return changed
+
 
 def process_command(request):
     """Handle the incoming JSON request."""
@@ -74,7 +77,7 @@ def process_command(request):
             config_path.parent.mkdir(parents=True, exist_ok=True)
 
             fd, temp_path = tempfile.mkstemp(dir=config_path.parent, suffix=".xml")
-            with os.fdopen(fd, 'wb') as f:
+            with os.fdopen(fd, "wb") as f:
                 tree.write(f, encoding="utf-8", xml_declaration=True)
 
             os.replace(temp_path, config_path)
@@ -83,6 +86,7 @@ def process_command(request):
 
     else:
         return {"requestId": request_id, "error": f"Unknown command: {command}"}
+
 
 def main():
     """Read JSON from the standard input."""
@@ -100,6 +104,7 @@ def main():
         print(json.dumps({"requestId": "unknown", "error": "Invalid JSON"}))
     except Exception as e:
         print(json.dumps({"requestId": "unknown", "error": str(e)}))
+
 
 if __name__ == "__main__":
     main()
