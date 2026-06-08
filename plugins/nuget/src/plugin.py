@@ -66,13 +66,10 @@ def merge_settings(tree, settings):
     if not isinstance(settings, dict):
         return changed
 
-    # ── packageSources ──
     sources = settings.get("packageSources")
     if isinstance(sources, list):
         el = get_or_create(root, "packageSources")
-        existing = {
-            a.get("key"): a for a in el.findall("add")
-        }
+        existing = {a.get("key"): a for a in el.findall("add")}
         for src in sources:
             if not isinstance(src, dict):
                 continue
@@ -88,13 +85,10 @@ def merge_settings(tree, settings):
                 ET.SubElement(el, "add", {"key": name, "value": source})
                 changed = True
 
-    # ── apiKeys ──
     api_keys = settings.get("apiKeys")
     if isinstance(api_keys, list):
         el = get_or_create(root, "apikeys")
-        existing = {
-            a.get("key"): a for a in el.findall("add")
-        }
+        existing = {a.get("key"): a for a in el.findall("add")}
         for entry in api_keys:
             if not isinstance(entry, dict):
                 continue
@@ -110,13 +104,10 @@ def merge_settings(tree, settings):
                 ET.SubElement(el, "add", {"key": source, "value": key})
                 changed = True
 
-    # ── disabledPackageSources ──
     disabled = settings.get("disabledPackageSources")
     if isinstance(disabled, list):
         el = get_or_create(root, "disabledPackageSources")
-        existing = {
-            a.get("key") for a in el.findall("add")
-        }
+        existing = {a.get("key") for a in el.findall("add")}
         for name in disabled:
             if not isinstance(name, str):
                 continue
@@ -124,13 +115,10 @@ def merge_settings(tree, settings):
                 ET.SubElement(el, "add", {"key": name, "value": "true"})
                 changed = True
 
-    # ── fallbackPackageSources ──
     fallback = settings.get("fallbackPackageSources")
     if isinstance(fallback, list):
         el = get_or_create(root, "fallbackPackageSources")
-        existing = {
-            a.get("key"): a for a in el.findall("add")
-        }
+        existing = {a.get("key"): a for a in el.findall("add")}
         for src in fallback:
             if not isinstance(src, dict):
                 continue
@@ -146,20 +134,15 @@ def merge_settings(tree, settings):
                 ET.SubElement(el, "add", {"key": name, "value": source})
                 changed = True
 
-    # ── config section (globalPackagesFolder, proxies, etc.) ──
     config_el = get_or_create(root, "config")
-    existing_config = {
-        a.get("key"): a for a in config_el.findall("add")
-    }
-
+    existing_config = {a.get("key"): a for a in config_el.findall("add")}
     config_keys = {
         "globalPackagesFolder": settings.get("globalPackagesFolder"),
-        "httpProxy":            settings.get("httpProxy"),
-        "httpsProxy":           settings.get("httpsProxy"),
+        "httpProxy": settings.get("httpProxy"),
+        "httpsProxy": settings.get("httpsProxy"),
         "maxHttpRequestsPerSource": settings.get("maxHttpRequestsPerSource"),
         "signatureValidationMode": settings.get("signatureValidationMode"),
     }
-
     for key, value in config_keys.items():
         if value is None:
             continue
@@ -172,13 +155,10 @@ def merge_settings(tree, settings):
             ET.SubElement(config_el, "add", {"key": key, "value": str_val})
             changed = True
 
-    # ── repositoryPaths ──
     repo_paths = settings.get("repositoryPaths")
     if isinstance(repo_paths, list):
         el = get_or_create(root, "repositoryPaths")
-        existing = {
-            a.get("key"): a for a in el.findall("add")
-        }
+        existing = {a.get("key"): a for a in el.findall("add")}
         for path in repo_paths:
             if not isinstance(path, str):
                 continue
@@ -189,18 +169,17 @@ def merge_settings(tree, settings):
     return changed
 
 
-def check_installed(args, request_id):
+def check_installed():
     config_path = get_config_path()
-    installed = (
+    return (
         shutil.which("nuget") is not None
         or shutil.which("dotnet") is not None
         or os.path.exists(config_path)
     )
-    return installed
 
 
-def apply_config(args, context, request_id):
-    dry_run = context.get("dryRun", False)
+def apply_config(args, request_id):
+    dry_run = args.get("dryRun", False)
 
     try:
         config_path = get_config_path()
@@ -213,37 +192,19 @@ def apply_config(args, context, request_id):
         changed = merge_settings(tree, settings)
 
         if not changed:
-            return {
-                "requestId": request_id,
-                "success": True,
-                "changed": False,
-            }
+            return {"requestId": request_id, "changed": False}
 
         if dry_run:
             log(f"Would update NuGet config at {config_path}")
-            return {
-                "requestId": request_id,
-                "success": True,
-                "changed": True,
-            }
+            return {"requestId": request_id, "changed": True}
 
         write_xml(config_path, tree)
         log(f"Updated NuGet config: {config_path}")
-
-        return {
-            "requestId": request_id,
-            "success": True,
-            "changed": True,
-        }
+        return {"requestId": request_id, "changed": True}
 
     except Exception as e:
         log(f"Failed to apply config: {e}")
-        return {
-            "requestId": request_id,
-            "success": False,
-            "changed": False,
-            "error": str(e),
-        }
+        return {"requestId": request_id, "error": str(e)}
 
 
 def main():
@@ -251,14 +212,7 @@ def main():
 
     if not input_data:
         sys.stdout.write(
-            json.dumps(
-                {
-                    "requestId": "unknown",
-                    "success": False,
-                    "error": "No input received",
-                }
-            )
-            + "\n"
+            json.dumps({"requestId": "unknown", "error": "No input received"}) + "\n"
         )
         sys.stdout.flush()
         return
@@ -266,34 +220,26 @@ def main():
     try:
         request = json.loads(input_data)
     except Exception as e:
-        response = {
-            "requestId": "unknown",
-            "error": f"Failed to parse request: {e}",
-        }
-        sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.write(
+            json.dumps({"requestId": "unknown", "error": f"Failed to parse request: {e}"}) + "\n"
+        )
         sys.stdout.flush()
         return
 
     request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
-    context = request.get("context", {})
-
-    response = {
-        "requestId": request_id,
-        "success": False,
-    }
 
     try:
         if command == "check_installed":
-            installed = check_installed(args, request_id)
+            installed = check_installed()
             response = {"requestId": request_id, "installed": installed}
         elif command == "apply":
-            response = apply_config(args, context, request_id)
+            response = apply_config(args, request_id)
         else:
-            response["error"] = f"Unknown command: {command}"
+            response = {"requestId": request_id, "error": f"Unknown command: {command}"}
     except Exception as fatal_err:
-        response["error"] = f"Internal Script Error: {str(fatal_err)}"
+        response = {"requestId": request_id, "error": f"Internal Script Error: {str(fatal_err)}"}
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
