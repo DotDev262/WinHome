@@ -26,5 +26,11 @@ namespace WinHome.Interfaces
     void RestoreState(string backupPath);
     /// <summary>Returns all currently applied item identifiers.</summary>
     IEnumerable<string> ListItems();
+    /// <summary>Records a step result in the step history.</summary>
+    void RecordStep(StepResult result);
+    /// <summary>Removes a step from the step history.</summary>
+    void RemoveStep(string stepId);
+    /// <summary>Returns the full step history dictionary.</summary>
+    Dictionary<string, StepResult> ListSteps();
   }
 }

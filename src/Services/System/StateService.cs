@@ -17,9 +17,93 @@ namespace WinHome.Services.System
     {
       _logger = logger;
 
+      var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+      var winHomeDir = Path.Combine(appData, "WinHome");
       var envPath = Environment.GetEnvironmentVariable("WINHOME_STATE_PATH");
-      _stateFilePath = string.IsNullOrEmpty(envPath) ? "winhome.state.json" : envPath;
+      _stateFilePath = envPath ?? Path.Combine(winHomeDir, "state.json");
+
+      if (!Directory.Exists(winHomeDir))
+      {
+        Directory.CreateDirectory(winHomeDir);
+      }
+
       _inMemoryState = LoadState();
+      MigrateLegacyState();
+    }
+
+    private void MigrateLegacyState()
+    {
+      var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+      var winHomeDir = Path.Combine(appData, "WinHome");
+      var oldStepPath = Path.Combine(winHomeDir, ".winhome-state.json");
+      var cwdStatePath = Path.Combine(Directory.GetCurrentDirectory(), "winhome.state.json");
+
+      bool oldStepExists = File.Exists(oldStepPath);
+      bool oldCwdExists = File.Exists(cwdStatePath);
+
+      if (!oldStepExists && !oldCwdExists) return;
+
+      lock (_sync)
+      {
+        var merged = _inMemoryState;
+        bool changed = false;
+
+        if (oldCwdExists)
+        {
+          try
+          {
+            var oldCwdJson = File.ReadAllText(cwdStatePath);
+            var oldState = JsonSerializer.Deserialize<StateData>(oldCwdJson);
+            if (oldState != null && oldState.AppliedItems.Any())
+            {
+              foreach (var item in oldState.AppliedItems)
+                merged.AppliedItems.Add(item);
+              foreach (var kv in oldState.SystemSettingOriginals)
+                merged.SystemSettingOriginals.TryAdd(kv.Key, kv.Value);
+              changed = true;
+            }
+          }
+          catch { }
+
+          try
+          {
+            var backupPath = cwdStatePath + $".backup.{Guid.NewGuid():N}";
+            File.Move(cwdStatePath, backupPath);
+            _logger.LogInfo($"[State] Migrated legacy state from {cwdStatePath}, backed up to {backupPath}");
+          }
+          catch { }
+        }
+
+        if (oldStepExists)
+        {
+          try
+          {
+            var oldStepJson = File.ReadAllText(oldStepPath);
+            var oldSteps = JsonSerializer.Deserialize<Dictionary<string, StepResult>>(oldStepJson);
+            if (oldSteps != null)
+            {
+              foreach (var kv in oldSteps)
+                merged.StepHistory.TryAdd(kv.Key, kv.Value);
+              changed = true;
+            }
+          }
+          catch { }
+
+          try
+          {
+            var backupPath = oldStepPath + $".backup.{Guid.NewGuid():N}";
+            File.Move(oldStepPath, backupPath);
+            _logger.LogInfo($"[State] Migrated legacy step state from {oldStepPath}, backed up to {backupPath}");
+          }
+          catch { }
+        }
+
+        if (changed)
+        {
+          _inMemoryState = merged;
+          FlushToDisk();
+        }
+      }
     }
 
     public StateData LoadState()
@@ -29,7 +113,6 @@ namespace WinHome.Services.System
       string json;
       try
       {
-        // Use FileShare.ReadWrite to allow reading even if we are writing (though we lock on write)
         using var stream = File.Open(_stateFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         using var reader = new StreamReader(stream);
         json = reader.ReadToEnd();
@@ -45,7 +128,6 @@ namespace WinHome.Services.System
         return new StateData();
       }
 
-      // Try to deserialize as new StateData format
       try
       {
         var stateData = JsonSerializer.Deserialize<StateData>(json);
@@ -53,10 +135,8 @@ namespace WinHome.Services.System
       }
       catch (JsonException)
       {
-        // Fall through to backward compatibility
       }
 
-      // Backward compatibility: try to deserialize as old HashSet<string> format
       try
       {
         var legacyState = JsonSerializer.Deserialize<HashSet<string>>(json);
@@ -97,7 +177,8 @@ namespace WinHome.Services.System
         _inMemoryState = new StateData
         {
           AppliedItems = new HashSet<string>(state.AppliedItems),
-          SystemSettingOriginals = new Dictionary<string, object>(state.SystemSettingOriginals)
+          SystemSettingOriginals = new Dictionary<string, object>(state.SystemSettingOriginals),
+          StepHistory = new Dictionary<string, StepResult>(state.StepHistory),
         };
         FlushToDisk();
       }
@@ -150,6 +231,34 @@ namespace WinHome.Services.System
       lock (_sync)
       {
         return _inMemoryState.SystemSettingOriginals.TryGetValue(settingKey, out var value) ? value : null;
+      }
+    }
+
+    public void RecordStep(StepResult result)
+    {
+      lock (_sync)
+      {
+        _inMemoryState.StepHistory[result.StepId] = result;
+        FlushToDisk();
+      }
+    }
+
+    public void RemoveStep(string stepId)
+    {
+      lock (_sync)
+      {
+        if (_inMemoryState.StepHistory.Remove(stepId))
+        {
+          FlushToDisk();
+        }
+      }
+    }
+
+    public Dictionary<string, StepResult> ListSteps()
+    {
+      lock (_sync)
+      {
+        return new Dictionary<string, StepResult>(_inMemoryState.StepHistory);
       }
     }
 

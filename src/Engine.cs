@@ -100,10 +100,8 @@ namespace WinHome
       {
         if (plugin.Capabilities.Contains("package_manager"))
         {
-          // Register the plugin as a package manager
           if (!_managers.ContainsKey(plugin.Name))
           {
-            // Delay logging discovery until it's actually used by an app
             _managers[plugin.Name] = new WinHome.Services.Plugins.PluginPackageManagerAdapter(plugin, _pluginRunner, _pluginManager, _runtimeResolver);
           }
         }
@@ -130,7 +128,6 @@ namespace WinHome
         return;
       }
 
-      // Check network if we have apps to install or WSL update enabled
       if ((config.Apps.Any() || (config.Wsl != null && config.Wsl.Update)) && !dryRun)
       {
         if (!WaitForNetwork())
@@ -189,7 +186,6 @@ namespace WinHome
         }
       }
 
-      // Revert system settings that are no longer in config
       if (OperatingSystem.IsWindows() && previousState.SystemSettingOriginals.Any())
       {
         var removedSystemSettings = previousState.SystemSettingOriginals.Keys
@@ -230,7 +226,6 @@ namespace WinHome
       var pluginsNeedingRuntime = plugins.Where(p => !p.Type.Equals("executable", StringComparison.OrdinalIgnoreCase)).ToList();
       if (pluginsNeedingRuntime.Any())
       {
-        // Only reconcile runtimes for plugins that are actually used in the config
         var usedPluginNames = config.Apps.Select(a => a.Manager)
             .Concat(new[] { "vim", "vscode", "obsidian", "ohmyposh" }.Where(_ => config.Vim != null || config.Vscode != null || config.Obsidian != null || config.Ohmyposh != null))
             .Concat(config.Extensions.Keys)
@@ -263,7 +258,6 @@ namespace WinHome
           if (!forceReapply && !dryRun && applyState.TryGetValue(stepId, out var previous) && previous.Status == StepStatus.Succeeded)
           {
             _logger.LogInfo($"[Engine] Skipping previously applied {stepId}.");
-            // Record skipped if not present or different
             var skippedResult = new StepResult
             {
               StepId = stepId,
@@ -379,7 +373,6 @@ namespace WinHome
           var pluginName = ext.Key;
           var pluginConfig = ext.Value;
 
-          // Find plugin by name
           var plugin = plugins.FirstOrDefault(p => p.Name.Equals(pluginName, StringComparison.OrdinalIgnoreCase));
 
           if (plugin != null)
@@ -415,7 +408,6 @@ namespace WinHome
       if (allTweaks.Any() && OperatingSystem.IsWindows())
       {
         _logger.LogInfo("\n--- Applying Registry Tweaks ---");
-        // Run sequentially to ensure state is saved accurately after each operation
         var applyState = _stateWriter.Load();
         foreach (var tweak in allTweaks)
         {
@@ -487,7 +479,6 @@ namespace WinHome
       {
         _logger.LogInfo("\n--- Applying System Settings ---");
 
-        // Capture original values before applying new settings
         if (!dryRun)
         {
           var originals = await _systemSettings.CaptureOriginalSettingsAsync(config.SystemSettings);
@@ -551,7 +542,6 @@ namespace WinHome
       var itemsToAdd = currentState.AppliedItems.Except(previousState.AppliedItems).ToList();
       var unchangedItems = previousState.AppliedItems.Intersect(currentState.AppliedItems).ToList();
 
-      // System settings reverts
       var systemSettingsReverts = previousState.SystemSettingOriginals.Keys
           .Where(k => !config.SystemSettings.ContainsKey(k))
           .ToList();
@@ -665,13 +655,11 @@ namespace WinHome
     {
       var state = new StateData();
 
-      // App managers
       foreach (var app in config.Apps)
       {
         state.AppliedItems.Add($"{app.Manager}:{app.Id}");
       }
 
-      // Registry tweaks
       var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
       var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
       foreach (var reg in allTweaks)
