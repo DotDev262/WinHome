@@ -23,9 +23,15 @@ namespace WinHome.Services.System
 
     public void WriteAllText(string path, string content)
     {
+      string? backupPath = BackupService.CreateBackup(path);
+
+      if (backupPath is not null)
+      {
+        Console.WriteLine($"Created backup at {backupPath}");
+      }
+
       File.WriteAllText(path, content);
     }
-
     public void CreateDirectory(string path)
     {
       Directory.CreateDirectory(path);

@@ -50,25 +50,45 @@ namespace WinHome.Tests
     }
 
     [Fact]
-    public void Apply_TargetExists_CreatesBackup()
+  public void Apply_TargetExists_CreatesTimestampedBackup()
+  {
+    var sourcePath = Path.GetTempFileName();
+    var targetPath = Path.GetTempFileName();
+
+    File.WriteAllText(targetPath, "original-content");
+
+    var dotfileConfig = new DotfileConfig
     {
-      // Arrange
-      var sourcePath = Path.GetTempFileName();
-      var targetPath = Path.GetTempFileName();
-      var dotfileConfig = new DotfileConfig { Src = sourcePath, Target = targetPath };
+      Src = sourcePath,
+      Target = targetPath
+    };
 
-      // Act
-      _dotfileService.Apply(dotfileConfig, false);
+    _dotfileService.Apply(dotfileConfig, false);
 
-      // Assert
-      Assert.True(File.Exists(targetPath + ".bak"));
+    var backups = Directory.GetFiles(
+      Path.GetDirectoryName(targetPath)!,
+      Path.GetFileName(targetPath) + ".*.bak"
+    );
 
-      // Cleanup
-      File.Delete(sourcePath);
-      if (File.Exists(targetPath))
-        File.Delete(targetPath);
-      File.Delete(targetPath + ".bak");
+    Assert.Single(backups);
+
+    Assert.Equal(
+      "original-content",
+      File.ReadAllText(backups[0])
+    );
+
+    File.Delete(sourcePath);
+
+    if (File.Exists(targetPath))
+    {
+      File.Delete(targetPath);
+    } 
+
+    foreach (var backup in backups)
+    {
+      File.Delete(backup);
     }
+  }
 
     [Fact]
     public void Apply_CreatesSymbolicLink()

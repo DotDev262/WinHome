@@ -92,9 +92,19 @@ namespace WinHome.Services.System
         // 2. Move new EXE to current path
         // 3. Start new process to delete .old and verify
 
+        string? backupPath = BackupService.CreateBackup(currentPath);
+
+        if (backupPath is not null)
+        {
+          _logger.LogInfo($"Created backup at {backupPath}");
+        }
+
         string oldPath = currentPath + ".old";
 
-        if (File.Exists(oldPath)) File.Delete(oldPath);
+        if (File.Exists(oldPath))
+        {
+          File.Delete(oldPath);
+        } 
 
         File.Move(currentPath, oldPath);
         File.Move(tempPath, currentPath);
