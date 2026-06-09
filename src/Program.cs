@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.IO;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
+using WinHome.Models;
 using WinHome.Services.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -130,22 +131,13 @@ class Program
               case "clear":
                 try
                 {
-                  // Look for winhome.state.json in the current working directory
-                  string stateFilePath = Path.Combine(Directory.GetCurrentDirectory(), "winhome.state.json");
-
-                  if (File.Exists(stateFilePath))
-                  {
-                    File.Delete(stateFilePath);
-                    logger.LogSuccess("[State] Success: winhome.state.json has been deleted and tracking state is reset.");
-                  }
-                  else
-                  {
-                    logger.LogInfo("[State] No active winhome.state.json file was found. State is already clean.");
-                  }
+                  stateService.SaveState(new StateData());
+                  stateService.LoadState();
+                  logger.LogSuccess("[State] All tracking state cleared successfully.");
                 }
                 catch (Exception ex)
                 {
-                  logger.LogError($"[State] Failed to clear tracking state file: {ex.Message}");
+                  logger.LogError($"[State] Failed to clear tracking state: {ex.Message}");
                   return 1;
                 }
                 break;

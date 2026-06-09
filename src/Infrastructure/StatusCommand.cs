@@ -1,15 +1,13 @@
 using System;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using WinHome.Services;
 using WinHome.Models;
 using WinHome.Interfaces;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 
 namespace WinHome.Infrastructure
 {
-  /// <summary>Registers the `status` subcommand that displays the apply state from the state file.</summary>
+  /// <summary>Registers the `status` subcommand that displays the apply state from the unified state file.</summary>
   public static class StatusCommand
   {
     /// <summary>Registers the status command onto the root command.</summary>
@@ -17,19 +15,19 @@ namespace WinHome.Infrastructure
     /// <param name="services">Service provider for resolving dependencies.</param>
     public static void Register(RootCommand root, IServiceProvider services)
     {
-      var cmd = new Command("status") { Description = "Show apply status from .winhome-state.json" };
+      var cmd = new Command("status") { Description = "Show apply status from unified state" };
 
       cmd.SetAction((ParseResult result) =>
       {
         var logger = services.GetService<ILogger>();
-        var writer = services.GetService<StateWriter>();
-        if (writer == null)
+        var stateService = services.GetService<IStateService>();
+        if (stateService == null)
         {
-          logger?.LogError("State writer not available.");
+          logger?.LogError("State service not available.");
           return 1;
         }
 
-        var state = writer.Load();
+        var state = stateService.ListSteps();
         if (!state.Any())
         {
           Console.WriteLine("No apply state found.");
@@ -67,4 +65,3 @@ namespace WinHome.Infrastructure
     }
   }
 }
-

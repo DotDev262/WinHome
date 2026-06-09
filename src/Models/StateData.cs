@@ -1,11 +1,10 @@
 using System.Text.Json.Serialization;
-using YamlDotNet.Serialization;
 
 namespace WinHome.Models
 {
   /// <summary>
-  /// Represents the complete system state tracked by WinHome, including applied items
-  /// and original values of system settings for reverting when they're removed from config.
+  /// Represents the complete system state tracked by WinHome, including applied items,
+  /// original values of system settings, and step execution history.
   /// </summary>
   public class StateData
   {
@@ -14,5 +13,8 @@ namespace WinHome.Models
 
     [JsonPropertyName("system_setting_originals")]
     public Dictionary<string, object> SystemSettingOriginals { get; set; } = new();
+
+    [JsonPropertyName("step_history")]
+    public Dictionary<string, StepResult> StepHistory { get; set; } = new();
   }
 }
