@@ -26,6 +26,9 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
     settings = args.get("settings", {})
 
+    if not settings:
+        return {"requestId": request_id, "success": True, "changed": False}
+
     if not isinstance(settings, dict):
         return {
             "requestId": request_id,
@@ -68,7 +71,12 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
     # Merge new settings
     for section, keys in settings.items():
         if not isinstance(keys, dict):
-            continue
+            return {
+                "requestId": request_id,
+                "success": False,
+                "changed": False,
+                "error": f"Section '{section}' must be a dictionary",
+            }
 
         if not parser.has_section(section):
             parser.add_section(section)
@@ -93,9 +101,9 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 parser.write(f, space_around_delimiters=False)
             os.replace(tmp_path, config_file)
-        except Exception as e:
+        except Exception:
             os.unlink(tmp_path)
-            raise e
+            raise
 
         return {"requestId": request_id, "success": True, "changed": True}
     except Exception as e:

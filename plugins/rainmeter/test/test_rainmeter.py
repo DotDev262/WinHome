@@ -19,11 +19,16 @@ class TestRainmeterPlugin(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.appdata = os.path.join(self.temp_dir, "AppData")
         os.makedirs(self.appdata)
+        self.old_appdata = os.environ.get("APPDATA")
         os.environ["APPDATA"] = self.appdata
         self.config_dir = os.path.join(self.appdata, "Rainmeter")
         self.config_file = os.path.join(self.config_dir, "Rainmeter.ini")
 
     def tearDown(self):
+        if self.old_appdata is not None:
+            os.environ["APPDATA"] = self.old_appdata
+        else:
+            del os.environ["APPDATA"]
         shutil.rmtree(self.temp_dir)
 
     @patch("shutil.which")
@@ -166,6 +171,21 @@ class TestRainmeterPlugin(unittest.TestCase):
         result = json.loads(output[0])
         self.assertFalse(result["success"])
         self.assertIn("Invalid JSON", result["error"])
+
+    @patch("sys.stdout")
+    @patch("sys.stdin")
+    def test_main_unknown_command(self, mock_stdin, mock_stdout):
+        mock_stdin.read.return_value = '{"command": "invalid_cmd", "requestId": "req-10"}'
+
+        output = []
+        mock_stdout.write.side_effect = output.append
+
+        plugin.main()
+
+        result = json.loads(output[0])
+        self.assertFalse(result["success"])
+        self.assertFalse(result["changed"])
+        self.assertIn("Unknown command", result["error"])
 
 
 if __name__ == "__main__":
