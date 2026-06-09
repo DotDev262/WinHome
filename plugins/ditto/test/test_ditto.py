@@ -32,8 +32,8 @@ def test_check_installed_false():
             },
             env={"APPDATA": tmp, "PATH": ""},
         )
-        # ✅ check_installed returns bare bool, not a dict with "data"
-        assert res == False  # Changed from assert res["success"] and res["data"]
+        assert "error" not in res
+        assert res["installed"] == False
         print("✓ check_installed_false")
 
 
@@ -52,8 +52,8 @@ def test_check_installed_true():
             },
             env={"APPDATA": tmp, "PATH": ""},
         )
-        # ✅ check_installed returns bare bool
-        assert res == True  # Changed from assert res["success"] and res["data"]
+        assert "error" not in res
+        assert res["installed"] == True
         print("✓ check_installed_true")
 
 
@@ -98,7 +98,7 @@ def test_idempotent():
         }
         run_plugin(payload, env={"APPDATA": tmp})
         res = run_plugin(payload, env={"APPDATA": tmp})
-        assert "error" not in res  # Changed from assert res["success"]
+        assert "error" not in res
         assert not res["changed"]
         print("✓ idempotent")
 
@@ -116,7 +116,7 @@ def test_dry_run():
             },
             env={"APPDATA": tmp},
         )
-        assert "error" not in res  # Changed from assert res["success"]
+        assert "error" not in res
         assert res["changed"]
         assert not os.path.exists(config_path)
         print("✓ dry_run")
@@ -124,8 +124,8 @@ def test_dry_run():
 
 def test_unknown_command():
     res = run_plugin({"requestId": "6", "command": "explode", "args": {}, "context": {}})
-    assert "error" in res  # Changed from assert not res["success"]
-    assert "success" not in res  # ✅ Verify no success field
+    assert "error" in res
+    assert "success" not in res
     print("✓ unknown_command")
 
 

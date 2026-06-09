@@ -45,7 +45,8 @@ def merge_settings(target: dict, source: dict) -> bool:
     return changed
 
 
-def check_installed(args: dict, request_id: str) -> bool:
+
+def check_installed() -> bool:
     appdata = os.environ.get("APPDATA", "")
     exe_path = os.path.join(appdata, "Ditto", "Ditto.exe")
 
@@ -62,6 +63,11 @@ def check_installed(args: dict, request_id: str) -> bool:
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     new_settings = args.get("settings", {})
+    
+    
+    if not isinstance(new_settings, dict):
+        return {"requestId": request_id, "error": "settings must be a dictionary"}
+    
     dry_run = args.get("dryRun", False)
 
     current = read_json(CONFIG_PATH)
@@ -105,16 +111,18 @@ def main():
         sys.stdout.flush()
         return
 
-    request_id = request.get("requestId", "unknown")
+    
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
     context = request.get("context", {})
 
     try:
         if command == "check_installed":
-            # Return bare bool as requested by admin
-            installed = check_installed(args, request_id)
-            sys.stdout.write(json.dumps(installed) + "\n")
+            
+            installed = check_installed()
+            response = {"requestId": request_id, "installed": installed}
+            sys.stdout.write(json.dumps(response) + "\n")
             sys.stdout.flush()
             return
 
