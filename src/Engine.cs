@@ -143,7 +143,9 @@ namespace WinHome
 
       var previousState = _stateService.LoadState();
       currentState.SystemSettingOriginals = new Dictionary<string, object>(previousState.SystemSettingOriginals);
-      var confirmedApplied = new HashSet<string>(previousState.AppliedItems, StringComparer.OrdinalIgnoreCase);
+      var confirmedApplied = new ConcurrentDictionary<string, byte>(
+          previousState.AppliedItems.Select(x => new KeyValuePair<string, byte>(x, (byte)0)),
+          StringComparer.OrdinalIgnoreCase);
       var hadSuccessfulApply = false;
 
       // Cleanup
@@ -160,7 +162,7 @@ namespace WinHome
             if (parts.Length == 2 && _registry.Revert(parts[0], parts[1], dryRun) && !dryRun)
             {
               removedItems.Add(uniqueId);
-              confirmedApplied.Remove(uniqueId);
+              confirmedApplied.TryRemove(uniqueId, out _);
             }
           }
           else
@@ -172,7 +174,7 @@ namespace WinHome
               if (!dryRun)
               {
                 removedItems.Add(uniqueId);
-                confirmedApplied.Remove(uniqueId);
+                confirmedApplied.TryRemove(uniqueId, out _);
               }
             }
           }
@@ -314,7 +316,7 @@ namespace WinHome
                 _stateWriter.RecordStep(successResult);
                 applyState[stepId] = successResult;
 
-                confirmedApplied.Add(stepId);
+                confirmedApplied.TryAdd(stepId, (byte)0);
                 hadSuccessfulApply = true;
               }
 
@@ -457,7 +459,7 @@ namespace WinHome
               _stateWriter.RecordStep(successResult);
               applyState[stepId] = successResult;
 
-              confirmedApplied.Add(stepId);
+              confirmedApplied.TryAdd(stepId, (byte)0);
               hadSuccessfulApply = true;
             }
           }
@@ -526,7 +528,7 @@ namespace WinHome
       {
         if (hadSuccessfulApply)
         {
-          currentState.AppliedItems = confirmedApplied;
+          currentState.AppliedItems = new HashSet<string>(confirmedApplied.Keys, StringComparer.OrdinalIgnoreCase);
           _stateService.SaveState(currentState);
         }
 
