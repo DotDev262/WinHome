@@ -20,10 +20,11 @@ class TestRustupPlugin(unittest.TestCase):
     def test_deep_merge_logic(self):
         src = {"settings": {"profile": "minimal"}}
         dest = {"settings": {"default_toolchain": "stable"}, "custom_key": 123}
-        merged = plugin.deep_merge(src, dest)
-        self.assertEqual(merged["settings"]["profile"], "minimal")
-        self.assertEqual(merged["settings"]["default_toolchain"], "stable")
-        self.assertEqual(merged["custom_key"], 123)
+        has_changed = plugin.deep_merge(src, dest)
+        self.assertEqual(dest["settings"]["profile"], "minimal")
+        self.assertEqual(dest["settings"]["default_toolchain"], "stable")
+        self.assertEqual(dest["custom_key"], 123)
+        self.assertTrue(has_changed)
 
 
 if __name__ == "__main__":
