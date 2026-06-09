@@ -28,14 +28,10 @@ def get_config_path():
 
 
 def _backup_corrupt_config(file_path: str, reason: str):
-    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
-        "%Y%m%d%H%M%S"
-    )
+    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
     suffix = uuid.uuid4().hex[:8]
     backup_path = f"{file_path}.corrupted.{timestamp}.{suffix}"
-    log(
-        f"Config read failed ({reason}). Backing up to {backup_path} and starting fresh."
-    )
+    log(f"Config read failed ({reason}). Backing up to {backup_path} and starting fresh.")
     try:
         shutil.move(file_path, backup_path)
     except Exception as backup_e:

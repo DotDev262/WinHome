@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
+
 import json
 import os
 import sys
@@ -8,9 +15,7 @@ from unittest.mock import patch
 
 import yaml
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 import plugin
 
 
@@ -25,15 +30,9 @@ class TestGhPlugin(unittest.TestCase):
     def test_check_installed_returns_true_when_gh_is_found(self):
         with patch(
             "plugin.shutil.which",
-            side_effect=lambda name: (
-                "C:/Program Files/gh/gh.exe"
-                if name in {"gh", "gh.exe"}
-                else None
-            ),
+            side_effect=lambda name: "C:/Program Files/gh/gh.exe" if name in {"gh", "gh.exe"} else None,
         ):
-            response = self.run_main(
-                {"requestId": "req-1", "command": "check_installed", "args": {}}
-            )
+            response = self.run_main({"requestId": "req-1", "command": "check_installed", "args": {}})
 
         self.assertEqual(response["requestId"], "req-1")
         self.assertTrue(response["success"])
@@ -42,9 +41,7 @@ class TestGhPlugin(unittest.TestCase):
 
     def test_check_installed_returns_false_when_gh_is_missing(self):
         with patch("plugin.shutil.which", return_value=None):
-            response = self.run_main(
-                {"requestId": "req-2", "command": "check_installed", "args": {}}
-            )
+            response = self.run_main({"requestId": "req-2", "command": "check_installed", "args": {}})
 
         self.assertEqual(response["requestId"], "req-2")
         self.assertTrue(response["success"])

@@ -25,16 +25,12 @@ def read_json(file_path: str) -> dict:
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except json.JSONDecodeError:
-        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
-            "%Y%m%d%H%M%S"
-        )
+        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
         suffix = uuid.uuid4().hex[:8]
         backup_path = f"{file_path}.corrupted.{timestamp}.{suffix}"
         try:
             shutil.move(file_path, backup_path)
-            log(
-                f"Config corrupted. Backing up to {backup_path} and starting fresh."
-            )
+            log(f"Config corrupted. Backing up to {backup_path} and starting fresh.")
         except Exception as backup_e:
             log(f"Failed to backup corrupted config: {backup_e}")
         return {}

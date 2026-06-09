@@ -13,9 +13,7 @@ spec.loader.exec_module(plugin)
 
 
 def test_check_installed_returns_true_when_zoxide_is_found():
-    with patch.object(
-        plugin.shutil, "which", side_effect=[None, "C:/Tools/zoxide"]
-    ):
+    with patch.object(plugin.shutil, "which", side_effect=[None, "C:/Tools/zoxide"]):
         result = plugin.check_installed({}, "req-1")
 
     assert result["requestId"] == "req-1"
@@ -90,9 +88,7 @@ def test_apply_skips_setx_when_env_vars_match():
         patch.object(
             plugin.subprocess,
             "run",
-            side_effect=AssertionError(
-                "setx should not be called when values already match"
-            ),
+            side_effect=AssertionError("setx should not be called when values already match"),
         ),
     ):
         result = plugin.apply_config(
@@ -129,9 +125,7 @@ def test_apply_skips_setx_on_non_windows():
         patch.object(
             plugin.subprocess,
             "run",
-            side_effect=AssertionError(
-                "setx should not run on non-Windows platforms"
-            ),
+            side_effect=AssertionError("setx should not run on non-Windows platforms"),
         ),
     ):
         result = plugin.apply_config(
@@ -152,16 +146,12 @@ def test_apply_updates_powershell_init_line_when_flags_change():
     opened = mock_open(read_data=existing)
 
     with (
-        patch.dict(
-            plugin.os.environ, {"USERPROFILE": "C:/Users/Test"}, clear=True
-        ),
+        patch.dict(plugin.os.environ, {"USERPROFILE": "C:/Users/Test"}, clear=True),
         patch("builtins.open", opened),
         patch.object(plugin.Path, "exists", return_value=True),
         patch.object(plugin.Path, "mkdir") as mock_mkdir,
     ):
-        profile_path = Path(
-            "C:/Users/Test/Documents/PowerShell/Microsoft.PowerShell_profile.ps1"
-        )
+        profile_path = Path("C:/Users/Test/Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
         changed = plugin.update_profile_file(
             profile_path,
             plugin.build_init_line(
@@ -175,9 +165,7 @@ def test_apply_updates_powershell_init_line_when_flags_change():
     mock_mkdir.assert_called_once()
     handle = opened()
     written = "".join(call.args[0] for call in handle.write.call_args_list)
-    assert (
-        "Invoke-Expression (& { (zoxide init powershell --cmd z) })" in written
-    )
+    assert "Invoke-Expression (& { (zoxide init powershell --cmd z) })" in written
     assert 'Write-Host "hello"' in written
 
 
@@ -185,24 +173,18 @@ def test_apply_preserves_comment_lines_containing_zoxide_init():
     existing = "# How to use zoxide init\nInvoke-Expression (& { (zoxide init powershell) })\n"
     updated, changed = plugin.update_profile_content(
         existing,
-        plugin.build_init_line(
-            "powershell", {"cmd": "z", "hook": "pwd", "no_cmd": False}
-        ),
+        plugin.build_init_line("powershell", {"cmd": "z", "hook": "pwd", "no_cmd": False}),
     )
 
     assert changed is True
     assert "# How to use zoxide init" in updated
-    assert (
-        "Invoke-Expression (& { (zoxide init powershell --cmd z) })" in updated
-    )
+    assert "Invoke-Expression (& { (zoxide init powershell --cmd z) })" in updated
 
 
 def test_apply_appends_init_line_if_not_present():
     updated, changed = plugin.update_profile_content(
         "Set-Location C:/Work\n",
-        plugin.build_init_line(
-            "bash", {"cmd": None, "hook": "pwd", "no_cmd": False}
-        ),
+        plugin.build_init_line("bash", {"cmd": None, "hook": "pwd", "no_cmd": False}),
     )
 
     assert changed is True
@@ -244,9 +226,7 @@ def test_apply_dry_run_does_not_write_files_or_run_setx():
 
 
 def test_apply_returns_changed_false_when_nothing_needs_updating():
-    matching_line = plugin.build_init_line(
-        "powershell", {"cmd": None, "hook": "pwd", "no_cmd": False}
-    )
+    matching_line = plugin.build_init_line("powershell", {"cmd": None, "hook": "pwd", "no_cmd": False})
     existing = f"{matching_line}\n"
     opened = mock_open(read_data=existing)
 
@@ -263,9 +243,7 @@ def test_apply_returns_changed_false_when_nothing_needs_updating():
             clear=True,
         ),
         patch.object(plugin.subprocess, "run") as mock_run,
-        patch.object(
-            plugin.shutil, "which", return_value="C:/Tools/zoxide.exe"
-        ),
+        patch.object(plugin.shutil, "which", return_value="C:/Tools/zoxide.exe"),
         patch("builtins.open", opened),
         patch.object(plugin.Path, "exists", return_value=True),
         patch.object(plugin, "update_profile_file", return_value=False),
@@ -296,16 +274,11 @@ def test_apply_builds_correct_init_line_with_flags():
         {"cmd": "z", "hook": "pwd", "no_cmd": True},
     )
 
-    assert (
-        line
-        == "Invoke-Expression (& { (zoxide init powershell --cmd z --no-cmd) })"
-    )
+    assert line == "Invoke-Expression (& { (zoxide init powershell --cmd z --no-cmd) })"
 
 
 def test_apply_handles_missing_profile_file_by_creating_it():
-    profile_path = Path(
-        "C:/Users/Test/Documents/PowerShell/Microsoft.PowerShell_profile.ps1"
-    )
+    profile_path = Path("C:/Users/Test/Documents/PowerShell/Microsoft.PowerShell_profile.ps1")
     opened = mock_open()
 
     with (
@@ -315,9 +288,7 @@ def test_apply_handles_missing_profile_file_by_creating_it():
     ):
         changed = plugin.update_profile_file(
             profile_path,
-            plugin.build_init_line(
-                "powershell", {"cmd": None, "hook": "pwd", "no_cmd": False}
-            ),
+            plugin.build_init_line("powershell", {"cmd": None, "hook": "pwd", "no_cmd": False}),
             dry_run=False,
         )
 
@@ -328,9 +299,7 @@ def test_apply_handles_missing_profile_file_by_creating_it():
 
 
 def test_process_request_returns_error_for_unknown_command():
-    result = plugin.process_request(
-        {"requestId": "req-7", "command": "explode", "args": {}}
-    )
+    result = plugin.process_request({"requestId": "req-7", "command": "explode", "args": {}})
 
     assert result["requestId"] == "req-7"
     assert result["success"] is False
@@ -351,16 +320,10 @@ def test_main_handles_pretty_printed_json_request():
     with (
         patch("sys.stdin", StringIO(request)),
         patch("sys.stdout", new_callable=StringIO),
-        patch.object(
-            plugin.shutil, "which", side_effect=[None, "C:/Tools/zoxide"]
-        ) as mock_which,
+        patch.object(plugin.shutil, "which", side_effect=[None, "C:/Tools/zoxide"]) as mock_which,
     ):
         plugin.main()
-        output = (
-            plugin.sys.stdout.getvalue()
-            if hasattr(plugin.sys.stdout, "getvalue")
-            else None
-        )
+        output = plugin.sys.stdout.getvalue() if hasattr(plugin.sys.stdout, "getvalue") else None
 
     assert mock_which.call_count == 2
 

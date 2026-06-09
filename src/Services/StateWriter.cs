@@ -6,84 +6,129 @@ using WinHome.Models;
 
 namespace WinHome.Services
 {
-    // Simple resilient writer for the .winhome-state.json manifest
-    public class StateWriter
+  /// <summary>Thread-safe writer for the .winhome-state.json manifest that tracks apply step results.</summary>
+  public class StateWriter
+  {
+    private readonly string _path;
+    private readonly object _lock = new();
+    private readonly JsonSerializerOptions _opts = new() { WriteIndented = true };
+    private Dictionary<string, StepResult>? _cache;
+
+    /// <summary>Initializes the writer with an optional custom path. Defaults to %LOCALAPPDATA%/WinHome/.winhome-state.json.</summary>
+    public StateWriter(string? path = null)
     {
-        private readonly string _path;
-        private readonly object _lock = new();
-        private readonly JsonSerializerOptions _opts = new() { WriteIndented = true };
-        private Dictionary<string, StepResult>? _cache;
+      var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+      var winHomeDir = Path.Combine(appData, "WinHome");
 
-        public StateWriter(string? path = null)
-        {
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var winHomeDir = Path.Combine(appData, "WinHome");
-
-            _path = path ?? Path.Combine(winHomeDir, ".winhome-state.json");
-            _opts.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        }
-
-        public Dictionary<string, StepResult> Load()
-        {
-            lock (_lock)
-            {
-                if (_cache != null) return new Dictionary<string, StepResult>(_cache);
-
-                if (!File.Exists(_path))
-                {
-                    _cache = new Dictionary<string, StepResult>();
-                    return new Dictionary<string, StepResult>(_cache);
-                }
-
-                try
-                {
-                    var text = File.ReadAllText(_path);
-                    if (string.IsNullOrWhiteSpace(text))
-                    {
-                        _cache = new Dictionary<string, StepResult>();
-                        return new Dictionary<string, StepResult>(_cache);
-                    }
-
-                    var data = JsonSerializer.Deserialize<Dictionary<string, StepResult>>(text, _opts);
-                    _cache = data ?? new Dictionary<string, StepResult>();
-                    return new Dictionary<string, StepResult>(_cache);
-                }
-                catch
-                {
-                    // Do not throw on corrupted/invalid JSON; return empty state to allow recovery
-                    _cache = new Dictionary<string, StepResult>();
-                    return new Dictionary<string, StepResult>(_cache);
-                }
-            }
-        }
-
-        public void RecordStep(StepResult result)
-        {
-            lock (_lock)
-            {
-                if (_cache == null) Load();
-                if (_cache != null) _cache[result.StepId] = result;
-
-                var dir = Path.GetDirectoryName(_path);
-                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-
-                var tmp = _path + ".tmp";
-                var serialized = JsonSerializer.Serialize(_cache, _opts);
-                File.WriteAllText(tmp, serialized);
-
-                try
-                {
-                    File.Replace(tmp, _path, null);
-                }
-                catch (FileNotFoundException)
-                {
-                    File.Move(tmp, _path);
-                }
-            }
-        }
+      _path = path ?? Path.Combine(winHomeDir, ".winhome-state.json");
+      _opts.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     }
+
+    /// <summary>Loads the persisted state from disk. Returns an empty dictionary if the file doesn't exist or is corrupted.</summary>
+    public Dictionary<string, StepResult> Load()
+    {
+      lock (_lock)
+      {
+        if (_cache != null) return new Dictionary<string, StepResult>(_cache);
+
+        if (!File.Exists(_path))
+        {
+          _cache = new Dictionary<string, StepResult>();
+          return new Dictionary<string, StepResult>(_cache);
+        }
+
+        try
+        {
+          var text = File.ReadAllText(_path);
+          if (string.IsNullOrWhiteSpace(text))
+          {
+            _cache = new Dictionary<string, StepResult>();
+            return new Dictionary<string, StepResult>(_cache);
+          }
+
+          var data = JsonSerializer.Deserialize<Dictionary<string, StepResult>>(text, _opts);
+          _cache = data ?? new Dictionary<string, StepResult>();
+          return new Dictionary<string, StepResult>(_cache);
+        }
+        catch
+        {
+          try
+          {
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+            var uuid = Guid.NewGuid().ToString("N");
+            var backupPath = $"{_path}.corrupted.{timestamp}.{uuid}.bak";
+            File.Move(_path, backupPath);
+          }
+          catch
+          {
+            // Best-effort backup; continue with empty state if backup fails
+          }
+
+          _cache = new Dictionary<string, StepResult>();
+          return new Dictionary<string, StepResult>(_cache);
+        }
+      }
+    }
+
+    /// <summary>Records a step result to both cache and disk using atomic file replacement.</summary>
+    public void RecordStep(StepResult result)
+    {
+      lock (_lock)
+      {
+        if (_cache == null) Load();
+        if (_cache != null) _cache[result.StepId] = result;
+
+        var dir = Path.GetDirectoryName(_path);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+          Directory.CreateDirectory(dir);
+        }
+
+        var tmp = _path + ".tmp";
+        var serialized = JsonSerializer.Serialize(_cache, _opts);
+        File.WriteAllText(tmp, serialized);
+
+        try
+        {
+          File.Replace(tmp, _path, null);
+        }
+        catch (FileNotFoundException)
+        {
+          File.Move(tmp, _path);
+        }
+      }
+    }
+
+    // Remove a step entry from the persisted state (used when cleanup uninstalls/reverts resources)
+    public void RemoveStep(string stepId)
+    {
+      lock (_lock)
+      {
+        if (_cache == null) Load();
+        if (_cache == null) return;
+
+        if (!_cache.Remove(stepId)) return;
+
+        var dir = Path.GetDirectoryName(_path);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+          Directory.CreateDirectory(dir);
+        }
+
+        var tmp = _path + ".tmp";
+        var serialized = JsonSerializer.Serialize(_cache, _opts);
+        File.WriteAllText(tmp, serialized);
+
+        try
+        {
+          File.Replace(tmp, _path, null);
+        }
+        catch (FileNotFoundException)
+        {
+          File.Move(tmp, _path);
+        }
+      }
+    }
+  }
 }
 

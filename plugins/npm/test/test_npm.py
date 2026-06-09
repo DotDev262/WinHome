@@ -4,9 +4,7 @@ import sys
 from io import StringIO
 from unittest.mock import patch
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.plugin import main, read_npmrc, write_npmrc
 
 
@@ -31,10 +29,7 @@ def run_plugin(input_dict):
 
 def test_read_npmrc(tmp_path):
     npmrc_content = (
-        "registry=https://registry.npmjs.org/\n"
-        "@scope:registry=https://custom.com/\n"
-        "; comment\n"
-        "save-exact=true\n"
+        "registry=https://registry.npmjs.org/\n@scope:registry=https://custom.com/\n; comment\nsave-exact=true\n"
     )
     npmrc_file = tmp_path / ".npmrc"
     npmrc_file.write_text(npmrc_content)

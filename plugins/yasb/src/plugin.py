@@ -4,15 +4,15 @@
 # ]
 # ///
 
+import copy
 import json
 import os
 import shutil
-import tempfile
 import sys
-import copy
+import tempfile
 import uuid
-import yaml
 
+import yaml
 
 PLUGIN_NAME = "yasb"
 
@@ -75,6 +75,7 @@ def write_yaml(file_path: str, data: dict) -> None:
             except OSError:
                 pass
 
+
 def merge_settings(target: dict, source: dict) -> bool:
     """Deep-merge `source` into `target`.
 
@@ -102,14 +103,9 @@ def merge_settings(target: dict, source: dict) -> bool:
     return changed
 
 
-
-
-
 def check_installed(request_id: str) -> dict:
     installed = (
-        shutil.which("yasb") is not None
-        or shutil.which("yasb.exe") is not None
-        or os.path.isdir(get_config_dir())
+        shutil.which("yasb") is not None or shutil.which("yasb.exe") is not None or os.path.isdir(get_config_dir())
     )
 
     return {
@@ -133,7 +129,7 @@ def apply_config(request_id: str, args: dict, context: dict) -> dict:
 
     config_path = get_config_path()
     current_config = read_yaml(config_path)
-    
+
     # Securely create a deep copy to evaluate alterations cleanly
     updated_config = copy.deepcopy(current_config)
     changed = merge_settings(updated_config, settings)

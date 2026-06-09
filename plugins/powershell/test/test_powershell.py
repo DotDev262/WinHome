@@ -3,9 +3,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"))
-)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 import plugin
 
 
@@ -33,9 +31,7 @@ class TestPowershellPlugin(unittest.TestCase):
             "Invoke-Expression (& zoxide init powershell --cmd z --hook pwd | Out-String)",
             script,
         )
-        self.assertIn(
-            "oh-my-posh init powershell --config 'catppuccin'", script
-        )
+        self.assertIn("oh-my-posh init powershell --config 'catppuccin'", script)
         self.assertIn("Set-PSReadLineOption -EditMode 'Emacs'", script)
         self.assertIn("function touch {", script)
         self.assertIn("# --- WinHome managed end ---", script)

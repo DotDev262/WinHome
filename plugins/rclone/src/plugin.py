@@ -65,18 +65,14 @@ def parse_ini(text: str) -> tuple:
         if match_kv:
             key = match_kv.group(1).strip()
             val = match_kv.group(2).strip()
-            current_block["lines"].append(
-                {"type": "kv", "raw": line, "key": key, "val": val}
-            )
+            current_block["lines"].append({"type": "kv", "raw": line, "key": key, "val": val})
         else:
             current_block["lines"].append({"type": "unknown", "raw": line})
 
     return blocks, has_trailing_newline, is_crlf
 
 
-def serialize_ini(
-    blocks: list, has_trailing_newline: bool, is_crlf: bool
-) -> str:
+def serialize_ini(blocks: list, has_trailing_newline: bool, is_crlf: bool) -> str:
     lines = []
     for b in blocks:
         for line in b["lines"]:
@@ -140,16 +136,10 @@ def merge_settings(blocks: list, args: dict) -> bool:
         if not block:
             block = {"name": remote_name, "lines": []}
 
-            if (
-                blocks
-                and blocks[-1]["lines"]
-                and blocks[-1]["lines"][-1]["type"] != "empty"
-            ):
+            if blocks and blocks[-1]["lines"] and blocks[-1]["lines"][-1]["type"] != "empty":
                 blocks[-1]["lines"].append({"type": "empty", "raw": ""})
 
-            block["lines"].append(
-                {"type": "section", "raw": f"[{remote_name}]"}
-            )
+            block["lines"].append({"type": "section", "raw": f"[{remote_name}]"})
             blocks.append(block)
             changed = True
 

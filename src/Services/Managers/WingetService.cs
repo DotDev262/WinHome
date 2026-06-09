@@ -4,138 +4,144 @@ using WinHome.Services.Bootstrappers;
 
 namespace WinHome.Services.Managers
 {
-    public class WingetService : IPackageManager
+  /// <summary>Manages package operations via Windows Package Manager (winget).</summary>
+  public class WingetService : IPackageManager
+  {
+    private string _wingetPath = "winget";
+    private bool _pathResolved = false;
+    private bool _sourceUpdated = false;
+    private readonly IProcessRunner _processRunner;
+    private readonly ILogger _logger;
+    private readonly IRuntimeResolver _resolver;
+    public IPackageManagerBootstrapper Bootstrapper { get; }
+
+    /// <summary>Initializes a new instance of <see cref="WingetService"/>.</summary>
+    public WingetService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
     {
-        private string _wingetPath = "winget";
-        private bool _pathResolved = false;
-        private bool _sourceUpdated = false;
-        private readonly IProcessRunner _processRunner;
-        private readonly ILogger _logger;
-        private readonly IRuntimeResolver _resolver;
-        public IPackageManagerBootstrapper Bootstrapper { get; }
-
-        public WingetService(IProcessRunner processRunner, IPackageManagerBootstrapper bootstrapper, ILogger logger, IRuntimeResolver resolver)
-        {
-            _processRunner = processRunner;
-            Bootstrapper = bootstrapper;
-            _logger = logger;
-            _resolver = resolver;
-        }
-
-        private void ResolveWingetPath()
-        {
-            if (_pathResolved && _wingetPath != "winget") return;
-            _wingetPath = _resolver.Resolve("winget");
-            _pathResolved = true;
-        }
-
-        private void LogFiltered(string line, string context)
-        {
-            if (string.IsNullOrWhiteSpace(line)) return;
-
-            // Filter out spinners: - \ | /
-            string trimmed = line.Trim();
-            if (trimmed == "-" || trimmed == "\\" || trimmed == "|" || trimmed == "/") return;
-
-            // Filter out progress bar characters (Winget uses blocks)
-            // Common block characters in different encodings: █ (U+2588) often appears as Γûê in some locales
-            if (line.Contains("Γûê") || line.Contains("ΓûÆ") || line.Contains("█") || line.Contains("░"))
-            {
-                // Only log if it's the final 100% or similar meaningful update (optional)
-                // For now, let's just suppress the spammy progress lines
-                return;
-            }
-
-            _logger.LogInfo($"[Winget:{context}] {line}");
-        }
-
-        private void UpdateSource(bool dryRun)
-        {
-            if (_sourceUpdated || dryRun) return;
-
-            _logger.LogInfo("[Winget] Updating package sources...");
-            _processRunner.RunCommand(_wingetPath, new[] { "source", "update", "--accept-source-agreements" }, false, line => LogFiltered(line, "SourceUpdate"));
-            _sourceUpdated = true;
-        }
-
-        public bool IsAvailable()
-        {
-            ResolveWingetPath();
-            return Bootstrapper.IsInstalled();
-        }
-
-        public void Install(AppConfig app, bool dryRun)
-        {
-            ResolveWingetPath();
-
-            if (IsInstalled(app.Id))
-            {
-                _logger.LogInfo($"[Winget] {app.Id} is already installed.");
-                return;
-            }
-
-            if (dryRun)
-            {
-                _logger.LogWarning($"[DryRun] Would install '{app.Id}' via Winget");
-                return;
-            }
-
-            UpdateSource(dryRun);
-
-            _logger.LogInfo($"[Winget] Installing {app.Id}...");
-            var args = new global::System.Collections.Generic.List<string> { "install", "--id", app.Id, "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity", "--no-upgrade" };
-            if (!string.IsNullOrEmpty(app.Source))
-            {
-                args.Add("--source");
-                args.Add(app.Source);
-            }
-
-            bool alreadyInstalled = false;
-            bool success = _processRunner.RunCommand(_wingetPath, args, false, line =>
-            {
-                LogFiltered(line, "Install");
-                if (line != null && line.Contains("A package version is already installed", StringComparison.OrdinalIgnoreCase))
-                {
-                    alreadyInstalled = true;
-                }
-            });
-
-            if (!success)
-            {
-                if (alreadyInstalled)
-                {
-                    _logger.LogSuccess($"[Success] {app.Id} is already installed (detected during install attempt).");
-                    return;
-                }
-                throw new Exception($"Failed to install {app.Id} using Winget.");
-            }
-            _logger.LogSuccess($"[Success] Installed {app.Id}");
-        }
-
-        public void Uninstall(string appId, bool dryRun)
-        {
-            ResolveWingetPath();
-            if (dryRun)
-            {
-                _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Winget");
-                return;
-            }
-
-            _logger.LogInfo($"[Winget] Uninstalling {appId}...");
-            var args = new[] { "uninstall", "--id", appId, "-e", "--silent", "--accept-source-agreements", "--disable-interactivity" };
-
-            if (!_processRunner.RunCommand(_wingetPath, args, false, line => LogFiltered(line, "Uninstall")))
-            {
-                throw new Exception($"Failed to uninstall {appId} using Winget.");
-            }
-            _logger.LogSuccess($"[Success] Uninstalled {appId}");
-        }
-
-        public bool IsInstalled(string appId)
-        {
-            ResolveWingetPath();
-            var output = _processRunner.RunCommandWithOutput(_wingetPath, new[] { "list", "-q", appId });
-            return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
-        }
+      _processRunner = processRunner;
+      Bootstrapper = bootstrapper;
+      _logger = logger;
+      _resolver = resolver;
     }
+
+    private void ResolveWingetPath()
+    {
+      if (_pathResolved && _wingetPath != "winget") return;
+      _wingetPath = _resolver.Resolve("winget");
+      _pathResolved = true;
+    }
+
+    private void LogFiltered(string line, string context)
+    {
+      if (string.IsNullOrWhiteSpace(line)) return;
+
+      // Filter out spinners: - \ | /
+      string trimmed = line.Trim();
+      if (trimmed == "-" || trimmed == "\\" || trimmed == "|" || trimmed == "/") return;
+
+      // Filter out progress bar characters (Winget uses blocks)
+      // Common block characters in different encodings: █ (U+2588) often appears as Γûê in some locales
+      if (line.Contains("Γûê") || line.Contains("ΓûÆ") || line.Contains("█") || line.Contains("░"))
+      {
+        // Only log if it's the final 100% or similar meaningful update (optional)
+        // For now, let's just suppress the spammy progress lines
+        return;
+      }
+
+      _logger.LogInfo($"[Winget:{context}] {line}");
+    }
+
+    private void UpdateSource(bool dryRun)
+    {
+      if (_sourceUpdated || dryRun) return;
+
+      _logger.LogInfo("[Winget] Updating package sources...");
+      _processRunner.RunCommand(_wingetPath, new[] { "source", "update", "--accept-source-agreements" }, false, line => LogFiltered(line, "SourceUpdate"));
+      _sourceUpdated = true;
+    }
+
+    /// <summary>Returns <c>true</c> if winget is available on the system.</summary>
+    public bool IsAvailable()
+    {
+      ResolveWingetPath();
+      return Bootstrapper.IsInstalled();
+    }
+
+    /// <summary>Installs a package via winget. Updates sources and skips if already installed.</summary>
+    public void Install(AppConfig app, bool dryRun)
+    {
+      ResolveWingetPath();
+
+      if (IsInstalled(app.Id))
+      {
+        _logger.LogInfo($"[Winget] {app.Id} is already installed.");
+        return;
+      }
+
+      if (dryRun)
+      {
+        _logger.LogWarning($"[DryRun] Would install '{app.Id}' via Winget");
+        return;
+      }
+
+      UpdateSource(dryRun);
+
+      _logger.LogInfo($"[Winget] Installing {app.Id}...");
+      var args = new global::System.Collections.Generic.List<string> { "install", "--id", app.Id, "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity", "--no-upgrade" };
+      if (!string.IsNullOrEmpty(app.Source))
+      {
+        args.Add("--source");
+        args.Add(app.Source);
+      }
+
+      bool alreadyInstalled = false;
+      bool success = _processRunner.RunCommand(_wingetPath, args, false, line =>
+      {
+        LogFiltered(line, "Install");
+        if (line != null && line.Contains("A package version is already installed", StringComparison.OrdinalIgnoreCase))
+        {
+          alreadyInstalled = true;
+        }
+      });
+
+      if (!success)
+      {
+        if (alreadyInstalled)
+        {
+          _logger.LogSuccess($"[Success] {app.Id} is already installed (detected during install attempt).");
+          return;
+        }
+        throw new Exception($"Failed to install {app.Id} using Winget.");
+      }
+      _logger.LogSuccess($"[Success] Installed {app.Id}");
+    }
+
+    /// <summary>Uninstalls a package via winget.</summary>
+    public void Uninstall(string appId, bool dryRun)
+    {
+      ResolveWingetPath();
+      if (dryRun)
+      {
+        _logger.LogWarning($"[DryRun] Would uninstall '{appId}' via Winget");
+        return;
+      }
+
+      _logger.LogInfo($"[Winget] Uninstalling {appId}...");
+      var args = new[] { "uninstall", "--id", appId, "-e", "--silent", "--accept-source-agreements", "--disable-interactivity" };
+
+      if (!_processRunner.RunCommand(_wingetPath, args, false, line => LogFiltered(line, "Uninstall")))
+      {
+        throw new Exception($"Failed to uninstall {appId} using Winget.");
+      }
+      _logger.LogSuccess($"[Success] Uninstalled {appId}");
+    }
+
+    /// <summary>Checks whether a package is installed via winget.</summary>
+    public bool IsInstalled(string appId)
+    {
+      ResolveWingetPath();
+      var output = _processRunner.RunCommandWithOutput(_wingetPath, new[] { "list", "-q", appId });
+      return output.Contains(appId, StringComparison.OrdinalIgnoreCase);
+    }
+  }
 }
