@@ -1,5 +1,6 @@
 """
 Tests for the VLC configuration provider plugin.
+
 Run with:  python -m pytest plugins/vlc/test/test_vlc.py -v
        or:  python plugins/vlc/test/test_vlc.py
 """
@@ -53,6 +54,30 @@ def _write_vlcrc(tmp_dir: str, content: str) -> str:
     return path
 
 
+def test_empty_stdin_returns_json_error():
+    result = subprocess.run(
+        [sys.executable, PLUGIN],
+        input="",
+        capture_output=True,
+        text=True,
+    )
+    res = json.loads(result.stdout.strip())
+    assert "error" in res
+    print("✓ empty_stdin_returns_json_error")
+
+
+def test_bad_json_returns_json_error():
+    result = subprocess.run(
+        [sys.executable, PLUGIN],
+        input="not-json",
+        capture_output=True,
+        text=True,
+    )
+    res = json.loads(result.stdout.strip())
+    assert "error" in res
+    print("✓ bad_json_returns_json_error")
+
+
 def test_check_installed_present():
     with tempfile.TemporaryDirectory() as tmp:
         os.makedirs(os.path.join(tmp, "vlc"))
@@ -60,8 +85,8 @@ def test_check_installed_present():
             {"requestId": "1", "command": "check_installed", "args": {}, "context": {}},
             env={"APPDATA": tmp},
         )
-        assert res["success"]
-        assert res["data"] is True
+        assert res["installed"] is True
+        assert res["requestId"] == "1"
         print("✓ check_installed_present")
 
 
@@ -71,9 +96,19 @@ def test_check_installed_absent():
             {"requestId": "2", "command": "check_installed", "args": {}, "context": {}},
             env={"APPDATA": tmp, "PATH": ""},
         )
-        assert res["success"]
-        assert res["data"] is False
+        assert res["installed"] is False
         print("✓ check_installed_absent")
+
+
+def test_check_installed_no_success_field():
+    with tempfile.TemporaryDirectory() as tmp:
+        res = run_plugin(
+            {"requestId": "ci3", "command": "check_installed", "args": {}, "context": {}},
+            env={"APPDATA": tmp},
+        )
+        assert "success" not in res
+        assert "data" not in res
+        print("✓ check_installed_no_success_field")
 
 
 def test_apply_dry_run_does_not_write():
@@ -84,15 +119,43 @@ def test_apply_dry_run_does_not_write():
             {
                 "requestId": "3",
                 "command": "apply",
-                "args": {"settings": {"volume": 50}},
-                "context": {"dryRun": True},
+                "args": {"settings": {"volume": 50}, "dryRun": True},
             },
             env={"APPDATA": tmp},
         )
-        assert res["success"]
-        assert not res["changed"]
+        assert not res.get("error")
         assert open(cfg).read() == original
         print("✓ apply_dry_run_does_not_write")
+
+
+def test_apply_dry_run_changed_true_when_settings_exist():
+    with tempfile.TemporaryDirectory() as tmp:
+        _write_vlcrc(tmp, SAMPLE_VLCRC)
+        res = run_plugin(
+            {
+                "requestId": "dr2",
+                "command": "apply",
+                "args": {"settings": {"volume": 50}, "dryRun": True},
+            },
+            env={"APPDATA": tmp},
+        )
+        assert res["changed"] is True
+        print("✓ apply_dry_run_changed_true_when_settings_exist")
+
+
+def test_apply_dry_run_changed_false_when_no_settings():
+    with tempfile.TemporaryDirectory() as tmp:
+        _write_vlcrc(tmp, SAMPLE_VLCRC)
+        res = run_plugin(
+            {
+                "requestId": "dr3",
+                "command": "apply",
+                "args": {"settings": {}, "dryRun": True},
+            },
+            env={"APPDATA": tmp},
+        )
+        assert res["changed"] is False
+        print("✓ apply_dry_run_changed_false_when_no_settings")
 
 
 def test_apply_updates_existing_key():
@@ -103,12 +166,10 @@ def test_apply_updates_existing_key():
                 "requestId": "4",
                 "command": "apply",
                 "args": {"settings": {"volume": 100}},
-                "context": {"dryRun": False},
             },
             env={"APPDATA": tmp},
         )
-        assert res["success"]
-        assert res["changed"]
+        assert res["changed"] is True
         content = open(cfg).read()
         assert "volume=100" in content
         assert "volume=256" not in content
@@ -123,7 +184,6 @@ def test_apply_adds_new_key():
                 "requestId": "5",
                 "command": "apply",
                 "args": {"settings": {"aspect-ratio": "16:9"}},
-                "context": {"dryRun": False},
             },
             env={"APPDATA": tmp},
         )
@@ -139,7 +199,6 @@ def test_apply_bool_settings():
                 "requestId": "6",
                 "command": "apply",
                 "args": {"settings": {"video-on-top": True, "playlist-cork": False}},
-                "context": {"dryRun": False},
             },
             env={"APPDATA": tmp},
         )
@@ -158,11 +217,10 @@ def test_apply_creates_config_when_absent():
                 "requestId": "7",
                 "command": "apply",
                 "args": {"settings": {"volume": 200}},
-                "context": {"dryRun": False},
             },
             env={"APPDATA": tmp},
         )
-        assert res["success"]
+        assert not res.get("error")
         assert os.path.exists(cfg_path)
         assert "volume=200" in open(cfg_path).read()
         print("✓ apply_creates_config_when_absent")
@@ -176,7 +234,6 @@ def test_apply_idempotent():
             "requestId": "8",
             "command": "apply",
             "args": {"settings": {"volume": 300, "network-caching": 1500}},
-            "context": {"dryRun": False},
         }
         run_plugin(payload, env={"APPDATA": tmp})
         first = open(cfg).read()
@@ -194,7 +251,6 @@ def test_apply_preserves_unknown_sections_and_keys():
                 "requestId": "9",
                 "command": "apply",
                 "args": {"settings": {"volume": 128}},
-                "context": {"dryRun": False},
             },
             env={"APPDATA": tmp},
         )
@@ -214,7 +270,6 @@ def test_apply_multivalue_key_collapsed():
                 "requestId": "10",
                 "command": "apply",
                 "args": {"settings": {"volume": 100}},
-                "context": {"dryRun": False},
             },
             env={"APPDATA": tmp},
         )
@@ -231,7 +286,6 @@ def test_posix_trailing_newline():
                 "requestId": "11",
                 "command": "apply",
                 "args": {"settings": {"volume": 256}},
-                "context": {"dryRun": False},
             },
             env={"APPDATA": tmp},
         )
@@ -240,9 +294,23 @@ def test_posix_trailing_newline():
         print("✓ posix_trailing_newline")
 
 
+def test_apply_no_success_field():
+    with tempfile.TemporaryDirectory() as tmp:
+        _write_vlcrc(tmp, SAMPLE_VLCRC)
+        res = run_plugin(
+            {
+                "requestId": "ns1",
+                "command": "apply",
+                "args": {"settings": {"volume": 128}},
+            },
+            env={"APPDATA": tmp},
+        )
+        assert "success" not in res
+        print("✓ apply_no_success_field")
+
+
 def test_unknown_command():
     res = run_plugin({"requestId": "12", "command": "explode", "args": {}, "context": {}})
-    assert not res["success"]
     assert "error" in res
     print("✓ unknown_command")
 
@@ -255,10 +323,23 @@ def test_request_id_echoed():
     print("✓ request_id_echoed")
 
 
+def test_request_id_null_defaults_to_unknown():
+    res = run_plugin(
+        {"requestId": None, "command": "check_installed", "args": {}, "context": {}}
+    )
+    assert res["requestId"] == "unknown"
+    print("✓ request_id_null_defaults_to_unknown")
+
+
 if __name__ == "__main__":
+    test_empty_stdin_returns_json_error()
+    test_bad_json_returns_json_error()
     test_check_installed_present()
     test_check_installed_absent()
+    test_check_installed_no_success_field()
     test_apply_dry_run_does_not_write()
+    test_apply_dry_run_changed_true_when_settings_exist()
+    test_apply_dry_run_changed_false_when_no_settings()
     test_apply_updates_existing_key()
     test_apply_adds_new_key()
     test_apply_bool_settings()
@@ -267,7 +348,9 @@ if __name__ == "__main__":
     test_apply_preserves_unknown_sections_and_keys()
     test_apply_multivalue_key_collapsed()
     test_posix_trailing_newline()
+    test_apply_no_success_field()
     test_unknown_command()
     test_request_id_echoed()
+    test_request_id_null_defaults_to_unknown()
 
     print("\nAll tests passed.")
