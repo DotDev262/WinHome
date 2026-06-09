@@ -7,6 +7,7 @@ namespace WinHome.Services.Bootstrappers
   public class ScoopBootstrapper : IPackageManagerBootstrapper
   {
     private readonly IProcessRunner _processRunner;
+    private const int MaxRetries = 3;
     public string Name => "Scoop";
 
     /// <summary>Initializes a new instance of <see cref="ScoopBootstrapper"/>.</summary>
@@ -36,7 +37,7 @@ namespace WinHome.Services.Bootstrappers
       return false;
     }
 
-    /// <summary>Installs Scoop via irm/get.scoop.sh. Retries on DNS errors.</summary>
+    /// <summary>Installs Scoop via irm/get.scoop.sh. Retries on DNS errors with max attempt limit.</summary>
     public void Install(bool dryRun)
     {
       if (dryRun)
@@ -47,41 +48,47 @@ namespace WinHome.Services.Bootstrappers
         return;
       }
 
-      Console.WriteLine($"[Bootstrapper] Installing {Name}...");
-
       // Set execution policy first, then install Scoop
       // This fixes the "cannot be loaded because running scripts is disabled" error
       string command = "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; irm get.scoop.sh -outfile install.ps1; .\\install.ps1 -RunAsAdmin; if (Test-Path .\\install.ps1) { Remove-Item .\\install.ps1 }";
 
-      var psi = new ProcessStartInfo
+      for (int attempt = 0; attempt < MaxRetries; attempt++)
       {
-        FileName = "powershell.exe",
-        Arguments = $"-NoProfile -Command \"{command}\"",
-        RedirectStandardOutput = true,
-        RedirectStandardError = true,
-        UseShellExecute = false,
-        CreateNoWindow = true,
-      };
+        Console.WriteLine($"[Bootstrapper] Installing {Name} (attempt {attempt + 1}/{MaxRetries})...");
 
-      try
-      {
-        _processRunner.RunProcessWithStartInfo(psi);
-      }
-      catch (Exception ex)
-      {
-        // If it's just a DNS resolution error, it might be transient or need a retry
-        if (ex.Message.Contains("remote name could not be resolved"))
+        var psi = new ProcessStartInfo
         {
-          Console.WriteLine("[Bootstrapper] Network error resolving get.scoop.sh. Retrying in 10 seconds...");
-          Thread.Sleep(10000);
-          // One recursive retry
-          Install(false);
+          FileName = "powershell.exe",
+          Arguments = $"-NoProfile -Command \"{command}\"",
+          RedirectStandardOutput = true,
+          RedirectStandardError = true,
+          UseShellExecute = false,
+          CreateNoWindow = true,
+        };
+
+        try
+        {
+          _processRunner.RunProcessWithStartInfo(psi);
+          Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
           return;
         }
-        throw new Exception($"Failed to install {Name}: {ex.Message}", ex);
+        catch (Exception ex) when (ex.Message.Contains("remote name could not be resolved"))
+        {
+          if (attempt < MaxRetries - 1)
+          {
+            Console.WriteLine("[Bootstrapper] Network error resolving get.scoop.sh. Retrying in 10 seconds...");
+            Thread.Sleep(10000);
+          }
+          else
+          {
+            throw new Exception($"Failed to install {Name} after {MaxRetries} attempts: {ex.Message}", ex);
+          }
+        }
+        catch (Exception ex)
+        {
+          throw new Exception($"Failed to install {Name}: {ex.Message}", ex);
+        }
       }
-
-      Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
     }
   }
 }

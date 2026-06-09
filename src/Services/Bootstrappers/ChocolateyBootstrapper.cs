@@ -7,6 +7,7 @@ namespace WinHome.Services.Bootstrappers
   public class ChocolateyBootstrapper : IPackageManagerBootstrapper
   {
     private readonly IProcessRunner _processRunner;
+    private const int MaxRetries = 3;
     public string Name => "Chocolatey";
 
     /// <summary>Initializes a new instance of <see cref="ChocolateyBootstrapper"/>.</summary>
@@ -24,7 +25,7 @@ namespace WinHome.Services.Bootstrappers
       return File.Exists(chocoPath);
     }
 
-    /// <summary>Installs Chocolatey via the community PowerShell install script. Retries on network errors.</summary>
+    /// <summary>Installs Chocolatey via the community PowerShell install script. Retries on network errors with max attempt limit.</summary>
     public void Install(bool dryRun)
     {
       if (dryRun)
@@ -35,45 +36,48 @@ namespace WinHome.Services.Bootstrappers
         return;
       }
 
-      Console.WriteLine($"[Bootstrapper] Installing {Name}...");
-
       string command = "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
                        "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
 
-      var psi = new ProcessStartInfo
+      for (int attempt = 0; attempt < MaxRetries; attempt++)
       {
-        FileName = "powershell.exe",
-        Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"",
-        RedirectStandardOutput = true,
-        RedirectStandardError = true,
-        UseShellExecute = false,
-        CreateNoWindow = true,
-      };
+        Console.WriteLine($"[Bootstrapper] Installing {Name} (attempt {attempt + 1}/{MaxRetries})...");
 
-      try
-      {
-        _processRunner.RunProcessWithStartInfo(psi);
-      }
-      catch (Exception ex)
-      {
-        if (ex.Message.Contains("remote name could not be resolved") || ex.Message.Contains("Operation timed out"))
+        var psi = new ProcessStartInfo
         {
-          Console.WriteLine($"[Bootstrapper] Network error installing {Name}. Retrying in 10 seconds...");
-          Thread.Sleep(10000);
-          Install(false);
+          FileName = "powershell.exe",
+          Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"",
+          RedirectStandardOutput = true,
+          RedirectStandardError = true,
+          UseShellExecute = false,
+          CreateNoWindow = true,
+        };
+
+        try
+        {
+          _processRunner.RunProcessWithStartInfo(psi);
+          Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
           return;
         }
-        if (!ex.Message.Contains("Process failed with exit code"))
+        catch (Exception ex) when (
+          ex.Message.Contains("remote name could not be resolved") ||
+          ex.Message.Contains("Operation timed out"))
         {
-          Console.WriteLine($"[Bootstrapper] Unexpected error: {ex.Message}. Retrying...");
-          Thread.Sleep(5000);
-          Install(false);
-          return;
+          if (attempt < MaxRetries - 1)
+          {
+            Console.WriteLine("[Bootstrapper] Network error installing {Name}. Retrying in 10 seconds...");
+            Thread.Sleep(10000);
+          }
+          else
+          {
+            throw new Exception($"Failed to install {Name} after {MaxRetries} attempts: {ex.Message}", ex);
+          }
         }
-        throw new Exception($"Failed to install {Name}: {ex.Message}", ex);
+        catch (Exception ex)
+        {
+          throw new Exception($"Failed to install {Name}: {ex.Message}", ex);
+        }
       }
-
-      Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
     }
   }
 }
