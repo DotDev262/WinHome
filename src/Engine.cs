@@ -144,7 +144,9 @@ namespace WinHome
       var previousState = _stateService.LoadState();
       currentState.SystemSettingOriginals = new Dictionary<string, object>(previousState.SystemSettingOriginals);
       var confirmedApplied = new ConcurrentDictionary<string, byte>(
-          previousState.AppliedItems.Select(x => new KeyValuePair<string, byte>(x, (byte)0)),
+          previousState.AppliedItems
+              .Where(x => x != null)
+              .Select(x => new KeyValuePair<string, byte>(x, (byte)0)),
           StringComparer.OrdinalIgnoreCase);
       var hadSuccessfulApply = false;
 
