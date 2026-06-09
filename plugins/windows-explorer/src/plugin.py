@@ -1,12 +1,14 @@
-import sys
 import json
+import sys
 import winreg
 
 REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
 
+
 def log(msg):
     sys.stderr.write(f"[windows-explorer] {msg}\n")
     sys.stderr.flush()
+
 
 def read_registry_values():
     values = {}
@@ -26,6 +28,7 @@ def read_registry_values():
         log(f"Error reading registry: {e}")
     return values
 
+
 def check_installed():
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_READ):
@@ -35,10 +38,11 @@ def check_installed():
     except OSError:
         return False
 
+
 def apply_config(args):
     dry_run = args.get("dryRun", False)
     settings = args.get("settings", {})
-    
+
     if not settings:
         return {"changed": False}
 
@@ -53,7 +57,7 @@ def apply_config(args):
         "AutoCheckSelect": "AutoCheckSelect",
         "DisableThumbnails": "DisableThumbnails",
         "DisableThumbsDBOnNetworkFolders": "DisableThumbsDBOnNetworkFolders",
-        "SeparateProcess": "SeparateProcess"
+        "SeparateProcess": "SeparateProcess",
     }
 
     for config_key, reg_key in mappings.items():
@@ -86,6 +90,7 @@ def apply_config(args):
             return {"error": f"Failed to write to registry: {e}"}
 
     return {"changed": changed}
+
 
 def main():
     input_data = sys.stdin.read()
@@ -120,6 +125,7 @@ def main():
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
+
 
 if __name__ == "__main__":
     main()

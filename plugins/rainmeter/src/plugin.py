@@ -7,7 +7,7 @@ import tempfile
 import uuid
 
 
-def check_installed(request_id: str) -> dict:
+def check_installed() -> bool:
     installed = False
 
     # Check in PATH
@@ -19,21 +19,19 @@ def check_installed(request_id: str) -> dict:
         if os.path.exists(os.path.join(program_files, "Rainmeter", "Rainmeter.exe")):
             installed = True
 
-    return {"requestId": request_id, "success": True, "changed": False, "data": installed}
+    return installed
 
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
-    dry_run = context.get("dryRun", False)
+    dry_run = args.get("dryRun", False)
     settings = args.get("settings", {})
 
     if not settings:
-        return {"requestId": request_id, "success": True, "changed": False}
+        return {"requestId": request_id, "changed": False}
 
     if not isinstance(settings, dict):
         return {
             "requestId": request_id,
-            "success": False,
-            "changed": False,
             "error": "settings must be a dictionary",
         }
 
@@ -41,8 +39,6 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
     if not appdata:
         return {
             "requestId": request_id,
-            "success": False,
-            "changed": False,
             "error": "APPDATA environment variable not found",
         }
 
@@ -73,8 +69,6 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         if not isinstance(keys, dict):
             return {
                 "requestId": request_id,
-                "success": False,
-                "changed": False,
                 "error": f"Section '{section}' must be a dictionary",
             }
 
@@ -89,10 +83,10 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
                 changed = True
 
     if not changed:
-        return {"requestId": request_id, "success": True, "changed": False}
+        return {"requestId": request_id, "changed": False}
 
     if dry_run:
-        return {"requestId": request_id, "success": True, "changed": True}
+        return {"requestId": request_id, "changed": True}
 
     try:
         os.makedirs(config_dir, exist_ok=True)
@@ -105,12 +99,10 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             os.unlink(tmp_path)
             raise
 
-        return {"requestId": request_id, "success": True, "changed": True}
+        return {"requestId": request_id, "changed": True}
     except Exception as e:
         return {
             "requestId": request_id,
-            "success": False,
-            "changed": False,
             "error": f"Failed to apply config: {e}",
         }
 
@@ -118,6 +110,8 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 def main():
     input_data = sys.stdin.read()
     if not input_data:
+        sys.stdout.write(json.dumps({"requestId": "unknown", "error": "Empty input"}) + "\n")
+        sys.stdout.flush()
         return
 
     try:
@@ -127,8 +121,6 @@ def main():
             json.dumps(
                 {
                     "requestId": "unknown",
-                    "success": False,
-                    "changed": False,
                     "error": f"Invalid JSON: {e}",
                 }
             )
@@ -137,20 +129,18 @@ def main():
         sys.stdout.flush()
         return
 
-    request_id = request.get("requestId", "unknown")
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
     context = request.get("context", {})
 
     if command == "check_installed":
-        response = check_installed(request_id)
+        response = {"requestId": request_id, "installed": check_installed()}
     elif command == "apply":
         response = apply_config(args, context, request_id)
     else:
         response = {
             "requestId": request_id,
-            "success": False,
-            "changed": False,
             "error": f"Unknown command: {command}",
         }
 

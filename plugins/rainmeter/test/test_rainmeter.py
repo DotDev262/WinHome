@@ -34,27 +34,24 @@ class TestRainmeterPlugin(unittest.TestCase):
     @patch("shutil.which")
     def test_check_installed_true_path(self, mock_which):
         mock_which.return_value = "C:\\Program Files\\Rainmeter\\Rainmeter.exe"
-        res = plugin.check_installed("req-1")
-        self.assertTrue(res["success"])
-        self.assertTrue(res["data"])
+        res = plugin.check_installed()
+        self.assertTrue(res)
 
     @patch("shutil.which")
     @patch("os.path.exists")
     def test_check_installed_true_default(self, mock_exists, mock_which):
         mock_which.return_value = None
         mock_exists.side_effect = lambda p: p.endswith("Rainmeter.exe")
-        res = plugin.check_installed("req-2")
-        self.assertTrue(res["success"])
-        self.assertTrue(res["data"])
+        res = plugin.check_installed()
+        self.assertTrue(res)
 
     @patch("shutil.which")
     @patch("os.path.exists")
     def test_check_installed_false(self, mock_exists, mock_which):
         mock_which.return_value = None
         mock_exists.return_value = False
-        res = plugin.check_installed("req-3")
-        self.assertTrue(res["success"])
-        self.assertFalse(res["data"])
+        res = plugin.check_installed()
+        self.assertFalse(res)
 
     def test_apply_config_creates_new_file(self):
         args = {
@@ -64,7 +61,6 @@ class TestRainmeterPlugin(unittest.TestCase):
             }
         }
         res = plugin.apply_config(args, {}, "req-4")
-        self.assertTrue(res["success"])
         self.assertTrue(res["changed"])
         self.assertTrue(os.path.exists(self.config_file))
 
@@ -87,7 +83,6 @@ class TestRainmeterPlugin(unittest.TestCase):
             }
         }
         res = plugin.apply_config(args, {}, "req-5")
-        self.assertTrue(res["success"])
         self.assertTrue(res["changed"])
 
         with open(self.config_file, "r") as f:
@@ -106,13 +101,11 @@ class TestRainmeterPlugin(unittest.TestCase):
 
         args = {"settings": {"Rainmeter": {"ConfigEditor": "notepad.exe"}}}
         res = plugin.apply_config(args, {}, "req-6")
-        self.assertTrue(res["success"])
         self.assertFalse(res["changed"])
 
     def test_apply_config_dry_run(self):
-        args = {"settings": {"Rainmeter": {"ConfigEditor": "notepad.exe"}}}
-        res = plugin.apply_config(args, {"dryRun": True}, "req-7")
-        self.assertTrue(res["success"])
+        args = {"settings": {"Rainmeter": {"ConfigEditor": "notepad.exe"}}, "dryRun": True}
+        res = plugin.apply_config(args, {}, "req-7")
         self.assertTrue(res["changed"])
         self.assertFalse(os.path.exists(self.config_file))
 
@@ -123,7 +116,6 @@ class TestRainmeterPlugin(unittest.TestCase):
 
         args = {"settings": {"Rainmeter": {"ConfigEditor": "notepad.exe"}}}
         res = plugin.apply_config(args, {}, "req-8")
-        self.assertTrue(res["success"])
         self.assertTrue(res["changed"])
 
         # Original should be overwritten with new section
@@ -140,7 +132,6 @@ class TestRainmeterPlugin(unittest.TestCase):
     def test_apply_config_invalid_settings_type(self):
         args = {"settings": ["not", "a", "dict"]}
         res = plugin.apply_config(args, {}, "req-9")
-        self.assertFalse(res["success"])
         self.assertIn("dictionary", res["error"])
 
     @patch("sys.stdout")
@@ -156,7 +147,7 @@ class TestRainmeterPlugin(unittest.TestCase):
 
         result = json.loads(output[0])
         self.assertEqual(result["requestId"], "unknown")
-        self.assertTrue(result["success"])
+        self.assertIn("installed", result)
 
     @patch("sys.stdout")
     @patch("sys.stdin")
@@ -169,8 +160,20 @@ class TestRainmeterPlugin(unittest.TestCase):
         plugin.main()
 
         result = json.loads(output[0])
-        self.assertFalse(result["success"])
         self.assertIn("Invalid JSON", result["error"])
+
+    @patch("sys.stdout")
+    @patch("sys.stdin")
+    def test_main_empty_input(self, mock_stdin, mock_stdout):
+        mock_stdin.read.return_value = ""
+
+        output = []
+        mock_stdout.write.side_effect = output.append
+
+        plugin.main()
+
+        result = json.loads(output[0])
+        self.assertIn("Empty input", result["error"])
 
     @patch("sys.stdout")
     @patch("sys.stdin")
@@ -183,8 +186,6 @@ class TestRainmeterPlugin(unittest.TestCase):
         plugin.main()
 
         result = json.loads(output[0])
-        self.assertFalse(result["success"])
-        self.assertFalse(result["changed"])
         self.assertIn("Unknown command", result["error"])
 
 

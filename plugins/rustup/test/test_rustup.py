@@ -3,11 +3,11 @@ import sys
 import unittest
 
 # Compute absolute path to the src directory safely
-src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../src'))
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"))
 sys.path.append(src_path)
 
 # Dynamically import the plugin to satisfy strict linter sorting rules
-plugin = __import__('plugin')
+plugin = __import__("plugin")
 
 sys.path.remove(src_path)
 
@@ -26,5 +26,5 @@ class TestRustupPlugin(unittest.TestCase):
         self.assertEqual(merged["custom_key"], 123)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

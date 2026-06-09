@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-import os
-import sys
 import json
-import unittest
-import tempfile
+import os
 import shutil
 import subprocess
+import sys
+import tempfile
+import unittest
+
 
 class TestWallpaperEnginePluginContract(unittest.TestCase):
     def setUp(self):
@@ -13,7 +14,7 @@ class TestWallpaperEnginePluginContract(unittest.TestCase):
         self.config_dir = os.path.join(self.test_dir, "Steam", "steamapps", "common", "wallpaper_engine", "config")
         self.config_file = os.path.join(self.config_dir, "config.json")
         self.plugin_script = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/plugin.py"))
-        
+
         self.orig_p86 = os.environ.get("ProgramFiles(x86)")
         os.environ["ProgramFiles(x86)"] = self.test_dir
 
@@ -28,7 +29,7 @@ class TestWallpaperEnginePluginContract(unittest.TestCase):
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
         stdout, _ = proc.communicate(input=payload_str)
         return json.loads(stdout.strip())
@@ -57,14 +58,7 @@ class TestWallpaperEnginePluginContract(unittest.TestCase):
         self.assertNotIn("status", response)
 
     def test_apply_config_dry_run(self):
-        payload = {
-            "requestId": "req-002",
-            "command": "apply",
-            "args": {
-                "settings": {"volume": 0.8},
-                "dryRun": True
-            }
-        }
+        payload = {"requestId": "req-002", "command": "apply", "args": {"settings": {"volume": 0.8}, "dryRun": True}}
         response = self.run_plugin_subprocess(json.dumps(payload))
         self.assertEqual(response["requestId"], "req-002")
         self.assertTrue(response["dryRun"])
@@ -75,21 +69,18 @@ class TestWallpaperEnginePluginContract(unittest.TestCase):
         os.makedirs(self.config_dir, exist_ok=True)
         with open(self.config_file, "w") as f:
             f.write(json.dumps({"volume": 0.2}))
-            
+
         payload = {
             "requestId": "req-003",
             "command": "apply",
-            "args": {
-                "settings": {"volume": 0.9, "fps": 60},
-                "dryRun": False
-            }
+            "args": {"settings": {"volume": 0.9, "fps": 60}, "dryRun": False},
         }
-        
+
         response = self.run_plugin_subprocess(json.dumps(payload))
         self.assertEqual(response["requestId"], "req-003")
         self.assertTrue(response["changed"])
         self.assertIn("path", response)
-        
+
         with open(self.config_file, "r") as f:
             data = json.load(f)
         self.assertEqual(data["volume"], 0.9)
@@ -97,17 +88,14 @@ class TestWallpaperEnginePluginContract(unittest.TestCase):
 
     def test_idempotent_apply(self):
         os.makedirs(self.config_dir, exist_ok=True)
-        payload = {
-            "requestId": "req-004",
-            "command": "apply",
-            "args": {"settings": {"fps": 60}}
-        }
-        
+        payload = {"requestId": "req-004", "command": "apply", "args": {"settings": {"fps": 60}}}
+
         res1 = self.run_plugin_subprocess(json.dumps(payload))
         self.assertTrue(res1["changed"])
-        
+
         res2 = self.run_plugin_subprocess(json.dumps(payload))
         self.assertFalse(res2["changed"])
+
 
 if __name__ == "__main__":
     unittest.main()
