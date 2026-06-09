@@ -98,80 +98,57 @@ def _to_str(value: Any) -> str:
     return str(value)
 
 
-def check_installed(args: dict, request_id: str) -> dict:
+def check_installed(args: dict) -> bool:
     vlc_dir = _vlcrc_path().parent
-    installed: bool = vlc_dir.is_dir() or _find_vlc_exe()
-    return {
-        "requestId": request_id,
-        "success": True,
-        "changed": False,
-        "data": installed,
-    }
+    return vlc_dir.is_dir() or _find_vlc_exe()
 
 
-def apply_config(args: dict, context: dict, request_id: str) -> dict:
-    dry_run: bool = bool(context.get("dryRun", False))
+def apply_config(args: dict) -> dict:
+    dry_run: bool = bool(args.get("dryRun", False))
     settings: dict[str, Any] = args.get("settings", {})
 
-    try:
-        vlcrc = _vlcrc_path()
-        doc = _VlcrcDoc()
-        doc.read(vlcrc)
-        doc.merge(settings)
+    vlcrc = _vlcrc_path()
+    doc = _VlcrcDoc()
+    doc.read(vlcrc)
+    doc.merge(settings)
 
-        if dry_run:
-            log(f"dryRun: would write {len(settings)} key(s) to {vlcrc}")
-            return {
-                "requestId": request_id,
-                "success": True,
-                "changed": False,
-            }
+    if dry_run:
+        log(f"dryRun: would write {len(settings)} key(s) to {vlcrc}")
+        return {"changed": bool(settings)}
 
-        doc.write(vlcrc)
-        log(f"Updated vlcrc: {vlcrc}")
-        return {
-            "requestId": request_id,
-            "success": True,
-            "changed": bool(settings),
-        }
-
-    except Exception as exc:
-        log(f"Failed to apply config: {exc}")
-        return {
-            "requestId": request_id,
-            "success": False,
-            "changed": False,
-            "error": str(exc),
-        }
+    doc.write(vlcrc)
+    log(f"Updated vlcrc: {vlcrc}")
+    return {"changed": bool(settings)}
 
 
 def main() -> None:
     input_data = sys.stdin.read()
+
     if not input_data:
+        sys.stdout.write(json.dumps({"requestId": None, "error": "Empty stdin"}) + "\n")
+        sys.stdout.flush()
         return
 
     try:
         request = json.loads(input_data)
     except Exception as exc:
-        log(f"Failed to parse request: {exc}")
-        sys.exit(1)
+        sys.stdout.write(json.dumps({"requestId": None, "error": f"JSON parse error: {exc}"}) + "\n")
+        sys.stdout.flush()
+        return
 
-    request_id = request.get("requestId", "unknown")
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
-    context = request.get("context", {})
 
-    response: dict = {
-        "requestId": request_id,
-        "success": False,
-        "changed": False,
-    }
+    response: dict = {"requestId": request_id}
 
     try:
         if command == "check_installed":
-            response = check_installed(args, request_id)
+            result = check_installed(args)
+            response["installed"] = result
         elif command == "apply":
-            response = apply_config(args, context, request_id)
+            result = apply_config(args)
+            response.update(result)
         else:
             response["error"] = f"Unknown command: {command}"
     except Exception as fatal:
