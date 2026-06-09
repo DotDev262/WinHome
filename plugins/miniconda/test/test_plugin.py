@@ -64,7 +64,8 @@ class TestMinicondaPlugin(unittest.TestCase):
     @patch(
         "sys.stdin",
         StringIO(
-            '{"requestId": "2", "command": "apply", "args": {"dryRun": true, "settings": {"channels": ["conda-forge"]}}}'
+            '{"requestId": "2", "command": "apply", '
+            '"args": {"dryRun": true, "settings": {"channels": ["conda-forge"]}}}'
         ),
     )
     def test_apply_dry_run(self, mock_stdout):
