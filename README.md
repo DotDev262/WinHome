@@ -71,24 +71,24 @@ WinHome ships as a **self-contained single EXE** (no .NET runtime needed), compa
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri '[https://github.com/DotDev262/WinHome/releases/latest/download/WinHome.exe](https://github.com/DotDev262/WinHome/releases/latest/download/WinHome.exe)' -OutFile 'WinHome.exe'"
 
-Method 3: winget (coming soon)
+### Method 3: winget (coming soon)
 Once WinHome is published to the Windows Package Manager repository, you will be able to install it with:
 # Coming soon — pending winget submission
 winget install DotDev262.WinHome
 
-Method 4: Scoop (coming soon)
+### Method 4: Scoop (coming soon)
 Once the Scoop bucket is published:
 # Coming soon — pending Scoop bucket submission
 scoop bucket add winhome [https://github.com/DotDev262/scoop-winhome](https://github.com/DotDev262/scoop-winhome)
 scoop install winhome
 
-Method 5: Chocolatey (coming soon)
+### Method 5: Chocolatey (coming soon)
 Once the Chocolatey package is published:
 # Coming soon — pending Chocolatey package approval
 choco install winhome
 Post-Install Note: For easier global access, we recommend moving WinHome.exe to a folder included in your system's PATH environment variable (e.g., C:\Users\<User>\bin).
 
-🔧 How It Works & Configuration Wiki
+### 🔧 How It Works & Configuration Wiki
 WinHome reads a declarative config.yaml that defines your desired system state.
 A built-in Reconciliation Engine compares it to the live system and ensures everything matches.
 
@@ -102,18 +102,18 @@ For a detailed breakdown of all configuration options, refer to the Configuratio
 
 For complete, real-world setup examples (Developer, Minimalist, Gamer), see the Configuration Cookbook.
 
-⚠️ Secrets & Security Warning
+### ⚠️ Secrets & Security Warning
 Do not commit config.yaml to public repositories if it contains sensitive information such as API tokens, passwords, or private environment variables. We recommend using a private repository or .gitignore for configurations containing secrets.
 
-✨ Features
-📦 Universal Package Management
+### ✨ Features
+### 📦 Universal Package Management
 Winget (with auto-install support)
 
 Scoop
 
 Chocolatey
 
-🐧 WSL Management
+###🐧 WSL Management
 Auto-install and configure distros
 
 Run post-provision scripts
@@ -125,16 +125,16 @@ Kernel settings and version management
 🛡️ Safe Dry-Run Mode
 🔄 Deterministic Idempotency
 
-🛡️ Security & Reliability
+### 🛡️ Security & Reliability
 WinHome implements enterprise-grade security controls to prevent common infrastructure automation pitfalls.
 
-🔒 Context Awareness (RegistryGuard)
+###🔒 Context Awareness (RegistryGuard)
 WinHome actively detects if it is running as SYSTEM (common in CI/CD or Scheduled Tasks) and blocks attempts to modify HKEY_CURRENT_USER. This prevents the "Admin Context Trap" where settings are accidentally applied to the LocalSystem profile instead of the logged-in user.
 
-💾 Crash Resilience (Write-Through State)
+### 💾 Crash Resilience (Write-Through State)
 The state engine uses a Write-Through pattern. Every successful action (e.g., installing an app, applying a registry key) is immediately flushed to disk (winhome.state.json). If the process crashes or is terminated (Ctrl+C), your progress is saved, and the next run will resume correctly without "zombie" state issues.
 
-📦 Plugin Sandboxing
+### 📦 Plugin Sandboxing
 External plugins (Bun, Uv) run in a sandboxed process with strict limits:
 
 Memory Limit: 10MB max output buffer to prevent OOM attacks.
@@ -143,7 +143,7 @@ Time Limit: 30-second execution timeout to prevent hangs.
 
 Isolation: Plugins communicate strictly via JSON over Stdin/Stdout.
 
-🗺️ Roadmap / Planned Features
+### 🗺️ Roadmap / Planned Features
 This roadmap is a living document that outlines the project's future direction. It will be updated with new features and ideas as the project evolves.
 
 Core Features & System Integration
@@ -168,7 +168,7 @@ Core Features & System Integration
 [ ] Hyper-V VM Provisioning: Introduce capabilities for managing local Hyper-V virtual machines.
 
 
-Developer Experience (DevEx) & Tooling
+### Developer Experience (DevEx) & Tooling
 [x] ~~State diff viewer (--diff)~~
 
 [x] Enhanced Logging: Filtered, real-time output for package managers.
@@ -187,7 +187,7 @@ Developer Experience (DevEx) & Tooling
 
 [ ] DSL: Evolve the configuration into a more powerful Domain-Specific Language (similar to Nix).
 
-Code Quality & Automation
+### Code Quality & Automation
 [x] ~~Mocked tests for registry operations~~
 
 [x] Containerized Acceptance Tests: Build a full acceptance test suite that runs inside a clean Windows container.
@@ -204,10 +204,10 @@ Code Quality & Automation
 
 [ ] Formalize Contribution Process: Create a CONTRIBUTING.md file and GitHub templates for issues and PRs.
 
-📅 Version Roadmap
+### 📅 Version Roadmap
 Here is a tentative plan for upcoming releases.
 
-v1.1 — The Quality & DX Release
+### v1.1 — The Quality & DX Release
 Focus: Internal refactoring, test coverage, and developer experience.
 
 [x] Complete Unit Test Coverage:
@@ -256,7 +256,7 @@ Focus: Internal refactoring, test coverage, and developer experience.
 
 [x] Formalize Contribution Process (CONTRIBUTING.md, templates).
 
-v1.2 — The Plugins & Extensibility Release
+### v1.2 — The Plugins & Extensibility Release
 Focus: Redesigning the core for extensibility and adding community-requested features.
 
 [x] Plugin Architecture: Redesign the core to support external providers for services and package managers.
@@ -287,7 +287,7 @@ Focus: Redesigning the core for extensibility and adding community-requested fea
 
 [x] Structured Output: Finalize --json integration for all modules.
 
-v2.0 — The Architecture Release
+### v2.0 — The Architecture Release
 Focus: Major architectural changes to support long-term power and reliability.
 
 [ ] Implement Resource Dependencies (dependsOn:)
@@ -296,7 +296,7 @@ Focus: Major architectural changes to support long-term power and reliability.
 
 [ ] Evolve configuration towards a true DSL
 
-🏗️ Technical Architecture
+### 🏗️ Technical Architecture
 Built with modern .NET engineering patterns:
 
 Dependency Injection (Microsoft.Extensions.Hosting)
@@ -309,10 +309,10 @@ Cross-Platform Dev: Can be developed/unit-tested on Linux & macOS.
 
 CI/CD via GitHub Actions (SingleFile & Native builds)
 
-📘 Usage
+### 📘 Usage
 .\WinHome.exe [options]
 
-Options
+### Options
 --config <path>
 
 --dry-run, -d
@@ -323,7 +323,7 @@ Options
 
 --diff
 
-🧩 Configuration Example (config.yaml)
+### 🧩 Configuration Example (config.yaml)
 version: "1.0"
 
 apps:
@@ -383,7 +383,7 @@ profiles:
         value: "%USERPROFILE%\work\bin"
         action: "append"
 
-🗑️ Uninstallation
+### 🗑️ Uninstallation
 WinHome is fully portable. To uninstall it:
 
 Delete the WinHome.exe file.
@@ -392,7 +392,7 @@ Delete the state file winhome.state.json (located in the same directory).
 
 No registry keys or hidden folders are left behind by the tool itself.
 
-❓ Troubleshooting
+### ❓ Troubleshooting
 For a comprehensive troubleshooting guide, see Troubleshooting.
 
 "Winget not recognized"
@@ -403,12 +403,12 @@ PowerShell Script Errors
 
 If you encounter execution policy errors, try running Set-ExecutionPolicy RemoteSigned -Scope CurrentUser in an administrative PowerShell window.
 
-🤝 Contributing
+### 🤝 Contributing
 Contributions, discussions, and feature ideas are welcome! WinHome is an open-source project and we'd love your help to make it better.
 
-📖 Contribution ResourcesResourceDescriptionContributing GuideFull guide: branching, commit style, PR processGSSOC 2026 InstructionsProgram-specific labels & tracking infoConfiguration WikiUnderstand WinHome's configuration schemaConfiguration CookbookReal-world config.yaml examplesTesting GuideHow to write and run testsCross-Platform DevDeveloping on Linux/macOSSecurity GuideSecurity practices and guidelinesTroubleshootingCommon issues and solutionsGitHub DiscussionsCommunity Q&A and ideasOpen IssuesFind something to work on
+### 📖 Contribution ResourcesResourceDescriptionContributing GuideFull guide: branching, commit style, PR processGSSOC 2026 InstructionsProgram-specific labels & tracking infoConfiguration WikiUnderstand WinHome's configuration schemaConfiguration CookbookReal-world config.yaml examplesTesting GuideHow to write and run testsCross-Platform DevDeveloping on Linux/macOSSecurity GuideSecurity practices and guidelinesTroubleshootingCommon issues and solutionsGitHub DiscussionsCommunity Q&A and ideasOpen IssuesFind something to work on
 
-🚀 Quick Start for Contributors
+### 🚀 Quick Start for Contributors
 Fork the repository → Fork WinHome
 
 Clone your fork and create a branch: git checkout -b <issue-number>-short-description
@@ -425,7 +425,7 @@ Open a Pull Request and link it to the relevant issue (Closes #<issue-number>)
 
 Please open an Issue or Pull Request on GitHub.
 
-✨ Contributors
+### ✨ Contributors
 Thanks goes to these wonderful people (emoji key):
 
 This project follows the all-contributors specification. Contributions of any kind welcome!
@@ -445,7 +445,7 @@ PowerShell
 
 And most importantly, the open-source community. ❤️
 
-📘 For detailed security guidance and best practices, see the Security Guide.
+### 📘 For detailed security guidance and best practices, see the Security Guide.
 
-📄 License
+### 📄 License
 Released under the MIT License.
