@@ -4,14 +4,19 @@ import os
 import sys
 from pathlib import Path
 
+
 APPDATA = os.environ.get("APPDATA", "")
 EVERYTHING_DIR = Path(APPDATA) / "Everything"
 INI_PATH = EVERYTHING_DIR / "Everything.ini"
 
 
 def handle_check_installed(request_id):
-    return {"requestId": request_id, "success": True, "changed": False, "data": EVERYTHING_DIR.exists()}
-
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": False,
+        "data": EVERYTHING_DIR.exists()
+    }
 
 def load_config():
     config = configparser.ConfigParser()
@@ -21,7 +26,6 @@ def load_config():
         config.read(INI_PATH, encoding="utf-8")
 
     return config
-
 
 def merge_config(config, settings):
     changed = False
@@ -39,7 +43,6 @@ def merge_config(config, settings):
 
     return changed
 
-
 def handle_apply(args, context, request_id):
     dry_run = context.get("dryRun", False)
     settings = args.get("settings", {})
@@ -49,13 +52,19 @@ def handle_apply(args, context, request_id):
     changed = merge_config(config, settings)
 
     if dry_run:
-        preview = {section: dict(config[section]) for section in config.sections()}
+        preview = {
+            section: dict(config[section])
+            for section in config.sections()
+        }
 
         return {
             "requestId": request_id,
             "success": True,
             "changed": changed,
-            "data": {"dryRun": True, "preview": preview},
+            "data": {
+                "dryRun": True,
+                "preview": preview
+            }
         }
 
     EVERYTHING_DIR.mkdir(parents=True, exist_ok=True)
@@ -63,19 +72,25 @@ def handle_apply(args, context, request_id):
     with open(INI_PATH, "w", encoding="utf-8") as file:
         config.write(file)
 
-    return {"requestId": request_id, "success": True, "changed": changed, "data": {}}
-
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": changed,
+        "data": {}
+    }
 
 def main():
     try:
         raw = sys.stdin.read().strip()
 
         if not raw:
-            print(
-                json.dumps(
-                    {"requestId": None, "success": False, "changed": False, "data": None, "error": "empty input"}
-                )
-            )
+            print(json.dumps({
+                "requestId": None,
+                "success": False,
+                "changed": False,
+                "data": None,
+                "error": "empty input"
+            }))
             return
 
         payload = json.loads(raw)
@@ -92,13 +107,21 @@ def main():
             result = handle_apply(args, context, request_id)
 
         else:
-            result = {"requestId": request_id, "success": False, "error": f"unknown command: {command}"}
+            result = {
+                "requestId": request_id,
+                "success": False,
+                "error": f"unknown command: {command}"
+            }
 
         print(json.dumps(result), flush=True)
 
     except Exception as error:
-        print(json.dumps({"requestId": None, "success": False, "error": str(error)}), flush=True)
-
+        print(json.dumps({
+            "requestId": None,
+            "success": False,
+            "error": str(error)
+        }), flush=True)
 
 if __name__ == "__main__":
     main()
+
