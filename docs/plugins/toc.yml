@@ -20,10 +20,14 @@
   href: chocolatey.md
 - name: Curl
   href: curl.md
+- name: Everything
+  href: everything.md
 - name: Gh Dash
   href: gh-dash.md
 - name: Gh
   href: gh.md
+- name: Lazydocker
+  href: lazydocker.md
 - name: Mise
   href: mise.md
 - name: Npm
@@ -44,8 +48,14 @@
   href: sharex.md
 - name: Starship
   href: starship.md
+- name: Windows Explorer
+  href: windows-explorer.md
+- name: Windows Sandbox
+  href: windows-sandbox.md
 - name: Winget
   href: winget.md
+- name: Yasb
+  href: yasb.md
 - name: Yazi
   href: yazi.md
 - name: Zoxide

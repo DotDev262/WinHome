@@ -1,6 +1,6 @@
 # Plugin Directory
 
-WinHome currently ships with 33 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
+WinHome currently ships with 38 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
 
 ## Capability Legend
 
@@ -74,6 +74,16 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | `powertoys` | Manages PowerToys general settings and supported module settings. | `config_provider` | [Details](#powertoys) |
 | `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
 | `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) |
+
+### System & File Tools
+
+| Name | Brief description | Capabilities | Docs |
+| --- | --- | --- | --- |
+| `everything` | Manages configuration settings in `Everything.ini` for Everything desktop file search utility. | `config_provider` | [Details](#everything) |
+| `lazydocker` | Manages YAML configurations for the `lazydocker` Docker terminal UI manager. | `config_provider` | [Details](#lazydocker) |
+| `windows-explorer` | Manages advanced registry configurations for Windows File Explorer. | `config_provider` | [Details](#windows-explorer) |
+| `windows-sandbox` | Manages settings in the `sandbox.wsb` configuration file for the Windows Sandbox. | `config_provider` | [Details](#windows-sandbox) |
+| `yasb` | Manages configuration settings in `config.yaml` for YASB. | `config_provider` | [Details](#yasb) |
 
 ### Examples And Test Fixtures
 
@@ -386,6 +396,43 @@ Manages general PowerToys settings plus supported module files such as `FancyZon
 Config key: `extensions.sharex`
 
 Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
+
+### System & File Tools
+
+<a id="everything"></a>
+#### everything
+
+Config key: `extensions.everything`
+
+Merges settings into `%APPDATA%\Everything\Everything.ini` preserving case on options but lowercasing values.
+
+<a id="lazydocker"></a>
+#### lazydocker
+
+Config key: `extensions.lazydocker`
+
+Deep-merges YAML configuration settings directly into `%APPDATA%\lazydocker\config.yml`.
+
+<a id="windows-explorer"></a>
+#### windows-explorer
+
+Config key: `extensions.windows-explorer`
+
+Configures File Explorer settings via HKCU registry DWORD values.
+
+<a id="windows-sandbox"></a>
+#### windows-sandbox
+
+Config key: `extensions.windows-sandbox`
+
+Manages sandbox resources and shares by modifying XML configuration in `%USERPROFILE%\Documents\sandbox.wsb`.
+
+<a id="yasb"></a>
+#### yasb
+
+Config key: `extensions.yasb`
+
+Deep-merges YASB options directly into the YAML config file at `%USERPROFILE%\.config\yasb\config.yaml`.
 
 ### Examples And Test Fixtures
 
