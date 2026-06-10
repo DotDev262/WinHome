@@ -65,7 +65,7 @@ namespace WinHome.Services.Bootstrappers
         {
           if (attempt < MaxRetries - 1)
           {
-            Console.WriteLine("[Bootstrapper] Network error installing {Name}. Retrying in 10 seconds...");
+            Console.WriteLine($"[Bootstrapper] Network error installing {Name}. Retrying in 10 seconds...");
             Thread.Sleep(10000);
           }
           else

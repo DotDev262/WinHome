@@ -91,5 +91,18 @@ namespace WinHome.Tests
       string name = _bootstrapper.Name;
       Assert.Equal("Chocolatey", name);
     }
+
+    [Fact]
+    public void Install_RetryExhausted_ThrowsAfterMaxAttempts()
+    {
+      _mockProcessRunner.Setup(pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()))
+          .Throws(new Exception("The remote name could not be resolved: 'community.chocolatey.org'"));
+
+      var ex = Assert.Throws<Exception>(() => _bootstrapper.Install(false));
+      Assert.Contains("after 3 attempts", ex.Message);
+      _mockProcessRunner.Verify(
+          pr => pr.RunProcessWithStartInfo(It.IsAny<ProcessStartInfo>()),
+          Times.Exactly(3));
+    }
   }
 }
