@@ -1,6 +1,6 @@
 # Plugin Directory
 
-WinHome currently ships with 33 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
+WinHome currently ships with 38 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
 
 ## Capability Legend
 
@@ -15,8 +15,11 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | --- | --- | --- | --- |
 | `cargo` | Manages Cargo settings in `.cargo/config.toml`. | `config_provider` | [Details](#cargo) |
 | `chocolatey` | Manages Chocolatey client configuration and feature flags. | `config_provider` | [Details](#chocolatey) |
+| `miniconda` | Manages settings in `.condarc` for Miniconda and Conda package manager. | `config_provider` | [Details](#miniconda) |
 | `npm` | Manages user-level `.npmrc` settings. | `config_provider` | [Details](#npm) |
 | `pip` | Manages `pip.ini` settings for Python package installs. | `config_provider` | [Details](#pip) |
+| `scoop` | Manages configuration settings in `config.json` for Scoop package manager. | `config_provider` | [Details](#scoop) |
+| `sdkman` | Manages configuration settings in `.sdkman/etc/config` for SDKMAN. | `config_provider` | [Details](#sdkman) |
 | `winget` | Manages Winget CLI `settings.json`, separate from package installation. | `config_provider` | [Details](#winget) |
 
 ### Editors And Knowledge Tools
@@ -68,12 +71,14 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 
 | Name | Brief description | Capabilities | Docs |
 | --- | --- | --- | --- |
+| `7-zip` | Manages advanced compression and shell context settings for 7-Zip using Windows registry. | `config_provider` | [Details](#7-zip) |
 | `autohotkey` | Manages an AutoHotkey v2 bootstrap script and WinHome-owned settings block. | `config_provider` | [Details](#autohotkey) |
 | `espanso` | Manages Espanso text expansion rules in `base.yml`. | `config_provider` | [Details](#espanso) |
 | `keepassxc` | Manages KeePassXC INI settings. | `config_provider` | [Details](#keepassxc) |
 | `powertoys` | Manages PowerToys general settings and supported module settings. | `config_provider` | [Details](#powertoys) |
-| `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
 | `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) |
+| `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
+| `syncthing` | Manages XML configuration settings in `config.xml` for Syncthing. | `config_provider` | [Details](#syncthing) |
 
 ### Examples And Test Fixtures
 
@@ -155,6 +160,13 @@ Config key: `extensions.chocolatey`
 
 Manages `%ChocolateyInstall%\config\chocolatey.config`, including both `config` values and `features`. For package installs, see [Chocolatey module docs](../modules/chocolatey.md).
 
+<a id="miniconda"></a>
+#### miniconda
+
+Config key: `extensions.miniconda`
+
+Manages settings in the `.condarc` configuration file for Conda and Miniconda.
+
 <a id="npm"></a>
 #### npm
 
@@ -168,6 +180,20 @@ Merges key-value settings into the current user's `.npmrc`.
 Config key: `extensions.pip`
 
 Merges Pip settings into `%APPDATA%\pip\pip.ini`.
+
+<a id="scoop"></a>
+#### scoop
+
+Config key: `extensions.scoop`
+
+Merges user settings into Scoop's JSON configuration file at `%USERPROFILE%\.config\scoop\config.json`.
+
+<a id="sdkman"></a>
+#### sdkman
+
+Config key: `extensions.sdkman`
+
+Manages toolchain configurations in SDKMAN's property file at `%USERPROFILE%\.sdkman\etc\config`.
 
 <a id="winget"></a>
 #### winget
@@ -352,6 +378,13 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 
 ### Automation, Productivity, And Desktop Utilities
 
+<a id="7-zip"></a>
+#### 7-zip
+
+Config key: `extensions.7-zip`
+
+Configures compression settings and shell extension registry keys under `HKCU\Software\7-Zip`.
+
 <a id="autohotkey"></a>
 #### autohotkey
 
@@ -386,6 +419,13 @@ Manages general PowerToys settings plus supported module files such as `FancyZon
 Config key: `extensions.sharex`
 
 Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
+
+<a id="syncthing"></a>
+#### syncthing
+
+Config key: `extensions.syncthing`
+
+Merges XML configurations into Syncthing's `config.xml` file.
 
 ### Examples And Test Fixtures
 

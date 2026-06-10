@@ -6,6 +6,8 @@
   href: tutorial.md
 - name: Development Guide
   href: development-guide.md
+- name: 7-zip
+  href: 7-zip.md
 - name: Alacritty
   href: alacritty.md
 - name: Autohotkey
@@ -24,6 +26,8 @@
   href: gh-dash.md
 - name: Gh
   href: gh.md
+- name: Miniconda
+  href: miniconda.md
 - name: Mise
   href: mise.md
 - name: Npm
@@ -40,10 +44,16 @@
   href: rclone.md
 - name: Rustup
   href: rustup.md
+- name: Scoop
+  href: scoop.md
+- name: Sdkman
+  href: sdkman.md
 - name: Sharex
   href: sharex.md
 - name: Starship
   href: starship.md
+- name: Syncthing
+  href: syncthing.md
 - name: Winget
   href: winget.md
 - name: Yazi
