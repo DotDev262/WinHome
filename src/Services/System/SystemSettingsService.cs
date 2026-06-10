@@ -303,7 +303,7 @@ namespace WinHome.Services.System
           }
           catch (Exception ex)
           {
-            Console.WriteLine($"[Warning] Could not capture original value for '{key}': {ex.Message}");
+            _logger.LogWarning("[Warning] Could not capture original value for '{Key}': {Message}", key, ex.Message);
           }
         }
 
@@ -327,14 +327,12 @@ namespace WinHome.Services.System
                 string command = $"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {brightness})";
                 if (dryRun)
                 {
-                  Console.ForegroundColor = ConsoleColor.Yellow;
-                  Console.WriteLine($"[DryRun] Would revert brightness to {brightness}");
-                  Console.ResetColor();
+                  _logger.LogWarning("[DryRun] Would revert brightness to {Brightness}", brightness);
                 }
                 else
                 {
                   _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
-                  Console.WriteLine($"[System Settings] Reverted brightness to {brightness}");
+                  _logger.LogInformation("[System Settings] Reverted brightness to {Brightness}", brightness);
                 }
               }
               break;
@@ -345,14 +343,12 @@ namespace WinHome.Services.System
                 string command = $@"$vol = [Math]::Round({volume} / 100.0, 2); (New-Object -ComObject MMDeviceEnumerator).GetDefaultAudioEndpoint(0,1).AudioEndpointVolume.MasterVolumeLevelScalar = $vol";
                 if (dryRun)
                 {
-                  Console.ForegroundColor = ConsoleColor.Yellow;
-                  Console.WriteLine($"[DryRun] Would revert volume to {volume}");
-                  Console.ResetColor();
+                  _logger.LogWarning("[DryRun] Would revert volume to {Volume}", volume);
                 }
                 else
                 {
                   _processRunner.RunCommand("powershell", new[] { "-Command", command }, false);
-                  Console.WriteLine($"[System Settings] Reverted volume to {volume}");
+                  _logger.LogInformation("[System Settings] Reverted volume to {Volume}", volume);
                 }
               }
               break;
@@ -360,7 +356,7 @@ namespace WinHome.Services.System
         }
         catch (Exception ex)
         {
-          Console.WriteLine($"[Error] Failed to revert {settingKey}: {ex.Message}");
+          _logger.LogError("[Error] Failed to revert {SettingKey}: {Message}", settingKey, ex.Message);
         }
       });
     }
@@ -410,7 +406,9 @@ namespace WinHome.Services.System
             {
               var title = notificationConfig.GetValueOrDefault((object)"title")?.ToString() ?? "";
               var message = notificationConfig.GetValueOrDefault((object)"message")?.ToString() ?? "";
-              string command = $"New-BurntToastNotification -Text '{title}', '{message}'";
+              string escapedTitle = title.Replace("'", "''");
+              string escapedMessage = message.Replace("'", "''");
+              string command = $"New-BurntToastNotification -Text '{escapedTitle}', '{escapedMessage}'";
               _processRunner.RunCommand("powershell", new[] { "-Command", command }, dryRun);
             }
             break;
