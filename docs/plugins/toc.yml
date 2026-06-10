@@ -20,24 +20,34 @@
   href: chocolatey.md
 - name: Curl
   href: curl.md
+- name: Fzf
+  href: fzf.md
 - name: Gh Dash
   href: gh-dash.md
 - name: Gh
   href: gh.md
+- name: Go
+  href: go.md
 - name: Mise
   href: mise.md
 - name: Npm
   href: npm.md
+- name: Nvm
+  href: nvm.md
 - name: Ohmyposh
   href: ohmyposh.md
 - name: Pip
   href: pip.md
+- name: Pnpm
+  href: pnpm.md
 - name: Powershell
   href: powershell.md
 - name: Powertoys
   href: powertoys.md
 - name: Rclone
   href: rclone.md
+- name: Ripgrep
+  href: ripgrep.md
 - name: Rustup
   href: rustup.md
 - name: Sharex

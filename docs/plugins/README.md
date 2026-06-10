@@ -1,6 +1,6 @@
 # Plugin Directory
 
-WinHome currently ships with 33 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
+WinHome currently ships with 38 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
 
 ## Capability Legend
 
@@ -16,7 +16,9 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | `cargo` | Manages Cargo settings in `.cargo/config.toml`. | `config_provider` | [Details](#cargo) |
 | `chocolatey` | Manages Chocolatey client configuration and feature flags. | `config_provider` | [Details](#chocolatey) |
 | `npm` | Manages user-level `.npmrc` settings. | `config_provider` | [Details](#npm) |
+| `nvm` | Manages settings for the Node Version Manager (`nvm-windows`). | `config_provider` | [Details](#nvm) |
 | `pip` | Manages `pip.ini` settings for Python package installs. | `config_provider` | [Details](#pip) |
+| `pnpm` | Manages settings for the PNPM package manager via the global `.npmrc`. | `config_provider` | [Details](#pnpm) |
 | `winget` | Manages Winget CLI `settings.json`, separate from package installation. | `config_provider` | [Details](#winget) |
 
 ### Editors And Knowledge Tools
@@ -35,8 +37,10 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | --- | --- | --- | --- |
 | `alacritty` | Manages Alacritty `alacritty.toml` terminal settings. | `config_provider` | [Details](#alacritty) |
 | `bat` | Manages `bat` syntax-highlighting pager configuration. | `config_provider` | [Details](#bat) |
+| `fzf` | Manages environment variables and default flags for the `fzf` fuzzy finder. | `config_provider` | [Details](#fzf) |
 | `ohmyposh` | Manages the Oh My Posh bootstrap line in a PowerShell profile. | `config_provider` | [Details](#ohmyposh) |
 | `powershell` | Generates a managed PowerShell profile block for aliases, modules, prompt, and functions. | `config_provider` | [Details](#powershell) |
+| `ripgrep` | Manages configuration settings and flags for the ripgrep search tool (`rg`). | `config_provider` | [Details](#ripgrep) |
 | `starship` | Manages `starship.toml` prompt settings. | `config_provider` | [Details](#starship) |
 | `windows-terminal` | Manages Windows Terminal `settings.json` for stable, preview, or dev installs. | `config_provider` | [Details](#windows-terminal) |
 | `yazi` | Manages Yazi core, keymap, and theme TOML files. | `config_provider` | [Details](#yazi) |
@@ -51,6 +55,7 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | `docker` | Manages Docker Desktop `settings.json`. | `config_provider` | [Details](#docker) |
 | `gh` | Manages GitHub CLI `config.yml`. | `config_provider` | [Details](#gh) |
 | `gh-dash` | Manages `gh-dash` dashboard settings in `config.yml`. | `config_provider` | [Details](#gh-dash) |
+| `go` | Manages environment variables for the Go language toolchain using `go env -w`. | `config_provider` | [Details](#go) |
 | `lazygit` | Manages `lazygit` YAML configuration. | `config_provider` | [Details](#lazygit) |
 | `mise` | Manages `config.toml` for the mise version manager. | `config_provider` | [Details](#mise) |
 | `opencode` | Manages OpenCode JSON and JSONC settings. | `config_provider` | [Details](#opencode) |
@@ -162,12 +167,26 @@ Config key: `extensions.npm`
 
 Merges key-value settings into the current user's `.npmrc`.
 
+<a id="nvm"></a>
+#### nvm
+
+Config key: `extensions.nvm`
+
+Manages settings for `nvm-windows` in `%APPDATA%\nvm\settings.txt`.
+
 <a id="pip"></a>
 #### pip
 
 Config key: `extensions.pip`
 
 Merges Pip settings into `%APPDATA%\pip\pip.ini`.
+
+<a id="pnpm"></a>
+#### pnpm
+
+Config key: `extensions.pnpm`
+
+Manages settings for the PNPM package manager in the global `.npmrc` file.
 
 <a id="winget"></a>
 #### winget
@@ -229,6 +248,13 @@ Config key: `extensions.bat`
 
 Manages flags and variables in `%APPDATA%\bat\config`.
 
+<a id="fzf"></a>
+#### fzf
+
+Config key: `extensions.fzf`
+
+Manages environment settings and default options inside `%USERPROFILE%\_fzfrc` (Windows) or `~/.fzfrc` (Unix).
+
 <a id="ohmyposh"></a>
 #### ohmyposh
 
@@ -242,6 +268,13 @@ Ensures a PowerShell profile contains the expected `oh-my-posh init` line for th
 Config key: `extensions.powershell`
 
 Generates a WinHome-managed profile block for aliases, modules, prompt settings, PSReadLine options, and custom functions.
+
+<a id="ripgrep"></a>
+#### ripgrep
+
+Config key: `extensions.ripgrep`
+
+Manages command flags in the file specified by `RIPGREP_CONFIG_PATH` (defaults to `%USERPROFILE%\.ripgreprc` or `~/.ripgreprc`).
 
 <a id="starship"></a>
 #### starship
@@ -307,6 +340,13 @@ Merges YAML settings into `%APPDATA%\GitHub CLI\config.yml`.
 Config key: `extensions.gh-dash`
 
 Merges dashboard settings into `%USERPROFILE%\.config\gh-dash\config.yml`.
+
+<a id="go"></a>
+#### go
+
+Config key: `extensions.go`
+
+Manages environment settings for the Go language toolchain persistently at the user level via `go env -w`.
 
 <a id="lazygit"></a>
 #### lazygit
