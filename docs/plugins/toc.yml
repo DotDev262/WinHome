@@ -8,6 +8,8 @@
   href: development-guide.md
 - name: Alacritty
   href: alacritty.md
+- name: Audacity
+  href: audacity.md
 - name: Autohotkey
   href: autohotkey.md
 - name: Bat
@@ -24,12 +26,16 @@
   href: gh-dash.md
 - name: Gh
   href: gh.md
+- name: Irfanview
+  href: irfanview.md
 - name: Mise
   href: mise.md
 - name: Npm
   href: npm.md
 - name: Ohmyposh
   href: ohmyposh.md
+- name: Obs Studio
+  href: obs-studio.md
 - name: Pip
   href: pip.md
 - name: Powershell
@@ -42,10 +48,14 @@
   href: rustup.md
 - name: Sharex
   href: sharex.md
+- name: Spicetify
+  href: spicetify.md
 - name: Starship
   href: starship.md
 - name: Winget
   href: winget.md
+- name: Wallpaper Engine
+  href: wallpaper-engine.md
 - name: Yazi
   href: yazi.md
 - name: Zoxide

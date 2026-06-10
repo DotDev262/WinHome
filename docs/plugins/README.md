@@ -1,6 +1,6 @@
 # Plugin Directory
 
-WinHome currently ships with 33 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
+WinHome currently ships with 38 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
 
 ## Capability Legend
 
@@ -74,6 +74,16 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | `powertoys` | Manages PowerToys general settings and supported module settings. | `config_provider` | [Details](#powertoys) |
 | `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
 | `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) |
+
+### Multimedia
+
+| Name | Brief description | Capabilities | Docs |
+| --- | --- | --- | --- |
+| `audacity` | Manages configuration settings in `audacity.cfg` for Audacity audio editor. | `config_provider` | [Details](#audacity) |
+| `irfanview` | Manages configuration settings in `i_view*.ini` files for IrfanView image viewer. | `config_provider` | [Details](#irfanview) |
+| `obs-studio` | Manages global and profile-specific INI settings for OBS Studio. | `config_provider` | [Details](#obs-studio) |
+| `spicetify` | Manages configuration settings in `config.ini` for Spotify client customizer Spicetify. | `config_provider` | [Details](#spicetify) |
+| `wallpaper-engine` | Manages JSON configuration settings in `config.json` for Wallpaper Engine. | `config_provider` | [Details](#wallpaper-engine) |
 
 ### Examples And Test Fixtures
 
@@ -386,6 +396,43 @@ Manages general PowerToys settings plus supported module files such as `FancyZon
 Config key: `extensions.sharex`
 
 Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
+
+### Multimedia
+
+<a id="audacity"></a>
+#### audacity
+
+Config key: `extensions.audacity`
+
+Merges custom INI-style settings into `%APPDATA%\audacity\audacity.cfg`.
+
+<a id="irfanview"></a>
+#### irfanview
+
+Config key: `extensions.irfanview`
+
+Merges section-grouped settings into IrfanView's active INI file (`i_view*.ini`) inside `%APPDATA%\IrfanView`.
+
+<a id="obs-studio"></a>
+#### obs-studio
+
+Config key: `extensions.obs-studio`
+
+Manages global settings in `global.ini` and profile-specific audio, video, output, and hotkey settings in `basic.ini`.
+
+<a id="spicetify"></a>
+#### spicetify
+
+Config key: `extensions.spicetify`
+
+Merges section-grouped options into `%USERPROFILE%\.spicetify\config.ini`.
+
+<a id="wallpaper-engine"></a>
+#### wallpaper-engine
+
+Config key: `extensions.wallpaper-engine`
+
+Deep-merges JSON settings recursively into Wallpaper Engine's `config.json` preferences file.
 
 ### Examples And Test Fixtures
 
