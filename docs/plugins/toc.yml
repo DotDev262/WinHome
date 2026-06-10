@@ -10,6 +10,8 @@
   href: alacritty.md
 - name: Autohotkey
   href: autohotkey.md
+- name: Betterdiscord
+  href: betterdiscord.md
 - name: Bat
   href: bat.md
 - name: Cargo
@@ -20,6 +22,8 @@
   href: chocolatey.md
 - name: Curl
   href: curl.md
+- name: Discord
+  href: discord.md
 - name: Gh Dash
   href: gh-dash.md
 - name: Gh
@@ -44,9 +48,13 @@
   href: sharex.md
 - name: Starship
   href: starship.md
+- name: Test Powershell
+  href: test-powershell.md
 - name: Winget
   href: winget.md
 - name: Yazi
   href: yazi.md
+- name: Zed
+  href: zed.md
 - name: Zoxide
   href: zoxide.md

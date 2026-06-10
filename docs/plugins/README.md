@@ -1,6 +1,6 @@
 # Plugin Directory
 
-WinHome currently ships with 33 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
+WinHome currently ships with 36 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
 
 ## Capability Legend
 
@@ -28,6 +28,7 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | `obsidian` | Configures vault settings and community plugins for Obsidian. | `config_provider` | [Details](#obsidian) |
 | `vim` | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [Details](#vim) |
 | `vscode` | Syncs VS Code settings, profiles, and extensions. | `config_provider`, `package_manager` | [Details](#vscode) |
+| `zed` | Manages JSONC configuration settings in `settings.json` for Zed editor. | `config_provider` | [Details](#zed) |
 
 ### Shell, Terminal, And Navigation
 
@@ -69,11 +70,13 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | Name | Brief description | Capabilities | Docs |
 | --- | --- | --- | --- |
 | `autohotkey` | Manages an AutoHotkey v2 bootstrap script and WinHome-owned settings block. | `config_provider` | [Details](#autohotkey) |
+| `betterdiscord` | Manages configuration settings in `settings.json` for BetterDiscord. | `config_provider` | [Details](#betterdiscord) |
+| `discord` | Manages configuration settings in `settings.json` for Discord. | `config_provider` | [Details](#discord) |
 | `espanso` | Manages Espanso text expansion rules in `base.yml`. | `config_provider` | [Details](#espanso) |
 | `keepassxc` | Manages KeePassXC INI settings. | `config_provider` | [Details](#keepassxc) |
 | `powertoys` | Manages PowerToys general settings and supported module settings. | `config_provider` | [Details](#powertoys) |
-| `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
 | `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) |
+| `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
 
 ### Examples And Test Fixtures
 
@@ -212,6 +215,13 @@ Generates `%LOCALAPPDATA%\nvim\init.lua` from `settings` and can install Git-bas
 Config key: `extensions.vscode` or top-level `vscode`
 
 Syncs VS Code `settings.json`, named profiles, and extension installation state under `%APPDATA%\Code\User`.
+
+<a id="zed"></a>
+#### zed
+
+Config key: `extensions.zed`
+
+Manages JSONC configurations in `%APPDATA%\Zed\settings.json`.
 
 ### Shell, Terminal, And Navigation
 
@@ -358,6 +368,20 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 Config key: `extensions.autohotkey`
 
 Generates or updates an AutoHotkey v2 script with a WinHome-managed settings block and optional custom script content.
+
+<a id="betterdiscord"></a>
+#### betterdiscord
+
+Config key: `extensions.betterdiscord`
+
+Deep-merges configuration settings in `%APPDATA%\BetterDiscord\data\settings.json`.
+
+<a id="discord"></a>
+#### discord
+
+Config key: `extensions.discord`
+
+Deep-merges configuration settings in `%APPDATA%\discord\settings.json`.
 
 <a id="espanso"></a>
 #### espanso
