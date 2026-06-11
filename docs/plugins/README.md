@@ -19,6 +19,13 @@ WinHome currently ships with 36 built-in plugins under `plugins/`. This page act
 | `pip` | Manages `pip.ini` settings for Python package installs. | `config_provider` | [Details](#pip) |
 | `winget` | Manages Winget CLI `settings.json`, separate from package installation. | `config_provider` | [Details](#winget) |
 
+
+| [Scoop](./scoop.md) | Command-line Installer Provisioning Framework | Package Manager | [Doc](./scoop.md) |
+| [Miniconda](./miniconda.md) | Python/R Package and Environment Manager | Package Manager | [Doc](./miniconda.md) |
+| [Sdkman](./sdkman.md) | Software Development Kit Manager for Java Ecosystem | Package Manager | [Doc](./sdkman.md) |
+| [7-Zip](./7-zip.md) | High-Ratio File Archiver and Compression Tool | Utility App | [Doc](./7-zip.md) |
+| [Syncthing](./syncthing.md) | Continuous File Synchronization Framework | Utility App | [Doc](./syncthing.md) |
+
 ### Editors And Knowledge Tools
 
 | Name | Brief description | Capabilities | Docs |
