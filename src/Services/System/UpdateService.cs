@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Hosting;
@@ -237,7 +238,7 @@ namespace WinHome.Services.System
                       ?? Environment.GetEnvironmentVariable("GITHUB_TOKEN");
       if (!string.IsNullOrEmpty(token))
       {
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
       }
 
       var response = await _httpClient.SendAsync(request);
