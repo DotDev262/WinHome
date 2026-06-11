@@ -26,5 +26,11 @@ namespace WinHome.Models
 
     [JsonPropertyName("browser_download_url")]
     public string BrowserDownloadUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("sha256")]
+    public string Sha256 { get; set; } = string.Empty;
+
+    [JsonPropertyName("md5")]
+    public string Md5 { get; set; } = string.Empty;
   }
 }

@@ -19,6 +19,9 @@ class Program
   {
     try
     {
+      // Post-update recovery: handle interrupted self-updates
+      PerformPostUpdateRecovery();
+
       if (Array.IndexOf(args, "--version") >= 0)
       {
         var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
@@ -167,6 +170,65 @@ class Program
       }
       Console.ResetColor();
       return 1;
+    }
+  }
+
+  /// <summary>Detects and recovers from an interrupted self-update on startup.</summary>
+  private static void PerformPostUpdateRecovery()
+  {
+    try
+    {
+      string currentPath = Environment.ProcessPath ?? string.Empty;
+      if (string.IsNullOrEmpty(currentPath)) return;
+
+      string? currentDir = Path.GetDirectoryName(currentPath);
+      if (string.IsNullOrEmpty(currentDir)) return;
+
+      string exeName = Path.GetFileName(currentPath);
+      string oldPath = Path.Combine(currentDir, exeName + ".old");
+      string stagingPath = Path.Combine(currentDir, exeName + ".staging");
+
+      bool currentExists = File.Exists(currentPath);
+      bool oldExists = File.Exists(oldPath);
+      bool stagingExists = File.Exists(stagingPath);
+
+      if (stagingExists)
+      {
+        TryDeleteFile(stagingPath);
+      }
+
+      if (!oldExists) return;
+
+      if (!currentExists)
+      {
+        try
+        {
+          File.Move(oldPath, currentPath);
+          Console.Error.WriteLine("[Recovery] Restored previous version from interrupted update.");
+        }
+        catch (Exception ex)
+        {
+          Console.Error.WriteLine($"[Recovery] Failed to restore from .old backup: {ex.Message}");
+        }
+      }
+      else
+      {
+        TryDeleteFile(oldPath);
+      }
+    }
+    catch
+    {
+    }
+  }
+
+  private static void TryDeleteFile(string path)
+  {
+    try
+    {
+      if (File.Exists(path)) File.Delete(path);
+    }
+    catch
+    {
     }
   }
 }
