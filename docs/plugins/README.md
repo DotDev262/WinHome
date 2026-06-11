@@ -395,3 +395,5 @@ Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
 Config key: `extensions.test-powershell`
 
 Example plugin used by the test suite to validate both `config_provider` and `package_manager` behavior. It is useful as a reference implementation, not as an end-user integration.
+
+* [Yazi](./yazi.md) - Declarative asynchronous terminal file manager plugin integration tracking guidelines.
