@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 
 try:
     import yaml
@@ -53,8 +54,15 @@ def write_yaml(file_path: str, data: dict) -> None:
         raise RuntimeError("PyYAML is required to read or write gh config")
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "w", encoding="utf-8") as file_handle:
-        yaml.dump(data, file_handle, default_flow_style=False, sort_keys=False)
+    dir_name = os.path.dirname(file_path) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".yml")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            yaml.dump(data, f, default_flow_style=False)
+            os.replace(tmp_path, file_path)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
 
 
 def merge_settings(target: dict, source: dict) -> bool:
