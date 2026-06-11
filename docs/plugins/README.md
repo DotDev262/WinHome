@@ -1,6 +1,6 @@
 # Plugin Directory
 
-WinHome currently ships with 33 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
+WinHome currently ships with 36 built-in plugins under `plugins/`. This page acts as a marketplace-style index for those plugins and a quick reference for how each one is enabled from `config.yaml`.
 
 ## Capability Legend
 
@@ -28,6 +28,7 @@ WinHome currently ships with 33 built-in plugins under `plugins/`. This page act
 | `obsidian` | Configures vault settings and community plugins for Obsidian. | `config_provider` | [Details](#obsidian) |
 | `vim` | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [Details](#vim) |
 | `vscode` | Syncs VS Code settings, profiles, and extensions. | `config_provider`, `package_manager` | [Details](#vscode) |
+| `zed` | Manages Zed editor settings in JSONC format. | `config_provider` | [Details](#zed) |
 
 ### Shell, Terminal, And Navigation
 
@@ -74,6 +75,13 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | `powertoys` | Manages PowerToys general settings and supported module settings. | `config_provider` | [Details](#powertoys) |
 | `sharex` | Manages ShareX `ShareX.json`. | `config_provider` | [Details](#sharex) |
 | `rustup` | Manages `settings.toml` for the Rust toolchain installer. | `config_provider` | [Details](#rustup) |
+
+### Community And Communication
+
+| Name | Brief description | Capabilities | Docs |
+| --- | --- | --- | --- |
+| `betterdiscord` | Manages BetterDiscord data settings in `settings.json`. | `config_provider` | [Details](#betterdiscord) |
+| `discord` | Manages Discord client settings in `settings.json`. | `config_provider` | [Details](#discord) |
 
 ### Examples And Test Fixtures
 
@@ -212,6 +220,13 @@ Generates `%LOCALAPPDATA%\nvim\init.lua` from `settings` and can install Git-bas
 Config key: `extensions.vscode` or top-level `vscode`
 
 Syncs VS Code `settings.json`, named profiles, and extension installation state under `%APPDATA%\Code\User`.
+
+<a id="zed"></a>
+#### zed
+
+Config key: `extensions.zed`
+
+Merges JSONC settings into `%APPDATA%\Zed\settings.json` with automatic type coercion for int and bool keys.
 
 ### Shell, Terminal, And Navigation
 
@@ -387,6 +402,22 @@ Config key: `extensions.sharex`
 
 Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
 
+### Community And Communication
+
+<a id="betterdiscord"></a>
+#### betterdiscord
+
+Config key: `extensions.betterdiscord`
+
+Deep-merges settings into `%APPDATA%\BetterDiscord\data\settings.json`.
+
+<a id="discord"></a>
+#### discord
+
+Config key: `extensions.discord`
+
+Deep-merges settings into `%APPDATA%\discord\settings.json`.
+
 ### Examples And Test Fixtures
 
 <a id="test-powershell"></a>
@@ -394,4 +425,4 @@ Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
 
 Config key: `extensions.test-powershell`
 
-Example plugin used by the test suite to validate both `config_provider` and `package_manager` behavior. It is useful as a reference implementation, not as an end-user integration.
+Example plugin used by the test suite to validate both `config_provider` and `package_manager` behavior. It is useful as a reference implementation, not as an end-user integration. See [full docs](test-powershell.md).
