@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.Hosting;
 using Moq;
 using Moq.Protected;
 using WinHome.Interfaces;
@@ -11,10 +12,12 @@ namespace WinHome.Tests.Services.System
   public class UpdateServiceTests
   {
     private readonly Mock<ILogger> _mockLogger;
+    private readonly Mock<IHostApplicationLifetime> _mockLifetime;
 
     public UpdateServiceTests()
     {
       _mockLogger = new Mock<ILogger>();
+      _mockLifetime = new Mock<IHostApplicationLifetime>();
     }
 
     private Mock<HttpMessageHandler> CreateMockHttpMessageHandler(HttpStatusCode statusCode, string responseContent)
@@ -55,7 +58,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       var result = await service.CheckForUpdatesAsync("1.0.0");
@@ -73,7 +76,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       var result = await service.CheckForUpdatesAsync("1.0.0");
@@ -91,7 +94,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       var result = await service.CheckForUpdatesAsync("1.0.0");
@@ -108,7 +111,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, "null");
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       var result = await service.CheckForUpdatesAsync("1.0.0");
@@ -125,7 +128,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       var result = await service.CheckForUpdatesAsync("1.0.0");
@@ -142,7 +145,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandlerThrows(new HttpRequestException("Network down"));
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       var result = await service.CheckForUpdatesAsync("1.0.0");
@@ -159,7 +162,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.NotFound, "");
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       var result = await service.CheckForUpdatesAsync("1.0.0");
@@ -181,7 +184,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, "null");
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       await service.UpdateAsync();
@@ -206,7 +209,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandler(HttpStatusCode.OK, releaseJson);
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       await service.UpdateAsync();
@@ -222,7 +225,7 @@ namespace WinHome.Tests.Services.System
       var handlerMock = CreateMockHttpMessageHandlerThrows(new HttpRequestException("Failed API call"));
       using var httpClient = new HttpClient(handlerMock.Object);
 
-      var service = new UpdateService(_mockLogger.Object, httpClient);
+      var service = new UpdateService(_mockLogger.Object, _mockLifetime.Object, httpClient);
 
       // Act
       await service.UpdateAsync();
