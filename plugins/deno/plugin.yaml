@@ -1,0 +1,6 @@
+name: deno
+description: Deno configuration provider plugin
+version: 1.0.0
+main: src/plugin.py
+capabilities:
+  - config_provider
