@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Text.Json;
 using WinHome.Interfaces;
 
@@ -10,16 +12,38 @@ namespace WinHome.Services.Logging
     private readonly List<LogEntry> _logEntries = new();
     private volatile LogLevel _minLevel = LogLevel.Info;
 
+    private readonly string? _logFilePath;
+
+    public JsonLogger(string? logFilePath = null)
+    {
+      _logFilePath = logFilePath;
+    }
+
     /// <summary>Sets the minimum log level; messages below this level are suppressed.</summary>
     public void SetMinLevel(LogLevel level)
     {
       _minLevel = level;
     }
 
+    private void WriteToFile(string message, LogLevel level)
+    {
+      if (string.IsNullOrWhiteSpace(_logFilePath))
+        return;
+
+      var formatted =
+        $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level}] {message}";
+
+      File.AppendAllText(
+        _logFilePath,
+        formatted + Environment.NewLine);
+    }
+
     /// <summary>Records a JSON log entry at the given level.</summary>
     public void Log(string message, LogLevel level)
     {
       if (level < _minLevel) return;
+
+      WriteToFile(message, level);
 
       lock (_lock)
       {
@@ -52,7 +76,9 @@ namespace WinHome.Services.Logging
     {
       lock (_lock)
       {
-        return JsonSerializer.Serialize(_logEntries, new JsonSerializerOptions { WriteIndented = true });
+        return JsonSerializer.Serialize(
+          _logEntries,
+          new JsonSerializerOptions { WriteIndented = true });
       }
     }
   }
