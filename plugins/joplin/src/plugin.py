@@ -57,10 +57,7 @@ def load_settings():
 def save_settings(settings):
     ensure_config_exists()
 
-    fd, temp_path = tempfile.mkstemp(
-        dir=CONFIG_DIR,
-        suffix=".tmp"
-    )
+    fd, temp_path = tempfile.mkstemp(dir=CONFIG_DIR, suffix=".tmp")
 
     os.close(fd)
 
@@ -84,20 +81,14 @@ def handle_apply(settings, dry_run=False):
         if old_value != value:
             changed = True
 
-            changes[key] = {
-                "old": old_value,
-                "new": value
-            }
+            changes[key] = {"old": old_value, "new": value}
 
         new_settings[key] = value
 
     if changed and not dry_run:
         save_settings(new_settings)
 
-    return {
-        "changed": changed,
-        "changes": changes
-    }
+    return {"changed": changed, "changes": changes}
 
 
 def main():
@@ -111,10 +102,7 @@ def main():
         args = request.get("args", {})
 
         if command == "check_installed":
-            response = {
-                "requestId": request_id,
-                "installed": is_joplin_installed()
-            }
+            response = {"requestId": request_id, "installed": is_joplin_installed()}
 
         elif command == "apply":
             dry_run = args.get("dryRun", False)
@@ -122,25 +110,15 @@ def main():
 
             result = handle_apply(settings, dry_run)
 
-            response = {
-                "requestId": request_id,
-                "changed": result["changed"],
-                "changes": result["changes"]
-            }
+            response = {"requestId": request_id, "changed": result["changed"], "changes": result["changes"]}
 
         else:
-            response = {
-                "requestId": request_id,
-                "error": f"Unknown command: {command}"
-            }
+            response = {"requestId": request_id, "error": f"Unknown command: {command}"}
 
         send_response(response)
 
     except Exception as e:
-        send_response({
-            "requestId": "unknown",
-            "error": str(e)
-        })
+        send_response({"requestId": "unknown", "error": str(e)})
 
 
 if __name__ == "__main__":
