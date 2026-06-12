@@ -54,14 +54,24 @@ def write_yaml(file_path: str, data: dict) -> None:
         raise RuntimeError("PyYAML is required to read or write gh config")
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
     dir_name = os.path.dirname(file_path) or "."
     fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".yml")
+
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            yaml.dump(data, f, default_flow_style=False)
-            os.replace(tmp_path, file_path)
+            yaml.dump(
+                data,
+                f,
+                default_flow_style=False,
+                sort_keys=False,
+            )
+
+        os.replace(tmp_path, file_path)
+
     except Exception:
-        os.unlink(tmp_path)
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
         raise
 
 
