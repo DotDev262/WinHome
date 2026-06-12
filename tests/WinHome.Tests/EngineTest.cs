@@ -153,6 +153,8 @@ namespace WinHome.Tests
     [Fact]
     public async Task RunAsync_ShouldApplyRegistryTweaksAndSystemSettings_WhenConfigured()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       // Arrange
       var config = new Configuration();
       config.RegistryTweaks.Add(new RegistryTweak
@@ -420,6 +422,8 @@ namespace WinHome.Tests
     [Fact]
     public async Task RunAsync_ShouldPreserveTrackedSystemSettingOriginals()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       // Arrange
       var config = new Configuration();
       config.SystemSettings["brightness"] = 80;
@@ -634,138 +638,138 @@ namespace WinHome.Tests
       }
     }
 
-        private Engine CreateEngine(Mock<ILogger> logger)
-        {
-            var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
-            var stateWriter = new WinHome.Services.StateWriter(tmp);
-            return new Engine(
-                _managers,
-                _mockDotfiles.Object,
-                _mockRegistry.Object,
-                _mockSystemSettings.Object,
-                _mockWsl.Object,
-                _mockGit.Object,
-                _mockEnv.Object,
-                _mockServiceManager.Object,
-                _mockScheduledTaskService.Object,
-                _mockPluginManager.Object,
-                _mockPluginRunner.Object,
-                _mockStateService.Object,
-                logger.Object,
-                _mockRuntimeResolver.Object,
-                stateWriter
-            );
-        }
-
-        [Fact]
-        public async Task RunAsync_Cleanup_RemovesStateWriterEntry_And_AllowsReapply_ForApp()
-        {
-            var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
-            try
-            {
-                var stateWriter = new WinHome.Services.StateWriter(tmp);
-                stateWriter.RecordStep(new StepResult
-                {
-                    StepId = "winget:ReaddApp",
-                    StepType = "app",
-                    StepName = "ReaddApp",
-                    Status = StepStatus.Succeeded,
-                    AppliedAt = DateTime.UtcNow
-                });
-
-                var previousState = new StateData();
-                previousState.AppliedItems.Add("winget:ReaddApp");
-                _mockStateService.Setup(s => s.LoadState()).Returns(previousState);
-
-                var mockLogger = new Mock<ILogger>();
-                var engine = new Engine(
-                    _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
-                    _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
-                    _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
-                    _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
-
-                // Act: cleanup run
-                await engine.RunAsync(new Configuration(), false);
-
-                // Assert cleanup removed applied state and removed StateWriter entry
-                _mockWinget.Verify(m => m.Uninstall("ReaddApp", false), Times.Once);
-                _mockStateService.Verify(s => s.RemoveApplied("winget:ReaddApp"), Times.Once);
-                var loadedAfterCleanup = stateWriter.Load();
-                Assert.False(loadedAfterCleanup.ContainsKey("winget:ReaddApp"));
-
-                // Act: re-add and apply
-                _mockStateService.Setup(s => s.LoadState()).Returns(new StateData());
-                var config = new Configuration();
-                config.Apps.Add(new AppConfig { Id = "ReaddApp", Manager = "winget" });
-                await engine.RunAsync(config, false);
-
-                // Verify re-apply
-                _mockWinget.Verify(m => m.Install(It.Is<AppConfig>(a => a.Id == "ReaddApp"), false), Times.Once);
-                var loadedAfterReapply = stateWriter.Load();
-                Assert.True(loadedAfterReapply.ContainsKey("winget:ReaddApp"));
-            }
-            finally
-            {
-                if (File.Exists(tmp)) File.Delete(tmp);
-                if (File.Exists(tmp + ".tmp")) File.Delete(tmp + ".tmp");
-            }
-        }
-
-        [Fact]
-        public async Task RunAsync_Cleanup_RemovesStateWriterEntry_And_AllowsReapply_ForRegistry()
-        {
-            if (!OperatingSystem.IsWindows()) return;
-
-            var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
-            try
-            {
-                var stateWriter = new WinHome.Services.StateWriter(tmp);
-                var stepId = "reg:HKCU\\Software\\Readd|ReaddSetting";
-                stateWriter.RecordStep(new StepResult
-                {
-                    StepId = stepId,
-                    StepType = "registry",
-                    StepName = "ReaddSetting",
-                    Status = StepStatus.Succeeded,
-                    AppliedAt = DateTime.UtcNow
-                });
-
-                var previousState = new StateData();
-                previousState.AppliedItems.Add(stepId);
-                _mockStateService.Setup(s => s.LoadState()).Returns(previousState);
-
-                var mockLogger = new Mock<ILogger>();
-                var engine = new Engine(
-                    _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
-                    _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
-                    _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
-                    _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
-
-                // Act: cleanup run
-                await engine.RunAsync(new Configuration(), false);
-
-                // Assert cleanup removed applied state and removed StateWriter entry
-                _mockRegistry.Verify(r => r.Revert("HKCU\\Software\\Readd", "ReaddSetting", false), Times.Once);
-                _mockStateService.Verify(s => s.RemoveApplied(stepId), Times.Once);
-                var loadedAfterCleanup = stateWriter.Load();
-                Assert.False(loadedAfterCleanup.ContainsKey(stepId));
-
-                // Act: re-add and apply
-                _mockStateService.Setup(s => s.LoadState()).Returns(new StateData());
-                var config = new Configuration();
-                config.RegistryTweaks.Add(new RegistryTweak { Path = "HKCU\\Software\\Readd", Name = "ReaddSetting", Value = 1, Type = "dword" });
-                await engine.RunAsync(config, false);
-
-                // Verify re-apply
-                _mockRegistry.Verify(r => r.Apply(It.Is<RegistryTweak>(t => t.Path == "HKCU\\Software\\Readd" && t.Name == "ReaddSetting"), false), Times.Once);
-                var loadedAfterReapply = stateWriter.Load();
-                Assert.True(loadedAfterReapply.ContainsKey(stepId));
-            }
-            finally
-            {
-                if (File.Exists(tmp)) File.Delete(tmp);
-                if (File.Exists(tmp + ".tmp")) File.Delete(tmp + ".tmp");
-            }
-        }
+    private Engine CreateEngine(Mock<ILogger> logger)
+    {
+      var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
+      var stateWriter = new WinHome.Services.StateWriter(tmp);
+      return new Engine(
+          _managers,
+          _mockDotfiles.Object,
+          _mockRegistry.Object,
+          _mockSystemSettings.Object,
+          _mockWsl.Object,
+          _mockGit.Object,
+          _mockEnv.Object,
+          _mockServiceManager.Object,
+          _mockScheduledTaskService.Object,
+          _mockPluginManager.Object,
+          _mockPluginRunner.Object,
+          _mockStateService.Object,
+          logger.Object,
+          _mockRuntimeResolver.Object,
+          stateWriter
+      );
     }
+
+    [Fact]
+    public async Task RunAsync_Cleanup_RemovesStateWriterEntry_And_AllowsReapply_ForApp()
+    {
+      var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
+      try
+      {
+        var stateWriter = new WinHome.Services.StateWriter(tmp);
+        stateWriter.RecordStep(new StepResult
+        {
+          StepId = "winget:ReaddApp",
+          StepType = "app",
+          StepName = "ReaddApp",
+          Status = StepStatus.Succeeded,
+          AppliedAt = DateTime.UtcNow
+        });
+
+        var previousState = new StateData();
+        previousState.AppliedItems.Add("winget:ReaddApp");
+        _mockStateService.Setup(s => s.LoadState()).Returns(previousState);
+
+        var mockLogger = new Mock<ILogger>();
+        var engine = new Engine(
+            _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
+            _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
+            _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
+            _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
+
+        // Act: cleanup run
+        await engine.RunAsync(new Configuration(), false);
+
+        // Assert cleanup removed applied state and removed StateWriter entry
+        _mockWinget.Verify(m => m.Uninstall("ReaddApp", false), Times.Once);
+        _mockStateService.Verify(s => s.RemoveApplied("winget:ReaddApp"), Times.Once);
+        var loadedAfterCleanup = stateWriter.Load();
+        Assert.False(loadedAfterCleanup.ContainsKey("winget:ReaddApp"));
+
+        // Act: re-add and apply
+        _mockStateService.Setup(s => s.LoadState()).Returns(new StateData());
+        var config = new Configuration();
+        config.Apps.Add(new AppConfig { Id = "ReaddApp", Manager = "winget" });
+        await engine.RunAsync(config, false);
+
+        // Verify re-apply
+        _mockWinget.Verify(m => m.Install(It.Is<AppConfig>(a => a.Id == "ReaddApp"), false), Times.Once);
+        var loadedAfterReapply = stateWriter.Load();
+        Assert.True(loadedAfterReapply.ContainsKey("winget:ReaddApp"));
+      }
+      finally
+      {
+        if (File.Exists(tmp)) File.Delete(tmp);
+        if (File.Exists(tmp + ".tmp")) File.Delete(tmp + ".tmp");
+      }
+    }
+
+    [Fact]
+    public async Task RunAsync_Cleanup_RemovesStateWriterEntry_And_AllowsReapply_ForRegistry()
+    {
+      if (!OperatingSystem.IsWindows()) return;
+
+      var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
+      try
+      {
+        var stateWriter = new WinHome.Services.StateWriter(tmp);
+        var stepId = "reg:HKCU\\Software\\Readd|ReaddSetting";
+        stateWriter.RecordStep(new StepResult
+        {
+          StepId = stepId,
+          StepType = "registry",
+          StepName = "ReaddSetting",
+          Status = StepStatus.Succeeded,
+          AppliedAt = DateTime.UtcNow
+        });
+
+        var previousState = new StateData();
+        previousState.AppliedItems.Add(stepId);
+        _mockStateService.Setup(s => s.LoadState()).Returns(previousState);
+
+        var mockLogger = new Mock<ILogger>();
+        var engine = new Engine(
+            _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
+            _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
+            _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
+            _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
+
+        // Act: cleanup run
+        await engine.RunAsync(new Configuration(), false);
+
+        // Assert cleanup removed applied state and removed StateWriter entry
+        _mockRegistry.Verify(r => r.Revert("HKCU\\Software\\Readd", "ReaddSetting", false), Times.Once);
+        _mockStateService.Verify(s => s.RemoveApplied(stepId), Times.Once);
+        var loadedAfterCleanup = stateWriter.Load();
+        Assert.False(loadedAfterCleanup.ContainsKey(stepId));
+
+        // Act: re-add and apply
+        _mockStateService.Setup(s => s.LoadState()).Returns(new StateData());
+        var config = new Configuration();
+        config.RegistryTweaks.Add(new RegistryTweak { Path = "HKCU\\Software\\Readd", Name = "ReaddSetting", Value = 1, Type = "dword" });
+        await engine.RunAsync(config, false);
+
+        // Verify re-apply
+        _mockRegistry.Verify(r => r.Apply(It.Is<RegistryTweak>(t => t.Path == "HKCU\\Software\\Readd" && t.Name == "ReaddSetting"), false), Times.Once);
+        var loadedAfterReapply = stateWriter.Load();
+        Assert.True(loadedAfterReapply.ContainsKey(stepId));
+      }
+      finally
+      {
+        if (File.Exists(tmp)) File.Delete(tmp);
+        if (File.Exists(tmp + ".tmp")) File.Delete(tmp + ".tmp");
+      }
+    }
+  }
 }

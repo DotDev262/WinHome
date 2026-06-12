@@ -1,10 +1,10 @@
 <div align="center">
-  
+
 # 🪟 WinHome
 
 <img src="./.github/banner.png" alt="WinHome Banner" width="80%">
 
-A declarative, portable, idempotent **Infrastructure-as-Code tool for Windows**  
+A declarative, portable, idempotent **Infrastructure-as-Code tool for Windows**
 powered by modern, dependency-free, single-file .NET.
 
 ---
@@ -38,9 +38,9 @@ I built WinHome to create a **lightweight, dependency-free configuration tool** 
 
 WinHome focuses on the real needs of **Windows developers**, including:
 
-- First-class **Winget** support  
-- Deep **WSL** provisioning  
-- Native **Registry tweaks** and system settings  
+- First-class **Winget** support
+- Deep **WSL** provisioning
+- Native **Registry tweaks** and system settings
 
 The goal is to make Windows environment automation as simple, fast, and reliable as possible.
 

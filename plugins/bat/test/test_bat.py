@@ -53,6 +53,8 @@ def test_check_installed_returns_bare_bool(tmp_path):
     bin_dir.mkdir()
     exe = bin_dir / ("bat.exe" if os.name == "nt" else "bat")
     exe.write_text("", encoding="utf-8")
+    if os.name != "nt":
+        exe.chmod(0o755)
 
     res, _ = run_plugin(
         {"requestId": "req-1", "command": "check_installed"},

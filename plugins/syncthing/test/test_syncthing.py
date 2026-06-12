@@ -8,15 +8,17 @@ from pathlib import Path
 
 PLUGIN_PATH = Path(__file__).parent.parent / "src" / "plugin.py"
 
+
 def run_plugin(input_data, env=None):
     result = subprocess.run(
         [sys.executable, str(PLUGIN_PATH)],
         input=input_data,
         text=True,
         capture_output=True,
-        env=env or os.environ.copy()
+        env=env or os.environ.copy(),
     )
     return result.stdout.strip()
+
 
 def test_empty_input():
     stdout = run_plugin("")
@@ -24,11 +26,13 @@ def test_empty_input():
     assert response["requestId"] == "unknown"
     assert response["error"] == "No input received"
 
+
 def test_invalid_json():
     stdout = run_plugin("this is not json!")
     response = json.loads(stdout)
     assert response["requestId"] == "unknown"
     assert response["error"] == "Invalid JSON"
+
 
 def test_unknown_command():
     request = {"requestId": "123", "command": "dance"}
@@ -37,6 +41,7 @@ def test_unknown_command():
     assert response["requestId"] == "123"
     assert "Unknown command: dance" in response["error"]
 
+
 def test_check_installed_response_format():
     request = {"requestId": "456", "command": "check_installed"}
     stdout = run_plugin(json.dumps(request))
@@ -44,19 +49,14 @@ def test_check_installed_response_format():
     assert response["requestId"] == "456"
     assert isinstance(response["installed"], bool)
 
+
 def test_apply_config_dry_run():
-    request = {
-        "requestId": "789",
-        "command": "apply",
-        "args": {
-            "dryRun": True,
-            "settings": {"gui": {"enabled": True}}
-        }
-    }
+    request = {"requestId": "789", "command": "apply", "args": {"dryRun": True, "settings": {"gui": {"enabled": True}}}}
     stdout = run_plugin(json.dumps(request))
     response = json.loads(stdout)
     assert response["requestId"] == "789"
     assert response["changed"] is True
+
 
 def test_apply_config():
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -67,17 +67,14 @@ def test_apply_config():
         request = {
             "requestId": "101",
             "command": "apply",
-            "args": {
-                "dryRun": False,
-                "settings": {"gui": {"enabled": True, "user": "admin"}}
-            }
+            "args": {"dryRun": False, "settings": {"gui": {"enabled": True, "user": "admin"}}},
         }
 
         stdout = run_plugin(json.dumps(request), env=env)
         response = json.loads(stdout)
         assert response["changed"] is True
 
-        if os.name == 'nt':
+        if os.name == "nt":
             config_file = Path(temp_dir) / "Syncthing" / "config.xml"
         else:
             config_file = Path(temp_dir) / ".config" / "syncthing" / "config.xml"
@@ -85,6 +82,7 @@ def test_apply_config():
         assert config_file.exists()
         tree = ET.parse(config_file)
         assert tree.getroot().find("gui").find("enabled").text == "true"
+
 
 def test_idempotent_apply():
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -95,10 +93,7 @@ def test_idempotent_apply():
         request = {
             "requestId": "202",
             "command": "apply",
-            "args": {
-                "dryRun": False,
-                "settings": {"options": {"listenAddress": "default"}}
-            }
+            "args": {"dryRun": False, "settings": {"options": {"listenAddress": "default"}}},
         }
 
         run_plugin(json.dumps(request), env=env)

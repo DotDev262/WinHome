@@ -19,22 +19,22 @@ It can:
 
 ## Configuration Schema
 
-| Field | Type | Default | Description |
-|---------|---------|---------|---------|
-| settings | object | none | Key-value settings written to Zed settings.json |
+| Field    | Type   | Default | Description                                     |
+| -------- | ------ | ------- | ----------------------------------------------- |
+| settings | object | none    | Key-value settings written to Zed settings.json |
 
 ### Type Coercion
 
 Certain settings are automatically coerced to the correct type:
 
-| Key | Type |
-|---------|---------|
-| buffer_font_size | int |
-| font_size | int |
-| tab_size | int |
-| vim_mode | bool |
+| Key                   | Type |
+| --------------------- | ---- |
+| buffer_font_size      | int  |
+| font_size             | int  |
+| tab_size              | int  |
+| vim_mode              | bool |
 | relative_line_numbers | bool |
-| copilot | bool |
+| copilot               | bool |
 
 ## Usage Examples
 
@@ -44,7 +44,7 @@ Certain settings are automatically coerced to the correct type:
 extensions:
   zed:
     settings:
-      theme: "One Dark"
+      theme: 'One Dark'
       font_size: 14
       vim_mode: true
 ```
@@ -55,14 +55,14 @@ extensions:
 extensions:
   zed:
     settings:
-      theme: "One Dark"
+      theme: 'One Dark'
       buffer_font_size: 14
       tab_size: 2
       vim_mode: true
       relative_line_numbers: true
       copilot: false
       features:
-        inline_completion: "copilot"
+        inline_completion: 'copilot'
         edit_prediction: false
 ```
 
@@ -73,7 +73,7 @@ extensions:
   zed:
     settings:
       config_path: "%USERPROFILE%\\.config\\zed\\settings.json"
-      theme: "One Dark"
+      theme: 'One Dark'
 ```
 
 ## Verification Steps

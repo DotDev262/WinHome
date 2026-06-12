@@ -158,15 +158,16 @@ capabilities:
       };
 
       // Act
-      var (fileName, arguments) = runner.BuildProcessStartInfo(manifest);
+      var (fileName, argumentList) = runner.BuildProcessStartInfo(manifest.Type, Path.Combine(manifest.DirectoryPath, manifest.Main));
 
       // Assert
       Assert.Equal(@"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe", fileName);
-      Assert.Contains("-NoProfile", arguments);
-      Assert.Contains("-NonInteractive", arguments);
-      Assert.Contains("-ExecutionPolicy Bypass", arguments);
-      Assert.Contains("-File", arguments);
-      Assert.Contains("plugin.ps1", arguments);
+      Assert.Contains("-NoProfile", argumentList);
+      Assert.Contains("-NonInteractive", argumentList);
+      Assert.Contains("-ExecutionPolicy", argumentList);
+      Assert.Contains("Bypass", argumentList);
+      Assert.Contains("-File", argumentList);
+      Assert.Contains(Path.Combine(manifest.DirectoryPath, manifest.Main), argumentList);
     }
 
     [Fact]
@@ -190,15 +191,16 @@ capabilities:
       };
 
       // Act
-      var (fileName, arguments) = runner.BuildProcessStartInfo(manifest);
+      var (fileName, argumentList) = runner.BuildProcessStartInfo(manifest.Type, Path.Combine(manifest.DirectoryPath, manifest.Main));
 
       // Assert
       Assert.Equal(existingPath, fileName);
-      Assert.Contains("-NoProfile", arguments);
-      Assert.Contains("-NonInteractive", arguments);
-      Assert.Contains("-ExecutionPolicy Bypass", arguments);
-      Assert.Contains("-File", arguments);
-      Assert.Contains("plugin.ps1", arguments);
+      Assert.Contains("-NoProfile", argumentList);
+      Assert.Contains("-NonInteractive", argumentList);
+      Assert.Contains("-ExecutionPolicy", argumentList);
+      Assert.Contains("Bypass", argumentList);
+      Assert.Contains("-File", argumentList);
+      Assert.Contains(Path.Combine(manifest.DirectoryPath, manifest.Main), argumentList);
     }
 
     [Fact]

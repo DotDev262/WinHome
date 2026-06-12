@@ -258,7 +258,7 @@ capabilities:
 
     // Assert
     Assert.Equal(string.Empty, result.RequestId);
-    Assert.False(result.Success);
+    Assert.True(result.Success);
     Assert.False(result.Changed);
     Assert.Null(result.Error);
     Assert.Null(result.Data);
@@ -1870,4 +1870,3 @@ capabilities:
   #endregion
 
 }
-

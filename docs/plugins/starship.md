@@ -2,7 +2,8 @@
 
 ## Overview
 
-The Starship plugin configures the Starship shell prompt by updating the `starship.toml` configuration file.
+The Starship plugin configures the Starship shell prompt by updating the `starship.toml`
+configuration file.
 
 It helps customize terminal prompts with themes, symbols, and performance indicators.
 
@@ -13,13 +14,14 @@ It helps customize terminal prompts with themes, symbols, and performance indica
 
 ## Configuration Schema
 
-| Key | Type | Description |
-|-----|------|-------------|
+| Key          | Type          | Description                   |
+| ------------ | ------------- | ----------------------------- |
 | Any TOML key | object/string | Starship configuration values |
 
 ## Usage Examples
 
 ### Basic setup
+
 ```yaml
 plugins:
   - name: starship
@@ -27,6 +29,7 @@ plugins:
 ```
 
 ### Enable custom sections
+
 ```yaml
 plugins:
   - name: starship
@@ -51,4 +54,7 @@ cat ~/.config/starship.toml
 - Requires `starship` binary installed
 - Config is automatically merged
 - Runs on Windows via USERPROFILE
+
+```
+
 ```

@@ -1,7 +1,6 @@
 # 🚀 Getting Started with WinHome
 
-This guide will take you from zero to a working Windows configuration
-in under 10 minutes.
+This guide will take you from zero to a working Windows configuration in under 10 minutes.
 
 ---
 
@@ -45,6 +44,7 @@ envVars:
 ```
 
 This minimal config will:
+
 - Install **PowerToys** via Winget
 - Show **file extensions** in Explorer
 - Set **EDITOR** environment variable to notepad
@@ -53,8 +53,7 @@ This minimal config will:
 
 ## Step 3 — Preview changes with --dry-run
 
-Always run a dry-run first to see what WinHome will do
-without making any changes:
+Always run a dry-run first to see what WinHome will do without making any changes:
 
 ```powershell
 .\WinHome.exe --dry-run
@@ -72,8 +71,7 @@ Once happy with the dry-run output, apply the config:
 .\WinHome.exe
 ```
 
-WinHome will compare your config to the live system and
-apply only what is needed.
+WinHome will compare your config to the live system and apply only what is needed.
 
 ---
 
@@ -85,15 +83,13 @@ Check what WinHome has tracked:
 .\WinHome.exe --diff
 ```
 
-This shows the current state versus your desired config.
-You can also run `winhome state list` to view all currently
-tracked and managed items.
+This shows the current state versus your desired config. You can also run `winhome state list` to
+view all currently tracked and managed items.
 
 ## ⚠️ Security Note
 
-Never commit `config.yaml` to a public repository if it contains
-secrets, API tokens, or passwords. Use a private repo or add it
-to `.gitignore`.
+Never commit `config.yaml` to a public repository if it contains secrets, API tokens, or passwords.
+Use a private repo or add it to `.gitignore`.
 
 ---
 
@@ -102,7 +98,7 @@ to `.gitignore`.
 Now that you have a working setup, explore more:
 
 - [Configuration Reference](./config.md) — all available options
-- [Configuration Cookbook](./cookbook.md) — real-world examples
-  for Developer, Minimalist, and Gamer setups
+- [Configuration Cookbook](./cookbook.md) — real-world examples for Developer, Minimalist, and Gamer
+  setups
 - [Security Guide](./security.md) — best practices
 - [Troubleshooting](./troubleshooting.md) — common issues and fixes

@@ -50,8 +50,9 @@ namespace WinHome.Services
           _cache = data ?? new Dictionary<string, StepResult>();
           return new Dictionary<string, StepResult>(_cache);
         }
-        catch
+        catch (Exception loadEx)
         {
+          global::System.Diagnostics.Trace.WriteLine($"[StateWriter] State load failed, attempting backup: {loadEx.Message}");
           try
           {
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
@@ -59,9 +60,10 @@ namespace WinHome.Services
             var backupPath = $"{_path}.corrupted.{timestamp}.{uuid}.bak";
             File.Move(_path, backupPath);
           }
-          catch
+          catch (Exception backupEx)
           {
             // Best-effort backup; continue with empty state if backup fails
+            global::System.Diagnostics.Trace.WriteLine($"[StateWriter] Best-effort backup of corrupted state failed: {backupEx.Message}");
           }
 
           _cache = new Dictionary<string, StepResult>();
@@ -131,4 +133,3 @@ namespace WinHome.Services
     }
   }
 }
-

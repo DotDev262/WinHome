@@ -118,8 +118,7 @@ namespace WinHome.Services.Bootstrappers
         InstallAppPackage(msixBundle);
 
         _logger.LogInfo($"[Bootstrapper] {Name} installation commands completed.");
-        _logger.LogInfo("[Bootstrapper] Waiting 5 seconds for Windows to register the App Execution Alias...");
-        Thread.Sleep(5000);
+        _logger.LogWarning("[Bootstrapper] Installation complete");
 
         // Cleanup
         try

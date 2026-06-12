@@ -80,7 +80,7 @@ namespace WinHome.Services.System
 
         if (onOutput != null)
         {
-          // Ensure async event handlers (BeginOutputReadLine/BeginErrorReadLine) 
+          // Ensure async event handlers (BeginOutputReadLine/BeginErrorReadLine)
           // have finished processing streams before we dispose the process.
           // completed in pr.no 134
           process.WaitForExit();
@@ -91,6 +91,7 @@ namespace WinHome.Services.System
       catch (Exception ex)
       {
         if (onOutput != null) onOutput($"[ProcessRunner] Error starting {fileName}: {ex.Message}");
+        global::System.Diagnostics.Trace.WriteLine($"[ProcessRunner] Error starting {fileName}: {ex.Message}");
         return false;
       }
     }
@@ -183,7 +184,11 @@ namespace WinHome.Services.System
           return string.Empty;
         }
       }
-      catch { return string.Empty; }
+      catch (Exception ex)
+      {
+        global::System.Diagnostics.Trace.WriteLine($"[ProcessRunner] Error running process {startInfo.FileName}: {ex.Message}");
+        return string.Empty;
+      }
     }
     [Obsolete("Use the IEnumerable<string> overload instead to prevent command injection.")]
     public string RunAndCapture(string fileName, string arguments)
@@ -201,12 +206,17 @@ namespace WinHome.Services.System
         using var process = global::System.Diagnostics.Process.Start(psi);
         if (process == null) return string.Empty;
 
+        if (!process.WaitForExit(TimeSpan.FromSeconds(30)))
+        {
+          process.Kill(true);
+          return string.Empty;
+        }
         string output = process.StandardOutput.ReadToEnd().Trim();
-        process.WaitForExit();
         return output;
       }
-      catch
+      catch (Exception ex)
       {
+        global::System.Diagnostics.Trace.WriteLine($"[ProcessRunner] RunAndCapture failed for {fileName}: {ex.Message}");
         return string.Empty;
       }
     }
@@ -229,12 +239,17 @@ namespace WinHome.Services.System
         using var process = global::System.Diagnostics.Process.Start(psi);
         if (process == null) return string.Empty;
 
+        if (!process.WaitForExit(TimeSpan.FromSeconds(30)))
+        {
+          process.Kill(true);
+          return string.Empty;
+        }
         string output = process.StandardOutput.ReadToEnd().Trim();
-        process.WaitForExit();
         return output;
       }
-      catch
+      catch (Exception ex)
       {
+        global::System.Diagnostics.Trace.WriteLine($"[ProcessRunner] RunAndCapture failed for {fileName}: {ex.Message}");
         return string.Empty;
       }
     }

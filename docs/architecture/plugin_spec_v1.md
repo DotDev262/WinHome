@@ -2,23 +2,32 @@
 
 ## 1. Architecture Overview
 
-To maintain the **single-file, dependency-free** nature of WinHome while allowing unlimited extensibility, we are adopting a **Process-Based Plugin Architecture**.
+To maintain the **single-file, dependency-free** nature of WinHome while allowing unlimited
+extensibility, we are adopting a **Process-Based Plugin Architecture**.
 
-Instead of loading dynamic libraries (DLLs)—which is problematic for single-file .NET applications due to trimming and assembly isolation constraints—WinHome will execute plugins as **independent child processes**.
+Instead of loading dynamic libraries (DLLs)—which is problematic for single-file .NET applications
+due to trimming and assembly isolation constraints—WinHome will execute plugins as **independent
+child processes**.
 
 ### Why IPC over Standard I/O?
-1.  **Language Agnostic**: Plugins can be written in any language (Python, Rust, Go, PowerShell, Node.js).
+
+1.  **Language Agnostic**: Plugins can be written in any language (Python, Rust, Go, PowerShell,
+    Node.js).
 2.  **Isolation**: A plugin crash cannot bring down the main application.
-3.  **Compatibility**: Single-file .NET executables cannot easily load external assemblies dynamically. This bypasses that limitation entirely.
+3.  **Compatibility**: Single-file .NET executables cannot easily load external assemblies
+    dynamically. This bypasses that limitation entirely.
 
 ## 2. Communication Protocol
 
 Communication occurs via **Inter-Process Communication (IPC)** using standard input/output streams.
 
-*   **Transport**: The Host (`WinHome.exe`) spawns the Plugin (`winhome-provider-xyz.exe`) as a child process.
-*   **Input (Stdin)**: The Host sends a single-line JSON object to the plugin's `StandardInput`.
-*   **Output (Stdout)**: The Plugin responds by printing a single-line JSON object to `StandardOutput`.
-*   **Logging (Stderr)**: The Plugin writes all logs, debug messages, and human-readable text to `StandardError`. The Host captures these and pipes them to the main application log.
+- **Transport**: The Host (`WinHome.exe`) spawns the Plugin (`winhome-provider-xyz.exe`) as a child
+  process.
+- **Input (Stdin)**: The Host sends a single-line JSON object to the plugin's `StandardInput`.
+- **Output (Stdout)**: The Plugin responds by printing a single-line JSON object to
+  `StandardOutput`.
+- **Logging (Stderr)**: The Plugin writes all logs, debug messages, and human-readable text to
+  `StandardError`. The Host captures these and pipes them to the main application log.
 
 ## 3. The Contract (JSON Schema)
 
@@ -51,9 +60,10 @@ Read from the plugin's `stdout`.
 {
   "requestId": "uuid-v4-string", // Must match request
   "success": true,
-  "changed": false,               // True if system state was modified
-  "error": null,                  // Error message string if success is false
-  "data": {                       // Optional result data
+  "changed": false, // True if system state was modified
+  "error": null, // Error message string if success is false
+  "data": {
+    // Optional result data
     "installed": ["a"],
     "skipped": ["b"]
   }
@@ -64,10 +74,10 @@ Read from the plugin's `stdout`.
 
 WinHome will scan for plugins at startup.
 
-*   **Location**: `%LOCALAPPDATA%\WinHome\plugins`
-*   **Naming Convention**:
-    *   Executables: `winhome-provider-<name>.exe` (or `.bat`, `.cmd`, `.py` if associated).
-    *   Manifests: `winhome-provider-<name>.yaml` (Optional, for metadata).
+- **Location**: `%LOCALAPPDATA%\WinHome\plugins`
+- **Naming Convention**:
+  - Executables: `winhome-provider-<name>.exe` (or `.bat`, `.cmd`, `.py` if associated).
+  - Manifests: `winhome-provider-<name>.yaml` (Optional, for metadata).
 
 If the config file contains a key `docker:`, WinHome looks for `winhome-provider-docker`.
 
@@ -135,7 +145,7 @@ public class ProcessPluginRunner : IPlugin
         // Read Response
         string output = await process.StandardOutput.ReadToEndAsync();
         string error = await process.StandardError.ReadToEndAsync();
-        
+
         await process.WaitForExitAsync();
 
         if (process.ExitCode != 0)
@@ -143,7 +153,7 @@ public class ProcessPluginRunner : IPlugin
             return new PluginResult(false, false, $"Plugin crashed: {error}", null);
         }
 
-        try 
+        try
         {
             return JsonSerializer.Deserialize<PluginResult>(output);
         }
@@ -167,7 +177,7 @@ def main():
     # 1. Read Input
     raw_input = sys.stdin.read()
     request = json.loads(raw_input)
-    
+
     cmd = request.get("command")
     config = request.get("config", {})
     dry_run = request.get("dryRun", False)
@@ -184,7 +194,7 @@ def main():
     if cmd == "apply":
         # Log to Stderr (Host will capture this)
         sys.stderr.write(f"Processing config: {config}\n")
-        
+
         if not dry_run:
             # Perform action...
             response["changed"] = True

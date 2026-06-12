@@ -6,7 +6,7 @@ namespace WinHome.Infrastructure.Helpers
   [SupportedOSPlatform("windows")]
   public static class RegistryGuard
   {
-    internal static Func<bool> IsSystemUser = () => WindowsIdentity.GetCurrent().IsSystem;
+    internal static Func<bool> IsSystemUser = () => OperatingSystem.IsWindows() && WindowsIdentity.GetCurrent().IsSystem;
 
     /// <summary>Validates that the registry operation is safe. Blocks HKCU modifications when running as SYSTEM.</summary>
     /// <param name="keyPath">The registry key path to validate.</param>
@@ -30,7 +30,7 @@ namespace WinHome.Infrastructure.Helpers
     /// <summary>Resets the system user check delegate to its default implementation (used for testing).</summary>
     internal static void ResetSystemUserCheck()
     {
-      IsSystemUser = () => WindowsIdentity.GetCurrent().IsSystem;
+      IsSystemUser = () => OperatingSystem.IsWindows() && WindowsIdentity.GetCurrent().IsSystem;
     }
   }
 }

@@ -63,10 +63,8 @@ class ConfigLine:
 
 
 def _parse_setting_key(raw_key: str) -> str:
-    # Normalize: "--theme" or "--theme=" should become "--theme"
-    if not raw_key.startswith(MANAGED_PREFIX):
-        raise ValueError("setting must start with --")
-    # Remove any trailing '=' if present.
+    if raw_key.startswith(MANAGED_PREFIX):
+        raw_key = raw_key[len(MANAGED_PREFIX) :]
     return raw_key.rstrip("=")
 
 

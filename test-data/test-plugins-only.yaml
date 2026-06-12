@@ -35,4 +35,3 @@ extensions:
     message: "Python Plugin Integration Test"
   test-echo-js:
     message: "JavaScript Plugin Integration Test"
-  

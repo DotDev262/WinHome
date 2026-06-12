@@ -24,8 +24,14 @@ namespace WinHome.Models.Plugins
     [JsonPropertyName("requestId")]
     public string RequestId { get; set; } = string.Empty;
 
+    private bool? _success;
+
     [JsonPropertyName("success")]
-    public bool Success { get; set; }
+    public bool Success
+    {
+      get => _success ?? string.IsNullOrEmpty(Error);
+      set => _success = value;
+    }
 
     [JsonPropertyName("changed")]
     public bool Changed { get; set; }
@@ -35,5 +41,8 @@ namespace WinHome.Models.Plugins
 
     [JsonPropertyName("data")]
     public object? Data { get; set; }
+
+    [JsonPropertyName("installed")]
+    public bool? Installed { get; set; }
   }
 }

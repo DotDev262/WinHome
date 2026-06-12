@@ -40,14 +40,11 @@ namespace WinHome.Services.System
         }
 
 
-        if (File.Exists(targetPath))
-        {
-          string? backupPath = BackupService.CreateBackup(targetPath);
+        string? backupPath = BackupService.CreateAtomicBackup(targetPath);
 
-          if (backupPath is not null)
-          {
-            _logger.LogInfo($"[Dotfile] Backup created at {backupPath}");
-          }
+        if (backupPath is not null)
+        {
+          _logger.LogInfo($"[Dotfile] Backup created at {backupPath}");
         }
 
         string? parentDir = Path.GetDirectoryName(targetPath);

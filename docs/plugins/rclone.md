@@ -2,7 +2,8 @@
 
 ## Overview
 
-This plugin manages the `rclone.conf` file in the current user's profile. It preserves existing INI formatting as much as possible while merging global settings and named remote sections.
+This plugin manages the `rclone.conf` file in the current user's profile. It preserves existing INI
+formatting as much as possible while merging global settings and named remote sections.
 
 ## Prerequisites
 
@@ -15,24 +16,26 @@ This plugin manages the `rclone.conf` file in the current user's profile. It pre
 
 The plugin accepts a top-level YAML object with these fields:
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `settings` | object | none | Merges key/value pairs into the global section of `rclone.conf` before the first INI section. |
-| `remotes` | object | none | Map of remote names to remote settings objects. Each key becomes an INI section like `[remote-name]`. |
+| Field      | Type   | Default | Description                                                                                           |
+| ---------- | ------ | ------- | ----------------------------------------------------------------------------------------------------- |
+| `settings` | object | none    | Merges key/value pairs into the global section of `rclone.conf` before the first INI section.         |
+| `remotes`  | object | none    | Map of remote names to remote settings objects. Each key becomes an INI section like `[remote-name]`. |
 
-The plugin does not validate rclone backend options. It simply writes the keys and values you provide.
+The plugin does not validate rclone backend options. It simply writes the keys and values you
+provide.
 
 ### Global settings
 
-`settings` is written into the global section. Values are stringified when written, so use simple scalar values.
+`settings` is written into the global section. Values are stringified when written, so use simple
+scalar values.
 
 ### Remote settings
 
 Each entry under `remotes` is written into a section matching the remote name.
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `remotes.<name>` | object | none | Key/value pairs for the remote section. Existing keys are updated in place. New keys are appended. |
+| Field            | Type   | Default | Description                                                                                        |
+| ---------------- | ------ | ------- | -------------------------------------------------------------------------------------------------- |
+| `remotes.<name>` | object | none    | Key/value pairs for the remote section. Existing keys are updated in place. New keys are appended. |
 
 ## Usage Examples
 
@@ -43,7 +46,7 @@ remotes:
   gdrive:
     type: drive
     scope: drive
-    root_folder_id: ""
+    root_folder_id: ''
 ```
 
 ### Global settings plus one remote
@@ -77,7 +80,8 @@ remotes:
 2. Apply your configuration.
 3. Open `%USERPROFILE%\.config\rclone\rclone.conf`.
 4. Verify the global section and remote sections contain the merged keys you expected.
-5. Run a normal rclone command such as `rclone listremotes` or `rclone config file` to confirm rclone can read the file.
+5. Run a normal rclone command such as `rclone listremotes` or `rclone config file` to confirm
+   rclone can read the file.
 
 ## Notes / Caveats
 

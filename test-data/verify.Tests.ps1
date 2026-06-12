@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 Describe "WinHome Integration Tests" {
 
     Context "Application Installation" {
-        
+
         It "Should have 7-Zip installed via Scoop" {
             # Find Scoop
             $scoopExec = "scoop"
@@ -20,7 +20,7 @@ Describe "WinHome Integration Tests" {
                     }
                 }
             }
-            
+
             # Check if Scoop is executable found
             $scoopExec | Should -Not -BeNullOrEmpty
 

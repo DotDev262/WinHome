@@ -21,18 +21,18 @@ It can:
 
 ## Configuration Schema
 
-| Field | Type | Default | Description |
-|---------|---------|---------|---------|
-| vaults | array | none | List of Obsidian vaults to manage |
-| vaults[].path | string | none | Path to the vault |
-| vaults[].settings | object | none | Vault settings |
-| vaults[].plugins | array | none | Community plugins to install |
+| Field             | Type   | Default | Description                       |
+| ----------------- | ------ | ------- | --------------------------------- |
+| vaults            | array  | none    | List of Obsidian vaults to manage |
+| vaults[].path     | string | none    | Path to the vault                 |
+| vaults[].settings | object | none    | Vault settings                    |
+| vaults[].plugins  | array  | none    | Community plugins to install      |
 
 ### Settings Example
 
 ```yaml
 vaults:
-  - path: "D:/Notes"
+  - path: 'D:/Notes'
     settings:
       theme: dark
       vimMode: true
@@ -43,7 +43,7 @@ vaults:
 
 ```yaml
 vaults:
-  - path: "D:/Notes"
+  - path: 'D:/Notes'
     plugins:
       - calendar
       - dataview
@@ -55,7 +55,7 @@ vaults:
 
 ```yaml
 vaults:
-  - path: "D:/Notes"
+  - path: 'D:/Notes'
     settings:
       theme: dark
       spellcheck: true
@@ -66,7 +66,7 @@ vaults:
 
 ```yaml
 vaults:
-  - path: "D:/Notes"
+  - path: 'D:/Notes'
     plugins:
       - calendar
       - dataview
@@ -76,11 +76,11 @@ vaults:
 
 ```yaml
 vaults:
-  - path: "D:/Work"
+  - path: 'D:/Work'
     settings:
       spellcheck: true
 
-  - path: "D:/Personal"
+  - path: 'D:/Personal'
     settings:
       vimMode: true
       theme: dark

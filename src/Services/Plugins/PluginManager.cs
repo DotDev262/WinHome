@@ -100,7 +100,7 @@ namespace WinHome.Services.Plugins
             try
             {
               var pwshResolved = _runtimeResolver.Resolve("pwsh");
-              if (pwshResolved != "pwsh" && File.Exists(pwshResolved))
+              if (pwshResolved != "pwsh")
               {
                 resolvedMessage = "Using pwsh (Core).";
               }

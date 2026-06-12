@@ -35,8 +35,35 @@ def log(msg):
     sys.stderr.flush()
 
 
+class MockResponse:
+    def __init__(self, data: bytes):
+        self.data = data
+
+    def read(self):
+        return self.data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 def make_request(url: str):
     """Make an HTTP request to the given URL with a user agent"""
+    if os.environ.get("WINHOME_TEST_MOCK_URLOPEN") == "1":
+        if "community-plugins.json" in url:
+            data = json.dumps([{"id": "obsidian-git", "repo": "mgmeyers/obsidian-git"}]).encode("utf-8")
+            return MockResponse(data)
+        elif "releases/latest" in url:
+            data = json.dumps({"tag_name": "v1.2.3"}).encode("utf-8")
+            return MockResponse(data)
+        elif "manifest.json" in url:
+            data = json.dumps({"id": "obsidian-git", "version": "1.2.3"}).encode("utf-8")
+            return MockResponse(data)
+        else:
+            return MockResponse(b"mock content")
+
     req = urllib.request.Request(url, headers={"User-Agent": "WinHome-Environment-Manager/1.0"})
     return urllib.request.urlopen(req)
 

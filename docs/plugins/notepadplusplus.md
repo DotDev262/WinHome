@@ -19,9 +19,9 @@ It can:
 
 ## Configuration Schema
 
-| Field | Type | Default | Description |
-|---------|---------|---------|---------|
-| settings | object | none | Key-value settings written to Notepad++ configuration |
+| Field    | Type   | Default | Description                                           |
+| -------- | ------ | ------- | ----------------------------------------------------- |
+| settings | object | none    | Key-value settings written to Notepad++ configuration |
 
 ### Settings Example
 

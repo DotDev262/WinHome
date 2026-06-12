@@ -5,14 +5,18 @@ import sys
 import tempfile
 
 PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
+TMP_DIR = tempfile.mkdtemp()
 
 
 def run_plugin(payload: dict) -> dict:
+    env = os.environ.copy()
+    env["APPDATA"] = TMP_DIR
     result = subprocess.run(
         [sys.executable, PLUGIN],
         input=json.dumps(payload),
         capture_output=True,
         text=True,
+        env=env,
     )
 
     return json.loads(result.stdout.strip())
@@ -73,6 +77,9 @@ def test_deep_merge():
 
 
 def test_dry_run():
+    settings_path = os.path.join(TMP_DIR, "BetterDiscord", "data", "settings.json")
+    if os.path.exists(settings_path):
+        os.remove(settings_path)
     res = run_plugin(
         {
             "requestId": "3",
@@ -89,6 +96,9 @@ def test_dry_run():
 
 
 def test_apply():
+    settings_path = os.path.join(TMP_DIR, "BetterDiscord", "data", "settings.json")
+    if os.path.exists(settings_path):
+        os.remove(settings_path)
     res = run_plugin(
         {
             "requestId": "4",

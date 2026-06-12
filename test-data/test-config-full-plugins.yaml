@@ -236,4 +236,3 @@ extensions:
   zoxide:
     init:
       cmd: "j"
-

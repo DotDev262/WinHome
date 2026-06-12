@@ -11,15 +11,16 @@ The Zoxide plugin configures smart directory navigation using `zoxide`.
 
 ## Configuration Schema
 
-| Key | Type | Description |
-|-----|------|-------------|
-| init.cmd | string | Alias command |
-| init.hook | string | Hook type |
-| env_vars | object | Environment variables |
+| Key       | Type   | Description           |
+| --------- | ------ | --------------------- |
+| init.cmd  | string | Alias command         |
+| init.hook | string | Hook type             |
+| env_vars  | object | Environment variables |
 
 ## Usage Examples
 
 ### Basic setup
+
 ```yaml
 plugins:
   - name: zoxide
@@ -27,11 +28,12 @@ plugins:
 ```
 
 ### Custom alias
+
 ```yaml
 plugins:
   - name: zoxide
     init:
-      cmd: "z"
+      cmd: 'z'
 ```
 
 ## Verification Steps
@@ -44,4 +46,7 @@ zoxide --version
 
 - Updates shell profiles automatically
 - Works across PowerShell and Bash
+
+```
+
 ```

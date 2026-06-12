@@ -31,7 +31,7 @@ namespace WinHome.Services.Plugins
       var actualTimeout = timeout ?? TimeSpan.FromSeconds(30);
       if (actualTimeout < TimeSpan.FromSeconds(1)) actualTimeout = TimeSpan.FromSeconds(1);
 
-      var (fileName, arguments) = BuildProcessStartInfo(plugin);
+      var (fileName, argumentList) = BuildProcessStartInfo(plugin.Type, Path.Combine(plugin.DirectoryPath, plugin.Main));
 
       var request = new PluginRequest
       {
@@ -43,7 +43,6 @@ namespace WinHome.Services.Plugins
       var startInfo = new ProcessStartInfo
       {
         FileName = fileName,
-        Arguments = arguments,
         WorkingDirectory = plugin.DirectoryPath,
         RedirectStandardInput = true,
         RedirectStandardOutput = true,
@@ -51,6 +50,11 @@ namespace WinHome.Services.Plugins
         UseShellExecute = false,
         CreateNoWindow = true
       };
+
+      foreach (var arg in argumentList)
+      {
+        startInfo.ArgumentList.Add(arg);
+      }
 
       // Inject Environment Variables if needed
       startInfo.Environment["WINHOME_PLUGIN_NAME"] = plugin.Name;
@@ -61,7 +65,7 @@ namespace WinHome.Services.Plugins
 
       try
       {
-        _logger.LogInfo($"[PluginRunner] Starting {plugin.Name}: {fileName} {arguments}");
+        _logger.LogInfo($"[PluginRunner] Starting {plugin.Name}: {fileName} {string.Join(" ", argumentList)}");
         if (!process.Start())
         {
           return new PluginResult { Success = false, Error = "Failed to start plugin process." };
@@ -139,45 +143,61 @@ namespace WinHome.Services.Plugins
       catch (OperationCanceledException)
       {
         sw.Stop();
-        try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
+        try
+        {
+          if (!process.HasExited)
+          {
+            process.Kill(entireProcessTree: true);
+          }
+        }
+        catch (Exception killEx)
+        {
+          _logger.LogWarning($"[PluginRunner] Failed to kill plugin process tree for {plugin.Name}: {killEx.Message}");
+        }
         _logger.LogWarning($"[PluginRunner] Plugin {plugin.Name} timed out and was killed after {sw.ElapsedMilliseconds}ms.");
         return new PluginResult { Success = false, Error = $"Plugin timed out after {actualTimeout.TotalSeconds:F0}s." };
       }
       catch (Exception ex)
       {
         sw.Stop();
-        try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
+        try
+        {
+          if (!process.HasExited)
+          {
+            process.Kill(entireProcessTree: true);
+          }
+        }
+        catch (Exception killEx)
+        {
+          _logger.LogWarning($"[PluginRunner] Failed to kill plugin process tree for {plugin.Name}: {killEx.Message}");
+        }
         return new PluginResult { Success = false, Error = $"Runner Exception: {ex.Message}" };
       }
     }
 
     /// <summary>Builds the process filename and arguments for executing a plugin based on its type.</summary>
-    public (string FileName, string Arguments) BuildProcessStartInfo(PluginManifest plugin)
+    public (string FileName, IList<string> ArgumentList) BuildProcessStartInfo(string runnerType, string mainPath)
     {
-      string mainPath = Path.Combine(plugin.DirectoryPath, plugin.Main);
-
-      switch (plugin.Type.ToLower())
+      switch (runnerType.ToLowerInvariant())
       {
         case "python":
-          // uv run --quiet script.py
           var uvPath = _runtimeResolver.Resolve("uv");
-          return (uvPath, $"run --quiet \"{mainPath}\"");
+          return (uvPath, new List<string> { "run", "--quiet", mainPath });
 
         case "typescript":
         case "javascript":
-          // bun run script.ts
           var bunPath = _runtimeResolver.Resolve("bun");
-          return (bunPath, $"run \"{mainPath}\"");
+          return (bunPath, new List<string> { "run", mainPath });
 
         case "executable":
-          return (mainPath, "");
+          return (mainPath, new List<string>());
 
         case "powershell":
           string powershellPath = "powershell";
           try
           {
             var pwshResolved = _runtimeResolver.Resolve("pwsh");
-            if (pwshResolved != "pwsh" && File.Exists(pwshResolved))
+            if (pwshResolved != "pwsh")
             {
               powershellPath = pwshResolved;
             }
@@ -190,10 +210,10 @@ namespace WinHome.Services.Plugins
           {
             powershellPath = _runtimeResolver.Resolve("powershell");
           }
-          return (powershellPath, $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{mainPath}\"");
+          return (powershellPath, new List<string> { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", mainPath });
 
         default:
-          throw new NotSupportedException($"Plugin type '{plugin.Type}' is not supported.");
+          throw new NotSupportedException($"Runner type {runnerType} is not supported.");
       }
     }
   }

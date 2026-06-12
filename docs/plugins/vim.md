@@ -21,10 +21,10 @@ It can:
 
 ## Configuration Schema
 
-| Field | Type | Default | Description |
-|---------|---------|---------|---------|
-| extensions | array | none | List of GitHub repositories to install as Neovim plugins |
-| settings | object | none | Neovim options written to `init.lua` |
+| Field      | Type   | Default | Description                                              |
+| ---------- | ------ | ------- | -------------------------------------------------------- |
+| extensions | array  | none    | List of GitHub repositories to install as Neovim plugins |
+| settings   | object | none    | Neovim options written to `init.lua`                     |
 
 ### Settings Example
 

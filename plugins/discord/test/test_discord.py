@@ -4,9 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -40,14 +38,12 @@ def test_apply_config_dry_run():
 
         res = run_plugin(
             {
-              "requestId": "2",
-              "command": "apply",
-              "args": {
-                  "settings": {
-                      "enableHardwareAcceleration": False
-                  },
-                  "dryRun": True,
-              },
+                "requestId": "2",
+                "command": "apply",
+                "args": {
+                    "settings": {"enableHardwareAcceleration": False},
+                    "dryRun": True,
+                },
             }
         )
 
@@ -115,13 +111,7 @@ def test_nested_merge():
             {
                 "requestId": "4",
                 "command": "apply",
-                "args": {
-                    "settings": {
-                        "WINDOW_BOUNDS": {
-                            "width": 1920
-                        }
-                    }
-                },
+                "args": {"settings": {"WINDOW_BOUNDS": {"width": 1920}}},
             }
         )
 
@@ -145,11 +135,7 @@ def test_idempotent_apply():
         payload = {
             "requestId": "5",
             "command": "apply",
-            "args": {
-                "settings": {
-                    "enableHardwareAcceleration": False
-                }
-            },
+            "args": {"settings": {"enableHardwareAcceleration": False}},
         }
 
         run_plugin(payload)
@@ -205,6 +191,7 @@ def test_invalid_json_returns_error():
     assert "error" in res
 
     print("✓ invalid_json_returns_error")
+
 
 if __name__ == "__main__":
     test_check_installed()

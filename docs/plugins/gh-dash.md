@@ -11,28 +11,30 @@ The gh-dash plugin manages GitHub dashboard configuration for gh-dash.
 
 ## Configuration Schema
 
-| Key | Type | Description |
-|-----|------|-------------|
-| repoPaths | array | Repositories |
-| prSections | array | PR dashboard sections |
-| issuesSections | array | Issue sections |
+| Key            | Type  | Description           |
+| -------------- | ----- | --------------------- |
+| repoPaths      | array | Repositories          |
+| prSections     | array | PR dashboard sections |
+| issuesSections | array | Issue sections        |
 
 ## Usage Examples
 
 ### Repo setup
+
 ```yaml
 plugins:
   - name: gh-dash
     repoPaths:
-      - "owner/repo"
+      - 'owner/repo'
 ```
 
 ### PR sections
+
 ```yaml
 plugins:
   - name: gh-dash
     prSections:
-      - title: "My PRs"
+      - title: 'My PRs'
 ```
 
 ## Verification Steps
@@ -49,4 +51,7 @@ gh ext list
 
 - Uses YAML fallback parser if PyYAML missing
 - Supports nested configuration
+
+```
+
 ```

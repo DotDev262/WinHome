@@ -5,27 +5,31 @@ namespace WinHome.Services.System
 {
   public static class BackupService
   {
-    public static string? CreateBackup(string path)
+    public static string? CreateAtomicBackup(string path)
     {
-      if (!File.Exists(path))
-      {
-        return null;
-      }
-
       string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd-HHmmss");
-
       string backupPath = $"{path}.{timestamp}.bak";
-
       int counter = 1;
- 
-      while (File.Exists(backupPath))
+      while (true)
       {
-        backupPath = $"{path}.{timestamp}.{counter++}.bak";
+        try
+        {
+          File.Copy(path, backupPath, overwrite: false);
+          return backupPath;
+        }
+        catch (FileNotFoundException)
+        {
+          return null;
+        }
+        catch (IOException) when (counter < 10)
+        {
+          backupPath = $"{path}.{timestamp}.{counter++}.bak";
+        }
+        catch (IOException)
+        {
+          return null;
+        }
       }
-
-      File.Copy(path, backupPath, overwrite: false);
-
-      return backupPath;
     }
   }
 }

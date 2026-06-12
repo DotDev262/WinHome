@@ -13,6 +13,8 @@ namespace WinHome.Tests
     [Fact]
     public void Resolve_UsesPathMatch_WhenAvailable()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       var runtimeName = "testruntime";
       var expected = "C:\\tools\\runtime\\runtime.exe";
       var output = "C:\\tools\\runtime\\runtime.txt\r\n" + expected + "\r\n";
@@ -43,6 +45,8 @@ namespace WinHome.Tests
     [InlineData("choco", Environment.SpecialFolder.CommonApplicationData, "chocolatey\\bin\\choco.exe")]
     public void Resolve_ReturnsKnownInstallPath_WhenNotInPath(string runtimeName, Environment.SpecialFolder baseFolder, string relativePath)
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       var expectedPath = Path.Combine(Environment.GetFolderPath(baseFolder), relativePath);
 
       var processRunner = new Mock<IProcessRunner>();
@@ -69,6 +73,8 @@ namespace WinHome.Tests
     [Fact]
     public void Resolve_ReturnsChocoAltPath_WhenPrimaryMissing()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       var runtimeName = "choco";
       var primaryPath = Path.Combine(
           Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
@@ -102,6 +108,8 @@ namespace WinHome.Tests
     [Fact]
     public void Resolve_PrefersScoopExeShim_WhenPresent()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       var runtimeName = "testruntime";
       var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
       var expectedPath = Path.Combine(userProfile, "scoop", "shims", runtimeName + ".exe");
@@ -130,6 +138,8 @@ namespace WinHome.Tests
     [Fact]
     public void Resolve_UsesScoopCmdShim_WhenExeMissing()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       var runtimeName = "testruntime";
       var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
       var expectedPath = Path.Combine(userProfile, "scoop", "shims", runtimeName + ".cmd");
@@ -158,6 +168,8 @@ namespace WinHome.Tests
     [Fact]
     public void Resolve_ReturnsRuntimeName_WhenNotFound()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       var runtimeName = "testruntime";
       var processRunner = new Mock<IProcessRunner>();
       var fileSystem = new Mock<IFileSystem>();
@@ -179,6 +191,8 @@ namespace WinHome.Tests
     [Fact]
     public void Resolve_IgnoresNonPathWhereOutput()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       var runtimeName = "testruntime";
       var processRunner = new Mock<IProcessRunner>();
       var fileSystem = new Mock<IFileSystem>();

@@ -65,25 +65,29 @@ extensions:
   espanso:
     settings:
       matches:
-        - trigger: ":signature"
+        - trigger: ':signature'
           replace: "Best Regards,\nJuhi Gupta\nSoftware Engineer"
-        - trigger: ":cpp"
+        - trigger: ':cpp'
           replace: "#include <iostream>\nusing namespace std;\n\nint main() {\n    return 0;\n}"
 ```
 
 ## Notes / Caveats
 
-- The plugin performs intelligent list merging: items in matches are updated if their trigger matches, and global_vars are updated if their name matches. Any existing items in the native config not mentioned in user's WinHome config are safely preserved.
-- It features a built-in YAML parser and serializer, so it does not rely on external dependencies like PyYAML to read or write the base.yml file.
-- It supports dryRun mode — when it is enabled, it logs whether changes would be made without actually writing the updates to the disk.
+- The plugin performs intelligent list merging: items in matches are updated if their trigger
+  matches, and global_vars are updated if their name matches. Any existing items in the native
+  config not mentioned in user's WinHome config are safely preserved.
+- It features a built-in YAML parser and serializer, so it does not rely on external dependencies
+  like PyYAML to read or write the base.yml file.
+- It supports dryRun mode — when it is enabled, it logs whether changes would be made without
+  actually writing the updates to the disk.
 - The plugin performs intelligent list merging specifically for `matches` and `global_vars`.
 - Items in `matches` are updated if their `trigger` matches; otherwise, new triggers are appended.
 - Items in `global_vars` are updated if their `name` matches; otherwise, new variables are appended.
 
 ## Verification Steps
 
-After applying the configuration, user can verify if Espanso has picked up the changes or not.
-For this user has to open its terminal and type:
+After applying the configuration, user can verify if Espanso has picked up the changes or not. For
+this user has to open its terminal and type:
 
 ```bash
 espanso status

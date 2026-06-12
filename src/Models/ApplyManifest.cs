@@ -24,4 +24,3 @@ namespace WinHome.Models
     public DateTime? AppliedAt { get; init; }
   }
 }
-

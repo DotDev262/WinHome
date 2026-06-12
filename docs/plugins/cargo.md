@@ -2,7 +2,9 @@
 
 ## Description
 
-The `cargo` plugin manages configuration for Rust's package manager, Cargo. It writes settings to the user-level `config.toml` file, allowing you to declaratively control Cargo's behaviour as part of your WinHome setup.
+The `cargo` plugin manages configuration for Rust's package manager, Cargo. It writes settings to
+the user-level `config.toml` file, allowing you to declaratively control Cargo's behaviour as part
+of your WinHome setup.
 
 ## Prerequisites
 
@@ -12,8 +14,8 @@ The `cargo` plugin manages configuration for Rust's package manager, Cargo. It w
 
 ## Configuration file location
 
-| Platform | Path |
-|----------|------|
+| Platform | Path                               |
+| -------- | ---------------------------------- |
 | Windows  | `%USERPROFILE%\.cargo\config.toml` |
 
 ## Configuration format
@@ -26,22 +28,23 @@ plugins:
         <key>: <value>
 ```
 
-Settings are written to the TOML config file. Nested objects become TOML sections (e.g. `[net]`, `[build]`). Top-level non-object values are written as top-level TOML keys.
+Settings are written to the TOML config file. Nested objects become TOML sections (e.g. `[net]`,
+`[build]`). Top-level non-object values are written as top-level TOML keys.
 
 ## Supported settings
 
 Any valid Cargo configuration option is supported. Common sections include:
 
-| Section | Key | Type | Description |
-|---------|-----|------|-------------|
-| `net` | `retry` | integer | Number of retries for network requests |
-| `net` | `offline` | boolean | Prevent network access |
-| `net` | `git-fetch-with-cli` | boolean | Use system git for fetching |
-| `build` | `jobs` | integer | Number of parallel build jobs |
-| `build` | `target-dir` | string | Custom build output directory |
-| `http` | `timeout` | integer | HTTP timeout in seconds |
-| `http` | `proxy` | string | HTTP proxy URL |
-| `registry` | `default` | string | Default registry name |
+| Section    | Key                  | Type    | Description                            |
+| ---------- | -------------------- | ------- | -------------------------------------- |
+| `net`      | `retry`              | integer | Number of retries for network requests |
+| `net`      | `offline`            | boolean | Prevent network access                 |
+| `net`      | `git-fetch-with-cli` | boolean | Use system git for fetching            |
+| `build`    | `jobs`               | integer | Number of parallel build jobs          |
+| `build`    | `target-dir`         | string  | Custom build output directory          |
+| `http`     | `timeout`            | integer | HTTP timeout in seconds                |
+| `http`     | `proxy`              | string  | HTTP proxy URL                         |
+| `registry` | `default`            | string  | Default registry name                  |
 
 ## Usage examples
 
@@ -83,8 +86,10 @@ plugins:
 ## Notes
 
 - Settings are deep-merged — existing config keys not mentioned in `config.yaml` are preserved.
-- Requires `tomllib` (Python 3.11+) or `tomli` package for reading TOML files. The plugin raises a `RuntimeError` if neither is available.
-- The plugin writes a simple TOML serialiser — complex nested structures beyond two levels may not be supported.
+- Requires `tomllib` (Python 3.11+) or `tomli` package for reading TOML files. The plugin raises a
+  `RuntimeError` if neither is available.
+- The plugin writes a simple TOML serialiser — complex nested structures beyond two levels may not
+  be supported.
 - Supports `dryRun` mode — logs what would change without writing to disk.
 - The `USERPROFILE` environment variable must be set.
 

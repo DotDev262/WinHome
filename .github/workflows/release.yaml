@@ -17,7 +17,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 10.0.x 
+        dotnet-version: 10.0.x
 
     - name: Restore dependencies
       run: dotnet restore WinHome.sln
@@ -28,7 +28,7 @@ jobs:
         # Install uv
         powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
         echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
-        
+
         # Install bun
         powershell -ExecutionPolicy ByPass -c "irm https://bun.sh/install.ps1 | iex"
         echo "$env:USERPROFILE\.bun\bin" >> $env:GITHUB_PATH
@@ -62,9 +62,9 @@ jobs:
         generate_release_notes: true
         append_body: true
         body: |
-          
+
           ### 🔒 Checksums
-          
+
           | Filename | SHA256 |
           | :--- | :--- |
           | `WinHome.exe` | `${{ env.HASH }}` |

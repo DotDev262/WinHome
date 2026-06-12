@@ -11,15 +11,16 @@ The Yazi plugin manages configuration for the Yazi terminal file manager using T
 
 ## Configuration Schema
 
-| File | Purpose |
-|------|--------|
-| yazi.toml | Main config |
-| keymap.toml | Key bindings |
-| theme.toml | Theme settings |
+| File        | Purpose        |
+| ----------- | -------------- |
+| yazi.toml   | Main config    |
+| keymap.toml | Key bindings   |
+| theme.toml  | Theme settings |
 
 ## Usage Examples
 
 ### Manager config
+
 ```yaml
 plugins:
   - name: yazi
@@ -28,6 +29,7 @@ plugins:
 ```
 
 ### Keymap config
+
 ```yaml
 plugins:
   - name: yazi
@@ -45,4 +47,7 @@ yazi --version
 
 - TOML merging supported
 - Unknown keys ignored safely
+
+```
+
 ```

@@ -20,6 +20,8 @@ namespace WinHome.Tests
     [Fact]
     public void Apply_SetVariable()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       // Arrange
       var envVar = "TEST_VAR";
       var envValue = "test_value";
@@ -40,6 +42,8 @@ namespace WinHome.Tests
     [Fact]
     public void Apply_AppendToVariable()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       // Arrange
       var envVar = "TEST_PATH";
       var initialValue = "C:\\initial";
@@ -60,6 +64,8 @@ namespace WinHome.Tests
     [Fact]
     public void Apply_AppendToVariable_AlreadyExists_Skips()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       // Arrange
       var envVar = "TEST_PATH";
       var initialValue = "C:\\initial;C:\\existing";
@@ -81,6 +87,8 @@ namespace WinHome.Tests
     [Fact]
     public void Apply_SetVariable_AlreadySet_Skips()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       // Arrange
       var envVar = "TEST_VAR";
       var envValue = "test_value";
@@ -101,6 +109,8 @@ namespace WinHome.Tests
     [Fact]
     public void Apply_DryRun_LogsWarning()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       // Arrange
       var envVar = "TEST_VAR";
       var envValue = "test_value";

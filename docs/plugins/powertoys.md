@@ -2,7 +2,9 @@
 
 ## Overview
 
-This plugin manages Microsoft PowerToys configuration files under `%LOCALAPPDATA%\Microsoft\PowerToys`. It can update the main PowerToys settings file and the per-module settings for `FancyZones`, `Awake`, and `PowerRename`.
+This plugin manages Microsoft PowerToys configuration files under
+`%LOCALAPPDATA%\Microsoft\PowerToys`. It can update the main PowerToys settings file and the
+per-module settings for `FancyZones`, `Awake`, and `PowerRename`.
 
 ## Prerequisites
 
@@ -15,46 +17,50 @@ This plugin manages Microsoft PowerToys configuration files under `%LOCALAPPDATA
 
 The plugin accepts a top-level YAML object with these fields:
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `general` | object | none | Updates `%LOCALAPPDATA%\Microsoft\PowerToys\settings.json`. If `raw` and `settings` are both omitted, the whole object is merged into the current general settings file. |
-| `modules` | object | none | Optional container for module configs. Keys must be supported module names. |
-| `fancyzones` | object | none | Shortcut for configuring `FancyZones`. |
-| `awake` | object | none | Shortcut for configuring `Awake`. |
-| `powerrename` | object | none | Shortcut for configuring `PowerRename`. |
+| Field         | Type   | Default | Description                                                                                                                                                              |
+| ------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `general`     | object | none    | Updates `%LOCALAPPDATA%\Microsoft\PowerToys\settings.json`. If `raw` and `settings` are both omitted, the whole object is merged into the current general settings file. |
+| `modules`     | object | none    | Optional container for module configs. Keys must be supported module names.                                                                                              |
+| `fancyzones`  | object | none    | Shortcut for configuring `FancyZones`.                                                                                                                                   |
+| `awake`       | object | none    | Shortcut for configuring `Awake`.                                                                                                                                        |
+| `powerrename` | object | none    | Shortcut for configuring `PowerRename`.                                                                                                                                  |
 
-Supported module names are `fancyzones`, `awake`, and `powerrename`. The plugin maps them to the corresponding PowerToys folders `FancyZones`, `Awake`, and `PowerRename`.
+Supported module names are `fancyzones`, `awake`, and `powerrename`. The plugin maps them to the
+corresponding PowerToys folders `FancyZones`, `Awake`, and `PowerRename`.
 
 ### `general`
 
 `general` may contain:
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `raw` | object | none | Merges directly into the top-level PowerToys settings JSON. |
-| `settings` | object | none | Also merges into the top-level PowerToys settings JSON. |
+| Field      | Type   | Default | Description                                                 |
+| ---------- | ------ | ------- | ----------------------------------------------------------- |
+| `raw`      | object | none    | Merges directly into the top-level PowerToys settings JSON. |
+| `settings` | object | none    | Also merges into the top-level PowerToys settings JSON.     |
 
-If neither `raw` nor `settings` is provided, the plugin merges the remaining keys in `general` directly into the top-level JSON.
+If neither `raw` nor `settings` is provided, the plugin merges the remaining keys in `general`
+directly into the top-level JSON.
 
 ### Module config objects
 
 Each supported module config may contain:
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `enabled` | boolean | unchanged | Updates the module's `enabled` value. |
-| `settings` | object | none | Merges into the module's `properties` object. This is the main way to update nested module settings. |
-| `properties` | object | none | Merges into the module's `properties` object. |
-| `raw` | object | none | Merges directly into the module JSON object. |
+| Field        | Type    | Default   | Description                                                                                          |
+| ------------ | ------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `enabled`    | boolean | unchanged | Updates the module's `enabled` value.                                                                |
+| `settings`   | object  | none      | Merges into the module's `properties` object. This is the main way to update nested module settings. |
+| `properties` | object  | none      | Merges into the module's `properties` object.                                                        |
+| `raw`        | object  | none      | Merges directly into the module JSON object.                                                         |
 
-If none of `enabled`, `settings`, `properties`, or `raw` is present, the plugin merges the whole object directly into the module JSON.
+If none of `enabled`, `settings`, `properties`, or `raw` is present, the plugin merges the whole
+object directly into the module JSON.
 
 ### Behavior notes
 
 - Missing settings files are treated as empty JSON objects.
 - Existing JSON is preserved and merged recursively.
 - If a module file contains invalid JSON, the plugin reports an error instead of overwriting it.
-- After a module-only change, the plugin touches the main `settings.json` file so PowerToys notices the update.
+- After a module-only change, the plugin touches the main `settings.json` file so PowerToys notices
+  the update.
 
 ## Usage Examples
 
@@ -99,11 +105,14 @@ modules:
    - Awake: `%LOCALAPPDATA%\Microsoft\PowerToys\Awake\settings.json`
    - PowerRename: `%LOCALAPPDATA%\Microsoft\PowerToys\PowerRename\settings.json`
 4. Open the file and confirm the expected keys were merged.
-5. If you changed a module setting, restart or refresh PowerToys if the UI does not pick up the change immediately.
+5. If you changed a module setting, restart or refresh PowerToys if the UI does not pick up the
+   change immediately.
 
 ## Notes / Caveats
 
-- The plugin does not validate the structure of PowerToys keys beyond requiring objects for `raw`, `settings`, and `properties`.
+- The plugin does not validate the structure of PowerToys keys beyond requiring objects for `raw`,
+  `settings`, and `properties`.
 - Unknown module names fail the apply step.
-- `check_installed` returns true when the target settings file exists, not when PowerToys itself is currently running.
+- `check_installed` returns true when the target settings file exists, not when PowerToys itself is
+  currently running.
 - Dry runs are controlled by the execution context, not by a YAML field.

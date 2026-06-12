@@ -11,15 +11,68 @@ namespace WinHome.Services.System
   public class RegistryService : IRegistryService
   {
     private readonly IRegistryWrapper _registryWrapper;
+    private readonly ILogger? _logger;
 
     /// <summary>Initializes a new instance of <see cref="RegistryService"/>.</summary>
     public RegistryService(IRegistryWrapper registryWrapper)
+      : this(registryWrapper, null)
+    {
+    }
+
+    /// <summary>Initializes a new instance of <see cref="RegistryService"/> with a logger.</summary>
+    public RegistryService(IRegistryWrapper registryWrapper, ILogger? logger)
     {
       _registryWrapper = registryWrapper;
+      _logger = logger;
+    }
+
+    private void LogInfo(string message)
+    {
+      if (_logger != null) _logger.LogInfo(message);
+      else Console.WriteLine(message);
+    }
+
+    private void LogSuccess(string message)
+    {
+      if (_logger != null) _logger.LogSuccess(message);
+      else Console.WriteLine(message);
+    }
+
+    private void LogWarning(string message)
+    {
+      if (_logger != null) _logger.LogWarning(message);
+      else
+      {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine(message);
+        Console.ResetColor();
+      }
+    }
+
+    private void LogError(string message)
+    {
+      if (_logger != null) _logger.LogError(message);
+      else Console.WriteLine(message);
     }
 
     public bool Apply(RegistryTweak tweak, bool dryRun)
     {
+      if (tweak == null)
+      {
+        LogError("[Error] Registry tweak configuration is null.");
+        return false;
+      }
+      if (string.IsNullOrWhiteSpace(tweak.Path))
+      {
+        LogError("[Error] Registry path cannot be null or empty.");
+        return false;
+      }
+      if (string.IsNullOrWhiteSpace(tweak.Name))
+      {
+        LogError("[Error] Registry value name cannot be null or empty.");
+        return false;
+      }
+
       try
       {
         // Security Check: Prevent HKCU modification when running as SYSTEM
@@ -38,16 +91,14 @@ namespace WinHome.Services.System
                 : currentValue.ToString() == tweak.Value?.ToString();
             if (alreadySet)
             {
-              Console.WriteLine($"[Registry] Skipped: {tweak.Name} (Already set)");
+              LogInfo($"[Registry] Skipped: {tweak.Name} (Already set)");
               return true;
             }
           }
 
           if (dryRun)
           {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"[DryRun] Would set Registry: {tweak.Path}\\{tweak.Name} = {tweak.Value}");
-            Console.ResetColor();
+            LogWarning($"[DryRun] Would set Registry: {tweak.Path}\\{tweak.Name} = {tweak.Value}");
             return true;
           }
         }
@@ -56,7 +107,7 @@ namespace WinHome.Services.System
         {
           if (key == null)
           {
-            Console.WriteLine($"[Error] Could not create registry subkey: {tweak.Path}");
+            LogError($"[Error] Could not create registry subkey: {tweak.Path}");
             return false;
           }
 
@@ -82,13 +133,13 @@ namespace WinHome.Services.System
           }
 
           key.SetValue(tweak.Name, valueToWrite ?? string.Empty, kind);
-          Console.WriteLine($"[Registry] Set {tweak.Name} = {tweak.Value}");
+          LogSuccess($"[Registry] Set {tweak.Name} = {tweak.Value}");
           return true;
         }
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"[Error] Registry apply failed: {ex.Message}");
+        LogError($"[Error] Registry apply failed: {ex.Message}");
         // If it's our security exception, we rethrow it or ensure it's logged as critical.
         if (ex is InvalidOperationException && ex.Message.StartsWith("Security Risk"))
         {
@@ -100,6 +151,17 @@ namespace WinHome.Services.System
 
     public bool Revert(string path, string name, bool dryRun)
     {
+      if (string.IsNullOrWhiteSpace(path))
+      {
+        LogError("[Error] Registry path cannot be null or empty.");
+        return false;
+      }
+      if (string.IsNullOrWhiteSpace(name))
+      {
+        LogError("[Error] Registry value name cannot be null or empty.");
+        return false;
+      }
+
       try
       {
         // Security Check
@@ -114,21 +176,19 @@ namespace WinHome.Services.System
           {
             if (dryRun)
             {
-              Console.ForegroundColor = ConsoleColor.Yellow;
-              Console.WriteLine($"[DryRun] Would delete Registry value: {path}\\{name}");
-              Console.ResetColor();
+              LogWarning($"[DryRun] Would delete Registry value: {path}\\{name}");
               return true;
             }
 
             key.DeleteValue(name);
-            Console.WriteLine($"[Registry] Reverted {name}");
+            LogSuccess($"[Registry] Reverted {name}");
           }
           return true;
         }
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"[Error] Registry revert failed: {ex.Message}");
+        LogError($"[Error] Registry revert failed: {ex.Message}");
         if (ex is InvalidOperationException && ex.Message.StartsWith("Security Risk"))
         {
           throw;
@@ -139,6 +199,11 @@ namespace WinHome.Services.System
 
     public object? Read(string path, string name)
     {
+      if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(name))
+      {
+        return null;
+      }
+
       try
       {
         IRegistryKey root = _registryWrapper.GetRootKey(path, out string subKeyPath);
@@ -147,8 +212,14 @@ namespace WinHome.Services.System
           return key?.GetValue(name);
         }
       }
-      catch
+      catch (global::System.Security.SecurityException ex)
       {
+        _logger?.LogError($"Registry hive access denied: {ex.Message}");
+        return null;
+      }
+      catch (Exception ex)
+      {
+        _logger?.LogError($"Registry read failed for {path}\\{name}: {ex.Message}");
         return null;
       }
     }

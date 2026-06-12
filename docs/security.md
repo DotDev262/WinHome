@@ -1,16 +1,19 @@
 # Security Guide
 
-WinHome includes built-in security mechanisms and presets to help users safely optimize and configure their systems.
+WinHome includes built-in security mechanisms and presets to help users safely optimize and
+configure their systems.
 
 ---
 
 ## RegistryGuard
 
-RegistryGuard is a protection mechanism that prevents unsafe registry modifications, particularly when WinHome is executed with elevated SYSTEM privileges.
+RegistryGuard is a protection mechanism that prevents unsafe registry modifications, particularly
+when WinHome is executed with elevated SYSTEM privileges.
 
 ### Why It Exists
 
-When applications run as SYSTEM, accidental writes to sensitive registry hives like `HKCU` (HKEY_CURRENT_USER) can cause instability, permission conflicts, or unintended persistence issues.
+When applications run as SYSTEM, accidental writes to sensitive registry hives like `HKCU`
+(HKEY_CURRENT_USER) can cause instability, permission conflicts, or unintended persistence issues.
 
 ### What It Does
 
@@ -31,19 +34,18 @@ WinHome supports multiple approaches for handling sensitive values securely.
 
 Environment variables are the recommended approach for managing secrets. Use them for:
 
-| Use Case | Example |
-|---|---|
-| API keys | `$env:API_KEY` |
-| Auth tokens | `$env:AUTH_TOKEN` |
-| CI/CD secrets | `$env:CI_SECRET` |
-| Temporary credentials | `$env:TEMP_CRED` |
+| Use Case              | Example           |
+| --------------------- | ----------------- |
+| API keys              | `$env:API_KEY`    |
+| Auth tokens           | `$env:AUTH_TOKEN` |
+| CI/CD secrets         | `$env:CI_SECRET`  |
+| Temporary credentials | `$env:TEMP_CRED`  |
 
 **Example:**
+
 ```powershell
 $env:API_KEY = "your_key_here"
 ```
-
-
 
 ---
 
@@ -68,8 +70,8 @@ Useful for:
 
 ```yaml
 envVars:
-  - variable: "DB_PASSWORD"
-    value: "{{ vault:database-password }}"
+  - variable: 'DB_PASSWORD'
+    value: '{{ vault:database-password }}'
 ```
 
 Reads credentials securely from Windows Credential Manager.
@@ -165,4 +167,5 @@ Before modifying the registry:
 
 ## Disclaimer
 
-Advanced registry and system-level modifications may affect system stability. Always verify configurations before applying changes to production environments.
+Advanced registry and system-level modifications may affect system stability. Always verify
+configurations before applying changes to production environments.

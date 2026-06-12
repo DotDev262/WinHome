@@ -1,0 +1,6 @@
+{
+  "theme": "dark",
+  "plugins_enabled": [
+    "pluginA"
+  ]
+}

@@ -225,40 +225,40 @@ namespace WinHome.Services.System
     }
 
     /// <summary>Reads current registry values and maps them back to user-facing setting keys.</summary>
-    public async Task<Dictionary<string, object>> GetCapturedSettingsAsync()
+    public Task<Dictionary<string, object>> GetCapturedSettingsAsync()
     {
-      return await Task.Run(() =>
+      var captured = new Dictionary<string, object>();
+
+      foreach (var def in _catalog)
       {
-        var captured = new Dictionary<string, object>();
-
-        foreach (var def in _catalog)
+        try
         {
-          try
+          var regValue = _registryService.Read(def.RegistryPath, def.RegistryName);
+          if (regValue != null)
           {
-            var regValue = _registryService.Read(def.RegistryPath, def.RegistryName);
-            if (regValue != null)
+            var match = def.ValueMap.FirstOrDefault(kvp =>
+                  {
+                    if (kvp.Value is byte[] kvpBytes && regValue is byte[] regBytes)
+                      return kvpBytes.SequenceEqual(regBytes);
+                    return kvp.Value?.ToString() == regValue?.ToString();
+                  });
+            if (!match.Equals(default(KeyValuePair<string, object>)))
             {
-              var match = def.ValueMap.FirstOrDefault(kvp =>
-                    {
-                      if (kvp.Value is byte[] kvpBytes && regValue is byte[] regBytes)
-                        return kvpBytes.SequenceEqual(regBytes);
-                      return kvp.Value?.ToString() == regValue?.ToString();
-                    });
-              if (!match.Equals(default(KeyValuePair<string, object>)))
-              {
-                object val = match.Key;
-                if (bool.TryParse(match.Key, out bool bVal)) val = bVal;
-                else if (int.TryParse(match.Key, out int iVal)) val = iVal;
+              object val = match.Key;
+              if (bool.TryParse(match.Key, out bool bVal)) val = bVal;
+              else if (int.TryParse(match.Key, out int iVal)) val = iVal;
 
-                captured[def.SettingKey] = val;
-              }
+              captured[def.SettingKey] = val;
             }
           }
-          catch { /* Ignore read errors */ }
         }
+        catch (Exception ex)
+        {
+          _logger.LogWarning("Failed to read captured setting '{SettingKey}' from {RegistryPath}\\{RegistryName}: {Message}", def.SettingKey, def.RegistryPath, def.RegistryName, ex.Message);
+        }
+      }
 
-        return captured;
-      });
+      return Task.FromResult(captured);
     }
 
     /// <summary>Looks up the user-friendly setting key for the given registry path and value name.</summary>

@@ -1,6 +1,7 @@
 # Shell Completion
 
-WinHome supports tab completion for all CLI flags, subcommands, and file paths in both **PowerShell** and **Bash**.
+WinHome supports tab completion for all CLI flags, subcommands, and file paths in both
+**PowerShell** and **Bash**.
 
 ## Quick Setup
 
@@ -22,7 +23,8 @@ WinHome completion powershell > ~/winhome-completion.ps1
 Add-Content -Path $PROFILE -Value '. ~/winhome-completion.ps1'
 ```
 
-> **Note:** You may need to restart your PowerShell session or run `. $PROFILE` to reload the profile.
+> **Note:** You may need to restart your PowerShell session or run `. $PROFILE` to reload the
+> profile.
 
 ### Bash (WSL / Git Bash)
 
@@ -49,20 +51,20 @@ source ~/.bashrc
 
 Once enabled, pressing `Tab` will auto-complete:
 
-| Context               | Completions                                                                 |
-|-----------------------|-----------------------------------------------------------------------------|
-| `WinHome <TAB>`       | `--config`, `--dry-run`, `--profile`, `--debug`, `--diff`, `--verbose`, `--quiet`, `--json`, `--update`, `state`, `generate`, `completion` |
-| `WinHome state <TAB>` | `list`, `backup`, `restore`                                                 |
-| `WinHome generate <TAB>` | `--output`, `-o`, `--verbose`, `--quiet`                                 |
-| `WinHome --config <TAB>` | File path completion (`.yaml` / `.yml` files in Bash)                    |
-| `WinHome state backup <TAB>` | File path completion                                                |
+| Context                      | Completions                                                                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `WinHome <TAB>`              | `--config`, `--dry-run`, `--profile`, `--debug`, `--diff`, `--verbose`, `--quiet`, `--json`, `--update`, `state`, `generate`, `completion` |
+| `WinHome state <TAB>`        | `list`, `backup`, `restore`                                                                                                                |
+| `WinHome generate <TAB>`     | `--output`, `-o`, `--verbose`, `--quiet`                                                                                                   |
+| `WinHome --config <TAB>`     | File path completion (`.yaml` / `.yml` files in Bash)                                                                                      |
+| `WinHome state backup <TAB>` | File path completion                                                                                                                       |
 
 ## Supported Shells
 
-| Shell      | Argument     | Mechanism                      |
-|------------|-------------|--------------------------------|
-| PowerShell | `powershell` | `Register-ArgumentCompleter`   |
-| Bash       | `bash`       | `complete -F`                  |
+| Shell      | Argument     | Mechanism                    |
+| ---------- | ------------ | ---------------------------- |
+| PowerShell | `powershell` | `Register-ArgumentCompleter` |
+| Bash       | `bash`       | `complete -F`                |
 
 ## Troubleshooting
 

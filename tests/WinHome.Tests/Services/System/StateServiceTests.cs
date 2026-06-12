@@ -149,6 +149,8 @@ namespace WinHome.Tests.Services.System
     [Fact]
     public void LoadState_BackupFails_LogsWarningAndReturnsEmpty()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       File.WriteAllText(_stateFilePath, "{ invalid json");
 
       // Lock the file to force File.Move to throw an exception

@@ -21,18 +21,18 @@ It can:
 
 ## Configuration Schema
 
-| Field | Type | Default | Description |
-|---------|---------|---------|---------|
-| config | object | none | General Helix editor settings |
-| languages | object | none | Language-specific configuration |
+| Field     | Type   | Default | Description                     |
+| --------- | ------ | ------- | ------------------------------- |
+| config    | object | none    | General Helix editor settings   |
+| languages | object | none    | Language-specific configuration |
 
 ### Config Example
 
 ```yaml
 config:
-  theme: "onedark"
+  theme: 'onedark'
   editor:
-    line-number: "relative"
+    line-number: 'relative'
 ```
 
 ### Languages Example
@@ -50,9 +50,9 @@ languages:
 
 ```yaml
 config:
-  theme: "onedark"
+  theme: 'onedark'
   editor:
-    line-number: "relative"
+    line-number: 'relative'
 ```
 
 ### Configure Python Language Support

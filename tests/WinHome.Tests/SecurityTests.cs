@@ -11,11 +11,11 @@ namespace WinHome.Tests
   public class SecurityTests
   {
     // --- Test 1: Plugin Timeout & Memory Limit ---
-    // Since PluginRunner uses actual Process.Start, fully unit testing the timeout/memory limit 
+    // Since PluginRunner uses actual Process.Start, fully unit testing the timeout/memory limit
     // without a real process is difficult. We will perform integration-style tests using a dummy script
-    // or by creating a specialized "TestablePluginRunner" if needed. 
-    // However, given the constraints, we will verify the logic by inspecting the code structure 
-    // or simulating the behavior if we refactor. 
+    // or by creating a specialized "TestablePluginRunner" if needed.
+    // However, given the constraints, we will verify the logic by inspecting the code structure
+    // or simulating the behavior if we refactor.
     // For this task, we will verify the RegistryGuard and StateService logic which are more isolated.
 
     // --- Test 2: State Persistence (Write-Through) ---
@@ -55,8 +55,8 @@ namespace WinHome.Tests
       // Arrange
       string path = "HKCU\\Software\\Test";
 
-      // To test this properly, we would ideally mock WindowsIdentity. 
-      // Since we can't easily mock static WindowsIdentity.GetCurrent(), 
+      // To test this properly, we would ideally mock WindowsIdentity.
+      // Since we can't easily mock static WindowsIdentity.GetCurrent(),
       // we will verify that the logic *doesn't* throw for a normal user (Scenario A),
       // and structurally assume the SYSTEM check is present.
       // However, we CAN test the path logic.
@@ -70,7 +70,7 @@ namespace WinHome.Tests
       }
       catch (InvalidOperationException ex)
       {
-        // If we happen to be running as SYSTEM (e.g. GitHub Actions sometimes), 
+        // If we happen to be running as SYSTEM (e.g. GitHub Actions sometimes),
         // we verify the message.
         Assert.Contains("Security Risk", ex.Message);
         return;

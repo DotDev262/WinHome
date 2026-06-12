@@ -23,7 +23,7 @@ namespace WinHome.Tests
       _mockValidator = new Mock<IConfigValidator>();
       _mockSecretResolver = new Mock<ISecretResolver>();
       _mockLogger = new Mock<ILogger>();
-      
+
       // Engine requires a lot of parameters for its constructor, we'll pass null! since we're mocking it
       _mockEngine = new Mock<IEngine>();
 
@@ -109,7 +109,7 @@ namespace WinHome.Tests
       Assert.Equal(1, exitCode);
       _mockLogger.Verify(l => l.LogError(It.Is<string>(s => s.Contains("unexpected error"))), Times.Once);
     }
-    
+
     [Fact]
     public async Task RunAsync_LogsStackTrace_OnException_WhenDebugTrue()
     {

@@ -11,15 +11,16 @@ The GitHub CLI plugin manages configuration for `gh` using YAML config file.
 
 ## Configuration Schema
 
-| Key | Type | Description |
-|-----|------|-------------|
-| git_protocol | string | SSH or HTTPS |
-| editor | string | Default editor |
-| aliases | object | Command aliases |
+| Key          | Type   | Description     |
+| ------------ | ------ | --------------- |
+| git_protocol | string | SSH or HTTPS    |
+| editor       | string | Default editor  |
+| aliases      | object | Command aliases |
 
 ## Usage Examples
 
 ### Git protocol
+
 ```yaml
 plugins:
   - name: gh
@@ -27,6 +28,7 @@ plugins:
 ```
 
 ### Aliases
+
 ```yaml
 plugins:
   - name: gh
@@ -48,4 +50,7 @@ gh config list
 
 - YAML is auto-merged
 - Empty values ignored
+
+```
+
 ```

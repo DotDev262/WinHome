@@ -19,21 +19,21 @@ It can:
 
 ## Configuration Schema
 
-| Field | Type | Default | Description |
-|---------|---------|---------|---------|
-| any valid Windows Terminal setting | object/string/number/bool | none | Written directly into settings.json |
+| Field                              | Type                      | Default | Description                         |
+| ---------------------------------- | ------------------------- | ------- | ----------------------------------- |
+| any valid Windows Terminal setting | object/string/number/bool | none    | Written directly into settings.json |
 
 ### Basic Settings Example
 
 ```yaml
-defaultProfile: "{profile-guid}"
-theme: "dark"
+defaultProfile: '{profile-guid}'
+theme: 'dark'
 ```
 
 ### Appearance Example
 
 ```yaml
-theme: "dark"
+theme: 'dark'
 alwaysShowTabs: true
 showTabsInTitlebar: false
 ```
@@ -43,13 +43,13 @@ showTabsInTitlebar: false
 ### Configure Theme
 
 ```yaml
-theme: "dark"
+theme: 'dark'
 ```
 
 ### Startup Preferences
 
 ```yaml
-launchMode: "maximized"
+launchMode: 'maximized'
 alwaysShowTabs: true
 ```
 
@@ -59,7 +59,7 @@ alwaysShowTabs: true
 profiles:
   defaults:
     font:
-      face: "Cascadia Code"
+      face: 'Cascadia Code'
       size: 12
 ```
 

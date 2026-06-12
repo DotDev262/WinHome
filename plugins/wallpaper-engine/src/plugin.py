@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
+import json
 import os
 import sys
-import json
 import tempfile
+
 
 def get_config_paths():
     program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
     program_files_x64 = os.environ.get("ProgramFiles", r"C:\Program Files")
     return [
         os.path.join(program_files_x86, "Steam", "steamapps", "common", "wallpaper_engine", "config", "config.json"),
-        os.path.join(program_files_x64, "Steam", "steamapps", "common", "wallpaper_engine", "config", "config.json")
+        os.path.join(program_files_x64, "Steam", "steamapps", "common", "wallpaper_engine", "config", "config.json"),
     ]
+
 
 def deep_merge(target, source):
     """Recursively deep merges source into target and returns True if any value changed."""
@@ -25,17 +27,19 @@ def deep_merge(target, source):
                 any_changed = True
     return any_changed
 
+
 def check_installed() -> bool:
     """Strictly returns a bare boolean indicating system installation state."""
     return any(os.path.exists(path) for path in get_config_paths())
 
+
 def apply(request_id, args):
     settings = args.get("settings", {})
     dry_run = args.get("dryRun", False)
-    
+
     if not isinstance(settings, dict):
         return {"requestId": request_id, "error": "settings must be a dictionary"}
-    
+
     target_path = None
     for path in get_config_paths():
         if os.path.exists(path) or os.path.exists(os.path.dirname(path)):
@@ -43,7 +47,9 @@ def apply(request_id, args):
             break
     if not target_path:
         program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
-        target_path = os.path.join(program_files_x86, "Steam", "steamapps", "common", "wallpaper_engine", "config", "config.json")
+        target_path = os.path.join(
+            program_files_x86, "Steam", "steamapps", "common", "wallpaper_engine", "config", "config.json"
+        )
 
     config_dir = os.path.dirname(target_path)
     existing_config = {}
@@ -55,7 +61,7 @@ def apply(request_id, args):
             existing_config = {}
 
     has_changes = deep_merge(existing_config, settings)
-    
+
     if dry_run:
         return {"requestId": request_id, "dryRun": True, "changed": has_changes, "path": target_path}
 
@@ -79,6 +85,7 @@ def apply(request_id, args):
     except Exception as err:
         return {"requestId": request_id, "error": str(err)}
 
+
 def main():
     request_id = "unknown"
     try:
@@ -90,24 +97,19 @@ def main():
     except Exception as e:
         print(json.dumps({"requestId": request_id, "error": f"Invalid JSON: {str(e)}"}))
         return
-        
+
     request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
 
     if command == "check_installed":
-        print(json.dumps({
-            "requestId": request_id,
-            "installed": check_installed()
-        }))
+        print(json.dumps({"requestId": request_id, "installed": check_installed()}))
     elif command == "apply":
         result = apply(request_id, args)
         print(json.dumps(result))
     else:
-        print(json.dumps({
-            "requestId": request_id,
-            "error": f"Unknown command: {command}"
-        }))
+        print(json.dumps({"requestId": request_id, "error": f"Unknown command: {command}"}))
+
 
 if __name__ == "__main__":
     main()

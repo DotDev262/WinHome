@@ -7,7 +7,10 @@ import tempfile
 try:
     import tomllib
 except ImportError:
-    tomllib = None
+    try:
+        import tomli as tomllib
+    except ImportError:
+        tomllib = None
 
 PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 

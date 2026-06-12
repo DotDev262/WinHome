@@ -63,7 +63,10 @@ namespace WinHome.Services.System
               changed = true;
             }
           }
-          catch { }
+          catch (Exception)
+          {
+            /* Silently skip malformed structural nodes */
+          }
 
           try
           {
@@ -71,7 +74,10 @@ namespace WinHome.Services.System
             File.Move(cwdStatePath, backupPath);
             _logger.LogInfo($"[State] Migrated legacy state from {cwdStatePath}, backed up to {backupPath}");
           }
-          catch { }
+          catch (Exception ex)
+          {
+            _logger.LogWarning($"[State] Failed to back up legacy state: {ex.Message}");
+          }
         }
 
         if (oldStepExists)
@@ -87,7 +93,10 @@ namespace WinHome.Services.System
               changed = true;
             }
           }
-          catch { }
+          catch (Exception)
+          {
+            /* Silently skip malformed structural nodes */
+          }
 
           try
           {
@@ -95,7 +104,10 @@ namespace WinHome.Services.System
             File.Move(oldStepPath, backupPath);
             _logger.LogInfo($"[State] Migrated legacy step state from {oldStepPath}, backed up to {backupPath}");
           }
-          catch { }
+          catch (Exception ex)
+          {
+            _logger.LogWarning($"[State] Failed to back up legacy step state: {ex.Message}");
+          }
         }
 
         if (changed)

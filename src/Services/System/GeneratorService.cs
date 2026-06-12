@@ -86,7 +86,7 @@ namespace WinHome.Services.System
         {
           if (File.Exists(tempFile))
           {
-            try { File.Delete(tempFile); } catch { }
+            try { File.Delete(tempFile); } catch (Exception deleteEx) { global::System.Diagnostics.Trace.WriteLine($"Failed to delete temporary winget export file: {deleteEx.Message}"); }
           }
         }
 
@@ -126,9 +126,10 @@ namespace WinHome.Services.System
             }
           }
         }
-        catch
+        catch (Exception ex)
         {
           // Invalid JSON, return empty list
+          global::System.Diagnostics.Trace.WriteLine($"Failed to parse winget export JSON: {ex.Message}");
         }
       }
       return apps;
@@ -222,8 +223,9 @@ namespace WinHome.Services.System
           UserEmail = email
         };
       }
-      catch
+      catch (Exception ex)
       {
+        global::System.Diagnostics.Trace.WriteLine($"Failed to retrieve Git config: {ex.Message}");
         return null;
       }
     }

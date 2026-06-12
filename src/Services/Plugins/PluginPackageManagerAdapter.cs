@@ -12,9 +12,16 @@ namespace WinHome.Services.Plugins
     private readonly IPluginRunner _runner;
     private readonly IPluginManager _manager;
     private readonly IRuntimeResolver _resolver;
+    private readonly ILogger? _logger;
 
     /// <summary>Initializes a new instance of <see cref="PluginPackageManagerAdapter"/>.</summary>
     public PluginPackageManagerAdapter(PluginManifest plugin, IPluginRunner runner, IPluginManager manager, IRuntimeResolver resolver)
+      : this(plugin, runner, manager, resolver, null)
+    {
+    }
+
+    /// <summary>Initializes a new instance of <see cref="PluginPackageManagerAdapter"/> with a logger.</summary>
+    public PluginPackageManagerAdapter(PluginManifest plugin, IPluginRunner runner, IPluginManager manager, IRuntimeResolver resolver, ILogger? logger)
     {
       ArgumentNullException.ThrowIfNull(plugin);
       ArgumentNullException.ThrowIfNull(runner);
@@ -25,11 +32,12 @@ namespace WinHome.Services.Plugins
       _runner = runner;
       _manager = manager;
       _resolver = resolver;
+      _logger = logger;
     }
 
     public string PluginType => _plugin.Type;
 
-    public IPackageManagerBootstrapper Bootstrapper => new PluginRuntimeBootstrapper(_plugin, _manager, _resolver);
+    public IPackageManagerBootstrapper Bootstrapper => new PluginRuntimeBootstrapper(_plugin, _manager, _resolver, _logger);
 
     /// <summary>Returns <c>true</c> if the plugin's runtime is installed.</summary>
     public bool IsAvailable()
@@ -41,9 +49,11 @@ namespace WinHome.Services.Plugins
     public bool IsInstalled(string appId)
     {
       var result = TryExecute("check_installed", new { packageId = appId }, null);
-      return result?.Success == true
-        && bool.TryParse(result.Data?.ToString(), out var isInstalled)
-        && isInstalled;
+      if (result == null || result.Success != true)
+        return false;
+      if (result.Installed.HasValue)
+        return result.Installed.Value;
+      return bool.TryParse(result.Data?.ToString(), out var isInstalled) && isInstalled;
     }
 
     /// <summary>Installs a package by delegating to the plugin's install command.</summary>
@@ -89,7 +99,9 @@ namespace WinHome.Services.Plugins
       {
         return _runner.ExecuteAsync(_plugin, command, args, context).GetAwaiter().GetResult();
       }
-      catch
+      catch (UnauthorizedAccessException ex) { _logger?.LogError($"Permissions failure during package resolution: {ex.Message}"); return null; }
+      catch (global::System.Text.Json.JsonException ex) { _logger?.LogError($"Malformed registry response manifest parsing: {ex.Message}"); return null; }
+      catch (Exception)
       {
         return null;
       }
@@ -129,12 +141,14 @@ namespace WinHome.Services.Plugins
       private readonly PluginManifest _p;
       private readonly IPluginManager _m;
       private readonly IRuntimeResolver _r;
+      private readonly ILogger? _logger;
 
-      public PluginRuntimeBootstrapper(PluginManifest p, IPluginManager m, IRuntimeResolver r)
+      public PluginRuntimeBootstrapper(PluginManifest p, IPluginManager m, IRuntimeResolver r, ILogger? logger)
       {
         _p = p;
         _m = m;
         _r = r;
+        _logger = logger;
       }
 
       public string Name => $"{_p.Name} Runtime";
@@ -164,7 +178,12 @@ namespace WinHome.Services.Plugins
         {
           return Process.Start(new ProcessStartInfo { FileName = exe, Arguments = "--version", CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true })?.WaitForExit(1000) ?? false;
         }
-        catch
+        catch (global::System.IO.IOException ex)
+        {
+          _logger?.LogWarning($"Package deployment IO bottleneck: {ex.Message}");
+          return false;
+        }
+        catch (Exception)
         {
           return false;
         }

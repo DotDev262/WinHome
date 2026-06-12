@@ -24,6 +24,8 @@
 - Repo homepage set to GitHub Pages: https://DotDev262.github.io/WinHome/
 
 ## Merged This Session
+- **#388** (Dual State Management, @ionfwsrijan) — squash merged with `gssoc:approved`. Closes #376.
+- **#384** (Docker multi-stage, @Stewartsson) — squash merged with `gssoc:approved`. Closes #311.
 - **#377** (Syncthing, @Bhagyashri77777) — approved, squash merged with `gssoc:approved`. Closes #181.
 - **#371** (CliBuilder tests, @VIDYANKSHINI) — scope creep reverted, approved, squash merged with `gssoc:approved`. Closes #223.
 - **#379** (Wallpaper Engine, @Stewartsson) — 8 protocol issues fixed, 7/7 tests pass, 0 behind main. Approved and squash merged with `gssoc:approved`. Closes #301.
@@ -38,16 +40,10 @@
 - **#311** (Docker, @mahi-bansal) — unassigned (10 days, no PR after 1-week policy). Conflict resolved by first-requester priority — awarded to @Stewartsson.
 
 ## New Assignments
-- **#327** (yarn) → @krishsharma-code
-- **#330** (Deno) → @silentguyracer (has merged PR #368)
-- **#141** (Flow Launcher) → @basantnema31 (user override of mass-requesting warning)
-- **#184** (Joplin) → @Vidheendu
-- **#311** (Docker multi-stage) → @Stewartsson (first requester)
-- **#130** (Spotify) → @Devexhhh (first requester, #375 merged)
-- **#202** (Rainmeter) → @VIDYANKSHINI (chose this from available options)
-- **#96** (Config Backup) → @sat-06 (detailed planned approach)
-
+- **#407** (Command Injection, @ionfwsrijan) — assigned per request, type:security, level:intermediate
 ## Reviewed This Session
+- **#388** (Dual State Management, @ionfwsrijan) — core fix solid (StateService migration, StepHistory), but scope creep: 17 unrelated plugin files formatted, Engine.cs comments stripped. CHANGES_REQUESTED.
+- **#386** (Joplin, @Vidheendu) — 10 protocol issues (\`requestId\` missing, \`\"success\"\`/`\"data\"` banned, \`dryRun\` from request, args passed as settings, no atomic writes, etc.). CHANGES_REQUESTED. Round 2 (Jun 8): all 10 fixed ✅ — but all 3 files missing POSIX trailing newlines. CHANGES_REQUESTED.
 - **#387** (Config Backup, @sat-06) — well-scoped, 0 behind main, clean approach. 3 issues: tab indentation in DotfileService.cs, no BackupService unit tests, `DateTime.Now` vs `UtcNow`. CHANGES_REQUESTED.
 - **#384** (Docker multi-stage, @Stewartsson) — round 3 review: `.dockerignore` fixed ✅, but `FROM ://microsoft.com` regression persists (empty commit), still 1 behind main. CHANGES_REQUESTED.
 - **#354** (Audacity, @Achiever199) — protocol-compliant, 18 tests, 0 behind main. Only issue: stray `bat/plugin.yaml` change. Asked to revert.
@@ -64,7 +60,7 @@
 - **#354** (Audacity, @Achiever199) — 0 behind main, protocol-compliant, 18 tests pass. Only issue: stray `plugins/bat/plugin.yaml` change (prettier side effect). Asked to revert.
 - **#338** (NuGet, @lokeshkumar69) — 12 behind main, 6 issues: `"success"` in every response, `dryRun` from `context`, unknown command response polluted, `check_installed` unused params. 48h window.
 - **#339** (Ditto, @vedika76) — 12 behind main, 5 issues: CRITICAL — `check_installed` returns bare bool without `requestId` wrap, wrong `requestId` pattern, no `isinstance(settings, dict)` guard, unused params. 48h window.
-- **#384** (Docker multi-stage, @Stewartsson) — CHANGES_REQUESTED. Author rewrote for .NET 10 but 2 critical issues remain: (1) `net10.0-windows` + `win-x64` binary cannot run on `dotnet/runtime:10.0` Linux image — needs Windows containers or artifact-stage approach; (2) `dotnet restore` fails because `tests/` not copied but .sln references it. Also: sparse `.dockerignore`, 1 behind main, no `--no-restore`. Options offered (Windows containers vs. artifact stage). Round 2 (Jun 8): author implemented Option B but introduced malformed `FROM ://microsoft.com` line (regression), `.dockerignore` still not updated, still 1 behind main. Re-reviewed with 3 remaining issues. Round 3 (Jun 8): `.dockerignore` fixed ✅, but `FROM ://microsoft.com` unchanged (empty commit, no file changes), still 1 behind main. Re-reviewed.
+- **#384** (Docker multi-stage, @Stewartsson) — 4 rounds of review. 3 edge case fixes requested (cache optimization, .dockerignore gaps, remove useless COPY WinHome.sln). CHANGES_REQUESTED.
 - **#385** (Deno, @silentguyracer) — CHANGES_REQUESTED. 7 protocol violations (`"success"`, `"data"`, `dryRun` from context, wrong `requestId`, `check_installed` wrap issue, `"changed"` leak, unused param). Scope creep: includes `plugins/windows-explorer/` files. Uses fork's `main` branch.
 
 ### Awaiting review or rebase
@@ -95,7 +91,7 @@
 - @Vidheendu: assigned #184 (Joplin). New contributor.
 
 ## Available Issues
-- **#202** (Rainmeter, level:beginner) — unassigned
-- **#291** (Postman, level:beginner) — unassigned
-- **#96** (Config Backup, level:beginner) — unassigned
+- **#291** (Postman, level:beginner) — unassigned. @gaurav123-4 unassigned for inactivity, falsely claimed PR. @Stewartsson and @Vidheendu both have open PRs — can't assign.
+- **#202** (Rainmeter, level:beginner) — assigned to @VIDYANKSHINI
+- **#96** (Config Backup, level:beginner) — assigned to @sat-06 (PR #387 pending)
 - **#236** (Docs, level:beginner) — unassigned

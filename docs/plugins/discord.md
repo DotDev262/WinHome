@@ -19,9 +19,9 @@ It can:
 
 ## Configuration Schema
 
-| Field | Type | Default | Description |
-|---------|---------|---------|---------|
-| settings | object | none | Key-value settings written to Discord settings.json |
+| Field    | Type   | Default | Description                                         |
+| -------- | ------ | ------- | --------------------------------------------------- |
+| settings | object | none    | Key-value settings written to Discord settings.json |
 
 ### Settings Example
 

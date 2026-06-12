@@ -6,7 +6,10 @@ import sys
 try:
     import tomllib
 except ImportError:
-    tomllib = None
+    try:
+        import tomli as tomllib
+    except ImportError:
+        tomllib = None
 
 
 def log(msg):

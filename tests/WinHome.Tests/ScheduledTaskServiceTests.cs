@@ -23,6 +23,8 @@ namespace WinHome.Tests
     [Fact]
     public void Apply_ShouldCreateScheduledTask()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       // Arrange
       var taskConfig = new ScheduledTaskConfig
       {
@@ -65,6 +67,8 @@ namespace WinHome.Tests
     [Fact]
     public void Apply_DryRun_ShouldNotCreateScheduledTask()
     {
+      if (!OperatingSystem.IsWindows()) return;
+
       // Arrange
       var taskConfig = new ScheduledTaskConfig
       {

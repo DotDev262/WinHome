@@ -2,7 +2,8 @@
 
 ## Overview
 
-This plugin manages ShareX's JSON configuration file at `%APPDATA%\ShareX\ShareX.json`. It performs a recursive merge so you can update only the parts you care about without rewriting the whole file.
+This plugin manages ShareX's JSON configuration file at `%APPDATA%\ShareX\ShareX.json`. It performs
+a recursive merge so you can update only the parts you care about without rewriting the whole file.
 
 ## Prerequisites
 
@@ -15,11 +16,12 @@ This plugin manages ShareX's JSON configuration file at `%APPDATA%\ShareX\ShareX
 
 The plugin accepts a top-level YAML object with a single supported field:
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `settings` | object | none | Recursively merged into `ShareX.json`. Any nested object shape is accepted. |
+| Field      | Type   | Default | Description                                                                 |
+| ---------- | ------ | ------- | --------------------------------------------------------------------------- |
+| `settings` | object | none    | Recursively merged into `ShareX.json`. Any nested object shape is accepted. |
 
-The plugin does not enforce a ShareX-specific schema. It simply deep-merges the JSON object tree you provide.
+The plugin does not enforce a ShareX-specific schema. It simply deep-merges the JSON object tree you
+provide.
 
 ### Merge behavior
 
@@ -27,7 +29,8 @@ The plugin does not enforce a ShareX-specific schema. It simply deep-merges the 
 - Non-object values replace the existing value.
 - New keys are added.
 - If the current file is missing, the plugin starts from an empty object.
-- If the file is corrupted JSON, the plugin backs it up to a timestamped `.corrupted` file and starts fresh.
+- If the file is corrupted JSON, the plugin backs it up to a timestamped `.corrupted` file and
+  starts fresh.
 
 ## Usage Examples
 
@@ -57,7 +60,7 @@ settings:
   Application:
     StartMinimized: true
   HotkeySettings:
-    CaptureRegion: "Ctrl+Shift+R"
+    CaptureRegion: 'Ctrl+Shift+R'
   History:
     MaxItemCount: 100
 ```

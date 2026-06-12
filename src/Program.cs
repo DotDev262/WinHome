@@ -81,7 +81,11 @@ class Program
 
               if (outputFile != null)
               {
-                await File.WriteAllTextAsync(outputFile.FullName, yaml);
+                string? dir = Path.GetDirectoryName(outputFile.FullName);
+                if (dir != null) Directory.CreateDirectory(dir);
+                string tmp = outputFile.FullName + ".tmp";
+                await File.WriteAllTextAsync(tmp, yaml);
+                File.Move(tmp, outputFile.FullName, overwrite: true);
                 logger.LogSuccess($"[Generator] Configuration saved to {outputFile.FullName}");
               }
               else

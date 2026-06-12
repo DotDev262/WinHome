@@ -55,4 +55,5 @@ extensions:
 To verify that the settings managed by this plugin have been applied correctly:
 
 - The user have to restart the OpenCode application.
-- Then they have to open the OpenCode UI and navigate to the Settings/Preferences menu to their configurations.
+- Then they have to open the OpenCode UI and navigate to the Settings/Preferences menu to their
+  configurations.

@@ -1,8 +1,10 @@
 # Building Your First WinHome Plugin: A Step-by-Step Tutorial
 
-This tutorial walks you through building a WinHome plugin from scratch. By the end, you'll have a working plugin with tests, ready to submit.
+This tutorial walks you through building a WinHome plugin from scratch. By the end, you'll have a
+working plugin with tests, ready to submit.
 
-> **Prerequisites**: Basic knowledge of Python or JavaScript/TypeScript. No .NET or C# knowledge required.
+> **Prerequisites**: Basic knowledge of Python or JavaScript/TypeScript. No .NET or C# knowledge
+> required.
 
 ---
 
@@ -22,9 +24,12 @@ This tutorial walks you through building a WinHome plugin from scratch. By the e
 
 ## 1. How Plugins Work
 
-WinHome uses a **process-based plugin architecture**. Instead of loading code directly, WinHome spawns your plugin as a separate child process and communicates with it through standard input/output streams.
+WinHome uses a **process-based plugin architecture**. Instead of loading code directly, WinHome
+spawns your plugin as a separate child process and communicates with it through standard
+input/output streams.
 
 This means:
+
 - Plugins can be written in **any language** (Python, JavaScript, Go, etc.)
 - A plugin crash **cannot** bring down WinHome
 - No .NET knowledge is required
@@ -37,7 +42,8 @@ WinHome  ◀──(JSON response)─  Your Plugin (stdout)
 WinHome  ◀──(logs/debug)────  Your Plugin (stderr)
 ```
 
-For a deeper look at the architecture, see [`docs/architecture/plugin_spec_v1.md`](../architecture/plugin_spec_v1.md).
+For a deeper look at the architecture, see
+[`docs/architecture/plugin_spec_v1.md`](../architecture/plugin_spec_v1.md).
 
 ---
 
@@ -55,36 +61,40 @@ plugins/
         └── test_plugin.py   # pytest tests
 ```
 
-For a TypeScript plugin, `src/` would contain `index.ts` instead. You can refer to the existing [`obsidian`](../../plugins/obsidian) (Python) and [`vscode`](../../plugins/vscode) (TypeScript) plugins as real-world examples.
+For a TypeScript plugin, `src/` would contain `index.ts` instead. You can refer to the existing
+[`obsidian`](../../plugins/obsidian) (Python) and [`vscode`](../../plugins/vscode) (TypeScript)
+plugins as real-world examples.
 
 ---
 
 ## 3. The Manifest: `plugin.yaml`
 
-Every plugin needs a `plugin.yaml` in its root folder. This tells WinHome how to find and run your plugin.
+Every plugin needs a `plugin.yaml` in its root folder. This tells WinHome how to find and run your
+plugin.
 
 ```yaml
 name: my-plugin
 version: 0.1.0
-type: python          # or "typescript"
-main: src/plugin.py   # entry point relative to this folder
+type: python # or "typescript"
+main: src/plugin.py # entry point relative to this folder
 capabilities:
   - config_provider
 ```
 
-| Field | Description |
-|---|---|
-| `name` | Unique plugin identifier |
-| `version` | Semantic version of your plugin |
-| `type` | Runtime type: `python` or `typescript` |
-| `main` | Path to the entry point file |
+| Field          | Description                                            |
+| -------------- | ------------------------------------------------------ |
+| `name`         | Unique plugin identifier                               |
+| `version`      | Semantic version of your plugin                        |
+| `type`         | Runtime type: `python` or `typescript`                 |
+| `main`         | Path to the entry point file                           |
 | `capabilities` | What the plugin can do (use `config_provider` for now) |
 
 ---
 
 ## 4. The JSON IPC Protocol
 
-When WinHome runs your plugin, it sends a single-line JSON object to your plugin's **stdin**. Your plugin must respond with a single-line JSON object to **stdout**.
+When WinHome runs your plugin, it sends a single-line JSON object to your plugin's **stdin**. Your
+plugin must respond with a single-line JSON object to **stdout**.
 
 ### Request (WinHome → Plugin)
 
@@ -103,14 +113,15 @@ When WinHome runs your plugin, it sends a single-line JSON object to your plugin
 }
 ```
 
-| Field | Description |
-|---|---|
-| `requestId` | Unique ID — your response must echo this back |
-| `command` | What to do — currently `apply` is the primary command used by all plugins |
-| `args` | Your plugin's config from the user's `config.yaml` (referred to as `config` in the protocol spec) |
-| `context` | System info provided by WinHome, including `dryRun`, `osVersion`, and `isAdmin` |
+| Field       | Description                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------- |
+| `requestId` | Unique ID — your response must echo this back                                                     |
+| `command`   | What to do — currently `apply` is the primary command used by all plugins                         |
+| `args`      | Your plugin's config from the user's `config.yaml` (referred to as `config` in the protocol spec) |
+| `context`   | System info provided by WinHome, including `dryRun`, `osVersion`, and `isAdmin`                   |
 
-> **Note**: The protocol spec (`plugin_spec_v1.md`) refers to this field as `config`. The existing plugins (obsidian, vscode) use `args`. Follow the existing plugins when building your own.
+> **Note**: The protocol spec (`plugin_spec_v1.md`) refers to this field as `config`. The existing
+> plugins (obsidian, vscode) use `args`. Follow the existing plugins when building your own.
 
 ### Response (Plugin → WinHome)
 
@@ -125,15 +136,16 @@ When WinHome runs your plugin, it sends a single-line JSON object to your plugin
 }
 ```
 
-| Field | Description |
-|---|---|
-| `requestId` | Must match the request's `requestId` |
-| `success` | `true` if the plugin ran without errors |
-| `changed` | `true` if system state was modified (or would be modified on dry run) |
-| `error` | Error message string — only include this field if `success` is `false` |
-| `data` | Optional result data |
+| Field       | Description                                                            |
+| ----------- | ---------------------------------------------------------------------- |
+| `requestId` | Must match the request's `requestId`                                   |
+| `success`   | `true` if the plugin ran without errors                                |
+| `changed`   | `true` if system state was modified (or would be modified on dry run)  |
+| `error`     | Error message string — only include this field if `success` is `false` |
+| `data`      | Optional result data                                                   |
 
-> **Important**: Write all logs and debug messages to **stderr**, never stdout. WinHome captures stderr and pipes it to the main application log.
+> **Important**: Write all logs and debug messages to **stderr**, never stdout. WinHome captures
+> stderr and pipes it to the main application log.
 
 ---
 
@@ -207,49 +219,49 @@ capabilities:
 Create `plugins/hello-world-js/src/index.ts` (or `main.js` for plain JavaScript):
 
 ```javascript
-let inputData = "";
+let inputData = '';
 
 // 1. Read the request from stdin
-process.stdin.on("data", (chunk) => {
-    inputData += chunk;
+process.stdin.on('data', (chunk) => {
+  inputData += chunk;
 });
 
-process.stdin.on("end", () => {
-    const request = JSON.parse(inputData);
-    const { requestId, command, context = {} } = request;
-    const dryRun = context.dryRun ?? false;
+process.stdin.on('end', () => {
+  const request = JSON.parse(inputData);
+  const { requestId, command, context = {} } = request;
+  const dryRun = context.dryRun ?? false;
 
-    // Log to stderr — WinHome captures this
-    process.stderr.write(`[hello-world-js] Received command: ${command}\n`);
+  // Log to stderr — WinHome captures this
+  process.stderr.write(`[hello-world-js] Received command: ${command}\n`);
 
-    // 2. Build the response
-    const response = {
-        requestId,
-        success: true,
-        changed: false,
-        data: {}
-    };
+  // 2. Build the response
+  const response = {
+    requestId,
+    success: true,
+    changed: false,
+    data: {},
+  };
 
-    if (command === "apply") {
-        if (dryRun) {
-            process.stderr.write("[hello-world-js] Dry run — no changes made.\n");
-            response.changed = true; // changes would happen, just not applied
-        } else {
-            process.stderr.write("[hello-world-js] Applying changes...\n");
-            response.changed = true;
-            response.data = { status: "Hello from my first WinHome plugin!" };
-        }
-    } else if (command === "check_installed") {
-        // Return whether the plugin's managed resource is already configured
-        response.changed = false;
-        response.data = { installed: false };
+  if (command === 'apply') {
+    if (dryRun) {
+      process.stderr.write('[hello-world-js] Dry run — no changes made.\n');
+      response.changed = true; // changes would happen, just not applied
     } else {
-        response.success = false;
-        response.error = `Unknown command: ${command}`;
+      process.stderr.write('[hello-world-js] Applying changes...\n');
+      response.changed = true;
+      response.data = { status: 'Hello from my first WinHome plugin!' };
     }
+  } else if (command === 'check_installed') {
+    // Return whether the plugin's managed resource is already configured
+    response.changed = false;
+    response.data = { installed: false };
+  } else {
+    response.success = false;
+    response.error = `Unknown command: ${command}`;
+  }
 
-    // 3. Write response to stdout
-    process.stdout.write(JSON.stringify(response) + "\n");
+  // 3. Write response to stdout
+  process.stdout.write(JSON.stringify(response) + '\n');
 });
 ```
 
@@ -264,13 +276,19 @@ capabilities:
   - config_provider
 ```
 
-> **Note**: The example above follows the same pattern as the existing [`vscode`](../../plugins/vscode) plugin. The code is written in plain JavaScript syntax for readability — if you want full TypeScript, add type annotations to your file. Check `plugins/vscode/plugin.yaml` to confirm the exact `type` value to use in your manifest.
+> **Note**: The example above follows the same pattern as the existing
+> [`vscode`](../../plugins/vscode) plugin. The code is written in plain JavaScript syntax for
+> readability — if you want full TypeScript, add type annotations to your file. Check
+> `plugins/vscode/plugin.yaml` to confirm the exact `type` value to use in your manifest.
 
 ---
 
 ## 7. Concrete Example: Managing Windows App Settings
 
-The Hello World plugins above show the basic structure. Now let's build something real that you could actually use — a plugin that reads a user's desired settings from `config.yaml` and writes them to a Windows application's JSON config file. This is exactly the same pattern used by the [`obsidian`](../../plugins/obsidian) plugin, which manages Obsidian's settings files the same way.
+The Hello World plugins above show the basic structure. Now let's build something real that you
+could actually use — a plugin that reads a user's desired settings from `config.yaml` and writes
+them to a Windows application's JSON config file. This is exactly the same pattern used by the
+[`obsidian`](../../plugins/obsidian) plugin, which manages Obsidian's settings files the same way.
 
 We'll use this concrete example for the testing section as well.
 
@@ -358,9 +376,9 @@ A user would configure this in their `config.yaml` like:
 
 ```yaml
 app-settings:
-  settingsPath: "C:/Users/John/AppData/Roaming/MyApp/settings.json"
+  settingsPath: 'C:/Users/John/AppData/Roaming/MyApp/settings.json'
   settings:
-    theme: "dark"
+    theme: 'dark'
     fontSize: 14
     autoSave: true
 ```
@@ -369,7 +387,10 @@ app-settings:
 
 ## 8. Testing with pytest
 
-Now let's write tests for the `app-settings` plugin we built in Section 7. WinHome plugins are tested by running them as subprocesses and asserting their JSON responses — the same pattern used in the [`obsidian` tests](../../plugins/obsidian/test/test_obsidian.py). This approach works for any plugin regardless of language.
+Now let's write tests for the `app-settings` plugin we built in Section 7. WinHome plugins are
+tested by running them as subprocesses and asserting their JSON responses — the same pattern used in
+the [`obsidian` tests](../../plugins/obsidian/test/test_obsidian.py). This approach works for any
+plugin regardless of language.
 
 Create `plugins/app-settings/test/test_plugin.py`:
 
@@ -505,6 +526,7 @@ pytest plugins/app-settings/test/
 ```
 
 Always write tests for at least these five cases:
+
 - **Normal apply** — changes are made correctly
 - **Idempotent** — running twice doesn't report changed the second time
 - **Dry run** — no files written, but `changed: True` (changes exist, just not applied)
@@ -519,9 +541,11 @@ Always write tests for at least these five cases:
 
 2. **Ensure your `plugin.yaml`** has the correct `main` field pointing to your entry point file.
 
-3. **Ensure your plugin handles** at minimum the `apply` and `check_installed` commands, and respects `dryRun` inside `context`.
+3. **Ensure your plugin handles** at minimum the `apply` and `check_installed` commands, and
+   respects `dryRun` inside `context`.
 
 4. **Run your tests** and make sure they all pass:
+
    ```bash
    pytest plugins/your-plugin/test/
    ```
@@ -532,13 +556,13 @@ Always write tests for at least these five cases:
 
 ## Summary
 
-| What | Where |
-|---|---|
-| Plugin manifest | `plugin.yaml` in plugin root |
-| Entry point | `src/plugin.py` or `src/index.ts` |
-| Tests | `test/test_<name>.py` |
-| Architecture spec | `docs/architecture/plugin_spec_v1.md` |
-| Real Python example | `plugins/obsidian/` |
-| Real TypeScript example | `plugins/vscode/` |
+| What                    | Where                                 |
+| ----------------------- | ------------------------------------- |
+| Plugin manifest         | `plugin.yaml` in plugin root          |
+| Entry point             | `src/plugin.py` or `src/index.ts`     |
+| Tests                   | `test/test_<name>.py`                 |
+| Architecture spec       | `docs/architecture/plugin_spec_v1.md` |
+| Real Python example     | `plugins/obsidian/`                   |
+| Real TypeScript example | `plugins/vscode/`                     |
 
-You're ready to build. 
+You're ready to build.

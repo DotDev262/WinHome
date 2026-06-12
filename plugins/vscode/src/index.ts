@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 interface Request {
   requestId: string;
@@ -84,8 +84,10 @@ function ensureProfile(profileName: string, dryRun: boolean): string | null {
 
 function getInstalledExtensions(profileName?: string): string[] {
   try {
-    const profileArg = profileName ? `--profile "${profileName}"` : '';
-    const output = execSync(`code ${profileArg} --list-extensions`, {
+    const args = profileName
+      ? ['--profile', profileName, '--list-extensions']
+      : ['--list-extensions'];
+    const output = execFileSync('code', args, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
@@ -132,8 +134,10 @@ export function install(args: any, context: any, requestId: string): Response {
     `Installing VSCode extension: ${packageId}${profileName ? ` in profile ${profileName}` : ''}...`
   );
   try {
-    const profileArg = profileName ? `--profile "${profileName}"` : '';
-    execSync(`code ${profileArg} --install-extension ${packageId}`, {
+    const args = profileName
+      ? ['--profile', profileName, '--install-extension', packageId]
+      : ['--install-extension', packageId];
+    execFileSync('code', args, {
       stdio: ['ignore', 2, 2],
     });
     return { requestId: requestId, success: true, changed: true };
@@ -171,8 +175,10 @@ export function uninstall(
     `Uninstalling VSCode extension: ${packageId}${profileName ? ` in profile ${profileName}` : ''}...`
   );
   try {
-    const profileArg = profileName ? `--profile "${profileName}"` : '';
-    execSync(`code ${profileArg} --uninstall-extension ${packageId}`, {
+    const args = profileName
+      ? ['--profile', profileName, '--uninstall-extension', packageId]
+      : ['--uninstall-extension', packageId];
+    execFileSync('code', args, {
       stdio: ['ignore', 2, 2],
     });
     return { requestId: requestId, success: true, changed: true };

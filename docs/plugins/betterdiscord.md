@@ -2,7 +2,8 @@
 
 ## Overview
 
-The BetterDiscord plugin manages BetterDiscord configuration settings, allowing you to customize your Discord client through BetterDiscord's data settings.
+The BetterDiscord plugin manages BetterDiscord configuration settings, allowing you to customize
+your Discord client through BetterDiscord's data settings.
 
 It can:
 
@@ -18,9 +19,9 @@ It can:
 
 ## Configuration Schema
 
-| Field | Type | Default | Description |
-|---------|---------|---------|---------|
-| settings | object | none | Key-value settings written to BetterDiscord settings.json |
+| Field    | Type   | Default | Description                                               |
+| -------- | ------ | ------- | --------------------------------------------------------- |
+| settings | object | none    | Key-value settings written to BetterDiscord settings.json |
 
 ### Settings Example
 

@@ -28,7 +28,7 @@ try {
             }
         }
     }
-    
+
     Write-Host "Using Scoop executable: $scoopExec"
     $scoopList = & $scoopExec list
     Assert-True ($scoopList -like "*7zip*"), "7-Zip should be installed (Scoop)"

@@ -104,7 +104,7 @@ namespace WinHome
           if (!_managers.ContainsKey(plugin.Name))
           {
             // Delay logging discovery until it's actually used by an app
-            _managers[plugin.Name] = new WinHome.Services.Plugins.PluginPackageManagerAdapter(plugin, _pluginRunner, _pluginManager, _runtimeResolver);
+            _managers[plugin.Name] = new WinHome.Services.Plugins.PluginPackageManagerAdapter(plugin, _pluginRunner, _pluginManager, _runtimeResolver, _logger);
           }
         }
       }
@@ -133,7 +133,7 @@ namespace WinHome
       // Check network if we have apps to install or WSL update enabled
       if ((config.Apps.Any() || (config.Wsl != null && config.Wsl.Update)) && !dryRun)
       {
-        if (!WaitForNetwork())
+        if (!await WaitForNetwork())
         {
           _logger.LogWarning("[Warning] No internet connection detected. Package manager operations may fail.");
         }
@@ -189,7 +189,10 @@ namespace WinHome
           {
             _stateWriter.RemoveStep(item);
           }
-          catch { }
+          catch (Exception ex)
+          {
+            _logger.LogWarning($"[Engine] Failed to remove step: {ex.Message}");
+          }
         }
       }
 
@@ -337,7 +340,14 @@ namespace WinHome
                 AppliedAt = DateTime.UtcNow
               };
 
-              try { _stateWriter.RecordStep(failedResult); } catch { }
+              try
+              {
+                _stateWriter.RecordStep(failedResult);
+              }
+              catch (Exception stateEx)
+              {
+                _logger.LogWarning($"[Engine] Failed to write failed step status for {stepId}: {stateEx.Message}");
+              }
               applyState[stepId] = failedResult;
 
               _logger.LogError($"[Error] Failed applying {stepId}: {ex.Message}");
@@ -478,7 +488,14 @@ namespace WinHome
               AppliedAt = DateTime.UtcNow
             };
 
-            try { _stateWriter.RecordStep(failedResult); } catch { }
+            try
+            {
+              _stateWriter.RecordStep(failedResult);
+            }
+            catch (Exception stateEx)
+            {
+              _logger.LogWarning($"[Engine] Failed to write failed step status for {stepId}: {stateEx.Message}");
+            }
             applyState[stepId] = failedResult;
 
             _logger.LogError($"[Error] Registry tweak failed: {ex.Message}");
@@ -688,8 +705,9 @@ namespace WinHome
 
     /// <summary>Waits for internet connectivity by pinging 1.1.1.1.</summary>
     /// <param name="timeoutSeconds">Maximum seconds to wait for connectivity.</param>
+    /// <param name="cancellationToken">A token to cancel the wait.</param>
     /// <returns><c>true</c> if network is available within the timeout.</returns>
-    private bool WaitForNetwork(int timeoutSeconds = 30)
+    private async Task<bool> WaitForNetwork(int timeoutSeconds = 30, CancellationToken cancellationToken = default)
     {
       _logger.LogInfo("[Engine] Checking for internet connectivity...");
       var start = DateTime.Now;
@@ -705,10 +723,13 @@ namespace WinHome
             return true;
           }
         }
-        catch { }
+        catch (Exception)
+        {
+          /* Ping failed - will retry */
+        }
 
         _logger.LogInfo("[Engine] Waiting for network...");
-        Thread.Sleep(2000);
+        await Task.Delay(2000, cancellationToken);
       }
       return false;
     }

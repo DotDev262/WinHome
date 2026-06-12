@@ -50,17 +50,20 @@ extensions:
   lazygit:
     settings:
       os:
-        editCommand: "code"
-        editCommandTemplate: "{{editor}} {{filename}}"
+        editCommand: 'code'
+        editCommandTemplate: '{{editor}} {{filename}}'
       gui:
         scrollHeight: 2
 ```
 
 ## Notes / Caveats
 
-- The plugin deep-merges settings — existing config entries in Lazygit's config.yml that are not mentioned in user's config.yaml are safely preserved.
-- It supports dryRun mode — if it is enabled, it logs what would change in the config path without actually writing the updates to disk.
-- It safely reads and parses the existing YAML. If the file doesn't exist, it creates a fresh configuration.
+- The plugin deep-merges settings — existing config entries in Lazygit's config.yml that are not
+  mentioned in user's config.yaml are safely preserved.
+- It supports dryRun mode — if it is enabled, it logs what would change in the config path without
+  actually writing the updates to disk.
+- It safely reads and parses the existing YAML. If the file doesn't exist, it creates a fresh
+  configuration.
 - Objects are merged recursively.
 - Non-object values replace the existing value.
 - New keys are added.
@@ -68,8 +71,8 @@ extensions:
 
 ## Verification Steps
 
-After applying, user can verify if Lazygit is running properly with their applied settings.
-For this, user have to open its terminal:
+After applying, user can verify if Lazygit is running properly with their applied settings. For
+this, user have to open its terminal:
 
 ```bash
 lazygit

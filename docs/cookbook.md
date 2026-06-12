@@ -1,12 +1,17 @@
 # 🍳 Configuration Cookbook
 
-New to WinHome? Start here! This cookbook provides complete, production-ready `config.yaml` templates tailored for different use cases. You can copy these configurations, modify the fields (such as usernames and emails), and apply them directly to your system.
+New to WinHome? Start here! This cookbook provides complete, production-ready `config.yaml`
+templates tailored for different use cases. You can copy these configurations, modify the fields
+(such as usernames and emails), and apply them directly to your system.
 
 ---
 
 ## 💻 1. The Developer Setup
 
-This configuration is designed for full-stack developers, DevOps engineers, and power users. It configures a complete development environment, including development tools, global Git settings, VS Code extension management, a customized Neovim environment, user-level environment variables, and a WSL (Windows Subsystem for Linux) instance.
+This configuration is designed for full-stack developers, DevOps engineers, and power users. It
+configures a complete development environment, including development tools, global Git settings, VS
+Code extension management, a customized Neovim environment, user-level environment variables, and a
+WSL (Windows Subsystem for Linux) instance.
 
 ```yaml
 version: "1.0"
@@ -109,58 +114,64 @@ systemSettings:
 
 ## 🧹 2. The Minimalist Setup
 
-This setup is tailored for users who prefer a clean, minimal desktop environment with maximum privacy and minimal background bloat. It applies security baseline hardening, optimizes essential Explorer settings, installs a few core utilities, and disables heavy or unnecessary Windows services.
+This setup is tailored for users who prefer a clean, minimal desktop environment with maximum
+privacy and minimal background bloat. It applies security baseline hardening, optimizes essential
+Explorer settings, installs a few core utilities, and disables heavy or unnecessary Windows
+services.
 
 ```yaml
-version: "1.0"
+version: '1.0'
 
 # 📦 Universal Package Management
 apps:
-  - id: "Git.Git"
-    manager: "winget"
-  - id: "7zip.7zip"
-    manager: "winget"
-  - id: "Microsoft.PowerToys"
-    manager: "winget"
+  - id: 'Git.Git'
+    manager: 'winget'
+  - id: '7zip.7zip'
+    manager: 'winget'
+  - id: 'Microsoft.PowerToys'
+    manager: 'winget'
 
 # 🎛️ Clean & Secure System Settings
 systemSettings:
   # Enable pre-defined security baseline (enables SmartScreen, disables Autorun/Autoplay)
-  security_preset: "baseline"
+  security_preset: 'baseline'
   dark_mode: true
-  taskbar_alignment: "center"
-  taskbar_widgets: "hide"         # Keep the taskbar clear of widgets
+  taskbar_alignment: 'center'
+  taskbar_widgets: 'hide' # Keep the taskbar clear of widgets
   show_file_extensions: true
   show_hidden_files: true
-  explorer_launch_to: "this_pc"   # Launch File Explorer directly to This PC
-  bing_search_enabled: false      # Disable web search results in Start Menu
+  explorer_launch_to: 'this_pc' # Launch File Explorer directly to This PC
+  bing_search_enabled: false # Disable web search results in Start Menu
 
 # ⚙️ Global Git Configuration
 git:
-  userName: "Minimal User"
-  userEmail: "minimalist@example.com"
+  userName: 'Minimal User'
+  userEmail: 'minimalist@example.com'
   settings:
-    init.defaultBranch: "main"
+    init.defaultBranch: 'main'
 
 # 🚫 De-bloat System Services
 services:
   # Disable heavy background telemetry and services that aren't needed
-  - name: "Spooler"               # Print Spooler (Safe to disable if you don't print)
-    state: "stopped"
-    startup: "disabled"
-  - name: "Fax"                   # Legacy fax service
-    state: "stopped"
-    startup: "disabled"
-  - name: "DiagTrack"             # Connected User Experiences and Telemetry
-    state: "stopped"
-    startup: "disabled"
+  - name: 'Spooler' # Print Spooler (Safe to disable if you don't print)
+    state: 'stopped'
+    startup: 'disabled'
+  - name: 'Fax' # Legacy fax service
+    state: 'stopped'
+    startup: 'disabled'
+  - name: 'DiagTrack' # Connected User Experiences and Telemetry
+    state: 'stopped'
+    startup: 'disabled'
 ```
 
 ---
 
 ## 🎮 3. The Gamer Setup
 
-Tailored for pc gamers who want to prioritize gaming performance, install gaming platforms, and eliminate system-level distractions. It optimizes mouse precision registry tweaks, disables latency-inducing Windows Game DVR telemetry, sets custom hardware parameters, and installs popular gaming tools.
+Tailored for pc gamers who want to prioritize gaming performance, install gaming platforms, and
+eliminate system-level distractions. It optimizes mouse precision registry tweaks, disables
+latency-inducing Windows Game DVR telemetry, sets custom hardware parameters, and installs popular
+gaming tools.
 
 ```yaml
 version: "1.0"
@@ -216,5 +227,7 @@ systemSettings:
 
 ---
 
-> [!TIP]
-> **Using Custom Variables:** Remember that you can reference secrets, files, or environment variables in your templates by using the `{{ env:VARIABLE_NAME }}` or `{{ file:C:\path\to\file.txt }}` syntax. This helps keep your production `config.yaml` secure and clean.
+> [!TIP] **Using Custom Variables:** Remember that you can reference secrets, files, or environment
+> variables in your templates by using the `{{ env:VARIABLE_NAME }}` or
+> `{{ file:C:\path\to\file.txt }}` syntax. This helps keep your production `config.yaml` secure and
+> clean.

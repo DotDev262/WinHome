@@ -32,7 +32,7 @@ describe('VSCode Plugin', () => {
 
   test('install: dry run returns changed=false without calling execSync', async () => {
     const { install } = await getModule();
-    const spy = vi.spyOn(child, 'execSync').mockReturnValue('' as any);
+    const spy = vi.spyOn(child, 'execFileSync').mockReturnValue('' as any);
 
     const res = install(
       { packageId: 'ms-python.python' },
@@ -42,8 +42,8 @@ describe('VSCode Plugin', () => {
 
     expect(res.success).toBe(true);
     expect(res.changed).toBe(false);
-    const installCalls = spy.mock.calls.filter((c) =>
-      String(c[0]).includes('--install-extension')
+    const installCalls = spy.mock.calls.filter(
+      (c) => c[1] && (c[1] as string[]).includes('--install-extension')
     );
     expect(installCalls).toHaveLength(0);
   });
@@ -51,7 +51,7 @@ describe('VSCode Plugin', () => {
   test('install: calls --install-extension when not already installed', async () => {
     const { install } = await getModule();
     const spy = vi
-      .spyOn(child, 'execSync')
+      .spyOn(child, 'execFileSync')
       .mockReturnValueOnce('' as any)
       .mockReturnValueOnce('' as any);
 
@@ -63,16 +63,18 @@ describe('VSCode Plugin', () => {
 
     expect(res.success).toBe(true);
     expect(res.changed).toBe(true);
-    const installCall = spy.mock.calls.find((c) =>
-      String(c[0]).includes('--install-extension')
+    const installCall = spy.mock.calls.find(
+      (c) => c[1] && (c[1] as string[]).includes('--install-extension')
     );
     expect(installCall).toBeDefined();
-    expect(String(installCall![0])).toContain('ms-python.python');
+    expect(installCall![1]).toContain('ms-python.python');
   });
 
   test('install: skips install if extension already present', async () => {
     const { install } = await getModule();
-    vi.spyOn(child, 'execSync').mockReturnValue('ms-python.python\n' as any);
+    vi.spyOn(child, 'execFileSync').mockReturnValue(
+      'ms-python.python\n' as any
+    );
 
     const res = install(
       { packageId: 'ms-python.python' },
@@ -86,7 +88,7 @@ describe('VSCode Plugin', () => {
 
   test('uninstall: returns changed=false if extension not installed', async () => {
     const { uninstall } = await getModule();
-    vi.spyOn(child, 'execSync').mockReturnValue('' as any);
+    vi.spyOn(child, 'execFileSync').mockReturnValue('' as any);
 
     const res = uninstall(
       { packageId: 'fake.extension' },
@@ -101,7 +103,7 @@ describe('VSCode Plugin', () => {
   test('uninstall: calls --uninstall-extension when extension is present', async () => {
     const { uninstall } = await getModule();
     const spy = vi
-      .spyOn(child, 'execSync')
+      .spyOn(child, 'execFileSync')
       .mockReturnValueOnce('ms-python.python\n' as any)
       .mockReturnValueOnce('' as any);
 
@@ -113,15 +115,15 @@ describe('VSCode Plugin', () => {
 
     expect(res.success).toBe(true);
     expect(res.changed).toBe(true);
-    const uninstallCall = spy.mock.calls.find((c) =>
-      String(c[0]).includes('--uninstall-extension')
+    const uninstallCall = spy.mock.calls.find(
+      (c) => c[1] && (c[1] as string[]).includes('--uninstall-extension')
     );
     expect(uninstallCall).toBeDefined();
   });
 
   test('checkInstalled: returns false for missing extension', async () => {
     const { checkInstalled } = await getModule();
-    vi.spyOn(child, 'execSync').mockReturnValue('' as any);
+    vi.spyOn(child, 'execFileSync').mockReturnValue('' as any);
 
     const res = checkInstalled({ packageId: 'fake.extension' }, '6');
 
@@ -131,7 +133,9 @@ describe('VSCode Plugin', () => {
 
   test('checkInstalled: returns true when extension is listed', async () => {
     const { checkInstalled } = await getModule();
-    vi.spyOn(child, 'execSync').mockReturnValue('ms-python.python\n' as any);
+    vi.spyOn(child, 'execFileSync').mockReturnValue(
+      'ms-python.python\n' as any
+    );
 
     const res = checkInstalled({ packageId: 'ms-python.python' }, '7');
 
@@ -196,7 +200,7 @@ describe('VSCode Plugin', () => {
   test('applyConfig: installs listed extensions via applyConfig->install', async () => {
     const { applyConfig } = await getModule();
     const spy = vi
-      .spyOn(child, 'execSync')
+      .spyOn(child, 'execFileSync')
       .mockReturnValueOnce('' as any)
       .mockReturnValueOnce('' as any);
 
@@ -208,8 +212,8 @@ describe('VSCode Plugin', () => {
 
     expect(res.success).toBe(true);
     expect(res.changed).toBe(true);
-    const installCall = spy.mock.calls.find((c) =>
-      String(c[0]).includes('--install-extension')
+    const installCall = spy.mock.calls.find(
+      (c) => c[1] && (c[1] as string[]).includes('--install-extension')
     );
     expect(installCall).toBeDefined();
   });
