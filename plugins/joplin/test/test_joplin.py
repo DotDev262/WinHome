@@ -1,8 +1,6 @@
-import json
+import sys
 import tempfile
 from pathlib import Path
-import sys
-
 plugin_path = str(Path(__file__).resolve().parents[1] / "src")
 
 sys.path.append(plugin_path)
