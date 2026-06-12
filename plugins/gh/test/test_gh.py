@@ -35,6 +35,7 @@ class TestGhPlugin(unittest.TestCase):
             response = self.run_main({"requestId": "req-1", "command": "check_installed", "args": {}})
 
         self.assertEqual(response["requestId"], "req-1")
+        self.assertFalse(response["changed"])
         self.assertTrue(response["installed"])
 
     def test_check_installed_returns_false_when_gh_is_missing(self):
@@ -42,6 +43,7 @@ class TestGhPlugin(unittest.TestCase):
             response = self.run_main({"requestId": "req-2", "command": "check_installed", "args": {}})
 
         self.assertEqual(response["requestId"], "req-2")
+        self.assertFalse(response["changed"])
         self.assertFalse(response["installed"])
 
     def test_apply_writes_merged_config_and_returns_changed_true(self):
@@ -75,6 +77,7 @@ class TestGhPlugin(unittest.TestCase):
                 )
 
             self.assertEqual(response["requestId"], "req-3")
+            self.assertTrue(response["changed"])
 
             with open(config_path, "r", encoding="utf-8") as file_handle:
                 content = yaml.safe_load(file_handle)
@@ -122,8 +125,8 @@ class TestGhPlugin(unittest.TestCase):
                         },
                     }
                 )
-
             self.assertEqual(response["requestId"], "req-4")
+            self.assertFalse(response["changed"])
 
             with open(config_path, "r", encoding="utf-8") as file_handle:
                 content = yaml.safe_load(file_handle)
@@ -144,6 +147,7 @@ class TestGhPlugin(unittest.TestCase):
                 )
 
             self.assertEqual(response["requestId"], "req-5")
+            self.assertTrue(response["changed"])
             self.assertFalse(os.path.exists(config_path))
 
     def test_apply_creates_missing_directory(self):
@@ -161,6 +165,7 @@ class TestGhPlugin(unittest.TestCase):
                 )
 
             self.assertEqual(response["requestId"], "req-6")
+            self.assertTrue(response["changed"])
             self.assertTrue(os.path.isdir(os.path.dirname(config_path)))
             self.assertTrue(os.path.exists(config_path))
 
@@ -175,6 +180,7 @@ class TestGhPlugin(unittest.TestCase):
             )
 
         self.assertEqual(response["requestId"], "req-7")
+        self.assertFalse(response["changed"])
         self.assertIn("PyYAML", response["error"])
 
     def test_unknown_command_returns_error(self):
@@ -187,6 +193,7 @@ class TestGhPlugin(unittest.TestCase):
             }
         )
         self.assertEqual(response["requestId"], "req-8")
+        self.assertFalse(response["changed"])
         self.assertIn("Unknown command", response["error"])
 
 

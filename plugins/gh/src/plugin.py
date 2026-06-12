@@ -95,16 +95,16 @@ def get_config_target(config: dict) -> dict:
     return config
 
 
-def check_installed() -> bool: 
+def check_installed() -> bool:
     return ( shutil.which("gh") is not None or shutil.which("gh.exe") is not None )
 
 
-def apply_config(request_id: str, args: dict) -> dict: 
-    dry_run = bool(args.get("dryRun", False)) 
-    settings = args.get("settings", {}) 
-    if not isinstance(settings, dict): 
-        return { "requestId": request_id, 
-                "error": "settings must be a dictionary", 
+def apply_config(request_id: str, args: dict) -> dict:
+    dry_run = bool(args.get("dryRun", False))
+    settings = args.get("settings", {})
+    if not isinstance(settings, dict):
+        return { "requestId": request_id,
+                "error": "settings must be a dictionary",
         }
     updates = {key: value for key, value in settings.items()}
 
@@ -139,16 +139,15 @@ def handle(request: dict) -> dict:
     request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
-    context = request.get("context", {})
 
-    if command == "check_installed": 
-        installed = check_installed() 
+    if command == "check_installed":
+        installed = check_installed()
         return { "requestId": request_id, "installed": installed, }
-    if command == "apply": 
-        if not isinstance(args, dict): 
-            return { "requestId": request_id, 
-                    "error": "args must be a dictionary", 
-            } 
+    if command == "apply":
+        if not isinstance(args, dict):
+            return { "requestId": request_id,
+                    "error": "args must be a dictionary",
+            }
         return apply_config(request_id, args)
 
     return {
@@ -158,11 +157,11 @@ def handle(request: dict) -> dict:
 
 
 def main() -> None:
-    raw = sys.stdin.read() 
-    if not raw: 
-        sys.stdout.write( 
-            json.dumps({ "requestId": "unknown", "error": "No input received", }) + "\n" ) 
-        sys.stdout.flush() 
+    raw = sys.stdin.read()
+    if not raw:
+        sys.stdout.write(
+            json.dumps({ "requestId": "unknown", "error": "No input received", }) + "\n" )
+        sys.stdout.flush()
         return
 
     try:
