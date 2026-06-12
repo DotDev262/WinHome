@@ -56,4 +56,3 @@ def test_handle_apply_dry_run():
         assert result["changed"] is True
         settings = plugin.load_settings()
         assert settings["theme"] == 1
-        

@@ -4,4 +4,3 @@ type: python
 main: src/plugin.py
 capabilities:
   - config_provider
-  
