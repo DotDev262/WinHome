@@ -1,4 +1,4 @@
-﻿using Moq;
+using Moq;
 using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Models.Plugins;
@@ -643,21 +643,21 @@ namespace WinHome.Tests
       var tmp = Path.Combine(Path.GetTempPath(), $"winhome_state_test_{Guid.NewGuid()}.json");
       var stateWriter = new WinHome.Services.StateWriter(tmp);
       return new Engine(
-        _managers,
-        _mockDotfiles.Object,
-        _mockRegistry.Object,
-        _mockSystemSettings.Object,
-        _mockWsl.Object,
-        _mockGit.Object,
-        _mockEnv.Object,
-        _mockServiceManager.Object,
-        _mockScheduledTaskService.Object,
-        _mockPluginManager.Object,
-        _mockPluginRunner.Object,
-        _mockStateService.Object,
-        logger.Object,
-        _mockRuntimeResolver.Object,
-        stateWriter
+          _managers,
+          _mockDotfiles.Object,
+          _mockRegistry.Object,
+          _mockSystemSettings.Object,
+          _mockWsl.Object,
+          _mockGit.Object,
+          _mockEnv.Object,
+          _mockServiceManager.Object,
+          _mockScheduledTaskService.Object,
+          _mockPluginManager.Object,
+          _mockPluginRunner.Object,
+          _mockStateService.Object,
+          logger.Object,
+          _mockRuntimeResolver.Object,
+          stateWriter
       );
     }
 
@@ -683,10 +683,10 @@ namespace WinHome.Tests
 
         var mockLogger = new Mock<ILogger>();
         var engine = new Engine(
-          _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
-          _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
-          _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
-          _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
+            _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
+            _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
+            _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
+            _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
 
         // Act: cleanup run
         await engine.RunAsync(new Configuration(), false);
@@ -740,10 +740,10 @@ namespace WinHome.Tests
 
         var mockLogger = new Mock<ILogger>();
         var engine = new Engine(
-          _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
-          _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
-          _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
-          _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
+            _managers, _mockDotfiles.Object, _mockRegistry.Object, _mockSystemSettings.Object,
+            _mockWsl.Object, _mockGit.Object, _mockEnv.Object, _mockServiceManager.Object,
+            _mockScheduledTaskService.Object, _mockPluginManager.Object, _mockPluginRunner.Object,
+            _mockStateService.Object, mockLogger.Object, _mockRuntimeResolver.Object, stateWriter);
 
         // Act: cleanup run
         await engine.RunAsync(new Configuration(), false);

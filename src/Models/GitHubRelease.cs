@@ -29,8 +29,5 @@ namespace WinHome.Models
 
     [JsonPropertyName("sha256")]
     public string Sha256 { get; set; } = string.Empty;
-
-    [JsonPropertyName("md5")]
-    public string Md5 { get; set; } = string.Empty;
   }
 }
