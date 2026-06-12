@@ -1,4 +1,4 @@
-"""
+﻿"""
 VLC media player configuration provider plugin.
 
 Manages settings in %APPDATA%\\vlc\\vlcrc using a custom INI-like parser
@@ -98,14 +98,17 @@ def _to_str(value: Any) -> str:
     return str(value)
 
 
-def check_installed(args: dict) -> bool:
+def check_installed() -> bool:
     vlc_dir = _vlcrc_path().parent
     return vlc_dir.is_dir() or _find_vlc_exe()
 
 
-def apply_config(args: dict) -> dict:
+def apply_config(args: dict, request_id: str) -> dict:
     dry_run: bool = bool(args.get("dryRun", False))
-    settings: dict[str, Any] = args.get("settings", {})
+    settings = args.get("settings", {})
+
+    if not isinstance(settings, dict):
+        return {"requestId": request_id, "error": "settings must be a dictionary"}
 
     vlcrc = _vlcrc_path()
     doc = _VlcrcDoc()
@@ -114,25 +117,25 @@ def apply_config(args: dict) -> dict:
 
     if dry_run:
         log(f"dryRun: would write {len(settings)} key(s) to {vlcrc}")
-        return {"changed": bool(settings)}
+        return {"requestId": request_id, "changed": bool(settings)}
 
     doc.write(vlcrc)
     log(f"Updated vlcrc: {vlcrc}")
-    return {"changed": bool(settings)}
+    return {"requestId": request_id, "changed": bool(settings)}
 
 
 def main() -> None:
     input_data = sys.stdin.read()
 
     if not input_data:
-        sys.stdout.write(json.dumps({"requestId": None, "error": "Empty stdin"}) + "\n")
+        sys.stdout.write(json.dumps({"requestId": "unknown", "error": "Empty stdin"}) + "\n")
         sys.stdout.flush()
         return
 
     try:
         request = json.loads(input_data)
     except Exception as exc:
-        sys.stdout.write(json.dumps({"requestId": None, "error": f"JSON parse error: {exc}"}) + "\n")
+        sys.stdout.write(json.dumps({"requestId": "unknown", "error": f"JSON parse error: {exc}"}) + "\n")
         sys.stdout.flush()
         return
 
@@ -144,10 +147,9 @@ def main() -> None:
 
     try:
         if command == "check_installed":
-            result = check_installed(args)
-            response["installed"] = result
+            response["installed"] = check_installed()
         elif command == "apply":
-            result = apply_config(args)
+            result = apply_config(args, request_id)
             response.update(result)
         else:
             response["error"] = f"Unknown command: {command}"

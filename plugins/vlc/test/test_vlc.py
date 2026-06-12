@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for the VLC configuration provider plugin.
 
 Run with:  python -m pytest plugins/vlc/test/test_vlc.py -v
@@ -62,8 +62,9 @@ def test_empty_stdin_returns_json_error():
         text=True,
     )
     res = json.loads(result.stdout.strip())
+    assert res["requestId"] == "unknown"
     assert "error" in res
-    print("✓ empty_stdin_returns_json_error")
+    print("âœ“ empty_stdin_returns_json_error")
 
 
 def test_bad_json_returns_json_error():
@@ -74,8 +75,9 @@ def test_bad_json_returns_json_error():
         text=True,
     )
     res = json.loads(result.stdout.strip())
+    assert res["requestId"] == "unknown"
     assert "error" in res
-    print("✓ bad_json_returns_json_error")
+    print("âœ“ bad_json_returns_json_error")
 
 
 def test_check_installed_present():
@@ -87,7 +89,7 @@ def test_check_installed_present():
         )
         assert res["installed"] is True
         assert res["requestId"] == "1"
-        print("✓ check_installed_present")
+        print("âœ“ check_installed_present")
 
 
 def test_check_installed_absent():
@@ -97,7 +99,7 @@ def test_check_installed_absent():
             env={"APPDATA": tmp, "PATH": ""},
         )
         assert res["installed"] is False
-        print("✓ check_installed_absent")
+        print("âœ“ check_installed_absent")
 
 
 def test_check_installed_no_success_field():
@@ -108,7 +110,7 @@ def test_check_installed_no_success_field():
         )
         assert "success" not in res
         assert "data" not in res
-        print("✓ check_installed_no_success_field")
+        print("âœ“ check_installed_no_success_field")
 
 
 def test_apply_dry_run_does_not_write():
@@ -125,7 +127,7 @@ def test_apply_dry_run_does_not_write():
         )
         assert not res.get("error")
         assert open(cfg).read() == original
-        print("✓ apply_dry_run_does_not_write")
+        print("âœ“ apply_dry_run_does_not_write")
 
 
 def test_apply_dry_run_changed_true_when_settings_exist():
@@ -140,7 +142,7 @@ def test_apply_dry_run_changed_true_when_settings_exist():
             env={"APPDATA": tmp},
         )
         assert res["changed"] is True
-        print("✓ apply_dry_run_changed_true_when_settings_exist")
+        print("âœ“ apply_dry_run_changed_true_when_settings_exist")
 
 
 def test_apply_dry_run_changed_false_when_no_settings():
@@ -155,7 +157,7 @@ def test_apply_dry_run_changed_false_when_no_settings():
             env={"APPDATA": tmp},
         )
         assert res["changed"] is False
-        print("✓ apply_dry_run_changed_false_when_no_settings")
+        print("âœ“ apply_dry_run_changed_false_when_no_settings")
 
 
 def test_apply_updates_existing_key():
@@ -173,7 +175,7 @@ def test_apply_updates_existing_key():
         content = open(cfg).read()
         assert "volume=100" in content
         assert "volume=256" not in content
-        print("✓ apply_updates_existing_key")
+        print("âœ“ apply_updates_existing_key")
 
 
 def test_apply_adds_new_key():
@@ -188,7 +190,7 @@ def test_apply_adds_new_key():
             env={"APPDATA": tmp},
         )
         assert "aspect-ratio=16:9" in open(cfg).read()
-        print("✓ apply_adds_new_key")
+        print("âœ“ apply_adds_new_key")
 
 
 def test_apply_bool_settings():
@@ -205,7 +207,7 @@ def test_apply_bool_settings():
         content = open(cfg).read()
         assert "video-on-top=1" in content
         assert "playlist-cork=0" in content
-        print("✓ apply_bool_settings")
+        print("âœ“ apply_bool_settings")
 
 
 def test_apply_creates_config_when_absent():
@@ -223,7 +225,7 @@ def test_apply_creates_config_when_absent():
         assert not res.get("error")
         assert os.path.exists(cfg_path)
         assert "volume=200" in open(cfg_path).read()
-        print("✓ apply_creates_config_when_absent")
+        print("âœ“ apply_creates_config_when_absent")
 
 
 def test_apply_idempotent():
@@ -240,7 +242,7 @@ def test_apply_idempotent():
         run_plugin(payload, env={"APPDATA": tmp})
         second = open(cfg).read()
         assert first == second
-        print("✓ apply_idempotent")
+        print("âœ“ apply_idempotent")
 
 
 def test_apply_preserves_unknown_sections_and_keys():
@@ -258,7 +260,7 @@ def test_apply_preserves_unknown_sections_and_keys():
         assert "[sout]" in content
         assert "enable-lua-sd=" in content
         assert "[qt]" in content
-        print("✓ apply_preserves_unknown_sections_and_keys")
+        print("âœ“ apply_preserves_unknown_sections_and_keys")
 
 
 def test_apply_multivalue_key_collapsed():
@@ -276,7 +278,7 @@ def test_apply_multivalue_key_collapsed():
         content = open(cfg).read()
         assert content.count("volume=") == 1
         assert "volume=100" in content
-        print("✓ apply_multivalue_key_collapsed")
+        print("âœ“ apply_multivalue_key_collapsed")
 
 
 def test_posix_trailing_newline():
@@ -291,7 +293,7 @@ def test_posix_trailing_newline():
         )
         raw = open(os.path.join(tmp, "vlc", "vlcrc"), "rb").read()
         assert raw.endswith(b"\n")
-        print("✓ posix_trailing_newline")
+        print("âœ“ posix_trailing_newline")
 
 
 def test_apply_no_success_field():
@@ -306,13 +308,28 @@ def test_apply_no_success_field():
             env={"APPDATA": tmp},
         )
         assert "success" not in res
-        print("✓ apply_no_success_field")
+        print("âœ“ apply_no_success_field")
+
+
+def test_apply_settings_not_dict():
+    with tempfile.TemporaryDirectory() as tmp:
+        res = run_plugin(
+            {
+                "requestId": "nd1",
+                "command": "apply",
+                "args": {"settings": "invalid"},
+            },
+            env={"APPDATA": tmp},
+        )
+        assert "error" in res
+        assert res["requestId"] == "nd1"
+        print("âœ“ apply_settings_not_dict")
 
 
 def test_unknown_command():
     res = run_plugin({"requestId": "12", "command": "explode", "args": {}, "context": {}})
     assert "error" in res
-    print("✓ unknown_command")
+    print("âœ“ unknown_command")
 
 
 def test_request_id_echoed():
@@ -320,7 +337,7 @@ def test_request_id_echoed():
         {"requestId": "my-custom-id", "command": "check_installed", "args": {}, "context": {}}
     )
     assert res["requestId"] == "my-custom-id"
-    print("✓ request_id_echoed")
+    print("âœ“ request_id_echoed")
 
 
 def test_request_id_null_defaults_to_unknown():
@@ -328,7 +345,7 @@ def test_request_id_null_defaults_to_unknown():
         {"requestId": None, "command": "check_installed", "args": {}, "context": {}}
     )
     assert res["requestId"] == "unknown"
-    print("✓ request_id_null_defaults_to_unknown")
+    print("âœ“ request_id_null_defaults_to_unknown")
 
 
 if __name__ == "__main__":
@@ -349,6 +366,7 @@ if __name__ == "__main__":
     test_apply_multivalue_key_collapsed()
     test_posix_trailing_newline()
     test_apply_no_success_field()
+    test_apply_settings_not_dict()
     test_unknown_command()
     test_request_id_echoed()
     test_request_id_null_defaults_to_unknown()
