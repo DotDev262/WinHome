@@ -22,6 +22,11 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `npm`        | Manages user-level `.npmrc` settings.                                   | `config_provider` | [Details](#npm)        |
 | `pip`        | Manages `pip.ini` settings for Python package installs.                 | `config_provider` | [Details](#pip)        |
 | `winget`     | Manages Winget CLI `settings.json`, separate from package installation. | `config_provider` | [Details](#winget)     |
+| `scoop`      | Command-line Installer Provisioning Framework                           | `package_manager` | [Details](#scoop)      |
+| `miniconda`  | Python/R Package and Environment Manager                                | `package_manager` | [Details](#miniconda)  |
+| `sdkman`     | Software Development Kit Manager for Java Ecosystem                     | `package_manager` | [Details](#sdkman)     |
+| `7-zip`      | High-Ratio File Archiver and Compression Tool                           | -                 | [Details](#7-zip)      |
+| `syncthing`  | Continuous File Synchronization Framework                               | -                 | [Details](#syncthing)  |
 
 ### Editors And Knowledge Tools
 
