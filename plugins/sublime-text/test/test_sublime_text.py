@@ -45,7 +45,9 @@ def test_apply_config_dry_run():
                 "requestId": "2",
                 "command": "apply",
                 "args": {
-                    "color_scheme": "Packages/Theme/Monokai.sublime-color-scheme",
+                    "color_scheme": (
+                        "Packages/Theme/Monokai.sublime-color-scheme"
+                    ),
                     "font_size": 12,
                 },
                 "context": {"dryRun": True},
@@ -74,7 +76,7 @@ def test_apply_config():
                 "context": {"dryRun": False},
             }
         )
-        
+
         assert res["success"]
         assert res["changed"]
 
