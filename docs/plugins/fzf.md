@@ -1,4 +1,4 @@
-# fzf Plugin
+# FZF Plugin
 
 ## Overview
 

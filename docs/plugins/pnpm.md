@@ -1,4 +1,4 @@
-# pnpm Plugin
+# PNPM Plugin
 
 ## Overview
 

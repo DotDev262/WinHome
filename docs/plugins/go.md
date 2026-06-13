@@ -15,7 +15,6 @@ The Go plugin manages configuration for the Go environment variables using the `
 | --- | ------- |
 | GO111MODULE | Module support |
 | GOARCH | Target architecture |
-| GONOSUMCHECK | Skip checksums |
 | GONOSUMDB | Skip checksum database |
 | GOOS | Target operating system |
 | GOPATH | Go workspace path |
