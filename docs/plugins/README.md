@@ -22,7 +22,9 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `chocolatey` | Manages Chocolatey client configuration and feature flags.              | `config_provider` | [Details](#chocolatey)    |
 | `miniconda`  | Python/R Package and Environment Manager                                | `config_provider` | [Details](./miniconda.md) |
 | `npm`        | Manages user-level `.npmrc` settings.                                   | `config_provider` | [Details](#npm)           |
+| `nvm`        | Manages NVM for Windows `settings.txt`.                                 | `config_provider` | [Details](#nvm)           |
 | `pip`        | Manages `pip.ini` settings for Python package installs.                 | `config_provider` | [Details](#pip)           |
+| `pnpm`       | Manages user-level `.npmrc` settings for pnpm.                          | `config_provider` | [Details](#pnpm)          |
 | `scoop`      | Command-line Installer Provisioning Framework                           | `config_provider` | [Details](./scoop.md)     |
 | `sdkman`     | Software Development Kit Manager for Java Ecosystem                     | `config_provider` | [Details](./sdkman.md)    |
 | `syncthing`  | Continuous File Synchronization Framework                               | `config_provider` | [Details](./syncthing.md) |
@@ -46,8 +48,10 @@ marketplace-style index for those plugins and a quick reference for how each one
 | ------------------ | ----------------------------------------------------------------------------------------- | ----------------- | ---------------------------- |
 | `alacritty`        | Manages Alacritty `alacritty.toml` terminal settings.                                     | `config_provider` | [Details](#alacritty)        |
 | `bat`              | Manages `bat` syntax-highlighting pager configuration.                                    | `config_provider` | [Details](#bat)              |
+| `fzf`              | Manages `.fzfrc` for fzf environment variables.                                           | `config_provider` | [Details](#fzf)              |
 | `ohmyposh`         | Manages the Oh My Posh bootstrap line in a PowerShell profile.                            | `config_provider` | [Details](#ohmyposh)         |
 | `powershell`       | Generates a managed PowerShell profile block for aliases, modules, prompt, and functions. | `config_provider` | [Details](#powershell)       |
+| `ripgrep`          | Manages `.ripgreprc` configuration.                                                       | `config_provider` | [Details](#ripgrep)          |
 | `starship`         | Manages `starship.toml` prompt settings.                                                  | `config_provider` | [Details](#starship)         |
 | `windows-terminal` | Manages Windows Terminal `settings.json` for stable, preview, or dev installs.            | `config_provider` | [Details](#windows-terminal) |
 | `yazi`             | Manages Yazi core, keymap, and theme TOML files.                                          | `config_provider` | [Details](#yazi)             |
@@ -62,6 +66,7 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `docker`   | Manages Docker Desktop `settings.json`.                      | `config_provider` | [Details](#docker)   |
 | `gh`       | Manages GitHub CLI `config.yml`.                             | `config_provider` | [Details](#gh)       |
 | `gh-dash`  | Manages `gh-dash` dashboard settings in `config.yml`.        | `config_provider` | [Details](#gh-dash)  |
+| `go`       | Manages Go environment variables via `go env`.               | `config_provider` | [Details](#go)       |
 | `lazydocker` | Manages LazyDocker YAML configuration.                     | `config_provider` | [Details](#lazydocker) |
 | `lazygit`  | Manages `lazygit` YAML configuration.                        | `config_provider` | [Details](#lazygit)  |
 | `mise`     | Manages `config.toml` for the mise version manager.          | `config_provider` | [Details](#mise)     |
@@ -188,6 +193,14 @@ Manages `%ChocolateyInstall%\config\chocolatey.config`, including both `config` 
 `features`. For package installs, see [Chocolatey module docs](../modules/chocolatey.md).
 
 <a id="npm"></a>
+<a id="nvm"></a>
+
+#### nvm
+
+Config key: `extensions.nvm`
+
+Merges key-value settings into `%APPDATA%\nvm\settings.txt`.
+
 
 #### npm
 
@@ -196,6 +209,14 @@ Config key: `extensions.npm`
 Merges key-value settings into the current user's `.npmrc`.
 
 <a id="pip"></a>
+<a id="pnpm"></a>
+
+#### pnpm
+
+Config key: `extensions.pnpm`
+
+Merges key-value settings into the current user's `.npmrc`, converting camelCase settings to dash-case automatically.
+
 
 #### pip
 
@@ -286,6 +307,14 @@ Config key: `extensions.bat`
 Manages flags and variables in `%APPDATA%\bat\config`.
 
 <a id="ohmyposh"></a>
+<a id="fzf"></a>
+
+#### fzf
+
+Config key: `extensions.fzf`
+
+Manages `fzf` environment variables (e.g. `FZF_DEFAULT_OPTS`) in `%USERPROFILE%\_fzfrc` or `~/.fzfrc`.
+
 
 #### ohmyposh
 
@@ -303,6 +332,14 @@ Generates a WinHome-managed profile block for aliases, modules, prompt settings,
 and custom functions.
 
 <a id="starship"></a>
+<a id="ripgrep"></a>
+
+#### ripgrep
+
+Config key: `extensions.ripgrep`
+
+Merges command-line flags into the `.ripgreprc` configuration file.
+
 
 #### starship
 
@@ -378,6 +415,14 @@ Config key: `extensions.gh-dash`
 Merges dashboard settings into `%USERPROFILE%\.config\gh-dash\config.yml`.
 
 <a id="lazydocker"></a>
+<a id="go"></a>
+
+#### go
+
+Config key: `extensions.go`
+
+Manages Go environment variables by executing `go env -w`.
+
 
 #### lazydocker
 
