@@ -55,13 +55,7 @@ def merge_settings(target: dict, source: dict) -> bool:
     changed = False
 
     for key, value in source.items():
-        if (
-            isinstance(value, dict)
-            and isinstance(target.get(key), dict)
-        ):
-            if merge_settings(target[key], value):
-                changed = True
-        elif key not in target or target[key] != value:
+        if key not in target or target[key] != value:
             target[key] = value
             changed = True
 
