@@ -1,6 +1,6 @@
 # Plugin Directory
 
-WinHome currently ships with 41 built-in plugins under `plugins/`. This page acts as a
+WinHome currently ships with 48 built-in plugins under `plugins/`. This page acts as a
 marketplace-style index for those plugins and a quick reference for how each one is enabled from
 `config.yaml`.
 
@@ -75,13 +75,17 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 
 | Name         | Brief description                                                           | Capabilities      | Docs                   |
 | ------------ | --------------------------------------------------------------------------- | ----------------- | ---------------------- |
+| `audacity`   | Manages Audacity configuration settings.                                    | `config_provider` | [Details](#audacity)   |
 | `autohotkey` | Manages an AutoHotkey v2 bootstrap script and WinHome-owned settings block. | `config_provider` | [Details](#autohotkey) |
 | `espanso`    | Manages Espanso text expansion rules in `base.yml`.                         | `config_provider` | [Details](#espanso)    |
 | `everything` | Manages Everything search application configuration.                        | `config_provider` | [Details](#everything) |
+| `irfanview`  | Manages IrfanView INI configuration files.                                  | `config_provider` | [Details](#irfanview)  |
 | `keepassxc`  | Manages KeePassXC INI settings.                                             | `config_provider` | [Details](#keepassxc)  |
+| `obs-studio` | Manages OBS Studio profiles and configuration.                              | `config_provider` | [Details](#obs-studio) |
 | `powertoys`  | Manages PowerToys general settings and supported module settings.           | `config_provider` | [Details](#powertoys)  |
 | `sharex`     | Manages ShareX `ShareX.json`.                                               | `config_provider` | [Details](#sharex)     |
 | `rustup`     | Manages `settings.toml` for the Rust toolchain installer.                   | `config_provider` | [Details](#rustup)     |
+| `wallpaper-engine` | Manages Wallpaper Engine JSON configuration.                          | `config_provider` | [Details](#wallpaper-engine) |
 | `windows-explorer` | Manages Windows Explorer preferences and settings.                    | `config_provider` | [Details](#windows-explorer) |
 | `windows-sandbox` | Manages Windows Sandbox `.wsb` configuration settings.                 | `config_provider` | [Details](#windows-sandbox) |
 | `yasb` | Manages YASB status bar YAML configuration.                                       | `config_provider` | [Details](#yasb) |
@@ -92,6 +96,7 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | --------------- | ------------------------------------------------------- | ----------------- | ------------------------- |
 | `betterdiscord` | Manages BetterDiscord data settings in `settings.json`. | `config_provider` | [Details](#betterdiscord) |
 | `discord`       | Manages Discord client settings in `settings.json`.     | `config_provider` | [Details](#discord)       |
+| `spicetify`     | Manages Spicetify configuration settings.               | `config_provider` | [Details](#spicetify)     |
 
 ### Examples And Test Fixtures
 
@@ -430,6 +435,13 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 
 ### Automation, Productivity, And Desktop Utilities
 
+<a id="audacity"></a>
+#### audacity
+
+Config key: `extensions.audacity`
+
+Merges Audacity settings into `%APPDATA%\audacity\audacity.cfg`.
+
 <a id="autohotkey"></a>
 
 #### autohotkey
@@ -455,6 +467,14 @@ Config key: `extensions.everything`
 
 Manages supported Everything configuration settings through WinHome.
 
+<a id="irfanview"></a>
+
+#### irfanview
+
+Config key: `extensions.irfanview`
+
+Merges IrfanView settings into `%APPDATA%\IrfanView\i_view64.ini`.
+
 <a id="keepassxc"></a>
 
 #### keepassxc
@@ -462,6 +482,14 @@ Manages supported Everything configuration settings through WinHome.
 Config key: `extensions.keepassxc`
 
 Merges INI-style settings into `%APPDATA%\KeePassXC\keepassxc.ini`.
+
+<a id="obs-studio"></a>
+
+#### obs-studio
+
+Config key: `extensions.obs-studio`
+
+Merges OBS Studio settings into global and profile configuration files under `%APPDATA%\obs-studio`.
 
 <a id="powertoys"></a>
 
@@ -479,6 +507,14 @@ Manages general PowerToys settings plus supported module files such as `FancyZon
 Config key: `extensions.sharex`
 
 Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
+
+<a id="wallpaper-engine"></a>
+
+#### wallpaper-engine
+
+Config key: `extensions.wallpaper-engine`
+
+Deep-merges Wallpaper Engine settings into `config.json`.
 
 <a id="windows-explorer"></a>
 
@@ -521,6 +557,15 @@ Deep-merges settings into `%APPDATA%\BetterDiscord\data\settings.json`.
 Config key: `extensions.discord`
 
 Deep-merges settings into `%APPDATA%\discord\settings.json`.
+
+<a id="spicetify"></a>
+
+#### spicetify
+
+Config key: `extensions.spicetify`
+
+Merges Spicetify settings into `%USERPROFILE%\.spicetify\config.ini`.
+
 
 ### Examples And Test Fixtures
 
