@@ -51,7 +51,10 @@ namespace WinHome.Services.System
           taskDefinition.Actions.Add(taskAction);
         }
 
-        ts.RootFolder.RegisterTaskDefinition(task.Path, taskDefinition);
+        var fullPath = string.IsNullOrEmpty(task.Path)
+            ? task.Name
+            : $"{task.Path.TrimEnd('\\')}\\{task.Name}";
+        ts.RootFolder.RegisterTaskDefinition(fullPath, taskDefinition);
       }
 
       _logger.LogInformation($"Scheduled task '{task.Name}' applied successfully.");

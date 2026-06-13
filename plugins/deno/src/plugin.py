@@ -100,9 +100,7 @@ def write_deno_config(file_path, config):
 
 def check_installed():
     return (
-        shutil.which("deno.cmd") is not None
-        or shutil.which("deno.exe") is not None
-        or shutil.which("deno") is not None
+        shutil.which("deno.cmd") is not None or shutil.which("deno.exe") is not None or shutil.which("deno") is not None
     )
 
 
