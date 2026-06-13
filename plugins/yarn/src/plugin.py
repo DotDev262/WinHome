@@ -113,7 +113,7 @@ def _atomic_write(path: str, content: str):
             pass
         raise
 
-def check_installed(args: dict, request_id: str) -> dict:
+def check_installed(args: dict) -> bool:
     paths = get_yarnrc_paths()
     found_yarn = (
         shutil.which("yarn.cmd") is not None
@@ -122,9 +122,8 @@ def check_installed(args: dict, request_id: str) -> dict:
     )
 
     cfg_exists = os.path.exists(paths["berry"]) or os.path.exists(paths["classic"])
-    installed_bool = bool(found_yarn or cfg_exists)
+    return bool(found_yarn or cfg_exists)
 
-    return _response(request_id, success=True, changed=False, data=installed_bool, error=None)
 
 YARN_SETTING_KEYS = {
     "nodeLinker",
@@ -141,14 +140,18 @@ YARN_SETTING_KEYS = {
     "compressionLevel",
 }
 
-def _response(request_id: str, success: bool, changed: bool, data, error: str = None):
-    return {
+def _response(request_id: str, changed: bool, error: str = None) -> dict:
+    # JSON-RPC response format for this plugin:
+    # - On success: {requestId, changed}
+    # - On failure: {requestId, changed, error}
+    resp = {
         "requestId": request_id,
-        "success": success,
         "changed": changed,
-        "data": data,
-        "error": error,
     }
+    if error is not None:
+        resp["error"] = error
+    return resp
+
 
 def _validate_and_normalize_settings(settings_raw: object):
     if not isinstance(settings_raw, dict):
@@ -195,10 +198,17 @@ def _apply_berry(berry_path: str, settings: dict, dry_run: bool, request_id: str
     content = _yarnrcyml_dump(settings=merged)
 
     if dry_run:
-        return _response(request_id, success=True, changed=True, data={"path": berry_path}, error=None)
+        return {
+            "requestId": request_id,
+            "changed": True,
+        }
 
     _atomic_write(berry_path, content)
-    return _response(request_id, success=True, changed=True, data={"path": berry_path}, error=None)
+    return {
+        "requestId": request_id,
+        "changed": True,
+    }
+
 
 def _apply_classic(classic_path: str, settings: dict, dry_run: bool, request_id: str) -> dict:
     existing = {}
@@ -216,10 +226,17 @@ def _apply_classic(classic_path: str, settings: dict, dry_run: bool, request_id:
     content = _yarnrc_dump_classic(merged)
 
     if dry_run:
-        return _response(request_id, success=True, changed=True, data={"path": classic_path}, error=None)
+        return {
+            "requestId": request_id,
+            "changed": True,
+        }
 
     _atomic_write(classic_path, content)
-    return _response(request_id, success=True, changed=True, data={"path": classic_path}, error=None)
+    return {
+        "requestId": request_id,
+        "changed": True,
+    }
+
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = bool(context.get("dryRun", False))
@@ -232,7 +249,11 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
         settings = _validate_and_normalize_settings(settings_raw)
 
         if not settings:
-            return _response(request_id, success=True, changed=False, data={}, error=None)
+            return {
+                "requestId": request_id,
+                "changed": False,
+            }
+
 
         paths = get_yarnrc_paths()
         berry_exists = os.path.exists(paths["berry"])
@@ -245,7 +266,12 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
     except Exception as e:
         log_error(f"Failed to apply config: {e}")
-        return _response(request_id, success=False, changed=False, data=None, error=str(e))
+        return {
+            "requestId": request_id,
+            "changed": False,
+            "error": str(e),
+        }
+
 
 def main():
     input_data = sys.stdin.read()
@@ -253,11 +279,10 @@ def main():
     if not input_data:
         response = {
             "requestId": "unknown",
-            "success": False,
             "changed": False,
-            "data": None,
             "error": "No input provided on stdin",
         }
+
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
         return
@@ -267,41 +292,44 @@ def main():
     except Exception as e:
         response = {
             "requestId": "unknown",
-            "success": False,
             "changed": False,
-            "data": None,
             "error": f"Failed to parse JSON request: {str(e)}",
         }
+
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
         return
 
-    request_id = request.get("requestId", "unknown")
+    request_id = request.get("requestId") or "unknown"
+
     command = request.get("command")
     args = request.get("args", {})
     context = request.get("context", {})
 
     try:
         if command == "check_installed":
-            response = check_installed(args, request_id)
+            installed = check_installed(args)
+            response = {
+                "requestId": request_id,
+                "installed": installed,
+            }
+
         elif command == "apply":
             response = apply_config(args, context, request_id)
         else:
             response = {
                 "requestId": request_id,
-                "success": False,
                 "changed": False,
-                "data": None,
                 "error": f"Unknown command: {command}",
             }
+
     except Exception as e:
         response = {
             "requestId": request_id,
-            "success": False,
             "changed": False,
-            "data": None,
             "error": f"Internal Script Error: {str(e)}",
         }
+
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
