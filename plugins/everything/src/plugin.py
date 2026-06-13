@@ -4,7 +4,6 @@ import os
 import sys
 from pathlib import Path
 
-
 APPDATA = os.environ.get("APPDATA", "")
 EVERYTHING_DIR = Path(APPDATA) / "Everything"
 INI_PATH = EVERYTHING_DIR / "Everything.ini"
