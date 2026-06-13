@@ -1,30 +1,94 @@
 # Scheduled Tasks
 
-Configures scheduled tasks.
+Configures Windows Task Scheduler to run automated tasks on your system.
 
 **YAML Key:** `scheduled_tasks`
 
 **Properties:**
 
-- `name`: The name of the task.
-- `description`: A description for the task.
-- `author`: The author of the task.
-- `path`: The path for the task definition.
-- `triggers`: A list of triggers for the task.
-- `actions`: A list of actions for the task.
+- `name` : Name of the scheduled task.
+- `command` : Command to run.
+- `trigger` : When to run the task.
+- `enabled` : `true` or `false`.
 
-**Example:**
+---
+
+## Basic Usage
 
 ```yaml
 scheduled_tasks:
-  - name: 'My Daily Task'
-    description: 'Runs a script every day.'
-    author: 'WinHome'
-    path: "\\MyTasks\\DailyScript"
-    triggers:
-      - type: 'daily'
-        startBoundary: '2026-01-01T08:00:00'
-    actions:
-      - type: 'exec'
-        path: "C:\\path\\to\\my\\script.bat"
+  - name: 'DailyBackup'
+    command: "C:\\scripts\\backup.bat"
+    trigger: 'daily'
+    enabled: true
 ```
+
+---
+
+## Real-World Examples
+
+### Example 1 — Daily Backup
+
+```yaml
+scheduled_tasks:
+  - name: 'DailyBackup'
+    command: "C:\\scripts\\backup.bat"
+    trigger: 'daily'
+    enabled: true
+```
+
+### Example 2 — Weekly Cleanup
+
+```yaml
+scheduled_tasks:
+  - name: 'WeeklyCleanup'
+    command: "C:\\scripts\\cleanup.bat"
+    trigger: 'weekly'
+    enabled: true
+```
+
+### Example 3 — System Update Check
+
+```yaml
+scheduled_tasks:
+  - name: 'UpdateCheck'
+    command: "C:\\scripts\\update.bat"
+    trigger: 'weekly'
+    enabled: true
+```
+
+### Example 4 — Multiple Tasks
+
+```yaml
+scheduled_tasks:
+  - name: 'DailyBackup'
+    command: "C:\\scripts\\backup.bat"
+    trigger: 'daily'
+    enabled: true
+  - name: 'WeeklyCleanup'
+    command: "C:\\scripts\\cleanup.bat"
+    trigger: 'weekly'
+    enabled: true
+```
+
+---
+
+## Troubleshooting
+
+**Issue: Task not running**
+
+- Make sure WinHome is run as Administrator
+- Check if task is enabled in Task Scheduler
+- Open Task Scheduler to verify task exists
+
+**Issue: Command not found**
+
+- Check if the script path is correct
+- Use full path for commands
+- Make sure script file exists
+
+**Issue: Task runs but fails**
+
+- Check script for errors
+- Run script manually first to test
+- Check Task Scheduler logs for errors
