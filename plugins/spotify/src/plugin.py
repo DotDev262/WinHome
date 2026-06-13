@@ -83,7 +83,7 @@ def merge_settings(target: dict, source: dict) -> bool:
     return changed
 
 
-def check_installed(args, request_id):
+def check_installed():
     appdata = os.getenv("APPDATA")
 
     if not appdata:
@@ -93,7 +93,7 @@ def check_installed(args, request_id):
     return os.path.exists(spotify_path)
 
 
-def apply_config(args: dict, context: dict, request_id: str) -> dict:
+def apply_config(args: dict, request_id: str) -> dict:
     dry_run = args.get("dryRun", False)
 
     settings = args.get("settings", {})
@@ -179,7 +179,6 @@ def main():
     request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
-    context = request.get("context", {})
 
     response = {
         "requestId": request_id,
@@ -187,7 +186,7 @@ def main():
 
     try:
         if command == "check_installed":
-            installed = check_installed(args, request_id)
+            installed = check_installed()
 
             response = {
               "requestId": request_id,
@@ -195,7 +194,7 @@ def main():
             }
 
         elif command == "apply":
-            response = apply_config(args, context, request_id)
+            response = apply_config(args, request_id)
 
         else:
             response["error"] = f"Unknown command: {command}"
