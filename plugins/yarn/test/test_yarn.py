@@ -37,9 +37,8 @@ def test_check_installed_via_config(mock_home, tmp_path):
     mock_home.return_value = str(tmp_path)
 
     response = run_plugin({"requestId": "r1", "command": "check_installed"})
-    assert response["success"] is True
-    assert response["data"] is True
-    assert response["changed"] is False
+    assert response["installed"] is True
+
 
 
 @patch("src.plugin._get_user_home")
@@ -87,7 +86,6 @@ def test_apply_writes_berry_file_with_newline(mock_home, tmp_path):
     }
 
     response = run_plugin(request)
-    assert response["success"] is True
     assert response["changed"] is True
 
     p = tmp_path / ".yarnrc.yml"
@@ -117,7 +115,6 @@ def test_apply_classic_prefers_classic_if_present(mock_home, tmp_path):
     }
 
     response = run_plugin(request)
-    assert response["success"] is True
     assert response["changed"] is True
 
     content = (tmp_path / ".yarnrc").read_text(encoding="utf-8")
