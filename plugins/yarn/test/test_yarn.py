@@ -4,8 +4,12 @@ import sys
 from io import StringIO
 from unittest.mock import patch
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from src.plugin import main
+test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.append(test_dir)
+try:
+    from src.plugin import main
+finally:
+    sys.path.remove(test_dir)
 
 
 def run_plugin(input_dict):
@@ -118,4 +122,3 @@ def test_apply_classic_prefers_classic_if_present(mock_home, tmp_path):
 
     content = (tmp_path / ".yarnrc").read_text(encoding="utf-8")
     assert "npmRegistryServer https://registry.yarnpkg.com" in content
-
