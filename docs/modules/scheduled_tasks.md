@@ -1,7 +1,6 @@
 # Scheduled Tasks
 
-Configures Windows Task Scheduler to run 
-automated tasks on your system.
+Configures Windows Task Scheduler to run automated tasks on your system.
 
 **YAML Key:** `scheduled_tasks`
 
@@ -18,9 +17,9 @@ automated tasks on your system.
 
 ```yaml
 scheduled_tasks:
-  - name: "DailyBackup"
+  - name: 'DailyBackup'
     command: "C:\\scripts\\backup.bat"
-    trigger: "daily"
+    trigger: 'daily'
     enabled: true
 ```
 
@@ -32,9 +31,9 @@ scheduled_tasks:
 
 ```yaml
 scheduled_tasks:
-  - name: "DailyBackup"
+  - name: 'DailyBackup'
     command: "C:\\scripts\\backup.bat"
-    trigger: "daily"
+    trigger: 'daily'
     enabled: true
 ```
 
@@ -42,9 +41,9 @@ scheduled_tasks:
 
 ```yaml
 scheduled_tasks:
-  - name: "WeeklyCleanup"
+  - name: 'WeeklyCleanup'
     command: "C:\\scripts\\cleanup.bat"
-    trigger: "weekly"
+    trigger: 'weekly'
     enabled: true
 ```
 
@@ -52,9 +51,9 @@ scheduled_tasks:
 
 ```yaml
 scheduled_tasks:
-  - name: "UpdateCheck"
+  - name: 'UpdateCheck'
     command: "C:\\scripts\\update.bat"
-    trigger: "weekly"
+    trigger: 'weekly'
     enabled: true
 ```
 
@@ -62,13 +61,13 @@ scheduled_tasks:
 
 ```yaml
 scheduled_tasks:
-  - name: "DailyBackup"
+  - name: 'DailyBackup'
     command: "C:\\scripts\\backup.bat"
-    trigger: "daily"
+    trigger: 'daily'
     enabled: true
-  - name: "WeeklyCleanup"
+  - name: 'WeeklyCleanup'
     command: "C:\\scripts\\cleanup.bat"
-    trigger: "weekly"
+    trigger: 'weekly'
     enabled: true
 ```
 
@@ -77,16 +76,19 @@ scheduled_tasks:
 ## Troubleshooting
 
 **Issue: Task not running**
+
 - Make sure WinHome is run as Administrator
 - Check if task is enabled in Task Scheduler
 - Open Task Scheduler to verify task exists
 
 **Issue: Command not found**
+
 - Check if the script path is correct
 - Use full path for commands
 - Make sure script file exists
 
 **Issue: Task runs but fails**
+
 - Check script for errors
 - Run script manually first to test
 - Check Task Scheduler logs for errors

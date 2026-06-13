@@ -1,7 +1,6 @@
 # Dotfiles
 
-Manages configuration files (dotfiles) 
-for your Windows development environment.
+Manages configuration files (dotfiles) for your Windows development environment.
 
 **YAML Key:** `dotfiles`
 
@@ -70,16 +69,19 @@ dotfiles:
 ## Troubleshooting
 
 **Issue: File not copied**
+
 - Check if source path is correct
 - Make sure source file exists
 - Run WinHome as Administrator
 
 **Issue: Overwrite not working**
+
 - Set overwrite to true in config
 - Check file permissions
 - Make sure destination path is correct
 
 **Issue: Wrong destination**
+
 - Use full path for destination
 - Check Windows path format
 - Use %APPDATA% for app configs
