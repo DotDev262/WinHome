@@ -28,8 +28,8 @@ namespace WinHome.Tests
       // Arrange
       var taskConfig = new ScheduledTaskConfig
       {
-        Name = "Test Task",
-        Path = "TestTask",
+        Name = "TestTask",
+        Path = "",
         Description = "A test task",
         Author = "Test Author",
         Triggers = new()
@@ -56,11 +56,11 @@ namespace WinHome.Tests
       // Assert
       using (var ts = new TaskService())
       {
-        var task = ts.FindTask("TestTask");
+        var task = ts.FindTask(taskConfig.Name);
         Assert.NotNull(task);
         Assert.Equal("A test task", task.Definition.RegistrationInfo.Description);
         Assert.Equal("Test Author", task.Definition.RegistrationInfo.Author);
-        ts.RootFolder.DeleteTask("TestTask");
+        ts.RootFolder.DeleteTask(taskConfig.Name);
       }
     }
 
@@ -72,8 +72,8 @@ namespace WinHome.Tests
       // Arrange
       var taskConfig = new ScheduledTaskConfig
       {
-        Name = "Test Task",
-        Path = "TestTask",
+        Name = "TestTask",
+        Path = "",
       };
 
       // Act
@@ -82,7 +82,7 @@ namespace WinHome.Tests
       // Assert
       using (var ts = new TaskService())
       {
-        var task = ts.FindTask("TestTask");
+        var task = ts.FindTask(taskConfig.Name);
         Assert.Null(task);
       }
     }
