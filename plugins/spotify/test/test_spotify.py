@@ -4,9 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -40,14 +38,12 @@ def test_apply_config_dry_run():
 
         res = run_plugin(
             {
-              "requestId": "2",
-              "command": "apply",
-              "args": {
-                  "settings": {
-                      "audio.play_bitrate_enumeration": "5"
-                  },
-                  "dryRun": True,
-              },
+                "requestId": "2",
+                "command": "apply",
+                "args": {
+                    "settings": {"audio.play_bitrate_enumeration": "5"},
+                    "dryRun": True,
+                },
             }
         )
 
@@ -67,20 +63,13 @@ def test_merge_existing_preferences():
         prefs_path = os.path.join(spotify_dir, "prefs")
 
         with open(prefs_path, "w", encoding="utf-8") as f:
-            f.write(
-                "audio.play_bitrate_enumeration=4\n"
-                "ui.track_notifications_enabled=false\n"
-            )
+            f.write("audio.play_bitrate_enumeration=4\nui.track_notifications_enabled=false\n")
 
         res = run_plugin(
             {
                 "requestId": "4",
                 "command": "apply",
-                "args": {
-                    "settings": {
-                        "audio.play_bitrate_enumeration": "5"
-                    }
-                },
+                "args": {"settings": {"audio.play_bitrate_enumeration": "5"}},
             }
         )
 
@@ -106,8 +95,8 @@ def test_apply_config():
                 "command": "apply",
                 "args": {
                     "settings": {
-                          "audio.play_bitrate_enumeration": "5",
-                          "ui.track_notifications_enabled": "true",
+                        "audio.play_bitrate_enumeration": "5",
+                        "ui.track_notifications_enabled": "true",
                     },
                 },
             }
@@ -128,6 +117,7 @@ def test_apply_config():
 
         print("✓ apply_config")
 
+
 def test_idempotent_apply():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["APPDATA"] = tmp
@@ -135,11 +125,7 @@ def test_idempotent_apply():
         payload = {
             "requestId": "5",
             "command": "apply",
-            "args": {
-                "settings": {
-                    "audio.play_bitrate_enumeration": "5"
-                }
-            },
+            "args": {"settings": {"audio.play_bitrate_enumeration": "5"}},
         }
 
         run_plugin(payload)
@@ -197,6 +183,7 @@ def test_invalid_json_returns_error():
     assert "error" in res
 
     print("✓ invalid_json_returns_error")
+
 
 if __name__ == "__main__":
     test_check_installed()
