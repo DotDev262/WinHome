@@ -76,3 +76,4 @@ class GreenshotPlugin:
             raise e
 
         return {"requestId": self.request_id, "status": "success", "changed": True}
+
