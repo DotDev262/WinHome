@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 
 try:
     import yaml
@@ -16,7 +17,17 @@ except ImportError:
 
 
 def get_config_path() -> str:
-    return os.path.join(os.environ.get("APPDATA", ""), "GitHub CLI", "config.yml")
+    appdata = os.environ.get("APPDATA")
+
+    if appdata:
+        return os.path.join(appdata, "GitHub CLI", "config.yml")
+
+    return os.path.join(
+        os.path.expanduser("~"),
+        ".config",
+        "gh",
+        "config.yml",
+    )
 
 
 def log(message: str) -> None:
@@ -32,8 +43,10 @@ def read_yaml(file_path: str) -> dict:
         return {}
 
     with open(file_path, "r", encoding="utf-8") as file_handle:
-        data = yaml.safe_load(file_handle)
-        return data if isinstance(data, dict) else {}
+        data = yaml.safe_load(file_handle) or {}
+        if not isinstance(data, dict):
+            return {}
+        return data
 
 
 def write_yaml(file_path: str, data: dict) -> None:
@@ -41,15 +54,32 @@ def write_yaml(file_path: str, data: dict) -> None:
         raise RuntimeError("PyYAML is required to read or write gh config")
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "w", encoding="utf-8") as file_handle:
-        yaml.dump(data, file_handle, default_flow_style=False, sort_keys=False)
+
+    dir_name = os.path.dirname(file_path) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".yml")
+
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            yaml.dump(
+                data,
+                f,
+                default_flow_style=False,
+                sort_keys=False,
+            )
+
+        os.replace(tmp_path, file_path)
+
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
 
 
 def merge_settings(target: dict, source: dict) -> bool:
     changed = False
 
     for key, value in source.items():
-        if value == "":
+        if value is None:
             continue
 
         current_value = target.get(key)
@@ -75,19 +105,18 @@ def get_config_target(config: dict) -> dict:
     return config
 
 
-def check_installed(request_id: str) -> dict:
-    installed = shutil.which("gh") is not None or shutil.which("gh.exe") is not None
-    return {
-        "requestId": request_id,
-        "success": True,
-        "changed": False,
-        "data": installed,
-    }
+def check_installed() -> bool:
+    return ( shutil.which("gh") is not None or shutil.which("gh.exe") is not None )
 
 
-def apply_config(request_id: str, args: dict, context: dict) -> dict:
-    dry_run = bool(context.get("dryRun", False))
-    updates = {key: value for key, value in args.items() if key != "dry_run"}
+def apply_config(request_id: str, args: dict) -> dict:
+    dry_run = bool(args.get("dryRun", False))
+    settings = args.get("settings", {})
+    if not isinstance(settings, dict):
+        return { "requestId": request_id,
+                "error": "settings must be a dictionary",
+        }
+    updates = {key: value for key, value in settings.items()}
 
     config_path = get_config_path()
     if yaml is None:
@@ -104,7 +133,6 @@ def apply_config(request_id: str, args: dict, context: dict) -> dict:
             log(f"dry_run: no changes for {config_path}")
         return {
             "requestId": request_id,
-            "success": True,
             "changed": changed,
         }
 
@@ -113,32 +141,37 @@ def apply_config(request_id: str, args: dict, context: dict) -> dict:
 
     return {
         "requestId": request_id,
-        "success": True,
         "changed": changed,
     }
 
 
 def handle(request: dict) -> dict:
-    request_id = request.get("requestId", "unknown")
+    request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
-    context = request.get("context", {})
 
     if command == "check_installed":
-        return check_installed(request_id)
+        installed = check_installed()
+        return { "requestId": request_id, "installed": installed, }
     if command == "apply":
         if not isinstance(args, dict):
-            raise ValueError("args must be an object")
-        if not isinstance(context, dict):
-            raise ValueError("context must be an object")
-        return apply_config(request_id, args, context)
+            return { "requestId": request_id,
+                    "error": "args must be a dictionary",
+            }
+        return apply_config(request_id, args)
 
-    raise ValueError(f"Unknown command: {command}")
+    return {
+    "requestId": request_id,
+    "error": f"Unknown command: {command}",
+    }
 
 
 def main() -> None:
     raw = sys.stdin.read()
     if not raw:
+        sys.stdout.write(
+            json.dumps({ "requestId": "unknown", "error": "No input received", }) + "\n" )
+        sys.stdout.flush()
         return
 
     try:
@@ -149,8 +182,6 @@ def main() -> None:
             "requestId": request.get("requestId", "unknown")
             if "request" in locals() and isinstance(request, dict)
             else "unknown",
-            "success": False,
-            "changed": False,
             "error": str(error),
         }
 

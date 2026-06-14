@@ -15,7 +15,7 @@ from unittest.mock import patch
 
 import yaml
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 import plugin
 
 
@@ -35,18 +35,16 @@ class TestGhPlugin(unittest.TestCase):
             response = self.run_main({"requestId": "req-1", "command": "check_installed", "args": {}})
 
         self.assertEqual(response["requestId"], "req-1")
-        self.assertTrue(response["success"])
         self.assertFalse(response["changed"])
-        self.assertTrue(response["data"])
+        self.assertTrue(response["installed"])
 
     def test_check_installed_returns_false_when_gh_is_missing(self):
         with patch("plugin.shutil.which", return_value=None):
             response = self.run_main({"requestId": "req-2", "command": "check_installed", "args": {}})
 
         self.assertEqual(response["requestId"], "req-2")
-        self.assertTrue(response["success"])
         self.assertFalse(response["changed"])
-        self.assertFalse(response["data"])
+        self.assertFalse(response["installed"])
 
     def test_apply_writes_merged_config_and_returns_changed_true(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -67,19 +65,18 @@ class TestGhPlugin(unittest.TestCase):
                         "requestId": "req-3",
                         "command": "apply",
                         "args": {
-                            "git_protocol": "https",
-                            "editor": "code --wait",
-                            "prompt": "enabled",
-                            "pager": "less",
-                            "http_unix_socket": "",
-                            "browser": "",
-                        },
-                        "context": {"dryRun": False},
+                            "dryRun": False,
+                            "settings": {
+                                "git_protocol": "https",
+                                "editor": "code --wait",
+                                "prompt": "enabled",
+                                "pager": "less",
+                                },
+                            },
                     }
                 )
 
             self.assertEqual(response["requestId"], "req-3")
-            self.assertTrue(response["success"])
             self.assertTrue(response["changed"])
 
             with open(config_path, "r", encoding="utf-8") as file_handle:
@@ -118,19 +115,17 @@ class TestGhPlugin(unittest.TestCase):
                         "requestId": "req-4",
                         "command": "apply",
                         "args": {
-                            "git_protocol": "https",
-                            "editor": "code --wait",
-                            "prompt": "enabled",
-                            "pager": "less",
-                            "http_unix_socket": "",
-                            "browser": "",
+                            "dryRun": False,
+                            "settings": {
+                                "git_protocol": "https",
+                                "editor": "code --wait",
+                                "prompt": "enabled",
+                                "pager": "less",
+                                },
                         },
-                        "context": {"dryRun": False},
                     }
                 )
-
             self.assertEqual(response["requestId"], "req-4")
-            self.assertTrue(response["success"])
             self.assertFalse(response["changed"])
 
             with open(config_path, "r", encoding="utf-8") as file_handle:
@@ -147,13 +142,11 @@ class TestGhPlugin(unittest.TestCase):
                     {
                         "requestId": "req-5",
                         "command": "apply",
-                        "args": {"git_protocol": "https", "dry_run": True},
-                        "context": {"dryRun": True},
+                        "args": { "dryRun": True, "settings": { "git_protocol": "https" } },
                     }
                 )
 
             self.assertEqual(response["requestId"], "req-5")
-            self.assertTrue(response["success"])
             self.assertTrue(response["changed"])
             self.assertFalse(os.path.exists(config_path))
 
@@ -167,13 +160,11 @@ class TestGhPlugin(unittest.TestCase):
                     {
                         "requestId": "req-6",
                         "command": "apply",
-                        "args": {"git_protocol": "https"},
-                        "context": {"dryRun": False},
+                        "args": { "dryRun": False, "settings": {"git_protocol": "https" },},
                     }
                 )
 
             self.assertEqual(response["requestId"], "req-6")
-            self.assertTrue(response["success"])
             self.assertTrue(response["changed"])
             self.assertTrue(os.path.isdir(os.path.dirname(config_path)))
             self.assertTrue(os.path.exists(config_path))
@@ -184,13 +175,11 @@ class TestGhPlugin(unittest.TestCase):
                 {
                     "requestId": "req-7",
                     "command": "apply",
-                    "args": {"git_protocol": "https"},
-                    "context": {"dryRun": False},
+                    "args": { "dryRun": False, "settings": { "git_protocol": "https" }, },
                 }
             )
 
         self.assertEqual(response["requestId"], "req-7")
-        self.assertFalse(response["success"])
         self.assertFalse(response["changed"])
         self.assertIn("PyYAML", response["error"])
 
@@ -204,7 +193,6 @@ class TestGhPlugin(unittest.TestCase):
             }
         )
         self.assertEqual(response["requestId"], "req-8")
-        self.assertFalse(response["success"])
         self.assertFalse(response["changed"])
         self.assertIn("Unknown command", response["error"])
 
