@@ -1,0 +1,10 @@
+name: greenshot
+description: Configuration provider plugin for Greenshot screen capture utility.
+type: config_provider
+capabilities:
+  - config_provider
+settings_schema:
+  type: object
+  properties:
+    settings:
+      type: object
