@@ -1,16 +1,17 @@
 import json
 import os
+import shutil
 import sys
 import tempfile
 
 # from pathlib import Path
 
 
-SETTING_FILE = "prefs"
+SETTING_FILE = "Preferences.sublime-settings"
 
 
 def log(msg):
-    sys.stderr.write(f"[spotify-plugin] {msg}\n")
+    sys.stderr.write(f"[sublime-text-plugin] {msg}\n")
     sys.stderr.flush()
 
 
@@ -20,36 +21,31 @@ def get_config_path():
     if not appdata:
         raise Exception("APPDATA environment variable not found")
 
-    config_dir = os.path.join(appdata, "Spotify")
+    config_dir = os.path.join(
+        appdata,
+        "Sublime Text",
+        "Packages",
+        "User",
+    )
+
     os.makedirs(config_dir, exist_ok=True)
 
     return os.path.join(config_dir, SETTING_FILE)
 
 
-def read_prefs(file_path: str) -> dict:
+def read_json(file_path: str) -> dict:
     if not os.path.exists(file_path):
         return {}
 
-    prefs = {}
-
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-
-                if not line or "=" not in line:
-                    continue
-
-                key, value = line.split("=", 1)
-                prefs[key] = value
-
+            return json.load(f)
     except Exception as e:
         log(f"Warning: could not parse {file_path}: {e}")
+        return {}
 
-    return prefs
 
-
-def write_prefs(file_path: str, prefs: dict) -> None:
+def write_json(file_path: str, data) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     fd, temp_path = tempfile.mkstemp(
@@ -59,23 +55,19 @@ def write_prefs(file_path: str, prefs: dict) -> None:
 
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            for key, value in prefs.items():
-                f.write(f"{key}={value}\n")
+            json.dump(data, f, indent=2)
 
         os.replace(temp_path, file_path)
 
-    except Exception:
+    finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
-        raise
 
 
 def merge_settings(target: dict, source: dict) -> bool:
     changed = False
 
     for key, value in source.items():
-        value = str(value)
-
         if key not in target or target[key] != value:
             target[key] = value
             changed = True
@@ -83,31 +75,17 @@ def merge_settings(target: dict, source: dict) -> bool:
     return changed
 
 
-def check_installed():
-    appdata = os.getenv("APPDATA")
-
-    if not appdata:
-        return False
-
-    spotify_path = os.path.join(appdata, "Spotify")
-    return os.path.exists(spotify_path)
+def check_installed() -> bool:
+    return shutil.which("subl.exe") is not None or shutil.which("sublime_text.exe") is not None
 
 
-def apply_config(args: dict, request_id: str) -> dict:
+def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = args.get("dryRun", False)
-
     settings = args.get("settings", {})
-
-    if not isinstance(settings, dict):
-        return {
-            "requestId": request_id,
-            "error": "settings must be a dictionary",
-        }
 
     try:
         config_path = get_config_path()
-
-        current_config = read_prefs(config_path)
+        current_config = read_json(config_path)
 
         changed = merge_settings(current_config, settings)
 
@@ -119,15 +97,14 @@ def apply_config(args: dict, request_id: str) -> dict:
 
         if dry_run:
             log(f"Would update {config_path} with: {json.dumps(settings)}")
-
             return {
                 "requestId": request_id,
-                "changed": True,
+                "changed": False,
             }
 
-        write_prefs(config_path, current_config)
+        write_json(config_path, current_config)
 
-        log(f"Updated Spotify prefs: {config_path}")
+        log(f"Updated Sublime Text config: {config_path}")
 
         return {
             "requestId": request_id,
@@ -136,9 +113,9 @@ def apply_config(args: dict, request_id: str) -> dict:
 
     except Exception as e:
         log(f"Failed to apply config: {e}")
-
         return {
             "requestId": request_id,
+            "changed": False,
             "error": str(e),
         }
 
@@ -147,15 +124,11 @@ def main():
     input_data = sys.stdin.read()
 
     if not input_data:
-        sys.stdout.write(
-            json.dumps(
-                {
-                    "requestId": "unknown",
-                    "error": "No input received",
-                }
-            )
-            + "\n"
-        )
+        response = {
+            "requestId": "unknown",
+            "error": "Empty request",
+        }
+        sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
         return
 
@@ -163,22 +136,18 @@ def main():
         request = json.loads(input_data)
     except Exception as e:
         log(f"Failed to parse request: {e}")
-        sys.stdout.write(
-            json.dumps(
-                {
-                    "requestId": "unknown",
-                    "error": f"Failed to parse request: {e}",
-                }
-            )
-            + "\n"
-        )
-
+        response = {
+            "requestId": "unknown",
+            "error": f"Failed to parse request: {str(e)}",
+        }
+        sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
         return
 
     request_id = request.get("requestId") or "unknown"
     command = request.get("command")
     args = request.get("args", {})
+    context = request.get("context", {})
 
     response = {
         "requestId": request_id,
@@ -186,15 +155,13 @@ def main():
 
     try:
         if command == "check_installed":
-            installed = check_installed()
-
             response = {
                 "requestId": request_id,
-                "installed": installed,
+                "installed": check_installed(),
             }
 
         elif command == "apply":
-            response = apply_config(args, request_id)
+            response = apply_config(args, context, request_id)
 
         else:
             response["error"] = f"Unknown command: {command}"
