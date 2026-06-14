@@ -4,7 +4,6 @@ import shutil
 import sys
 import tempfile
 
-
 COMMON_PATHS = [
     os.path.expandvars(r"%LOCALAPPDATA%\Programs\Joplin\Joplin.exe"),
     os.path.expandvars(r"%ProgramFiles%\Joplin\Joplin.exe"),
