@@ -15,12 +15,14 @@ public static class CliBuilder
   /// <summary>Constructs the root command with all options, subcommands (run, generate, state, completion), and their handlers.</summary>
   /// <param name="runAction">Handler for the default run action (applies configuration).</param>
   /// <param name="generateAction">Handler for the generate subcommand (generates config from system state).</param>
+  /// <param name="configBackupAction">Handler for configuration backup and restore.</param>
   /// <param name="stateAction">Handler for the state subcommand (manages tracking state).</param>
   /// <returns>The configured root <see cref="RootCommand"/>.</returns>
   public static RootCommand BuildRootCommand(
       Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
       Func<FileInfo?, LogLevel, Task<int>> generateAction,
-      Func<string, string?, LogLevel, Task<int>> stateAction)
+      Func<string, string?, LogLevel, Task<int>> stateAction,
+      Func<string, LogLevel, Task<int>>? configBackupAction = null)
   {
     var configOption = new Option<FileInfo>("--config");
     configOption.Description = "Path to the YAML configuration file";
@@ -249,7 +251,50 @@ public static class CliBuilder
     });
 
     rootCommand.Add(completionCommand);
+        // Config Command
+    var configCommand = new Command("config");
+    configCommand.Description = "Manage configuration backups";
 
+    var configBackupCommand = new Command("backup");
+    configBackupCommand.Description = "Backup WinHome configuration";
+
+    var configBackupInput = new Argument<string>("output")
+    {
+      Description = "Backup output file"
+    };
+
+    configBackupCommand.Arguments.Add(configBackupInput);
+
+    configBackupCommand.SetAction(async (ParseResult result) =>
+    {
+      var output = result.GetValue(configBackupInput)!;
+      return configBackupAction == null
+          ? 1
+          : await configBackupAction(output, ComputeLogLevel(false, false));
+    });
+
+    var configRestoreCommand = new Command("restore");
+    configRestoreCommand.Description = "Restore WinHome configuration";
+
+    var configRestoreInput = new Argument<string>("input")
+    {
+      Description = "Backup file"
+    };
+
+    configRestoreCommand.Arguments.Add(configRestoreInput);
+
+    configRestoreCommand.SetAction(async (ParseResult result) =>
+    {
+      var input = result.GetValue(configRestoreInput)!;
+      return configBackupAction == null
+          ? 1
+          : await configBackupAction("restore:" + input, ComputeLogLevel(false, false));
+    });
+
+    configCommand.Subcommands.Add(configBackupCommand);
+    configCommand.Subcommands.Add(configRestoreCommand);
+
+    rootCommand.Add(configCommand);
     return rootCommand;
   }
 

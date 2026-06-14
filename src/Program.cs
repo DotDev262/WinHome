@@ -149,7 +149,65 @@ class Program
                 }
                 break;
             }
-            return 0;
+                        return 0;
+          },
+
+          // Config Backup Action
+          async (path, minLogLevel) =>
+          {
+            var logger = host.Services.GetRequiredService<ILogger>();
+            logger.SetMinLevel(minLogLevel);
+
+            var backupService = host.Services.GetRequiredService<IConfigBackupService>();
+
+            try
+            {
+              if (path.StartsWith("restore:"))
+              {
+                var file = path.Replace("restore:", "");
+
+                var config = await backupService.RestoreAsync(file);
+
+                var serializer = new SerializerBuilder()
+                  .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                  .Build();
+
+                var yaml = serializer.Serialize(config);
+
+                await File.WriteAllTextAsync("config.yaml", yaml);
+
+                logger.LogSuccess("[Config] Configuration restored.");
+              }
+              else
+              {
+                var configFile = new FileInfo("config.yaml");
+
+                if (!configFile.Exists)
+                {
+                  logger.LogError("[Config] config.yaml not found. Run generate first.");
+                  return 1;
+                }
+
+                var yaml = await File.ReadAllTextAsync(configFile.FullName);
+
+                var deserializer = new DeserializerBuilder()
+                  .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                  .Build();
+
+                var config = deserializer.Deserialize<Configuration>(yaml);
+
+                await backupService.BackupAsync(config, path);
+
+                logger.LogSuccess($"[Config] Backup created: {path}");
+              }
+
+              return 0;
+            }
+            catch (Exception ex)
+            {
+              logger.LogError($"[Config] Failed: {ex.Message}");
+              return 1;
+            }
           }
       );
 
