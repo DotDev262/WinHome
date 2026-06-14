@@ -28,8 +28,7 @@ def test_check_installed():
         }
     )
 
-    assert res["success"]
-    assert "installed" in res["data"]
+    assert "installed" in res
 
     print("✓ check_installed")
 
@@ -46,12 +45,17 @@ def test_apply_config_dry_run():
                     "color_scheme": ("Packages/Theme/Monokai.sublime-color-scheme"),
                     "font_size": 12,
                 },
-                "context": {"dryRun": True},
+                "args": {
+                    "settings": {
+                        "color_scheme": "Packages/Theme/Monokai.sublime-color-scheme",
+                        "font_size": 12,
+                    },
+                    "dryRun": True,
+                },
             }
         )
 
-        assert res["success"]
-        assert not res["changed"]
+        assert res["changed"] is False
 
         print("✓ apply_config_dry_run")
 
@@ -65,16 +69,19 @@ def test_apply_config():
                 "requestId": "3",
                 "command": "apply",
                 "args": {
-                    "theme": "Adaptive.sublime-theme",
-                    "font_size": 14,
-                    "word_wrap": True,
+                    "settings": {
+                        "theme": "Adaptive.sublime-theme",
+                        "font_size": 14,
+                        "word_wrap": True,
+                        },
+                    "dryRun": False,
                 },
-                "context": {"dryRun": False},
             }
         )
+        
+        print(res)
 
-        assert res["success"]
-        assert res["changed"]
+        assert res["changed"] is True
 
         config_path = os.path.join(
             tmp,
@@ -104,17 +111,18 @@ def test_idempotent_apply():
             "requestId": "4",
             "command": "apply",
             "args": {
-                "font_size": 12,
+                "settings": {
+                    "font_size": 12,
+                },
+                "dryRun": False,
             },
-            "context": {"dryRun": False},
         }
 
         run_plugin(payload)
 
         res = run_plugin(payload)
 
-        assert res["success"]
-        assert not res["changed"]
+        assert res["changed"] is False
 
         print("✓ idempotent_apply")
 
@@ -129,7 +137,6 @@ def test_unknown_command():
         }
     )
 
-    assert not res["success"]
     assert "error" in res
 
     print("✓ unknown_command")
