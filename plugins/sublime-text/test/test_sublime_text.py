@@ -42,10 +42,6 @@ def test_apply_config_dry_run():
                 "requestId": "2",
                 "command": "apply",
                 "args": {
-                    "color_scheme": ("Packages/Theme/Monokai.sublime-color-scheme"),
-                    "font_size": 12,
-                },
-                "args": {
                     "settings": {
                         "color_scheme": "Packages/Theme/Monokai.sublime-color-scheme",
                         "font_size": 12,
