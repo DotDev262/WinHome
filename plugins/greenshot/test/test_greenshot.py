@@ -2,10 +2,13 @@ import os
 import sys
 import unittest
 
-# 🧠 THE ROUTING FIX: Injects the proper absolute plugin source folder mappings into the runtime execution tree
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+# 🧠 INTERFACE COMPLIANCE FIX: Employs strict path lifecycle control to comply with repository testing rules
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"))
+sys.path.append(src_path)
 
-from plugin import GreenshotPlugin
+import plugin
+
+sys.path.remove(src_path)
 
 
 class TestGreenshotPlugin(unittest.TestCase):
@@ -22,11 +25,10 @@ class TestGreenshotPlugin(unittest.TestCase):
                 "General\\Language": "en-US",
             },
         }
-        plugin = GreenshotPlugin(args)
-        result = plugin.apply()
+        result = plugin.apply(args)
 
         self.assertEqual(result["requestId"], "test-req-293")
-        self.assertTrue(result["dryRun"])
+        self.assertTrue(result["changed"])
 
 
 if __name__ == "__main__":
