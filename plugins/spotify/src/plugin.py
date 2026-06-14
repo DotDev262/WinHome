@@ -148,13 +148,13 @@ def main():
 
     if not input_data:
         sys.stdout.write(
-            json.dumps(
-                {
-                    "requestId": "unknown",
-                    "error": "No input received",
-                }
-            )
-            + "\n"
+          json.dumps(
+              {
+                  "requestId": "unknown",
+                  "error": "No input received",
+              }
+          )
+          + "\n"
         )
         sys.stdout.flush()
         return
@@ -166,11 +166,11 @@ def main():
         sys.stdout.write(
             json.dumps(
                 {
-                    "requestId": "unknown",
-                    "error": f"Failed to parse request: {e}",
+                  "requestId": "unknown",
+                  "error": f"Failed to parse request: {e}",
                 }
-            )
-            + "\n"
+              )
+          + "\n"
         )
 
         sys.stdout.flush()
@@ -189,8 +189,8 @@ def main():
             installed = check_installed()
 
             response = {
-                "requestId": request_id,
-                "installed": installed,
+              "requestId": request_id,
+              "installed": installed,
             }
 
         elif command == "apply":
