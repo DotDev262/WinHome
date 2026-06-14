@@ -76,10 +76,7 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 
 def check_installed() -> bool:
-    return (
-        shutil.which("subl.exe") is not None
-        or shutil.which("sublime_text.exe") is not None
-    )
+    return shutil.which("subl.exe") is not None or shutil.which("sublime_text.exe") is not None
 
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
@@ -111,7 +108,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
         return {
             "requestId": request_id,
-            "changed": True,   
+            "changed": True,
         }
 
     except Exception as e:
@@ -122,9 +119,10 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "error": str(e),
         }
 
+
 def main():
     input_data = sys.stdin.read()
-    
+
     if not input_data:
         response = {
             "requestId": "unknown",
@@ -152,9 +150,9 @@ def main():
     context = request.get("context", {})
 
     response = {
-    "requestId": request_id,
+        "requestId": request_id,
     }
-    
+
     try:
         if command == "check_installed":
             response = {

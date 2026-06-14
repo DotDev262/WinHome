@@ -73,12 +73,12 @@ def test_apply_config():
                         "theme": "Adaptive.sublime-theme",
                         "font_size": 14,
                         "word_wrap": True,
-                        },
+                    },
                     "dryRun": False,
                 },
             }
         )
-        
+
         print(res)
 
         assert res["changed"] is True
