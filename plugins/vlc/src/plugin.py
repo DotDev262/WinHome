@@ -77,8 +77,20 @@ class _VlcrcDoc:
                 result.append(i)
         return result
 
-    def set(self, key: str, value: Any) -> None:
+    def get(self, key: str) -> str | None:
+        """Return current value of key, or None if not present."""
+        indices = self._find_key_indices(key)
+        if indices:
+            kv = self._parse_kv(self._lines[indices[0]])
+            return kv[1] if kv else None
+        return None
+
+    def set(self, key: str, value: Any) -> bool:
+        """Set key to value. Returns True if the value actually changed."""
         str_value = _to_str(value)
+        current = self.get(key)
+        if current == str_value:
+            return False
         indices = self._find_key_indices(key)
         if indices:
             self._lines[indices[0]] = f"{key}={str_value}"
@@ -86,10 +98,15 @@ class _VlcrcDoc:
                 del self._lines[i]
         else:
             self._lines.append(f"{key}={str_value}")
+        return True
 
-    def merge(self, settings: dict[str, Any]) -> None:
+    def merge(self, settings: dict[str, Any]) -> bool:
+        """Apply all settings. Returns True if any value actually changed."""
+        changed = False
         for key, value in settings.items():
-            self.set(key, value)
+            if self.set(key, value):
+                changed = True
+        return changed
 
 
 def _to_str(value: Any) -> str:
@@ -113,15 +130,19 @@ def apply_config(args: dict, request_id: str) -> dict:
     vlcrc = _vlcrc_path()
     doc = _VlcrcDoc()
     doc.read(vlcrc)
-    doc.merge(settings)
+    changed = doc.merge(settings)
 
     if dry_run:
         log(f"dryRun: would write {len(settings)} key(s) to {vlcrc}")
-        return {"requestId": request_id, "changed": bool(settings)}
+        return {"requestId": request_id, "changed": changed}
 
-    doc.write(vlcrc)
-    log(f"Updated vlcrc: {vlcrc}")
-    return {"requestId": request_id, "changed": bool(settings)}
+    if changed:
+        doc.write(vlcrc)
+        log(f"Updated vlcrc: {vlcrc}")
+    else:
+        log("No changes detected, skipping write")
+
+    return {"requestId": request_id, "changed": changed}
 
 
 def main() -> None:

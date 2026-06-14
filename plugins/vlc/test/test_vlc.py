@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
-from pathlib import Path
+
 
 PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
