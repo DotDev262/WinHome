@@ -6,14 +6,11 @@ import tempfile
 from configparser import ConfigParser
 
 
-def check_installed(args: dict) -> dict:
+def check_installed() -> bool:
     """Detects if Greenshot is installed by checking AppData directories or PATH execution contexts."""
-    request_id = args.get("requestId", "unknown")
     app_data = os.environ.get("APPDATA", os.path.expanduser("~\\AppData\\Roaming"))
     config_dir = os.path.join(app_data, "Greenshot")
-    
-    installed = os.path.exists(config_dir) or (shutil.which("Greenshot.exe") is not None)
-    return {"requestId": request_id, "installed": installed}
+    return os.path.exists(config_dir) or (shutil.which("Greenshot.exe") is not None)
 
 
 def apply(args: dict) -> dict:
@@ -71,25 +68,32 @@ def apply(args: dict) -> dict:
 
 def main():
     """Main JSON-RPC routing entrypoint handling host engine input/output pipelines."""
+    request_id = "unknown"
     try:
         input_data = sys.stdin.read().strip()
         if not input_data:
+            sys.stdout.write(json.dumps({"requestId": request_id, "error": "Empty stdin"}) + "\n")
+            sys.stdout.flush()
             return
-        
+
         request = json.loads(input_data)
         command = request.get("command")
         args = request.get("args", {})
-        
+        request_id = args.get("requestId", "unknown")
+
         if command == "check_installed":
-            response = check_installed(args)
+            is_installed = check_installed()
+            response = {"requestId": request_id, "installed": is_installed}
         elif command == "apply":
             response = apply(args)
         else:
-            response = {"requestId": args.get("requestId", "unknown"), "error": f"Unknown command: {command}"}
-            
+            response = {"requestId": request_id, "error": f"Unknown command: {command}"}
+
         sys.stdout.write(json.dumps(response) + "\n")
+        sys.stdout.flush()
     except Exception as e:
-        sys.stdout.write(json.dumps({"error": str(e)}) + "\n")
+        sys.stdout.write(json.dumps({"requestId": request_id, "error": str(e)}) + "\n")
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":
