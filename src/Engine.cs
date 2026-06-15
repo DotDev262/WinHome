@@ -262,7 +262,8 @@ namespace WinHome
         _logger.LogInfo("\n--- Reconciling Apps ---");
         var applyState = _stateWriter.Load();
 
-        foreach (var app in config.Apps)
+        var sortedApps = DependencyResolver.Sort(config.Apps);
+        foreach (var app in sortedApps)
         {
           var stepId = $"{app.Manager}:{app.Id}";
           _logger.LogInfo($"[Engine] Processing {stepId}...");
@@ -372,7 +373,8 @@ namespace WinHome
       if (config.EnvVars.Any())
       {
         _logger.LogInfo("\n--- Configuring Environment Variables ---");
-        foreach (var env in config.EnvVars)
+        var sortedEnvVars = DependencyResolver.Sort(config.EnvVars);
+        foreach (var env in sortedEnvVars)
         {
           _env.Apply(env, dryRun);
         }
@@ -526,22 +528,53 @@ namespace WinHome
       }
 
       if (config.Dotfiles.Any())
-      {
-        _logger.LogInfo("\n--- Linking Dotfiles ---");
-        await Task.Run(() => Parallel.ForEach(config.Dotfiles, dotfile => _dotfiles.Apply(dotfile, dryRun)));
-      }
+        {
+          _logger.LogInfo("\n--- Linking Dotfiles ---");
+          var sortedDotfiles = DependencyResolver.Sort(config.Dotfiles);
+          var hasDotfileDeps = sortedDotfiles.Any(d => d.DependsOn?.Count > 0);
+          if (hasDotfileDeps)
+          {
+            // Sequential execution required to honour dependency order
+            foreach (var dotfile in sortedDotfiles)
+              _dotfiles.Apply(dotfile, dryRun);
+          }
+          else
+          {
+            await Task.Run(() => Parallel.ForEach(sortedDotfiles, dotfile => _dotfiles.Apply(dotfile, dryRun)));
+          }
+        }
 
       if (config.Services.Any())
-      {
-        _logger.LogInfo("\n--- Managing Windows Services ---");
-        await Task.Run(() => Parallel.ForEach(config.Services, service => _serviceManager.Apply(service, dryRun)));
-      }
+        {
+          _logger.LogInfo("\n--- Managing Windows Services ---");
+          var sortedServices = DependencyResolver.Sort(config.Services);
+          var hasServiceDeps = sortedServices.Any(s => s.DependsOn?.Count > 0);
+          if (hasServiceDeps)
+          {
+            foreach (var service in sortedServices)
+              _serviceManager.Apply(service, dryRun);
+          }
+          else
+          {
+            await Task.Run(() => Parallel.ForEach(sortedServices, service => _serviceManager.Apply(service, dryRun)));
+          }
+        }
 
-      if (config.ScheduledTasks.Any())
-      {
-        _logger.LogInfo("\n--- Scheduling Tasks ---");
-        await Task.Run(() => Parallel.ForEach(config.ScheduledTasks, task => _scheduledTaskService.Apply(task, dryRun)));
-      }
+        if (config.ScheduledTasks.Any())
+        {
+          _logger.LogInfo("\n--- Scheduling Tasks ---");
+          var sortedTasks = DependencyResolver.Sort(config.ScheduledTasks);
+          var hasTaskDeps = sortedTasks.Any(t => t.DependsOn?.Count > 0);
+          if (hasTaskDeps)
+          {
+            foreach (var task in sortedTasks)
+              _scheduledTaskService.Apply(task, dryRun);
+          }
+          else
+          {
+            await Task.Run(() => Parallel.ForEach(sortedTasks, task => _scheduledTaskService.Apply(task, dryRun)));
+          }
+        }
 
       if (!dryRun)
       {

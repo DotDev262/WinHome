@@ -4,7 +4,7 @@ using YamlDotNet.Serialization;
 namespace WinHome.Models
 {
   /// <summary>Configuration for managing a Windows service's state and startup type.</summary>
-  public class WindowsServiceConfig
+  public class WindowsServiceConfig : ResourceBase
   {
     [YamlMember(Alias = "name")]
     [JsonPropertyName("name")]

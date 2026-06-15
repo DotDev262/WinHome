@@ -6,7 +6,7 @@ using YamlDotNet.Serialization;
 namespace WinHome.Models
 {
   /// <summary>Complete configuration for a Windows Scheduled Task including triggers and actions.</summary>
-  public class ScheduledTaskConfig
+  public class ScheduledTaskConfig : ResourceBase
   {
     /// <summary>Registered task name in Task Scheduler. Combined with <see cref="Path"/> to form the full registration path.</summary>
     [YamlMember(Alias = "name")]
