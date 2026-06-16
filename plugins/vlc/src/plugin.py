@@ -1,4 +1,4 @@
-﻿"""
+"""
 VLC media player configuration provider plugin.
 
 Manages settings in %APPDATA%\\vlc\\vlcrc using a custom INI-like parser
