@@ -1,4 +1,3 @@
-using System.Text.Json;
 using WinHome.Interfaces;
 using WinHome.Models;
 using YamlDotNet.Serialization;
@@ -14,23 +13,32 @@ public class ConfigBackupService : IConfigBackupService
   public ConfigBackupService()
   {
     _serializer = new SerializerBuilder()
-        .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
-        .Build();
+      .WithNamingConvention(CamelCaseNamingConvention.Instance)
+      .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
+      .Build();
 
     _deserializer = new DeserializerBuilder()
-        .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        .Build();
+      .WithNamingConvention(CamelCaseNamingConvention.Instance)
+      .Build();
   }
 
-  public async Task BackupAsync(Configuration config, string output)
+  public async Task BackupAsync(
+      string provider,
+      Configuration config,
+      string output)
   {
-    var backup = new
+    if (!config.Extensions.TryGetValue(provider, out var settings))
     {
-      provider = "winhome",
-      version = config.Version,
-      createdAt = DateTime.UtcNow,
-      configuration = config
+      throw new InvalidOperationException(
+          $"Provider '{provider}' not found in configuration.");
+    }
+
+    var backup = new ConfigBackupModel
+    {
+      Provider = provider,
+      Version = config.Version,
+      CreatedAt = DateTime.UtcNow,
+      Settings = settings
     };
 
     var yaml = _serializer.Serialize(backup);
@@ -40,24 +48,34 @@ public class ConfigBackupService : IConfigBackupService
     await File.WriteAllTextAsync(tmp, yaml);
 
     File.Move(
-        tmp,
-        output,
-        true);
+      tmp,
+      output,
+      true);
   }
 
-  public async Task<Configuration> RestoreAsync(string input)
+  public async Task<(string Provider, object? Settings)> RestoreAsync(
+      string input)
   {
     if (!File.Exists(input))
-      throw new FileNotFoundException("Backup file not found.", input);
+    {
+      throw new FileNotFoundException(
+          "Backup file not found.",
+          input);
+    }
 
     var content = await File.ReadAllTextAsync(input);
 
     var backup = _deserializer.Deserialize<ConfigBackupModel>(content);
 
-    if (backup?.Configuration == null)
-      throw new InvalidDataException("Invalid WinHome backup format.");
+    if (backup == null)
+    {
+      throw new InvalidDataException(
+          "Invalid WinHome backup format.");
+    }
 
-    return backup.Configuration;
+    return (
+        backup.Provider,
+        backup.Settings);
   }
 
   private class ConfigBackupModel
@@ -65,6 +83,6 @@ public class ConfigBackupService : IConfigBackupService
     public string Provider { get; set; } = "";
     public string Version { get; set; } = "";
     public DateTime CreatedAt { get; set; }
-    public Configuration? Configuration { get; set; }
+    public object? Settings { get; set; }
   }
 }

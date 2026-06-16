@@ -164,13 +164,35 @@ class Program
             {
               if (provider == "restore")
               {
-                var restoredConfig = await backupService.RestoreAsync(path);
+                var (restoredProvider, restoredSettings) =
+                    await backupService.RestoreAsync(path!);
+
+                var existingConfigFile = new FileInfo("config.yaml");
+
+                if (!existingConfigFile.Exists)
+                {
+                  logger.LogError("[Config] config.yaml not found.");
+                  return 1;
+                }
+
+                var existingYaml =
+                    await File.ReadAllTextAsync(existingConfigFile.FullName);
+
+                var restoreDeserializer = new DeserializerBuilder()
+                  .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                  .Build();
+
+                var existingConfig =
+                    restoreDeserializer.Deserialize<Configuration>(existingYaml);
+
+                existingConfig.Extensions[restoredProvider] =
+                    restoredSettings!;
 
                 var serializer = new SerializerBuilder()
                   .WithNamingConvention(CamelCaseNamingConvention.Instance)
                   .Build();
 
-                var yaml = serializer.Serialize(restoredConfig);
+                var yaml = serializer.Serialize(existingConfig);
 
                 var tmp = "config.yaml.tmp";
 
@@ -181,7 +203,8 @@ class Program
                   "config.yaml",
                   true);
 
-                logger.LogSuccess("[Config] Configuration restored.");
+                logger.LogSuccess(
+                    $"[Config] Provider '{restoredProvider}' restored.");
 
                 return 0;
               }
@@ -202,7 +225,16 @@ class Program
 
               var config = deserializer.Deserialize<Configuration>(yamlContent);
 
-              await backupService.BackupAsync(config, path);
+              if (config == null)
+              {
+                logger.LogError("[Config] Invalid configuration file.");
+                return 1;
+              }
+
+              await backupService.BackupAsync(
+              provider,
+              config,
+              path!);
 
               logger.LogSuccess($"[Config] Backup created: {path}");
 
