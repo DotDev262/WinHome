@@ -1,7 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.CommandLine;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
 using WinHome.Models;
@@ -32,6 +35,26 @@ class Program
         return 0;
       }
 
+      // 🧠 STEP 1: Parse out --log-file path parameter from raw string arguments ahead of host build lifecycle
+      string? logFilePath = null;
+      for (int i = 0; i < args.Length; i++)
+      {
+        if (args[i] == "--log-file" && i + 1 < args.Length)
+        {
+          logFilePath = args[i + 1];
+          break;
+        }
+      }
+
+      // If an invalid path is passed, catch it immediately and return a clear error
+      if (logFilePath != null && string.IsNullOrWhiteSpace(logFilePath))
+      {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.Error.WriteLine("[Fatal Error] Invalid path provided for --log-file option flag.");
+        Console.ResetColor();
+        return 1;
+      }
+
       using IHost host = AppHost.CreateHost(args);
 
       var rootCommand = CliBuilder.BuildRootCommand(
@@ -44,7 +67,6 @@ class Program
             if (update)
             {
               var updater = host.Services.GetRequiredService<IUpdateService>();
-              // In a real app, get version from Assembly
               var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.2.0";
               if (await updater.CheckForUpdatesAsync(currentVersion))
               {
@@ -232,3 +254,4 @@ class Program
     }
   }
 }
+
