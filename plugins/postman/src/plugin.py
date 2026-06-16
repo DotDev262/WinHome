@@ -95,8 +95,8 @@ def deep_merge(original, updates):
     return merged
 
 
-def handle_check_installed(request_id):
-    return {"requestId": request_id, "installed": is_postman_installed()}
+def handle_check_installed():
+    return is_postman_installed()
 
 
 def handle_apply(settings, dry_run, request_id):
@@ -129,7 +129,7 @@ def main():
         settings = args.get("settings", {})
 
         if command == "check_installed":
-            response = handle_check_installed(request_id)
+            response = {"requestId": request_id, "installed": handle_check_installed()}
 
         elif command == "apply":
             response = handle_apply(settings, dry_run, request_id)
