@@ -1,12 +1,36 @@
+using System;
+using System.IO;
 using WinHome.Interfaces;
 
 namespace WinHome.Services.Logging
 {
-  /// <summary>Logs messages to the console with color-coded output for each severity level.</summary>
+  /// <summary>Logs messages to the console with color-coded output and optionally persists them to a file.</summary>
   public class ConsoleLogger : ILogger
   {
     private readonly object _consoleLock = new();
     private volatile LogLevel _minLevel = LogLevel.Info;
+    private readonly string _logFilePath;
+
+    /// <summary>Initializes a new instance of ConsoleLogger with an optional persistent logging file path.</summary>
+    public ConsoleLogger(string logFilePath = null)
+    {
+      _logFilePath = logFilePath;
+      if (!string.IsNullOrEmpty(_logFilePath))
+      {
+        try
+        {
+          var directory = Path.GetDirectoryName(_logFilePath);
+          if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+          {
+            Directory.CreateDirectory(directory);
+          }
+        }
+        catch (Exception ex)
+        {
+          Console.Error.WriteLine($"[Logger Error] Failed to initialize directory: {ex.Message}");
+        }
+      }
+    }
 
     /// <summary>Sets the minimum log level; messages below this level are suppressed.</summary>
     public void SetMinLevel(LogLevel level)
@@ -14,10 +38,25 @@ namespace WinHome.Services.Logging
       _minLevel = level;
     }
 
-    /// <summary>Logs a message at the given level with appropriate console coloring.</summary>
+    /// <summary>Logs a message at the given level with appropriate console coloring and file persistence.</summary>
     public void Log(string message, LogLevel level)
     {
       if (level < _minLevel) return;
+
+      // 🧠 TASK INTERCEPTOR: Capture the log parameters, stamp the exact requested format, and save in append mode
+      if (!string.IsNullOrEmpty(_logFilePath))
+      {
+        try
+        {
+          string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+          string fileLogEntry = $"[{timestamp}] [{level.ToString().ToUpper()}] {message}";
+          File.AppendAllText(_logFilePath, fileLogEntry + Environment.NewLine);
+        }
+        catch (Exception ex)
+        {
+          Console.Error.WriteLine($"[Logger Error] Failed to append entry to persistent file: {ex.Message}");
+        }
+      }
 
       switch (level)
       {
@@ -120,3 +159,4 @@ namespace WinHome.Services.Logging
     }
   }
 }
+
