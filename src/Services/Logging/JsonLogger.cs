@@ -1,14 +1,39 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using WinHome.Interfaces;
 
 namespace WinHome.Services.Logging
 {
-  /// <summary>Logs messages as JSON entries for structured output consumption (e.g. CI, tooling).</summary>
+  /// <summary>Logs messages as JSON entries for structured output consumption and optionally persists them to a file.</summary>
   public class JsonLogger : ILogger
   {
     private readonly object _lock = new();
     private readonly List<LogEntry> _logEntries = new();
     private volatile LogLevel _minLevel = LogLevel.Info;
+    private readonly string _logFilePath;
+
+    /// <summary>Initializes a new instance of JsonLogger with an optional persistent logging file path.</summary>
+    public JsonLogger(string logFilePath = null)
+    {
+      _logFilePath = logFilePath;
+      if (!string.IsNullOrEmpty(_logFilePath))
+      {
+        try
+        {
+          var directory = Path.GetDirectoryName(_logFilePath);
+          if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+          {
+            Directory.CreateDirectory(directory);
+          }
+        }
+        catch (Exception ex)
+        {
+          Console.Error.WriteLine($"[Logger Error] Failed to initialize directory: {ex.Message}");
+        }
+      }
+    }
 
     /// <summary>Sets the minimum log level; messages below this level are suppressed.</summary>
     public void SetMinLevel(LogLevel level)
@@ -16,10 +41,25 @@ namespace WinHome.Services.Logging
       _minLevel = level;
     }
 
-    /// <summary>Records a JSON log entry at the given level.</summary>
+    /// <summary>Records a JSON log entry and appends a human-readable stamp to the persistent log file if specified.</summary>
     public void Log(string message, LogLevel level)
     {
       if (level < _minLevel) return;
+
+      // 🧠 TASK INTERCEPTOR: Capture the log parameters, stamp the exact requested human-readable format, and save in append mode
+      if (!string.IsNullOrEmpty(_logFilePath))
+      {
+        try
+        {
+          string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+          string fileLogEntry = $"[{timestamp}] [{level.ToString().ToUpper()}] {message}";
+          File.AppendAllText(_logFilePath, fileLogEntry + Environment.NewLine);
+        }
+        catch (Exception ex)
+        {
+          Console.Error.WriteLine($"[Logger Error] Failed to append entry to persistent file: {ex.Message}");
+        }
+      }
 
       lock (_lock)
       {
@@ -60,3 +100,4 @@ namespace WinHome.Services.Logging
   /// <summary>Represents a single log entry with message and severity level.</summary>
   public record LogEntry(string Message, LogLevel Level);
 }
+
