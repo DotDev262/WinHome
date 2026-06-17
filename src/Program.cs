@@ -172,6 +172,101 @@ class Program
                 break;
             }
             return 0;
+          },
+
+          // Config Backup Action
+          async (provider, path, _, minLogLevel) =>
+          {
+            var logger = host.Services.GetRequiredService<ILogger>();
+            logger.SetMinLevel(minLogLevel);
+
+            var backupService = host.Services.GetRequiredService<IConfigBackupService>();
+
+            try
+            {
+              if (provider == "restore")
+              {
+                var (restoredProvider, restoredSettings) =
+                    await backupService.RestoreAsync(path!);
+
+                var existingConfigFile = new FileInfo("config.yaml");
+
+                if (!existingConfigFile.Exists)
+                {
+                  logger.LogError("[Config] config.yaml not found.");
+                  return 1;
+                }
+
+                var existingYaml =
+                    await File.ReadAllTextAsync(existingConfigFile.FullName);
+
+                var restoreDeserializer = new DeserializerBuilder()
+                  .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                  .Build();
+
+                var existingConfig =
+                    restoreDeserializer.Deserialize<Configuration>(existingYaml);
+
+                existingConfig.Extensions[restoredProvider] =
+                    restoredSettings!;
+
+                var serializer = new SerializerBuilder()
+                  .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                  .Build();
+
+                var yaml = serializer.Serialize(existingConfig);
+
+                var tmp = "config.yaml.tmp";
+
+                await File.WriteAllTextAsync(tmp, yaml);
+
+                File.Move(
+                  tmp,
+                  "config.yaml",
+                  true);
+
+                logger.LogSuccess(
+                    $"[Config] Provider '{restoredProvider}' restored.");
+
+                return 0;
+              }
+
+              var configFile = new FileInfo("config.yaml");
+
+              if (!configFile.Exists)
+              {
+                logger.LogError("[Config] config.yaml not found. Run generate first.");
+                return 1;
+              }
+
+              var yamlContent = await File.ReadAllTextAsync(configFile.FullName);
+
+              var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build();
+
+              var config = deserializer.Deserialize<Configuration>(yamlContent);
+
+              if (config == null)
+              {
+                logger.LogError("[Config] Invalid configuration file.");
+                return 1;
+              }
+
+              await backupService.BackupAsync(
+              provider,
+              config,
+              path!);
+
+              logger.LogSuccess($"[Config] Backup created: {path}");
+
+              return 0;
+            }
+            catch (Exception ex)
+            {
+              logger.LogError($"[Config] Failed: {ex.Message}");
+              return 1;
+            }
           }
       );
 

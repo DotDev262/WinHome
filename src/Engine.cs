@@ -100,10 +100,8 @@ namespace WinHome
       {
         if (plugin.Capabilities.Contains("package_manager"))
         {
-          // Register the plugin as a package manager
           if (!_managers.ContainsKey(plugin.Name))
           {
-            // Delay logging discovery until it's actually used by an app
             _managers[plugin.Name] = new WinHome.Services.Plugins.PluginPackageManagerAdapter(plugin, _pluginRunner, _pluginManager, _runtimeResolver, _logger);
           }
         }
@@ -237,7 +235,6 @@ namespace WinHome
       var pluginsNeedingRuntime = plugins.Where(p => !p.Type.Equals("executable", StringComparison.OrdinalIgnoreCase)).ToList();
       if (pluginsNeedingRuntime.Any())
       {
-        // Only reconcile runtimes for plugins that are actually used in the config
         var usedPluginNames = config.Apps.Select(a => a.Manager)
             .Concat(new[] { "vim", "vscode", "obsidian", "ohmyposh" }.Where(_ => config.Vim != null || config.Vscode != null || config.Obsidian != null || config.Ohmyposh != null))
             .Concat(config.Extensions.Keys)
@@ -256,13 +253,25 @@ namespace WinHome
         }
       }
 
+      // Build a global set of all resourceIds across every collection.
+      // Passed to DependencyResolver.Sort so cross-type dependsOn references
+      // (e.g. a service depending on an app) are validated without error.
+      var globalResourceIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+      foreach (var r in config.Apps)           if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+      foreach (var r in config.EnvVars)        if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+      foreach (var r in config.Dotfiles)       if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+      foreach (var r in config.RegistryTweaks) if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+      foreach (var r in config.Services)       if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+      foreach (var r in config.ScheduledTasks) if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+
       // Install Apps
       if (config.Apps.Any())
       {
         _logger.LogInfo("\n--- Reconciling Apps ---");
         var applyState = _stateWriter.Load();
 
-        foreach (var app in config.Apps)
+        var sortedApps = DependencyResolver.Sort(config.Apps, globalResourceIds);
+        foreach (var app in sortedApps)
         {
           var stepId = $"{app.Manager}:{app.Id}";
           _logger.LogInfo($"[Engine] Processing {stepId}...");
@@ -270,7 +279,6 @@ namespace WinHome
           if (!forceReapply && !dryRun && applyState.TryGetValue(stepId, out var previous) && previous.Status == StepStatus.Succeeded)
           {
             _logger.LogInfo($"[Engine] Skipping previously applied {stepId}.");
-            // Record skipped if not present or different
             var skippedResult = new StepResult
             {
               StepId = stepId,
@@ -372,7 +380,8 @@ namespace WinHome
       if (config.EnvVars.Any())
       {
         _logger.LogInfo("\n--- Configuring Environment Variables ---");
-        foreach (var env in config.EnvVars)
+        var sortedEnvVars = DependencyResolver.Sort(config.EnvVars, globalResourceIds);
+        foreach (var env in sortedEnvVars)
         {
           _env.Apply(env, dryRun);
         }
@@ -393,7 +402,6 @@ namespace WinHome
           var pluginName = ext.Key;
           var pluginConfig = ext.Value;
 
-          // Find plugin by name
           var plugin = plugins.FirstOrDefault(p => p.Name.Equals(pluginName, StringComparison.OrdinalIgnoreCase));
 
           if (plugin != null)
@@ -429,7 +437,6 @@ namespace WinHome
       if (allTweaks.Any() && OperatingSystem.IsWindows())
       {
         _logger.LogInfo("\n--- Applying Registry Tweaks ---");
-        // Run sequentially to ensure state is saved accurately after each operation
         var applyState = _stateWriter.Load();
         foreach (var tweak in allTweaks)
         {
@@ -508,7 +515,6 @@ namespace WinHome
       {
         _logger.LogInfo("\n--- Applying System Settings ---");
 
-        // Capture original values before applying new settings
         if (!dryRun)
         {
           var originals = await _systemSettings.CaptureOriginalSettingsAsync(config.SystemSettings);
@@ -528,19 +534,49 @@ namespace WinHome
       if (config.Dotfiles.Any())
       {
         _logger.LogInfo("\n--- Linking Dotfiles ---");
-        await Task.Run(() => Parallel.ForEach(config.Dotfiles, dotfile => _dotfiles.Apply(dotfile, dryRun)));
+        var sortedDotfiles = DependencyResolver.Sort(config.Dotfiles, globalResourceIds);
+        var hasDotfileDeps = sortedDotfiles.Any(d => d.DependsOn?.Count > 0);
+        if (hasDotfileDeps)
+        {
+          foreach (var dotfile in sortedDotfiles)
+            _dotfiles.Apply(dotfile, dryRun);
+        }
+        else
+        {
+          await Task.Run(() => Parallel.ForEach(sortedDotfiles, dotfile => _dotfiles.Apply(dotfile, dryRun)));
+        }
       }
 
       if (config.Services.Any())
       {
         _logger.LogInfo("\n--- Managing Windows Services ---");
-        await Task.Run(() => Parallel.ForEach(config.Services, service => _serviceManager.Apply(service, dryRun)));
+        var sortedServices = DependencyResolver.Sort(config.Services, globalResourceIds);
+        var hasServiceDeps = sortedServices.Any(s => s.DependsOn?.Count > 0);
+        if (hasServiceDeps)
+        {
+          foreach (var service in sortedServices)
+            _serviceManager.Apply(service, dryRun);
+        }
+        else
+        {
+          await Task.Run(() => Parallel.ForEach(sortedServices, service => _serviceManager.Apply(service, dryRun)));
+        }
       }
 
       if (config.ScheduledTasks.Any())
       {
         _logger.LogInfo("\n--- Scheduling Tasks ---");
-        await Task.Run(() => Parallel.ForEach(config.ScheduledTasks, task => _scheduledTaskService.Apply(task, dryRun)));
+        var sortedTasks = DependencyResolver.Sort(config.ScheduledTasks, globalResourceIds);
+        var hasTaskDeps = sortedTasks.Any(t => t.DependsOn?.Count > 0);
+        if (hasTaskDeps)
+        {
+          foreach (var task in sortedTasks)
+            _scheduledTaskService.Apply(task, dryRun);
+        }
+        else
+        {
+          await Task.Run(() => Parallel.ForEach(sortedTasks, task => _scheduledTaskService.Apply(task, dryRun)));
+        }
       }
 
       if (!dryRun)
@@ -560,7 +596,6 @@ namespace WinHome
     }
 
     /// <summary>Prints a diff of what will change compared to the previously applied state.</summary>
-    /// <param name="config">The proposed configuration to diff against.</param>
     public async Task PrintDiffAsync(Configuration config)
     {
       _logger.LogInfo("\n--- State Diff ---");
@@ -572,7 +607,6 @@ namespace WinHome
       var itemsToAdd = currentState.AppliedItems.Except(previousState.AppliedItems).ToList();
       var unchangedItems = previousState.AppliedItems.Intersect(currentState.AppliedItems).ToList();
 
-      // System settings reverts
       var systemSettingsReverts = previousState.SystemSettingOriginals.Keys
           .Where(k => !config.SystemSettings.ContainsKey(k))
           .ToList();
@@ -587,9 +621,7 @@ namespace WinHome
       {
         _logger.LogError("\n[-] Items to Remove:");
         foreach (var item in itemsToRemove)
-        {
           _logger.LogError($"  - {FormatFriendlyName(item)}");
-        }
       }
 
       if (systemSettingsReverts.Any())
@@ -606,22 +638,17 @@ namespace WinHome
       {
         _logger.LogSuccess("\n[+] Items to Add:");
         foreach (var item in itemsToAdd)
-        {
           _logger.LogSuccess($"  + {FormatFriendlyName(item)}");
-        }
       }
 
       if (unchangedItems.Any())
       {
         _logger.LogInfo("\n[=] Unchanged Items:");
         foreach (var item in unchangedItems)
-        {
           _logger.LogInfo($"  = {FormatFriendlyName(item)}");
-        }
       }
     }
 
-    /// <summary>Formats an internal item identifier into a human-readable name for display.</summary>
     private string FormatFriendlyName(string item)
     {
       if (item.StartsWith("reg:"))
@@ -632,31 +659,21 @@ namespace WinHome
           string path = parts[0];
           string name = parts[1];
           string? settingKey = _systemSettings.GetFriendlyName(path, name);
-          if (settingKey != null)
-          {
-            return $"System Setting: {settingKey}";
-          }
+          if (settingKey != null) return $"System Setting: {settingKey}";
           return $"Registry Tweak: {path} -> {name}";
         }
       }
       else
       {
         var parts = item.Split(':', 2);
-        if (parts.Length == 2)
-        {
-          return $"App ({parts[0]}): {parts[1]}";
-        }
+        if (parts.Length == 2) return $"App ({parts[0]}): {parts[1]}";
       }
       return item;
     }
 
-    /// <summary>Applies environment variable overrides from the active profile onto the configuration.</summary>
     private static void ApplyProfileEnvironmentOverrides(Configuration config, ProfileConfig profile)
     {
-      if (!profile.EnvVars.Any())
-      {
-        return;
-      }
+      if (!profile.EnvVars.Any()) return;
 
       foreach (var profileEnv in profile.EnvVars.Where(env => !string.IsNullOrWhiteSpace(env.Variable)))
       {
@@ -674,39 +691,25 @@ namespace WinHome
             string.Equals(env.Action, profileEnv.Action, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(env.Value, profileEnv.Value, StringComparison.OrdinalIgnoreCase));
 
-        if (!alreadyConfigured)
-        {
-          config.EnvVars.Add(profileEnv);
-        }
+        if (!alreadyConfigured) config.EnvVars.Add(profileEnv);
       }
     }
 
-    /// <summary>Builds a <see cref="StateData"/> from the given configuration listing all items that would be applied.</summary>
     private async Task<StateData> BuildStateFromConfig(Configuration config)
     {
       var state = new StateData();
 
-      // App managers
       foreach (var app in config.Apps)
-      {
         state.AppliedItems.Add($"{app.Manager}:{app.Id}");
-      }
 
-      // Registry tweaks
       var presetTweaks = await _systemSettings.GetTweaksAsync(config.SystemSettings);
       var allTweaks = config.RegistryTweaks.Concat(presetTweaks).ToList();
       foreach (var reg in allTweaks)
-      {
         state.AppliedItems.Add($"reg:{reg.Path}|{reg.Name}");
-      }
 
       return state;
     }
 
-    /// <summary>Waits for internet connectivity by pinging 1.1.1.1.</summary>
-    /// <param name="timeoutSeconds">Maximum seconds to wait for connectivity.</param>
-    /// <param name="cancellationToken">A token to cancel the wait.</param>
-    /// <returns><c>true</c> if network is available within the timeout.</returns>
     private async Task<bool> WaitForNetwork(int timeoutSeconds = 30, CancellationToken cancellationToken = default)
     {
       _logger.LogInfo("[Engine] Checking for internet connectivity...");
@@ -723,10 +726,7 @@ namespace WinHome
             return true;
           }
         }
-        catch (Exception)
-        {
-          /* Ping failed - will retry */
-        }
+        catch (Exception) { /* Ping failed - will retry */ }
 
         _logger.LogInfo("[Engine] Waiting for network...");
         await Task.Delay(2000, cancellationToken);

@@ -71,6 +71,7 @@ public static class AppHost
 
     // Domain Services
     services.AddSingleton<IConfigValidator, ConfigValidator>();
+    services.AddSingleton<IConfigBackupService, ConfigBackupService>();
     services.AddSingleton<IDotfileService, DotfileService>();
     services.AddSingleton<IRegistryService, RegistryService>();
     services.AddSingleton<ISystemSettingsService, SystemSettingsService>();
