@@ -25,7 +25,7 @@ public static class AppHost
   {
     bool isJson = args.Contains("--json");
 
-    // 🧠 EARLY PARSE LOG FILE ROUTINE: Intercepts the raw command argument elements before host compilation
+    // Early parse log file routine: Intercepts the raw command argument elements before host compilation
     string? logFilePath = null;
     for (int i = 0; i < args.Length; i++)
     {
