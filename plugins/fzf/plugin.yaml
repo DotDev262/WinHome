@@ -1,5 +1,6 @@
 name: fzf
 version: 1.0.0
+author: CH-GAGANRAJ
 type: python
 main: src/plugin.py
 capabilities:

@@ -103,6 +103,7 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | --------------- | ------------------------------------------------------- | ----------------- | ------------------------- |
 | `betterdiscord` | Manages BetterDiscord data settings in `settings.json`. | `config_provider` | [Details](#betterdiscord) |
 | `discord`       | Manages Discord client settings in `settings.json`.     | `config_provider` | [Details](#discord)       |
+| `spotify`       | Manages Spotify desktop client preferences.             | `config_provider` | [Details](./spotify.md)   |
 
 ### Examples And Test Fixtures
 
@@ -572,6 +573,14 @@ Deep-merges settings into `%APPDATA%\BetterDiscord\data\settings.json`.
 Config key: `extensions.discord`
 
 Deep-merges settings into `%APPDATA%\discord\settings.json`.
+
+<a id="spotify"></a>
+
+#### spotify
+
+Config key: `extensions.spotify`
+
+Merges key-value settings into `%APPDATA%\Spotify\prefs`. See [full docs](spotify.md).
 
 ### Examples And Test Fixtures
 
