@@ -16,7 +16,7 @@ jobs:
       python_plugins: ${{ steps.find.outputs.python_plugins }}
       js_plugins:     ${{ steps.find.outputs.js_plugins }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Discover plugins
         id: find
@@ -71,7 +71,7 @@ jobs:
       LOCALAPPDATA: /home/runner/localappdata
       USERPROFILE: /home/runner
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup environment
         run: |
@@ -115,7 +115,7 @@ jobs:
 
     name: "JS › ${{ matrix.plugin }}"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Bun
         shell: bash
