@@ -530,6 +530,13 @@ Manages general PowerToys settings plus supported module files such as `FancyZon
 Config key: `extensions.sharex`
 
 Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
+<a id="wallpaper-engine"></a>
+
+#### wallpaper-engine
+
+Config key: `extensions.wallpaper-engine`
+
+For detailed information, see the [Wallpaper Engine Plugin Documentation](./wallpaper-engine.md).
 
 <a id="windows-explorer"></a>
 
@@ -554,6 +561,39 @@ Manages `%USERPROFILE%\Documents\sandbox.wsb`, including memory allocation, netw
 Config key: `extensions.yasb`
 
 Deep-merges YAML settings into `%USERPROFILE%\.config\yasb\config.yaml`.
+### Media And Creativity
+
+<a id="audacity"></a>
+
+#### audacity
+
+Config key: `extensions.audacity`
+
+For detailed information, see the [Audacity Plugin Documentation](./audacity.md).
+
+<a id="irfanview"></a>
+
+#### irfanview
+
+Config key: `extensions.irfanview`
+
+For detailed information, see the [IrfanView Plugin Documentation](./irfanview.md).
+
+<a id="obs-studio"></a>
+
+#### obs-studio
+
+Config key: `extensions.obs-studio`
+
+For detailed information, see the [OBS Studio Plugin Documentation](./obs-studio.md).
+
+<a id="spicetify"></a>
+
+#### spicetify
+
+Config key: `extensions.spicetify`
+
+For detailed information, see the [Spicetify Plugin Documentation](./spicetify.md).
 
 ### Community And Communication
 
