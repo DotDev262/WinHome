@@ -71,6 +71,7 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `lazydocker` | Manages LazyDocker YAML configuration.                     | `config_provider` | [Details](#lazydocker) |
 | `lazygit`  | Manages `lazygit` YAML configuration.                        | `config_provider` | [Details](#lazygit)  |
 | `mise`     | Manages `config.toml` for the mise version manager.          | `config_provider` | [Details](#mise)     |
+| `postman`  | Manages automated environment mapping and setup configurations for Postman. | `config_provider` | [Details](./postman.md) |
 | `opencode` | Manages OpenCode JSON and JSONC settings.                    | `config_provider` | [Details](#opencode) |
 | `openssh`  | Manages global and host-specific entries in `~/.ssh/config`. | `config_provider` | [Details](#openssh)  |
 | `rclone`   | Manages `rclone.conf` global settings and remotes.           | `config_provider` | [Details](#rclone)   |
