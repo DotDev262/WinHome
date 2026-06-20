@@ -38,6 +38,7 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `helix-editor`    | Manages Helix `config.toml` and `languages.toml`.             | `config_provider`                    | [Details](#helix-editor)    |
 | `notepadplusplus` | Manages Notepad++ JSON settings.                              | `config_provider`                    | [Details](#notepadplusplus) |
 | `obsidian`        | Configures vault settings and community plugins for Obsidian. | `config_provider`                    | [Details](#obsidian)        |
+| `sublime-text`    | Manages Sublime Text user preferences in `Preferences.sublime-settings`. | `config_provider`                    | [Details](#sublime-text)    |
 | `vim`             | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [Details](#vim)             |
 | `vscode`          | Syncs VS Code settings, profiles, and extensions.             | `config_provider`, `package_manager` | [Details](#vscode)          |
 | `zed`             | Manages Zed editor settings in JSONC format.                  | `config_provider`                    | [Details](#zed)             |
@@ -260,6 +261,17 @@ Config key: `extensions.obsidian` or top-level `obsidian`
 
 Configures vault-scoped Obsidian settings and can install or enable community plugins inside
 `.obsidian`.
+
+<a id="sublime-text"></a>
+
+#### sublime-text
+
+Config key: `extensions.sublime-text`
+
+Manages Sublime Text user preferences by merging settings into
+`%APPDATA%\Sublime Text\Packages\User\Preferences.sublime-settings`.
+
+See [full docs](./sublime-text.md).
 
 <a id="vim"></a>
 
