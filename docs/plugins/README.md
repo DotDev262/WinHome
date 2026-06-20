@@ -92,6 +92,7 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | `everything` | Manages Everything search application configuration.                        | `config_provider` | [Details](#everything) |
 | `keepassxc`  | Manages KeePassXC INI settings.                                             | `config_provider` | [Details](#keepassxc)  |
 | `powertoys`  | Manages PowerToys general settings and supported module settings.           | `config_provider` | [Details](#powertoys)  |
+| `rainmeter`  | Manages global Rainmeter settings in `Rainmeter.ini`.                       | `config_provider` | [Details](./rainmeter.md) |
 | `sharex`     | Manages ShareX `ShareX.json`.                                               | `config_provider` | [Details](#sharex)     |
 | `rustup`     | Manages `settings.toml` for the Rust toolchain installer.                   | `config_provider` | [Details](#rustup)     |
 | `windows-explorer` | Manages Windows Explorer preferences and settings.                    | `config_provider` | [Details](#windows-explorer) |
@@ -524,6 +525,15 @@ Config key: `extensions.powertoys`
 
 Manages general PowerToys settings plus supported module files such as `FancyZones`, `Awake`, and
 `PowerRename`.
+
+<a id="rainmeter"></a>
+
+#### rainmeter
+
+Config key: `extensions.rainmeter`
+
+Merges sections and key-value settings into `%APPDATA%\Rainmeter\Rainmeter.ini`. See
+[full docs](rainmeter.md).
 
 <a id="sharex"></a>
 
