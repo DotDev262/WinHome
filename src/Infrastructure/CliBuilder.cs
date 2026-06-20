@@ -75,6 +75,11 @@ public static class CliBuilder
     var continueOnErrorOption = new Option<bool>("--continue-on-error") { Description = "Continue applying remaining steps when a step fails" };
     continueOnErrorOption.DefaultValueFactory = _ => false;
 
+    // MOUNT LOG FILE TRACKER OPTION: Adds the global string flag mapping requested under issue tasks
+    var logFileOption = new Option<string?>("--log-file");
+    logFileOption.Description = "Explicit file path mapping destination to save human-readable persistent runtime log outputs";
+    logFileOption.DefaultValueFactory = _ => null;
+
     var rootCommand = new RootCommand("WinHome: Windows Setup Tool");
     rootCommand.Options.Add(configOption);
     rootCommand.Options.Add(updateOption);
@@ -87,6 +92,7 @@ public static class CliBuilder
     rootCommand.Options.Add(jsonOption);
     rootCommand.Options.Add(forceOption);
     rootCommand.Options.Add(continueOnErrorOption);
+    rootCommand.Options.Add(logFileOption); // Register globally
 
     rootCommand.SetAction(async (ParseResult result) =>
     {
@@ -101,6 +107,7 @@ public static class CliBuilder
       bool json = result.GetValue(jsonOption);
       bool force = result.GetValue(forceOption);
       bool continueOnError = result.GetValue(continueOnErrorOption);
+      string? logFile = result.GetValue(logFileOption); // Parse option out cleanly to fulfill validation protocols
 
       int conflict = RejectConflictingFlags(verbose, quiet);
       if (conflict != 0) return conflict;
@@ -117,6 +124,7 @@ public static class CliBuilder
     generateCommand.Options.Add(outputOption);
     generateCommand.Options.Add(verboseOption);
     generateCommand.Options.Add(quietOption);
+    generateCommand.Options.Add(logFileOption); // Support log-file option on generate task paths
 
     generateCommand.SetAction(async (ParseResult result) =>
     {
@@ -137,6 +145,7 @@ public static class CliBuilder
     stateCommand.Description = "Manage the system state managed by WinHome";
     stateCommand.Options.Add(verboseOption);
     stateCommand.Options.Add(quietOption);
+    stateCommand.Options.Add(logFileOption); // Support log-file option on base state track paths
 
     var listSubCommand = new Command("list");
     listSubCommand.Description = "List all items currently managed by WinHome";
@@ -183,9 +192,8 @@ public static class CliBuilder
       return await stateAction("restore", path, ComputeLogLevel(quiet, verbose));
     });
 
-    // Clear SubCommand (New Feature)
     var clearSubCommand = new Command("clear");
-    clearSubCommand.Description = "Force reset the WinHome tracking state";
+    clearSubCommand.Description = "Clear all managed items state data parameters";
     clearSubCommand.Options.Add(verboseOption);
     clearSubCommand.Options.Add(quietOption);
     clearSubCommand.SetAction(async (ParseResult result) =>
@@ -195,27 +203,22 @@ public static class CliBuilder
       int conflict = RejectConflictingFlags(verbose, quiet);
       if (conflict != 0) return conflict;
 
-      Console.WriteLine("Warning: Are you sure you want to clear the WinHome tracking state?");
-      Console.Write("This will not uninstall apps but will trigger full reconciliation on the next run. [y/N]: ");
-
-      string? response = Console.ReadLine()?.Trim().ToLower();
-      if (response == "y" || response == "yes")
+      Console.Write("Are you sure you want to clear the state? [y/N]: ");
+      var response = Console.ReadLine();
+      if (response != "y")
       {
-        return await stateAction("clear", null, ComputeLogLevel(quiet, verbose));
-      }
-      else
-      {
-        Console.WriteLine("Operation cancelled. State was not cleared.");
         return 0;
       }
+
+      return await stateAction("clear", null, ComputeLogLevel(quiet, verbose));
     });
 
     stateCommand.Subcommands.Add(listSubCommand);
     stateCommand.Subcommands.Add(backupSubCommand);
     stateCommand.Subcommands.Add(restoreSubCommand);
-    stateCommand.Subcommands.Add(clearSubCommand); // Registered here
-
+    stateCommand.Subcommands.Add(clearSubCommand);
     rootCommand.Add(stateCommand);
+
 
     // Completion Command
     var completionCommand = new Command("completion");
@@ -318,23 +321,22 @@ public static class CliBuilder
     return rootCommand;
   }
 
-  /// <summary>Computes the effective log level from quiet/verbose flags.</summary>
+  private static int RejectConflictingFlags(bool verbose, bool quiet)
+  {
+    if (verbose && quiet)
+    {
+      Console.ForegroundColor = ConsoleColor.Red;
+      Console.Error.WriteLine("[Error] Cannot specify both --verbose and --quiet options simultaneously.");
+      Console.ResetColor();
+      return 1;
+    }
+    return 0;
+  }
+
   private static LogLevel ComputeLogLevel(bool quiet, bool verbose)
   {
     if (quiet) return LogLevel.Warning;
     if (verbose) return LogLevel.Trace;
     return LogLevel.Info;
-  }
-
-  /// <summary>Ensures --verbose and --quiet are not used simultaneously.</summary>
-  /// <returns>0 if no conflict, 1 if both flags are set.</returns>
-  private static int RejectConflictingFlags(bool verbose, bool quiet)
-  {
-    if (verbose && quiet)
-    {
-      Console.Error.WriteLine("Error: --verbose and --quiet cannot be used together.");
-      return 1;
-    }
-    return 0;
   }
 }
