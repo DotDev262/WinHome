@@ -36,6 +36,7 @@ marketplace-style index for those plugins and a quick reference for how each one
 | Name              | Brief description                                             | Capabilities                         | Docs                        |
 | ----------------- | ------------------------------------------------------------- | ------------------------------------ | --------------------------- |
 | `helix-editor`    | Manages Helix `config.toml` and `languages.toml`.             | `config_provider`                    | [Details](#helix-editor)    |
+| `joplin`          | Manages Joplin `settings.json` configuration.                 | `config_provider`                    | [Details](./joplin.md)      |
 | `notepadplusplus` | Manages Notepad++ JSON settings.                              | `config_provider`                    | [Details](#notepadplusplus) |
 | `obsidian`        | Configures vault settings and community plugins for Obsidian. | `config_provider`                    | [Details](#obsidian)        |
 | `vim`             | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [Details](#vim)             |
