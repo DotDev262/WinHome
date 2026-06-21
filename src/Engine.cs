@@ -257,11 +257,11 @@ namespace WinHome
       // Passed to DependencyResolver.Sort so cross-type dependsOn references
       // (e.g. a service depending on an app) are validated without error.
       var globalResourceIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-      foreach (var r in config.Apps)           if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
-      foreach (var r in config.EnvVars)        if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
-      foreach (var r in config.Dotfiles)       if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+      foreach (var r in config.Apps) if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+      foreach (var r in config.EnvVars) if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+      foreach (var r in config.Dotfiles) if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
       foreach (var r in config.RegistryTweaks) if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
-      foreach (var r in config.Services)       if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
+      foreach (var r in config.Services) if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
       foreach (var r in config.ScheduledTasks) if (r.ResourceId is not null) globalResourceIds.Add(r.ResourceId);
 
       // Install Apps
