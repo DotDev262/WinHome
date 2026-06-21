@@ -88,11 +88,11 @@ namespace WinHome.Services.System
 
     private class ConfigBackupModel
     {
-        public string Provider { get; set; } = "";
-        public string Version { get; set; } = "";
-        public string SourcePath { get; set; } = "";
-        public DateTime CreatedAt { get; set; }
-        public object? Settings { get; set; }
+      public string Provider { get; set; } = "";
+      public string Version { get; set; } = "";
+      public string SourcePath { get; set; } = "";
+      public DateTime CreatedAt { get; set; }
+      public object? Settings { get; set; }
     }
   }
 }

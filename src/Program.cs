@@ -255,7 +255,7 @@ class Program
               await backupService.BackupAsync(
               provider,
               config,
-	      configFile.FullName,
+          configFile.FullName,
               path!);
 
               logger.LogSuccess($"[Config] Backup created: {path}");
