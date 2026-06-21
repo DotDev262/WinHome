@@ -1,7 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.CommandLine;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
 using WinHome.Models;
@@ -44,7 +47,6 @@ class Program
             if (update)
             {
               var updater = host.Services.GetRequiredService<IUpdateService>();
-              // In a real app, get version from Assembly
               var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.2.0";
               if (await updater.CheckForUpdatesAsync(currentVersion))
               {

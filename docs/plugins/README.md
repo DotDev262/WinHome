@@ -36,8 +36,10 @@ marketplace-style index for those plugins and a quick reference for how each one
 | Name              | Brief description                                             | Capabilities                         | Docs                        |
 | ----------------- | ------------------------------------------------------------- | ------------------------------------ | --------------------------- |
 | `helix-editor`    | Manages Helix `config.toml` and `languages.toml`.             | `config_provider`                    | [Details](#helix-editor)    |
+| `joplin`          | Manages Joplin `settings.json` configuration.                 | `config_provider`                    | [Details](./joplin.md)      |
 | `notepadplusplus` | Manages Notepad++ JSON settings.                              | `config_provider`                    | [Details](#notepadplusplus) |
 | `obsidian`        | Configures vault settings and community plugins for Obsidian. | `config_provider`                    | [Details](#obsidian)        |
+| `sublime-text`    | Manages Sublime Text user preferences in `Preferences.sublime-settings`. | `config_provider`                    | [Details](#sublime-text)    |
 | `vim`             | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [Details](#vim)             |
 | `vscode`          | Syncs VS Code settings, profiles, and extensions.             | `config_provider`, `package_manager` | [Details](#vscode)          |
 | `zed`             | Manages Zed editor settings in JSONC format.                  | `config_provider`                    | [Details](#zed)             |
@@ -70,6 +72,7 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `lazydocker` | Manages LazyDocker YAML configuration.                     | `config_provider` | [Details](#lazydocker) |
 | `lazygit`  | Manages `lazygit` YAML configuration.                        | `config_provider` | [Details](#lazygit)  |
 | `mise`     | Manages `config.toml` for the mise version manager.          | `config_provider` | [Details](#mise)     |
+| `postman`  | Manages automated environment mapping and setup configurations for Postman. | `config_provider` | [Details](./postman.md) |
 | `opencode` | Manages OpenCode JSON and JSONC settings.                    | `config_provider` | [Details](#opencode) |
 | `openssh`  | Manages global and host-specific entries in `~/.ssh/config`. | `config_provider` | [Details](#openssh)  |
 | `rclone`   | Manages `rclone.conf` global settings and remotes.           | `config_provider` | [Details](#rclone)   |
@@ -89,8 +92,10 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | `autohotkey` | Manages an AutoHotkey v2 bootstrap script and WinHome-owned settings block. | `config_provider` | [Details](#autohotkey) |
 | `espanso`    | Manages Espanso text expansion rules in `base.yml`.                         | `config_provider` | [Details](#espanso)    |
 | `everything` | Manages Everything search application configuration.                        | `config_provider` | [Details](#everything) |
+| `greenshot`  | Manages Greenshot screenshot utility settings in `Greenshot.ini`.           | `config_provider` | [Details](./greenshot.md) |
 | `keepassxc`  | Manages KeePassXC INI settings.                                             | `config_provider` | [Details](#keepassxc)  |
 | `powertoys`  | Manages PowerToys general settings and supported module settings.           | `config_provider` | [Details](#powertoys)  |
+| `rainmeter`  | Manages global Rainmeter settings in `Rainmeter.ini`.                       | `config_provider` | [Details](./rainmeter.md) |
 | `sharex`     | Manages ShareX `ShareX.json`.                                               | `config_provider` | [Details](#sharex)     |
 | `rustup`     | Manages `settings.toml` for the Rust toolchain installer.                   | `config_provider` | [Details](#rustup)     |
 | `windows-explorer` | Manages Windows Explorer preferences and settings.                    | `config_provider` | [Details](#windows-explorer) |
@@ -103,6 +108,7 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | --------------- | ------------------------------------------------------- | ----------------- | ------------------------- |
 | `betterdiscord` | Manages BetterDiscord data settings in `settings.json`. | `config_provider` | [Details](#betterdiscord) |
 | `discord`       | Manages Discord client settings in `settings.json`.     | `config_provider` | [Details](#discord)       |
+| `spotify`       | Manages Spotify desktop client preferences.             | `config_provider` | [Details](./spotify.md)   |
 
 ### Examples And Test Fixtures
 
@@ -260,6 +266,17 @@ Config key: `extensions.obsidian` or top-level `obsidian`
 
 Configures vault-scoped Obsidian settings and can install or enable community plugins inside
 `.obsidian`.
+
+<a id="sublime-text"></a>
+
+#### sublime-text
+
+Config key: `extensions.sublime-text`
+
+Manages Sublime Text user preferences by merging settings into
+`%APPDATA%\Sublime Text\Packages\User\Preferences.sublime-settings`.
+
+See [full docs](./sublime-text.md).
 
 <a id="vim"></a>
 
@@ -523,6 +540,15 @@ Config key: `extensions.powertoys`
 Manages general PowerToys settings plus supported module files such as `FancyZones`, `Awake`, and
 `PowerRename`.
 
+<a id="rainmeter"></a>
+
+#### rainmeter
+
+Config key: `extensions.rainmeter`
+
+Merges sections and key-value settings into `%APPDATA%\Rainmeter\Rainmeter.ini`. See
+[full docs](rainmeter.md).
+
 <a id="sharex"></a>
 
 #### sharex
@@ -572,6 +598,14 @@ Deep-merges settings into `%APPDATA%\BetterDiscord\data\settings.json`.
 Config key: `extensions.discord`
 
 Deep-merges settings into `%APPDATA%\discord\settings.json`.
+
+<a id="spotify"></a>
+
+#### spotify
+
+Config key: `extensions.spotify`
+
+Merges key-value settings into `%APPDATA%\Spotify\prefs`. See [full docs](spotify.md).
 
 ### Examples And Test Fixtures
 
