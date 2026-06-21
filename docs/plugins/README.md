@@ -22,6 +22,7 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `chocolatey` | Manages Chocolatey client configuration and feature flags.              | `config_provider` | [Details](#chocolatey)    |
 | `miniconda`  | Python/R Package and Environment Manager                                | `config_provider` | [Details](./miniconda.md) |
 | `npm`        | Manages user-level `.npmrc` settings.                                   | `config_provider` | [Details](#npm)           |
+| `nuget`      | Manages NuGet package sources and config in `NuGet.Config`.            | `config_provider` | [Details](./nuget.md)     |
 | `nvm`        | Manages NVM for Windows `settings.txt`.                                 | `config_provider` | [Details](#nvm)           |
 | `pip`        | Manages `pip.ini` settings for Python package installs.                 | `config_provider` | [Details](#pip)           |
 | `pnpm`       | Manages user-level `.npmrc` settings for pnpm.                          | `config_provider` | [Details](#pnpm)          |
@@ -197,6 +198,14 @@ Config key: `extensions.chocolatey`
 
 Manages `%ChocolateyInstall%\config\chocolatey.config`, including both `config` values and
 `features`. For package installs, see [Chocolatey module docs](../modules/chocolatey.md).
+
+<a id="nuget"></a>
+
+#### nuget
+
+Config key: `extensions.nuget`
+
+Merges settings into `%APPDATA%\NuGet\NuGet.Config`. See [full docs](nuget.md).
 
 <a id="npm"></a>
 <a id="nvm"></a>
