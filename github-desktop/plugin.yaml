@@ -1,0 +1,37 @@
+name: github-desktop
+type: config_provider
+description: Manage GitHub Desktop application settings stored in config.json.
+supported_os:
+  - windows
+settings:
+  theme:
+    type: string
+    description: UI theme (light, dark, system)
+  defaultBranchName:
+    type: string
+    description: Default branch name for new repos
+  confirmRemovedFiles:
+    type: boolean
+    description: Confirmation on file removal
+  confirmDiscardChanges:
+    type: boolean
+    description: Confirmation on discard
+  usageStats:
+    type: boolean
+    description: Telemetry opt-in/out
+  signCommits:
+    type: boolean
+    description: Sign commits by default
+  selectedTheme:
+    type: string
+    description: Accent/theme selection
+  externalEditor:
+    type: string
+    description: Default external editor config
+  shell:
+    type: string
+    description: Default shell config
+  hideWhitespaceInStorybook:
+    type: boolean
+    description: Whitespace display setting
+
