@@ -14,7 +14,6 @@ import sys
 import tempfile
 import textwrap
 
-
 PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 SAMPLE_VLCRC = textwrap.dedent("""\
