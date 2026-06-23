@@ -21,8 +21,7 @@ def test_check_installed():
     resp, stderr = run_plugin(req)
     assert resp is not None
     assert resp["requestId"] == "123"
-    assert resp["success"] is True
-    assert "installed" in resp["data"]
+    assert isinstance(resp["installed"], bool)
 
 
 def test_apply_new_file(monkeypatch, tmp_path):
@@ -36,8 +35,7 @@ def test_apply_new_file(monkeypatch, tmp_path):
     resp, stderr = run_plugin(req)
     assert resp is not None
     assert resp["requestId"] == "456"
-    assert resp["success"] is True
-    assert resp["changed"] is True
+    assert resp.get("changed") is True
 
     config_file = tmp_path / "topgrade" / "topgrade.toml"
     assert config_file.exists()
@@ -73,8 +71,7 @@ display_time = true
 
     resp, stderr = run_plugin(req)
     assert resp is not None
-    assert resp["success"] is True
-    assert resp["changed"] is True
+    assert resp.get("changed") is True
 
     with open(config_file, "r", encoding="utf-8") as f:
         doc = tomlkit.load(f)
