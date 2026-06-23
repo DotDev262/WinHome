@@ -161,9 +161,30 @@ class Program
             logger.SetMinLevel(minLogLevel);
 
             var backupService = host.Services.GetRequiredService<IConfigBackupService>();
+            var driftService = host.Services.GetRequiredService<IConfigDriftService>();
 
             try
             {
+              if (provider == "drift")
+              {
+                var drifts = await driftService.DetectDriftAsync(path!);
+
+                if (drifts.Count == 0)
+                {
+                  logger.LogSuccess("[Config] No configuration drift detected.");
+                  return 0;
+                }
+
+                foreach (var drift in drifts)
+                {
+                  logger.LogWarning(
+                    $"[DRIFT] {drift.Provider}.{drift.Key} Expected='{drift.Expected}' Actual='{drift.Actual}'");
+                }
+
+                logger.LogWarning($"[Config] {drifts.Count} drift(s) detected.");
+
+                return 0;
+              }
               if (provider == "restore")
               {
                 var (restoredProvider, restoredSettings) =
@@ -236,6 +257,7 @@ class Program
               await backupService.BackupAsync(
               provider,
               config,
+          configFile.FullName,
               path!);
 
               logger.LogSuccess($"[Config] Backup created: {path}");

@@ -15,14 +15,14 @@ public static class CliBuilder
   /// <summary>Constructs the root command with all options, subcommands (run, generate, state, completion), and their handlers.</summary>
   /// <param name="runAction">Handler for the default run action (applies configuration).</param>
   /// <param name="generateAction">Handler for the generate subcommand (generates config from system state).</param>
-  /// <param name="configBackupAction">Handler for configuration backup and restore.</param>
+  /// <param name="configAction">Handler for configuration backup and restore.</param>
   /// <param name="stateAction">Handler for the state subcommand (manages tracking state).</param>
   /// <returns>The configured root <see cref="RootCommand"/>.</returns>
   public static RootCommand BuildRootCommand(
     Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
     Func<FileInfo?, LogLevel, Task<int>> generateAction,
     Func<string, string?, LogLevel, Task<int>> stateAction,
-    Func<string, string?, string?, LogLevel, Task<int>>? configBackupAction = null)
+    Func<string, string?, string?, LogLevel, Task<int>>? configAction = null)
   {
     var configOption = new Option<FileInfo>("--config");
     configOption.Description = "Path to the YAML configuration file";
@@ -279,9 +279,9 @@ public static class CliBuilder
       var provider = result.GetValue(providerArgument)!;
       var output = result.GetValue(backupOutputOption)!;
 
-      return configBackupAction == null
+      return configAction == null
           ? 1
-          : await configBackupAction(
+          : await configAction(
               provider,
               output,
               null,
@@ -303,10 +303,33 @@ public static class CliBuilder
     {
       var input = result.GetValue(restoreInput)!;
 
-      return configBackupAction == null
+      return configAction == null
           ? 1
-          : await configBackupAction(
+          : await configAction(
               "restore",
+              input,
+              null,
+              ComputeLogLevel(false, false));
+    });
+
+    var configDriftCommand = new Command("drift");
+    configDriftCommand.Description = "Detect configuration drift";
+
+    var driftInput = new Argument<string>("input")
+    {
+      Description = "Backup file path"
+    };
+
+    configDriftCommand.Arguments.Add(driftInput);
+
+    configDriftCommand.SetAction(async (ParseResult result) =>
+    {
+      var input = result.GetValue(driftInput)!;
+
+      return configAction == null
+          ? 1
+          : await configAction(
+              "drift",
               input,
               null,
               ComputeLogLevel(false, false));
@@ -315,6 +338,7 @@ public static class CliBuilder
 
     configCommand.Subcommands.Add(configBackupCommand);
     configCommand.Subcommands.Add(configRestoreCommand);
+    configCommand.Subcommands.Add(configDriftCommand);
 
     rootCommand.Add(configCommand);
 

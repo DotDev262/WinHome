@@ -25,6 +25,7 @@ public class ConfigBackupService : IConfigBackupService
   public async Task BackupAsync(
       string provider,
       Configuration config,
+      string sourcePath,
       string output)
   {
     if (!config.Extensions.TryGetValue(provider, out var settings))
@@ -37,6 +38,7 @@ public class ConfigBackupService : IConfigBackupService
     {
       Provider = provider,
       Version = config.Version,
+      SourcePath = sourcePath,
       CreatedAt = DateTime.UtcNow,
       Settings = settings
     };
@@ -82,6 +84,7 @@ public class ConfigBackupService : IConfigBackupService
   {
     public string Provider { get; set; } = "";
     public string Version { get; set; } = "";
+    public string SourcePath { get; set; } = "";
     public DateTime CreatedAt { get; set; }
     public object? Settings { get; set; }
   }

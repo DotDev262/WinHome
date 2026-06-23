@@ -22,10 +22,11 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `chocolatey` | Manages Chocolatey client configuration and feature flags.              | `config_provider` | [Details](#chocolatey)    |
 | `miniconda`  | Python/R Package and Environment Manager                                | `config_provider` | [Details](./miniconda.md) |
 | `npm`        | Manages user-level `.npmrc` settings.                                   | `config_provider` | [Details](#npm)           |
+| `nuget`      | Manages NuGet package sources and config in `NuGet.Config`.            | `config_provider` | [Details](./nuget.md)     |
 | `nvm`        | Manages NVM for Windows `settings.txt`.                                 | `config_provider` | [Details](#nvm)           |
 | `pip`        | Manages `pip.ini` settings for Python package installs.                 | `config_provider` | [Details](#pip)           |
 | `pnpm`       | Manages user-level `.npmrc` settings for pnpm.                          | `config_provider` | [Details](#pnpm)          |
-| `scoop`      | Command-line Installer Provisioning Framework                           | `config_provider` | [Details](./scoop.md)     |
+| `scoop`      | Manages Scoop CLI `config.json` settings.                               |
 | `sdkman`     | Software Development Kit Manager for Java Ecosystem                     | `config_provider` | [Details](./sdkman.md)    |
 | `syncthing`  | Continuous File Synchronization Framework                               | `config_provider` | [Details](./syncthing.md) |
 | `winget`     | Manages Winget CLI `settings.json`, separate from package installation. | `config_provider` | [Details](#winget)        |
@@ -197,6 +198,14 @@ Config key: `extensions.chocolatey`
 
 Manages `%ChocolateyInstall%\config\chocolatey.config`, including both `config` values and
 `features`. For package installs, see [Chocolatey module docs](../modules/chocolatey.md).
+
+<a id="nuget"></a>
+
+#### nuget
+
+Config key: `extensions.nuget`
+
+Merges settings into `%APPDATA%\NuGet\NuGet.Config`. See [full docs](nuget.md).
 
 <a id="npm"></a>
 <a id="nvm"></a>
@@ -556,6 +565,13 @@ Merges sections and key-value settings into `%APPDATA%\Rainmeter\Rainmeter.ini`.
 Config key: `extensions.sharex`
 
 Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
+<a id="wallpaper-engine"></a>
+
+#### wallpaper-engine
+
+Config key: `extensions.wallpaper-engine`
+
+For detailed information, see the [Wallpaper Engine Plugin Documentation](./wallpaper-engine.md).
 
 <a id="windows-explorer"></a>
 
@@ -580,6 +596,39 @@ Manages `%USERPROFILE%\Documents\sandbox.wsb`, including memory allocation, netw
 Config key: `extensions.yasb`
 
 Deep-merges YAML settings into `%USERPROFILE%\.config\yasb\config.yaml`.
+### Media And Creativity
+
+<a id="audacity"></a>
+
+#### audacity
+
+Config key: `extensions.audacity`
+
+For detailed information, see the [Audacity Plugin Documentation](./audacity.md).
+
+<a id="irfanview"></a>
+
+#### irfanview
+
+Config key: `extensions.irfanview`
+
+For detailed information, see the [IrfanView Plugin Documentation](./irfanview.md).
+
+<a id="obs-studio"></a>
+
+#### obs-studio
+
+Config key: `extensions.obs-studio`
+
+For detailed information, see the [OBS Studio Plugin Documentation](./obs-studio.md).
+
+<a id="spicetify"></a>
+
+#### spicetify
+
+Config key: `extensions.spicetify`
+
+For detailed information, see the [Spicetify Plugin Documentation](./spicetify.md).
 
 ### Community And Communication
 
