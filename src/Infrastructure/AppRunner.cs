@@ -1,11 +1,9 @@
+﻿using WinHome.Infrastructure.Helpers;
 using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Services.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-
-using WinHome.Infrastructure.Helpers;  // <-- add this line
-git fetch origin
 
 namespace WinHome.Infrastructure;
 
@@ -39,9 +37,9 @@ public class AppRunner
   public async Task<int> RunAsync(FileInfo configFile, bool dryRun, string? profile, bool debug, bool diff, bool json, bool force = false, bool continueOnError = false)
   {
     try
-    
     {
       AdminGuard.EnsureAdministrator();
+
       if (!configFile.Exists)
       {
         _logger.LogError($"[Error] Configuration file not found: {configFile.FullName}");
