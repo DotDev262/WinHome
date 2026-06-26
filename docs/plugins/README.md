@@ -93,6 +93,7 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | `autohotkey` | Manages an AutoHotkey v2 bootstrap script and WinHome-owned settings block. | `config_provider` | [Details](#autohotkey) |
 | `espanso`    | Manages Espanso text expansion rules in `base.yml`.                         | `config_provider` | [Details](#espanso)    |
 | `everything` | Manages Everything search application configuration.                        | `config_provider` | [Details](#everything) |
+| `flow-launcher` | Manages Flow Launcher desktop search settings in `Settings.json`.       | `config_provider` | [Details](#flow-launcher) |
 | `greenshot`  | Manages Greenshot screenshot utility settings in `Greenshot.ini`.           | `config_provider` | [Details](./greenshot.md) |
 | `keepassxc`  | Manages KeePassXC INI settings.                                             | `config_provider` | [Details](#keepassxc)  |
 | `powertoys`  | Manages PowerToys general settings and supported module settings.           | `config_provider` | [Details](#powertoys)  |
@@ -531,6 +532,15 @@ Merges Espanso config into `%APPDATA%\espanso\match\base.yml`.
 Config key: `extensions.everything`
 
 Manages supported Everything configuration settings through WinHome.
+
+<a id="flow-launcher"></a>
+
+#### flow-launcher
+
+Config key: `extensions.flow-launcher`
+
+Deep-merges settings into `%APPDATA%\FlowLauncher\Settings\Settings.json`. See
+[full docs](flow-launcher.md).
 
 <a id="keepassxc"></a>
 

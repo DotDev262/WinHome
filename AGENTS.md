@@ -20,78 +20,150 @@
 - `"data"` wrapper and `"success"` field banned from all responses
 - PRs from non-assignees closed — verify assigned issues before review
 - PRs must only touch files in scope of assigned issue
+- Before accepting/assigning any plugin feature request or issue, verify `plugins/<name>/` doesn't already exist on `main` — if it does, close as duplicate
 - Contributors with open PRs cannot receive new assignments
+- Partial/split submissions for a single issue are not accepted — full feature must be delivered in one PR
 - Repo homepage set to GitHub Pages: https://DotDev262.github.io/WinHome/
 
 ## Merged This Session
-- **#388** (Dual State Management, @ionfwsrijan) — squash merged with `gssoc:approved`. Closes #376.
-- **#384** (Docker multi-stage, @Stewartsson) — squash merged with `gssoc:approved`. Closes #311.
-- **#377** (Syncthing, @Bhagyashri77777) — approved, squash merged with `gssoc:approved`. Closes #181.
-- **#371** (CliBuilder tests, @VIDYANKSHINI) — scope creep reverted, approved, squash merged with `gssoc:approved`. Closes #223.
-- **#379** (Wallpaper Engine, @Stewartsson) — 8 protocol issues fixed, 7/7 tests pass, 0 behind main. Approved and squash merged with `gssoc:approved`. Closes #301.
+- **#385** (Deno, @silentguyracer) — Closes #330.
+- **#428** (Multimedia docs, @Monica-CodingWorld) — Closes #400.
+- **#415** (Module docs, @bhagya-2006) — Closes #236.
+- **#430** (ScheduledTask identity bug, @ionfwsrijan) — Closes #425.
+- **#423** (Package managers batch, @Stewartsson) — Closes #402.
+- **#388** (Dual State Management, @ionfwsrijan) — Closes #376.
+- **#384** (Docker multi-stage, @Stewartsson) — Closes #311.
+- **#377** (Syncthing, @Bhagyashri77777) — Closes #181.
+- **#371** (CliBuilder tests, @VIDYANKSHINI) — Closes #223.
+- **#379** (Wallpaper Engine, @Stewartsson) — Closes #301.
+- **#381** (Flow Launcher, @basantnema31) — Closes #141.
+- **#422** (Spotify, @Devexhhh) — Closes #130.
+- **#386** (Joplin, @Vidheendu) — Closes #184.
+- **#433** (Greenshot, @Stewartsson) — Closes #293.
+- **#439** (Bump JsonSchema.Net, @app/dependabot) — Dependency upgrade.
+- **#432** (Sublime Text, @RaghuveerSingh05) — Closes #178.
+- **#437** (Config Backup & Restore, @sat-06) — Closes #434.
+- **#431** (Developer Tools Docs, @VIDYANKSHINI) — Closes #399.
+- **#441** (dependsOn, @akshara200829-lgtm) — Closes #435.
+- **#338** (NuGet, @lokeshkumar69) — Closes #328.
+- **#442** (Postman, @Vidheendu) — Closes #291.
+- **#417** (Fix Process PATH, @Bhagyashri77777) — Closes #392.
+- **#457** (actions/checkout v6→v7, @app/dependabot) — Dependency bump.
+- **#443** (Log file persistence, @Stewartsson) — Closes #147.
+- **#460** (Spotify docs, @CH-GAGANRAJ) — Closes #453.
+- **#462** (Joplin docs, @rj9884) — Closes #449.
+- **#372** (VLC, @A-adilajaleel) — Closes #297.
+- **#463** (Greenshot docs, @rj9884) — Closes #448.
+- **#464** (Postman docs, @Stewartsson) — Closes #451.
+- **#465** (Rainmeter docs, @Vishxlll20) — Closes #452.
+- **#468** (Sublime Text docs, @hasitapattapu) — Closes #454.
+- **#461** (Drift detection + source path metadata, @sat-06) — Full drift detection delivered. Closes #444, #425.
+- **#458** (README entries, @Bhagyashri77777) — Closes #455.
+- **#456** (Scoop docs rewrite, @Aashita101) — Closes #230.
 
 ## Closed This Session
-- **#380** (Binary registry, @aayushprsingh) — closed. Issue #364 already fixed by #373 (@ionfwsrijan). Non-assignee PR for resolved issue.
-- **#383** (Plugin Health Checker, @Vidheendu) — closed. Vague scope, no GSSOC labels, touches core infrastructure. Alternatives offered (#184, #202, #291).
-- **#382** (README TOC, @Yogender-verma) — closed. Repo already has DocFx documentation site on GitHub Pages; README TOC is redundant.
+- **#436** (README TOC, @Yogender-verma) — TOC redundant with DocFx site.
+- **#427** (Logging - JSON, @Shashank1725) — Per author request. Closes #147 (unassigned).
+- **#380** (Binary registry, @aayushprsingh) — Issue already fixed by #373. Non-assignee PR.
+- **#383** (Plugin Health Checker, @Vidheendu) — Vague scope, core infra touches.
+- **#382** (README TOC, @Yogender-verma) — Duplicate of #436 rationale.
+- **#440** (Audacity duplicate, @ashu-here) — Plugin already on main via PR #354.
+- **#474** (Landing page styling, @khushitripathi06) — Out of scope (CSS/design preference, DocFx styling).
 
 ## Unassigned
-- **#236** (Docs, @priyanshi-coder-2) — unassigned (12 days, no PR after 1-week policy). @bhagya-2006 asked to clarify merged PR claim.
-- **#311** (Docker, @mahi-bansal) — unassigned (10 days, no PR after 1-week policy). Conflict resolved by first-requester priority — awarded to @Stewartsson.
+- **#236** (Docs, @priyanshi-coder-2) — 12 days, no PR.
+- **#311** (Docker, @mahi-bansal) — 10 days, no PR.
+- **#230** (Docs, @Stewartsson) — Per request (wanted #293).
+- **#390** (Non-elevated shell, @Gnanesh67) — 9 days, no PR.
 
 ## New Assignments
-- **#407** (Command Injection, @ionfwsrijan) — assigned per request, type:security, level:intermediate
-## Reviewed This Session
-- **#388** (Dual State Management, @ionfwsrijan) — core fix solid (StateService migration, StepHistory), but scope creep: 17 unrelated plugin files formatted, Engine.cs comments stripped. CHANGES_REQUESTED.
-- **#386** (Joplin, @Vidheendu) — 10 protocol issues (\`requestId\` missing, \`\"success\"\`/`\"data\"` banned, \`dryRun\` from request, args passed as settings, no atomic writes, etc.). CHANGES_REQUESTED. Round 2 (Jun 8): all 10 fixed ✅ — but all 3 files missing POSIX trailing newlines. CHANGES_REQUESTED.
-- **#387** (Config Backup, @sat-06) — well-scoped, 0 behind main, clean approach. 3 issues: tab indentation in DotfileService.cs, no BackupService unit tests, `DateTime.Now` vs `UtcNow`. CHANGES_REQUESTED.
-- **#384** (Docker multi-stage, @Stewartsson) — round 3 review: `.dockerignore` fixed ✅, but `FROM ://microsoft.com` regression persists (empty commit), still 1 behind main. CHANGES_REQUESTED.
-- **#354** (Audacity, @Achiever199) — protocol-compliant, 18 tests, 0 behind main. Only issue: stray `bat/plugin.yaml` change. Asked to revert.
-- **#339** (Ditto, @vedika76) — 5 protocol issues including critical `check_installed` bare bool. CHANGES_REQUESTED. 48h window.
-- **#338** (NuGet, @lokeshkumar69) — 6 protocol issues including `"success"` field everywhere, `dryRun` from context. CHANGES_REQUESTED. 48h window.
+- **#407** (Command Injection, @ionfwsrijan) — type:security, level:intermediate
+- **#425** (ScheduledTask identity bug, @ionfwsrijan) — type:bug, level:beginner
+- **#178** (Sublime Text, @RaghuveerSingh05) — type:feature, level:beginner
+- **#293** (Greenshot, @Stewartsson) — type:feature, level:beginner
+- **#434** (Backup & Restore, @sat-06) — type:feature, level:intermediate
+- **#435** (dependsOn support, @akshara200829-lgtm) — type:feature, level:intermediate
+- **#147** (Logging persistent, @Stewartsson) — type:feature, level:beginner
+- **#291** (Postman, @Vidheendu) — type:feature, level:beginner
+- **#230** (Docs scoop, @Aashita101) — type:docs, level:beginner
+- **#390** (Non-elevated shell, @Randomlyclueless) — type:bug, level:intermediate
+- **#444** (Drift Detection, @sat-06) — type:feature, level:intermediate
+- **#445** (Docs deno, @billu-beep) — type:docs, level:beginner
+- **#453** (Docs spotify, @CH-GAGANRAJ) — type:docs, level:beginner
+- **#454** (Docs sublime-text, @hasitapattapu) — type:docs, level:beginner
+- **#455** (Docs README entries, @Bhagyashri77777) — type:docs, level:beginner
+- **#452** (Docs rainmeter, @Vishxlll20) — type:docs, level:beginner
+- **#449** (Docs joplin, @rj9884) — type:docs, level:beginner
+- **#448** (Docs greenshot, @rj9884) — type:docs, level:beginner
+- **#451** (Docs postman, @Stewartsson) — type:docs, level:beginner
 
-## Open PRs (by review status)
+## Reviews Done This Session
 
-### Aprroved — 0 behind main, ready to merge
-- *(none currently)*
+### Approved and merged
+- **#372** (VLC, @A-adilajaleel) — BOM removed from plugin.yaml, 21 tests pass, protocol-compliant. Merged.
+- **#443** (Log persistence, @Stewartsson) — Build fixed, clean persistence without emoji, 527 tests pass. Merged.
+- **#460** (Spotify docs, @CH-GAGANRAJ) — fzf revert confirmed, clean scoped PR. Merged.
+- **#462** (Joplin docs, @rj9884) — Standard template, POSIX newlines, scoped. Merged.
+- **#463** (Greenshot docs, @rj9884) — Standard template, POSIX newlines, scoped. Merged.
+- **#464** (Postman docs, @Stewartsson) — Standard template, POSIX newlines, CLEAN merge state. Merged.
+- **#465** (Rainmeter docs, @Vishxlll20) — POSIX newline fixed, standard template. Merged.
+- **#468** (Sublime Text docs, @hasitapattapu) — POSIX newline fixed, standard template. Merged.
+- **#461** (Drift detection + source path metadata, @sat-06) — Full drift detection delivered. Build passes (0 errors), 3 drift tests pass. Merged. Closes #444, #425.
+- **#458** (README entries, @Bhagyashri77777) — Clean scoped PR, 5 entries added. Merged. Closes #455.
+- **#456** (Scoop docs rewrite, @Aashita101) — Standard template, POSIX newlines. Merged. Closes #230.
+- **#475** (Ditto docs, @sleepyme06) — Standard template, POSIX newlines, scoped. Merged. Closes #446.
+- **#472** (VLC test lint fix, @Vishxlll20) — Removed blank line causing ruff import-sort error. Merged.
+- **#471** (NuGet docs, @Vishxlll20) — Comprehensive NuGet docs + README entry. Merged. Closes #450.
+- **#476** (Flow Launcher docs, @vipul674) — Standard template, POSIX newlines. Merged. Closes #447.
+- **#369** (Topgrade plugin, @AdityaM-IITH) — check_installed returns bare bool, dryRun from args, atomic writes, protocol-compliant. Build passes. Merged. Closes #186.
 
-### CHANGES_REQUESTED — awaiting author fixes
-- **#374** (Cross-platform config, @ANSHIKATYAGI30) — 0 behind main. 8 of 10 issues fixed, 1 remaining: `write_yaml` not atomic (still `open(file_path, "w")`). Tests don't assert `changed` field. Changelog under `data` instead of root.
-- **#354** (Audacity, @Achiever199) — 0 behind main, protocol-compliant, 18 tests pass. Only issue: stray `plugins/bat/plugin.yaml` change (prettier side effect). Asked to revert.
-- **#338** (NuGet, @lokeshkumar69) — 12 behind main, 6 issues: `"success"` in every response, `dryRun` from `context`, unknown command response polluted, `check_installed` unused params. 48h window.
-- **#339** (Ditto, @vedika76) — 12 behind main, 5 issues: CRITICAL — `check_installed` returns bare bool without `requestId` wrap, wrong `requestId` pattern, no `isinstance(settings, dict)` guard, unused params. 48h window.
-- **#384** (Docker multi-stage, @Stewartsson) — 4 rounds of review. 3 edge case fixes requested (cache optimization, .dockerignore gaps, remove useless COPY WinHome.sln). CHANGES_REQUESTED.
-- **#385** (Deno, @silentguyracer) — CHANGES_REQUESTED. 7 protocol violations (`"success"`, `"data"`, `dryRun` from context, wrong `requestId`, `check_installed` wrap issue, `"changed"` leak, unused param). Scope creep: includes `plugins/windows-explorer/` files. Uses fork's `main` branch.
+### CHANGES_REQUESTED
+- **#374** (Cross-platform config, @ANSHIKATYAGI30) — Atomic write fix applied. 4 test assertions check `response["changed"]` on non-apply responses (check_installed, error). Asked to remove stale assertions.
+- **#429** (Yarn, @krishsharma-code) — dryRun from context, test import paths, success field. Author says "working on it."
+- **#470** (GitHub Desktop, @Stewartsson) — File paths at wrong directory level, plugin.yaml format incorrect. 6 behind main.
+- **#459** (Deno docs, @billu-beep) — README scope fixed (now +1 line only). Content is correct but 15 behind main — needs rebase before merge.
+- **#477** (Admin elevation check, @Randomlyclueless) — Duplicate `using` statement in AppRunner.cs (compilation error). 0 behind main.
+## Open PRs
 
-### Awaiting review or rebase
-- **#372** (VLC, @A-adilajaleel) — asked to rebase.
-- **#369** (Topgrade, @AdityaM-IITH) — asked to rebase.
-- **#254** (Sublime Text, @gitsofyash) — extension granted, asked to rebase.
-- **#381** (Flow Launcher, @basantnema31) — 15 protocol issues (sys.exit, empty stdin hang, data/success, etc.).
-
-### Stale / scope creep
-- **#359** (--log-file, @Sujith-RMD) — scope creep (9 unrelated plugin files), formatting issues, stale.
-- **#362** (Greenshot, @sachin-mahato25) — 6 issues, merge conflict, stale.
-- **#360** (Scoop docs, @Tharsiga-21) — 1 of 6 plugins documented, stale.
-
-## Blocked / Warned
-- @Pratikshya32: final warning — off-topic issues #308/#309/#310 closed. Reported to GSSoC.
-- @leno23: reported to GSSoC — 10 unassigned PRs closed.
-- @basantnema31: warned for mass-requesting, user override granted for #141. PR #381 has 15 issues.
-- @VIDYANKSHINI: 10+ merged PRs. Assigned #202 (Rainmeter) after losing #311 to Stewartsson (first-requester priority).
-
-## Key Contributors
-- @VIDYANKSHINI: 10+ merged PRs. Most productive. Assigned #202 (Rainmeter).
-- @Stewartsson: #361 (Rustup), #379 (Wallpaper Engine) merged. Assigned #311 (Docker multi-stage). PR #384 needs full rewrite for C#.
-- @Devexhhh: #375 (Discord) merged. Assigned #130 (Spotify).
-- @Bhagyashri77777: #357 (Miniconda), #377 (Syncthing) merged. No open assignments.
-- @silentguyracer: #368 (Win Explorer) merged. Assigned #330 (Deno). PR #385 has 7 issues + scope creep.
-- @ionfwsrijan: #366, #367, #373 merged. Assigned #376 (Dual State Management).
-- @sat-06: assigned #96 (Config Backup). No open PRs.
-- @Vidheendu: assigned #184 (Joplin). New contributor.
+| # | Author | Title | State | Status |
+|---|--------|-------|-------|--------|
+| 477 | @Randomlyclueless | Admin elevation check (#390) | UNSTABLE | CHANGES_REQUESTED (duplicate using statement — compilation error) — 2 behind main |
+| 470 | @Stewartsson | GitHub Desktop plugin | UNSTABLE | CHANGES_REQUESTED (file paths, plugin.yaml format) — 2 behind main |
+| 459 | @billu-beep | Deno docs | UNKNOWN | CHANGES_REQUESTED resolved (content correct) — 17 behind main, needs rebase |
+| 429 | @krishsharma-code | Yarn plugin | UNSTABLE | CHANGES_REQUESTED (protocol) — 28 behind main |
+| 374 | @ANSHIKATYAGI30 | Cross-platform config | UNSTABLE | CHANGES_REQUESTED (test assertions) — 38 behind main |
 
 ## Available Issues
-- **#291** (Postman, level:beginner) — unassigned. @gaurav123-4 unassigned for inactivity, falsely claimed PR. @Stewartsson and @Vidheendu both have open PRs — can't assign.
-- **#202** (Rainmeter, level:beginner) — assigned to @VIDYANKSHINI
-- **#96** (Config Backup, level:beginner) — assigned to @sat-06 (PR #387 pending)
-- **#236** (Docs, level:beginner) — unassigned
+- **#467** (Plugin Docker Compose, level:beginner) — assigned to @amanyadav2107
+
+## New Assignments This Session
+- **#469** (Configuration Recipes docs, @suryansh24-coder) — type:docs, level:beginner
+- **#450** (Docs nuget, @Vishxlll20) — type:docs, level:beginner
+- **#447** (Docs flow-launcher, @vipul674) — type:docs, level:beginner
+- **#467** (Plugin Docker Compose, @amanyadav2107) — type:feature, level:beginner
+
+## Key Contributors
+- @VIDYANKSHINI: 10+ merged PRs — most productive.
+- @Stewartsson: #361, #379, #384, #433, #423, #443, #464 merged. Has open PR #470 (GitHub Desktop, 2 behind main, CHANGES_REQUESTED).
+- @Randomlyclueless: Open PR #477 (admin elevation fix, CHANGES_REQUESTED). Assigned #390.
+- @Bhagyashri77777: #357, #377, #417, #458 merged. No open assignments.
+- @sat-06: #387, #437, #461 merged. No open assignments.
+- @ionfwsrijan: #366, #367, #373, #388, #430 merged. No open assignments.
+- @Vidheendu: #386, #442 merged. No open assignments.
+- @rj9884: #462, #463 merged. New contributor, completed #449 and #448. No open assignments.
+- @RaghuveerSingh05: #432 merged. No open assignments.
+- @akshara200829-lgtm: #441 merged. No open assignments.
+- @lokeshkumar69: #338 merged. No open assignments.
+- @A-adilajaleel: #372 (VLC) merged. No open assignments.
+- @AdityaM-IITH: #369 (Topgrade) merged. No open assignments.
+- @Vishxlll20: #465, #472, #471 merged. All assignments completed. No open assignments.
+- @CH-GAGANRAJ: #460 merged. New contributor, completed #453.
+- @Aashita101: #456 merged. New contributor, completed #230.
+- @hasitapattapu: #468 merged. New contributor, completed #454.
+- @sleepyme06: #475 merged. New contributor, completed #446. No open assignments.
+- @vipul674: #476 merged. New contributor, completed #447. No open assignments.
+
+## Blocked / Warned
+- @Pratikshya32: final warning — off-topic issues. Reported to GSSoC.
+- @leno23: reported to GSSoC — 10 unassigned PRs closed.
+- @basantnema31: warned for mass-requesting.
