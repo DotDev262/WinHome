@@ -19,7 +19,7 @@ powered by modern, dependency-free, single-file .NET.
 [![Downloads](https://img.shields.io/github/downloads/DotDev262/WinHome/total?color=blue&logo=github)](https://github.com/DotDev262/WinHome/releases)
 [![Stars](https://img.shields.io/github/stars/DotDev262/WinHome?style=social)](https://github.com/DotDev262/WinHome/stargazers)
 [![License](https://img.shields.io/github/license/DotDev262/WinHome)](./LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4?logo=windows)]()
+![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4?logo=windows)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 
 </div>
