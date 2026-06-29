@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using System.Net.Http;
 using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Services;
@@ -23,6 +23,8 @@ namespace WinHome
     private readonly IStateService _stateService;
     private readonly IRuntimeResolver _runtimeResolver;
     private readonly StateWriter _stateWriter;
+    private static readonly HttpClient _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+    private static readonly Uri ConnectivityCheckUri = new("http://www.msftconnecttest.com/connecttest.txt");
 
     /// <summary>Initializes a new instance of <see cref="Engine"/> with all required service dependencies.</summary>
     public Engine(
@@ -718,15 +720,19 @@ namespace WinHome
       {
         try
         {
-          using var ping = new System.Net.NetworkInformation.Ping();
-          var reply = ping.Send("1.1.1.1", 2000);
-          if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
+          using var response = await _httpClient.GetAsync(
+              ConnectivityCheckUri, 
+              HttpCompletionOption.ResponseHeadersRead, 
+              cancellationToken);
+              
+          if (response.IsSuccessStatusCode)
           {
             _logger.LogSuccess("[Engine] Internet connection verified.");
             return true;
           }
         }
-        catch (Exception) { /* Ping failed - will retry */ }
+        catch (HttpRequestException) { /* Request failed - will retry */ }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { /* HttpClient timeout - will retry */ }
 
         _logger.LogInfo("[Engine] Waiting for network...");
         await Task.Delay(2000, cancellationToken);
