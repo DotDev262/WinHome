@@ -25,6 +25,4 @@ Closes #
 - [ ] I have read the [Contribution Guidelines](https://github.com/DotDev262/WinHome/blob/main/CONTRIBUTING.md).
 - [ ] My code is formatted correctly (I have run `dotnet format`, `uv tool run ruff format plugins/`, and `bun x prettier --write plugins/`).
 - [ ] I have linked the PR to an approved issue.
-- [ ] I do not have any other open PRs for WinHome (one-issue-per-contributor rule).
-- [ ] This PR contains the full implementation for the issue (partial/split submissions are not accepted).
 - [ ] I understand that a maintainer must apply the `gssoc:approved` label for this PR to count for points.
