@@ -1,3 +1,4 @@
+﻿using WinHome.Infrastructure.Helpers;
 using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Services.Logging;
@@ -37,6 +38,8 @@ public class AppRunner
   {
     try
     {
+      AdminGuard.EnsureAdministrator();
+
       if (!configFile.Exists)
       {
         _logger.LogError($"[Error] Configuration file not found: {configFile.FullName}");
