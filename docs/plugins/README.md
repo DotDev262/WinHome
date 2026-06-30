@@ -23,6 +23,7 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `miniconda`  | Python/R Package and Environment Manager                                | `config_provider` | [Details](./miniconda.md) |
 | `npm`        | Manages user-level `.npmrc` settings.                                   | `config_provider` | [Details](#npm)           |
 | `nuget`      | Manages NuGet package sources and config in `NuGet.Config`.            | `config_provider` | [Details](./nuget.md)     |
+| `deno`       | Manages Deno runtime configuration via `deno.json`.                     | `config_provider` | [Details](./deno.md)      |
 | `nvm`        | Manages NVM for Windows `settings.txt`.                                 | `config_provider` | [Details](#nvm)           |
 | `pip`        | Manages `pip.ini` settings for Python package installs.                 | `config_provider` | [Details](#pip)           |
 | `pnpm`       | Manages user-level `.npmrc` settings for pnpm.                          | `config_provider` | [Details](#pnpm)          |
