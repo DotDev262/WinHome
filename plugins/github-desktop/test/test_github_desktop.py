@@ -4,33 +4,51 @@ import sys
 import os
 from unittest.mock import patch, mock_open
 
-# Compliance constraint: Leveraging sys.path.append instead of sys.path.insert(0)
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+# Track the structural runtime location coordinates carefully
+target_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-import plugin
+# Compliance constraint: Leveraging sys.path.append instead of sys.path.insert(0)
+if target_src_path not in sys.path:
+    sys.path.append(target_src_path)
+
+try:
+    # Safely import the protocol-aligned script blocks out-of-the-box
+    import plugin
+finally:
+    # Violation 5 Refactor: Clean up environment variable paths immediately after import 
+    # to maintain absolute isolation parameters across test runs
+    if target_src_path in sys.path:
+        sys.path.remove(target_src_path)
 
 class TestGitHubDesktopPlugin(unittest.TestCase):
     
     @patch("sys.stdin")
-    @patch("sys.stderr")
-    def test_empty_stdin_throws_json_error(self, mock_stderr, mock_stdin):
+    def test_empty_stdin_throws_json_error(self, mock_stdin):
+        """Verifies that empty input context returns structured JSON error metadata."""
         mock_stdin.read.return_value = "   "
-        with self.assertRaises(SystemExit) as cm:
+        
+        with patch("sys.stdout") as mock_stdout:
             plugin.main()
-        self.assertEqual(cm.exception.code, 1)
+            # Captures the written string from stdout call arguments directly
+            captured_raw = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
+            output = json.loads(captured_raw.strip())
+            
+            self.assertEqual(output["requestId"], "unknown")
+            self.assertIn("error", output)
         
     @patch("sys.stdin")
     @patch("os.environ", {"APPDATA": "C:\\MockAppData"})
     @patch("os.path.exists")
     def test_check_installed_protocol_parity(self, mock_exists, mock_stdin):
+        """Verifies that installation checks return the proper envelope layout tracking."""
         mock_stdin.read.return_value = json.dumps({"requestId": "test-req-123", "check_installed": True})
         mock_exists.return_value = True
         
         with patch("sys.stdout") as mock_stdout:
-            with self.assertRaises(SystemExit) as cm:
-                plugin.main()
-            self.assertEqual(cm.exception.code, 0)
-            output = json.loads(mock_stdout.write.call_args)
+            plugin.main()
+            captured_raw = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
+            output = json.loads(captured_raw.strip())
+            
             self.assertEqual(output["requestId"], "test-req-123")
             self.assertTrue(output["installed"])
             
@@ -42,6 +60,7 @@ class TestGitHubDesktopPlugin(unittest.TestCase):
     @patch("os.fdopen", new_callable=mock_open)
     @patch("os.replace")
     def test_settings_deep_merge_atomic_write(self, mock_replace, mock_fdopen, mock_mkstemp, mock_file, mock_exists, mock_stdin):
+        """Verifies that deep merges calculate variance parameters seamlessly."""
         mock_stdin.read.return_value = json.dumps({
             "requestId": "test-req-456",
             "settings": {"defaultBranchName": "main", "confirmRemovedFiles": True},
@@ -51,14 +70,14 @@ class TestGitHubDesktopPlugin(unittest.TestCase):
         mock_mkstemp.return_value = (10, "C:\\MockAppData\\GitHub Desktop\\config_tmp.json")
         
         with patch("sys.stdout") as mock_stdout:
-            with self.assertRaises(SystemExit) as cm:
-                plugin.main()
-            self.assertEqual(cm.exception.code, 0)
-            output = json.loads(mock_stdout.write.call_args)
+            plugin.main()
+            captured_raw = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
+            output = json.loads(captured_raw.strip())
+            
             self.assertEqual(output["requestId"], "test-req-456")
             self.assertNotIn("success", output)
             self.assertNotIn("data", output)
+            self.assertTrue(output["changed"])
 
 if __name__ == "__main__":
     unittest.main()
-
