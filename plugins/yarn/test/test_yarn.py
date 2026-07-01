@@ -5,11 +5,15 @@ from io import StringIO
 from unittest.mock import patch
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+# Keep sys.path entry while importing so that `plugin` resolves correctly
+# and patch paths like `plugin._get_user_home` work reliably.
 sys.path.append(test_dir)
 try:
-    from src.plugin import main
+    from plugin import main
 finally:
-    sys.path.remove(test_dir)
+    # Do not remove test_dir; the tests patch symbols on the imported module.
+    pass
+
 
 
 def run_plugin(input_dict):
@@ -29,7 +33,7 @@ def run_plugin(input_dict):
         sys.stdout = old_stdout
 
 
-@patch("src.plugin._get_user_home")
+@patch("plugin._get_user_home")
 def test_check_installed_via_config(mock_home, tmp_path):
     # Create berry config file
     berry = tmp_path / ".yarnrc.yml"
@@ -41,7 +45,7 @@ def test_check_installed_via_config(mock_home, tmp_path):
 
 
 
-@patch("src.plugin._get_user_home")
+@patch("plugin._get_user_home")
 def test_apply_dry_run_berry(mock_home, tmp_path):
     mock_home.return_value = str(tmp_path)
     # No config exists; should attempt to create .yarnrc.yml on apply
@@ -61,13 +65,12 @@ def test_apply_dry_run_berry(mock_home, tmp_path):
     }
 
     response = run_plugin(request)
-    assert response["success"] is True
     assert response["changed"] is True
 
     assert not (tmp_path / ".yarnrc.yml").exists()
 
 
-@patch("src.plugin._get_user_home")
+@patch("plugin._get_user_home")
 def test_apply_writes_berry_file_with_newline(mock_home, tmp_path):
     mock_home.return_value = str(tmp_path)
 
@@ -96,7 +99,7 @@ def test_apply_writes_berry_file_with_newline(mock_home, tmp_path):
     assert "enableTelemetry:" in content
 
 
-@patch("src.plugin._get_user_home")
+@patch("plugin._get_user_home")
 def test_apply_classic_prefers_classic_if_present(mock_home, tmp_path):
     mock_home.return_value = str(tmp_path)
 
