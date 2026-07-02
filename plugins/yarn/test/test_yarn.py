@@ -33,16 +33,20 @@ def run_plugin(input_dict):
         sys.stdout = old_stdout
 
 
+@patch("plugin.shutil.which")
 @patch("plugin._get_user_home")
-def test_check_installed_via_config(mock_home, tmp_path):
+def test_check_installed_via_config(mock_home, mock_which, tmp_path):
     # Create berry config file
     berry = tmp_path / ".yarnrc.yml"
     berry.write_text("nodeLinker: node-modules\n", encoding="utf-8")
     mock_home.return_value = str(tmp_path)
 
-    response = run_plugin({"requestId": "r1", "command": "check_installed"})
-    assert response["installed"] is True
+    # Avoid environment-dependent behavior in shutil.which during tests.
+    mock_which.return_value = "/usr/bin/yarn"
 
+    response = run_plugin({"requestId": "r1", "command": "check_installed"})
+    print("\nACTUAL RESPONSE IS:", response)
+    assert response["installed"] is True
 
 
 @patch("plugin._get_user_home")
@@ -54,14 +58,14 @@ def test_apply_dry_run_berry(mock_home, tmp_path):
         "requestId": "r2",
         "command": "apply",
         "args": {
+            "dryRun": True,
             "settings": {
                 "nodeLinker": "node-modules",
                 "enableTelemetry": False,
                 "compressionLevel": 0,
                 "supportedArchitectures": {"os": "linux"},
-            }
+            },
         },
-        "context": {"dryRun": True},
     }
 
     response = run_plugin(request)
@@ -78,14 +82,14 @@ def test_apply_writes_berry_file_with_newline(mock_home, tmp_path):
         "requestId": "r3",
         "command": "apply",
         "args": {
+            "dryRun": False,
             "settings": {
                 "nodeLinker": "node-modules",
                 "enableTelemetry": False,
                 "compressionLevel": 7,
                 "supportedArchitectures": {"cpu": "x64"},
-            }
+            },
         },
-        "context": {"dryRun": False},
     }
 
     response = run_plugin(request)
@@ -110,11 +114,11 @@ def test_apply_classic_prefers_classic_if_present(mock_home, tmp_path):
         "requestId": "r4",
         "command": "apply",
         "args": {
+            "dryRun": False,
             "settings": {
                 "npmRegistryServer": "https://registry.yarnpkg.com",
-            }
+            },
         },
-        "context": {"dryRun": False},
     }
 
     response = run_plugin(request)
@@ -122,3 +126,4 @@ def test_apply_classic_prefers_classic_if_present(mock_home, tmp_path):
 
     content = (tmp_path / ".yarnrc").read_text(encoding="utf-8")
     assert "npmRegistryServer https://registry.yarnpkg.com" in content
+

@@ -238,8 +238,9 @@ def _apply_classic(classic_path: str, settings: dict, dry_run: bool, request_id:
     }
 
 
-def apply_config(args: dict, context: dict, request_id: str) -> dict:
-    dry_run = bool(context.get("dryRun", False))
+def apply_config(args: dict, request_id: str) -> dict:
+    dry_run = bool(args.get("dryRun", False))
+
 
     try:
         settings_raw = args.get("settings", {})
@@ -315,7 +316,8 @@ def main():
             }
 
         elif command == "apply":
-            response = apply_config(args, context, request_id)
+            response = apply_config(args, request_id)
+
         else:
             response = {
                 "requestId": request_id,
