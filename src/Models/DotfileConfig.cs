@@ -4,7 +4,7 @@ using YamlDotNet.Serialization;
 namespace WinHome.Models
 {
   /// <summary>Represents a dotfile or directory to symlink or copy from source to target.</summary>
-  public class DotfileConfig
+  public class DotfileConfig : ResourceBase
   {
     [YamlMember(Alias = "src")]
     [JsonPropertyName("src")]

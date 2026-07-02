@@ -4,7 +4,7 @@ using YamlDotNet.Serialization;
 namespace WinHome.Models
 {
   /// <summary>Represents a single Windows Registry value to create, modify, or delete.</summary>
-  public class RegistryTweak
+  public class RegistryTweak : ResourceBase
   {
     [YamlMember(Alias = "path")]
     [JsonPropertyName("path")]

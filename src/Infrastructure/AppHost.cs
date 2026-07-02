@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,10 +25,21 @@ public static class AppHost
   {
     bool isJson = args.Contains("--json");
 
+    // Early parse log file routine: Intercepts the raw command argument elements before host compilation
+    string? logFilePath = null;
+    for (int i = 0; i < args.Length; i++)
+    {
+      if (args[i] == "--log-file" && i + 1 < args.Length)
+      {
+        logFilePath = args[i + 1];
+        break;
+      }
+    }
+
     return Host.CreateDefaultBuilder(args)
         .ConfigureServices((context, services) =>
         {
-          ConfigureServices(context.Configuration, services, isJson);
+          ConfigureServices(context.Configuration, services, isJson, logFilePath);
         })
         .Build();
   }
@@ -33,18 +48,19 @@ public static class AppHost
   /// <param name="configuration">Application configuration source.</param>
   /// <param name="services">The service collection to register into.</param>
   /// <param name="isJsonForce">If <c>true</c>, forces JSON logging regardless of configuration.</param>
-  public static void ConfigureServices(IConfiguration configuration, IServiceCollection services, bool isJsonForce = false)
+  /// <param name="logFilePath">The parsed file path target to pass down to persistent logger instances.</param>
+  public static void ConfigureServices(IConfiguration configuration, IServiceCollection services, bool isJsonForce = false, string? logFilePath = null)
   {
     var isJsonConfig = configuration.GetValue<bool>("json");
     var isJson = isJsonForce || isJsonConfig;
 
     if (isJson)
     {
-      services.AddSingleton<ILogger, JsonLogger>();
+      services.AddSingleton<ILogger>(sp => new JsonLogger(logFilePath));
     }
     else
     {
-      services.AddSingleton<ILogger, ConsoleLogger>();
+      services.AddSingleton<ILogger>(sp => new ConsoleLogger(logFilePath));
     }
 
     // System Services
@@ -55,6 +71,8 @@ public static class AppHost
 
     // Domain Services
     services.AddSingleton<IConfigValidator, ConfigValidator>();
+    services.AddSingleton<IConfigBackupService, ConfigBackupService>();
+    services.AddSingleton<IConfigDriftService, ConfigDriftService>();
     services.AddSingleton<IDotfileService, DotfileService>();
     services.AddSingleton<IRegistryService, RegistryService>();
     services.AddSingleton<ISystemSettingsService, SystemSettingsService>();

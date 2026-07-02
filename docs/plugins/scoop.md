@@ -1,39 +1,31 @@
-# 🍦 Scoop Plugin
+# scoop plugin
 
-## 📋 Overview
+## Description
 
-The Scoop plugin enables WinHome to declaratively install, update, and manage developer command-line utilities and tools seamlessly on Windows environments without administrative privilege requirements.
+The `scoop` plugin manages configuration for [Scoop](https://scoop.sh), a command-line installer for
+Windows. It writes settings to Scoop's `config.json` file, allowing you to declaratively control
+Scoop's behaviour as part of your WinHome setup.
 
-## 🛠️ Prerequisites
+## Prerequisites
 
-- PowerShell 5.1+ execution capabilities active
-- Valid user-level directory environment write permissions
+- Scoop must be installed (see [scoop.sh](https://scoop.sh))
+- Scoop is detected via `scoop.exe`, `scoop.ps1`, `scoop.cmd`, or `scoop`
+- **Windows only**
 
-## 🗄️ Configuration Schema
+## Configuration file location
 
-| Key | Type | Description | Required |
-| :--- | :--- | :--- | :--- |
-| `packages` | `List` | List of target package string names to provision | Yes |
-| `buckets` | `List` | Optional external bucket repositories to add | No |
+| Platform            | Path                                              |
+| ------------------- | ------------------------------------------------- |
+| Windows (XDG)       | `%XDG_CONFIG_HOME%\scoop\config.json`             |
+| Windows (default)   | `%USERPROFILE%\.config\scoop\config.json`          |
 
-## 💻 Usage Examples
+The plugin first checks the `XDG_CONFIG_HOME` environment variable, then falls back to
+`%USERPROFILE%\.config\scoop`.
+
+## Configuration format
 
 ```yaml
 plugins:
   scoop:
-    buckets:
-      - extras
-    packages:
-      - git
-      - neovim
-```
-
-## 🔍 Verification Steps
-
-```powershell
-scoop list
-```
-
-## ⚠️ Notes & Caveats
-
-- Scoop installs applications strictly inside the current user home scope directory (`~/scoop`).
+    settings:
+      <key>: <value>

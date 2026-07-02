@@ -4,7 +4,7 @@ using YamlDotNet.Serialization;
 namespace WinHome.Models
 {
   /// <summary>Represents an environment variable to set, modify, or remove.</summary>
-  public class EnvVarConfig
+  public class EnvVarConfig : ResourceBase
   {
     [YamlMember(Alias = "variable")]
     [JsonPropertyName("variable")]

@@ -57,7 +57,7 @@ namespace WinHome.Services.Bootstrappers
         {
           _processRunner.RunProcessWithStartInfo(psi);
           Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
-          return;
+          break;
         }
         catch (Exception ex) when (
           ex.Message.Contains("remote name could not be resolved") ||
@@ -78,6 +78,17 @@ namespace WinHome.Services.Bootstrappers
           throw new Exception($"Failed to install {Name}: {ex.Message}", ex);
         }
       }
+
+      Console.WriteLine($"[Bootstrapper] {Name} installed successfully.");
+      // Issue #392 Fix: Refresh the environment PATH for the current process so it can see the newly installed manager
+      if (OperatingSystem.IsWindows())
+      {
+        string userPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
+        string machinePath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine) ?? "";
+        string newPath = $"{machinePath};{userPath}";
+        Environment.SetEnvironmentVariable("PATH", newPath, EnvironmentVariableTarget.Process);
+      }
+
     }
   }
 }

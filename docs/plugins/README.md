@@ -22,8 +22,11 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `chocolatey` | Manages Chocolatey client configuration and feature flags.              | `config_provider` | [Details](#chocolatey)    |
 | `miniconda`  | Python/R Package and Environment Manager                                | `config_provider` | [Details](./miniconda.md) |
 | `npm`        | Manages user-level `.npmrc` settings.                                   | `config_provider` | [Details](#npm)           |
+| `nuget`      | Manages NuGet package sources and config in `NuGet.Config`.            | `config_provider` | [Details](./nuget.md)     |
+| `nvm`        | Manages NVM for Windows `settings.txt`.                                 | `config_provider` | [Details](#nvm)           |
 | `pip`        | Manages `pip.ini` settings for Python package installs.                 | `config_provider` | [Details](#pip)           |
-| `scoop`      | Command-line Installer Provisioning Framework                           | `config_provider` | [Details](./scoop.md)     |
+| `pnpm`       | Manages user-level `.npmrc` settings for pnpm.                          | `config_provider` | [Details](#pnpm)          |
+| `scoop`      | Manages Scoop CLI `config.json` settings.                               |
 | `sdkman`     | Software Development Kit Manager for Java Ecosystem                     | `config_provider` | [Details](./sdkman.md)    |
 | `syncthing`  | Continuous File Synchronization Framework                               | `config_provider` | [Details](./syncthing.md) |
 | `winget`     | Manages Winget CLI `settings.json`, separate from package installation. | `config_provider` | [Details](#winget)        |
@@ -34,8 +37,10 @@ marketplace-style index for those plugins and a quick reference for how each one
 | Name              | Brief description                                             | Capabilities                         | Docs                        |
 | ----------------- | ------------------------------------------------------------- | ------------------------------------ | --------------------------- |
 | `helix-editor`    | Manages Helix `config.toml` and `languages.toml`.             | `config_provider`                    | [Details](#helix-editor)    |
+| `joplin`          | Manages Joplin `settings.json` configuration.                 | `config_provider`                    | [Details](./joplin.md)      |
 | `notepadplusplus` | Manages Notepad++ JSON settings.                              | `config_provider`                    | [Details](#notepadplusplus) |
 | `obsidian`        | Configures vault settings and community plugins for Obsidian. | `config_provider`                    | [Details](#obsidian)        |
+| `sublime-text`    | Manages Sublime Text user preferences in `Preferences.sublime-settings`. | `config_provider`                    | [Details](#sublime-text)    |
 | `vim`             | Generates `init.lua` and installs Neovim plugins from GitHub. | `config_provider`, `package_manager` | [Details](#vim)             |
 | `vscode`          | Syncs VS Code settings, profiles, and extensions.             | `config_provider`, `package_manager` | [Details](#vscode)          |
 | `zed`             | Manages Zed editor settings in JSONC format.                  | `config_provider`                    | [Details](#zed)             |
@@ -46,8 +51,10 @@ marketplace-style index for those plugins and a quick reference for how each one
 | ------------------ | ----------------------------------------------------------------------------------------- | ----------------- | ---------------------------- |
 | `alacritty`        | Manages Alacritty `alacritty.toml` terminal settings.                                     | `config_provider` | [Details](#alacritty)        |
 | `bat`              | Manages `bat` syntax-highlighting pager configuration.                                    | `config_provider` | [Details](#bat)              |
+| `fzf`              | Manages `.fzfrc` for fzf environment variables.                                           | `config_provider` | [Details](#fzf)              |
 | `ohmyposh`         | Manages the Oh My Posh bootstrap line in a PowerShell profile.                            | `config_provider` | [Details](#ohmyposh)         |
 | `powershell`       | Generates a managed PowerShell profile block for aliases, modules, prompt, and functions. | `config_provider` | [Details](#powershell)       |
+| `ripgrep`          | Manages `.ripgreprc` configuration.                                                       | `config_provider` | [Details](#ripgrep)          |
 | `starship`         | Manages `starship.toml` prompt settings.                                                  | `config_provider` | [Details](#starship)         |
 | `windows-terminal` | Manages Windows Terminal `settings.json` for stable, preview, or dev installs.            | `config_provider` | [Details](#windows-terminal) |
 | `yazi`             | Manages Yazi core, keymap, and theme TOML files.                                          | `config_provider` | [Details](#yazi)             |
@@ -62,9 +69,11 @@ marketplace-style index for those plugins and a quick reference for how each one
 | `docker`   | Manages Docker Desktop `settings.json`.                      | `config_provider` | [Details](#docker)   |
 | `gh`       | Manages GitHub CLI `config.yml`.                             | `config_provider` | [Details](#gh)       |
 | `gh-dash`  | Manages `gh-dash` dashboard settings in `config.yml`.        | `config_provider` | [Details](#gh-dash)  |
+| `go`       | Manages Go environment variables via `go env`.               | `config_provider` | [Details](#go)       |
 | `lazydocker` | Manages LazyDocker YAML configuration.                     | `config_provider` | [Details](#lazydocker) |
 | `lazygit`  | Manages `lazygit` YAML configuration.                        | `config_provider` | [Details](#lazygit)  |
 | `mise`     | Manages `config.toml` for the mise version manager.          | `config_provider` | [Details](#mise)     |
+| `postman`  | Manages automated environment mapping and setup configurations for Postman. | `config_provider` | [Details](./postman.md) |
 | `opencode` | Manages OpenCode JSON and JSONC settings.                    | `config_provider` | [Details](#opencode) |
 | `openssh`  | Manages global and host-specific entries in `~/.ssh/config`. | `config_provider` | [Details](#openssh)  |
 | `rclone`   | Manages `rclone.conf` global settings and remotes.           | `config_provider` | [Details](#rclone)   |
@@ -84,8 +93,11 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | `autohotkey` | Manages an AutoHotkey v2 bootstrap script and WinHome-owned settings block. | `config_provider` | [Details](#autohotkey) |
 | `espanso`    | Manages Espanso text expansion rules in `base.yml`.                         | `config_provider` | [Details](#espanso)    |
 | `everything` | Manages Everything search application configuration.                        | `config_provider` | [Details](#everything) |
+| `flow-launcher` | Manages Flow Launcher desktop search settings in `Settings.json`.       | `config_provider` | [Details](#flow-launcher) |
+| `greenshot`  | Manages Greenshot screenshot utility settings in `Greenshot.ini`.           | `config_provider` | [Details](./greenshot.md) |
 | `keepassxc`  | Manages KeePassXC INI settings.                                             | `config_provider` | [Details](#keepassxc)  |
 | `powertoys`  | Manages PowerToys general settings and supported module settings.           | `config_provider` | [Details](#powertoys)  |
+| `rainmeter`  | Manages global Rainmeter settings in `Rainmeter.ini`.                       | `config_provider` | [Details](./rainmeter.md) |
 | `sharex`     | Manages ShareX `ShareX.json`.                                               | `config_provider` | [Details](#sharex)     |
 | `rustup`     | Manages `settings.toml` for the Rust toolchain installer.                   | `config_provider` | [Details](#rustup)     |
 | `windows-explorer` | Manages Windows Explorer preferences and settings.                    | `config_provider` | [Details](#windows-explorer) |
@@ -98,6 +110,7 @@ Deep-merges TOML settings into `%USERPROFILE%\.rustup\settings.toml`.
 | --------------- | ------------------------------------------------------- | ----------------- | ------------------------- |
 | `betterdiscord` | Manages BetterDiscord data settings in `settings.json`. | `config_provider` | [Details](#betterdiscord) |
 | `discord`       | Manages Discord client settings in `settings.json`.     | `config_provider` | [Details](#discord)       |
+| `spotify`       | Manages Spotify desktop client preferences.             | `config_provider` | [Details](./spotify.md)   |
 
 ### Examples And Test Fixtures
 
@@ -187,7 +200,23 @@ Config key: `extensions.chocolatey`
 Manages `%ChocolateyInstall%\config\chocolatey.config`, including both `config` values and
 `features`. For package installs, see [Chocolatey module docs](../modules/chocolatey.md).
 
+<a id="nuget"></a>
+
+#### nuget
+
+Config key: `extensions.nuget`
+
+Merges settings into `%APPDATA%\NuGet\NuGet.Config`. See [full docs](nuget.md).
+
 <a id="npm"></a>
+<a id="nvm"></a>
+
+#### nvm
+
+Config key: `extensions.nvm`
+
+Merges key-value settings into `%APPDATA%\nvm\settings.txt`.
+
 
 #### npm
 
@@ -196,6 +225,14 @@ Config key: `extensions.npm`
 Merges key-value settings into the current user's `.npmrc`.
 
 <a id="pip"></a>
+<a id="pnpm"></a>
+
+#### pnpm
+
+Config key: `extensions.pnpm`
+
+Merges key-value settings into the current user's `.npmrc`, converting camelCase settings to dash-case automatically.
+
 
 #### pip
 
@@ -239,6 +276,17 @@ Config key: `extensions.obsidian` or top-level `obsidian`
 
 Configures vault-scoped Obsidian settings and can install or enable community plugins inside
 `.obsidian`.
+
+<a id="sublime-text"></a>
+
+#### sublime-text
+
+Config key: `extensions.sublime-text`
+
+Manages Sublime Text user preferences by merging settings into
+`%APPDATA%\Sublime Text\Packages\User\Preferences.sublime-settings`.
+
+See [full docs](./sublime-text.md).
 
 <a id="vim"></a>
 
@@ -286,6 +334,14 @@ Config key: `extensions.bat`
 Manages flags and variables in `%APPDATA%\bat\config`.
 
 <a id="ohmyposh"></a>
+<a id="fzf"></a>
+
+#### fzf
+
+Config key: `extensions.fzf`
+
+Manages `fzf` environment variables (e.g. `FZF_DEFAULT_OPTS`) in `%USERPROFILE%\_fzfrc` or `~/.fzfrc`.
+
 
 #### ohmyposh
 
@@ -303,6 +359,14 @@ Generates a WinHome-managed profile block for aliases, modules, prompt settings,
 and custom functions.
 
 <a id="starship"></a>
+<a id="ripgrep"></a>
+
+#### ripgrep
+
+Config key: `extensions.ripgrep`
+
+Merges command-line flags into the `.ripgreprc` configuration file.
+
 
 #### starship
 
@@ -378,6 +442,14 @@ Config key: `extensions.gh-dash`
 Merges dashboard settings into `%USERPROFILE%\.config\gh-dash\config.yml`.
 
 <a id="lazydocker"></a>
+<a id="go"></a>
+
+#### go
+
+Config key: `extensions.go`
+
+Manages Go environment variables by executing `go env -w`.
+
 
 #### lazydocker
 
@@ -461,6 +533,15 @@ Config key: `extensions.everything`
 
 Manages supported Everything configuration settings through WinHome.
 
+<a id="flow-launcher"></a>
+
+#### flow-launcher
+
+Config key: `extensions.flow-launcher`
+
+Deep-merges settings into `%APPDATA%\FlowLauncher\Settings\Settings.json`. See
+[full docs](flow-launcher.md).
+
 <a id="keepassxc"></a>
 
 #### keepassxc
@@ -478,6 +559,15 @@ Config key: `extensions.powertoys`
 Manages general PowerToys settings plus supported module files such as `FancyZones`, `Awake`, and
 `PowerRename`.
 
+<a id="rainmeter"></a>
+
+#### rainmeter
+
+Config key: `extensions.rainmeter`
+
+Merges sections and key-value settings into `%APPDATA%\Rainmeter\Rainmeter.ini`. See
+[full docs](rainmeter.md).
+
 <a id="sharex"></a>
 
 #### sharex
@@ -485,6 +575,13 @@ Manages general PowerToys settings plus supported module files such as `FancyZon
 Config key: `extensions.sharex`
 
 Deep-merges ShareX settings into `%APPDATA%\ShareX\ShareX.json`.
+<a id="wallpaper-engine"></a>
+
+#### wallpaper-engine
+
+Config key: `extensions.wallpaper-engine`
+
+For detailed information, see the [Wallpaper Engine Plugin Documentation](./wallpaper-engine.md).
 
 <a id="windows-explorer"></a>
 
@@ -509,6 +606,39 @@ Manages `%USERPROFILE%\Documents\sandbox.wsb`, including memory allocation, netw
 Config key: `extensions.yasb`
 
 Deep-merges YAML settings into `%USERPROFILE%\.config\yasb\config.yaml`.
+### Media And Creativity
+
+<a id="audacity"></a>
+
+#### audacity
+
+Config key: `extensions.audacity`
+
+For detailed information, see the [Audacity Plugin Documentation](./audacity.md).
+
+<a id="irfanview"></a>
+
+#### irfanview
+
+Config key: `extensions.irfanview`
+
+For detailed information, see the [IrfanView Plugin Documentation](./irfanview.md).
+
+<a id="obs-studio"></a>
+
+#### obs-studio
+
+Config key: `extensions.obs-studio`
+
+For detailed information, see the [OBS Studio Plugin Documentation](./obs-studio.md).
+
+<a id="spicetify"></a>
+
+#### spicetify
+
+Config key: `extensions.spicetify`
+
+For detailed information, see the [Spicetify Plugin Documentation](./spicetify.md).
 
 ### Community And Communication
 
@@ -527,6 +657,14 @@ Deep-merges settings into `%APPDATA%\BetterDiscord\data\settings.json`.
 Config key: `extensions.discord`
 
 Deep-merges settings into `%APPDATA%\discord\settings.json`.
+
+<a id="spotify"></a>
+
+#### spotify
+
+Config key: `extensions.spotify`
+
+Merges key-value settings into `%APPDATA%\Spotify\prefs`. See [full docs](spotify.md).
 
 ### Examples And Test Fixtures
 
