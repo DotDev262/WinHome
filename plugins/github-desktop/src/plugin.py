@@ -1,6 +1,6 @@
-import sys
-import os
 import json
+import os
+import sys
 import tempfile
 
 def deep_merge(base, update):
@@ -113,4 +113,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
