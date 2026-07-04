@@ -1,7 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.CommandLine;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using WinHome.Infrastructure;
 using WinHome.Interfaces;
 using WinHome.Models;
@@ -44,7 +47,6 @@ class Program
             if (update)
             {
               var updater = host.Services.GetRequiredService<IUpdateService>();
-              // In a real app, get version from Assembly
               var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.2.0";
               if (await updater.CheckForUpdatesAsync(currentVersion))
               {
@@ -150,6 +152,123 @@ class Program
                 break;
             }
             return 0;
+          },
+
+          // Config Backup Action
+          async (provider, path, _, minLogLevel) =>
+          {
+            var logger = host.Services.GetRequiredService<ILogger>();
+            logger.SetMinLevel(minLogLevel);
+
+            var backupService = host.Services.GetRequiredService<IConfigBackupService>();
+            var driftService = host.Services.GetRequiredService<IConfigDriftService>();
+
+            try
+            {
+              if (provider == "drift")
+              {
+                var drifts = await driftService.DetectDriftAsync(path!);
+
+                if (drifts.Count == 0)
+                {
+                  logger.LogSuccess("[Config] No configuration drift detected.");
+                  return 0;
+                }
+
+                foreach (var drift in drifts)
+                {
+                  logger.LogWarning(
+                    $"[DRIFT] {drift.Provider}.{drift.Key} Expected='{drift.Expected}' Actual='{drift.Actual}'");
+                }
+
+                logger.LogWarning($"[Config] {drifts.Count} drift(s) detected.");
+
+                return 0;
+              }
+              if (provider == "restore")
+              {
+                var (restoredProvider, restoredSettings) =
+                    await backupService.RestoreAsync(path!);
+
+                var existingConfigFile = new FileInfo("config.yaml");
+
+                if (!existingConfigFile.Exists)
+                {
+                  logger.LogError("[Config] config.yaml not found.");
+                  return 1;
+                }
+
+                var existingYaml =
+                    await File.ReadAllTextAsync(existingConfigFile.FullName);
+
+                var restoreDeserializer = new DeserializerBuilder()
+                  .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                  .Build();
+
+                var existingConfig =
+                    restoreDeserializer.Deserialize<Configuration>(existingYaml);
+
+                existingConfig.Extensions[restoredProvider] =
+                    restoredSettings!;
+
+                var serializer = new SerializerBuilder()
+                  .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                  .Build();
+
+                var yaml = serializer.Serialize(existingConfig);
+
+                var tmp = "config.yaml.tmp";
+
+                await File.WriteAllTextAsync(tmp, yaml);
+
+                File.Move(
+                  tmp,
+                  "config.yaml",
+                  true);
+
+                logger.LogSuccess(
+                    $"[Config] Provider '{restoredProvider}' restored.");
+
+                return 0;
+              }
+
+              var configFile = new FileInfo("config.yaml");
+
+              if (!configFile.Exists)
+              {
+                logger.LogError("[Config] config.yaml not found. Run generate first.");
+                return 1;
+              }
+
+              var yamlContent = await File.ReadAllTextAsync(configFile.FullName);
+
+              var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build();
+
+              var config = deserializer.Deserialize<Configuration>(yamlContent);
+
+              if (config == null)
+              {
+                logger.LogError("[Config] Invalid configuration file.");
+                return 1;
+              }
+
+              await backupService.BackupAsync(
+              provider,
+              config,
+          configFile.FullName,
+              path!);
+
+              logger.LogSuccess($"[Config] Backup created: {path}");
+
+              return 0;
+            }
+            catch (Exception ex)
+            {
+              logger.LogError($"[Config] Failed: {ex.Message}");
+              return 1;
+            }
           }
       );
 

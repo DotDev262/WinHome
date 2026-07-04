@@ -4,7 +4,7 @@ using YamlDotNet.Serialization;
 namespace WinHome.Models
 {
   /// <summary>Describes an application to install via a package manager.</summary>
-  public class AppConfig
+  public class AppConfig : ResourceBase
   {
     [YamlMember(Alias = "id")]
     [JsonPropertyName("id")]
