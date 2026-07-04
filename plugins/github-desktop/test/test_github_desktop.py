@@ -1,8 +1,8 @@
-import unittest
 import json
-import sys
 import os
-from unittest.mock import patch, mock_open
+import sys
+import unittest
+from unittest.mock import mock_open, patch
 
 target_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -57,7 +57,9 @@ class TestGitHubDesktopPlugin(unittest.TestCase):
     @patch("tempfile.mkstemp")
     @patch("os.fdopen", new_callable=mock_open)
     @patch("os.replace")
-    def test_settings_deep_merge_atomic_write(self, mock_replace, mock_fdopen, mock_mkstemp, mock_file, mock_exists, mock_stdin):
+    def test_settings_deep_merge_atomic_write(
+        self, mock_replace, mock_fdopen, mock_mkstemp, mock_file, mock_exists, mock_stdin
+    ):
         """Verifies that deep merges calculate variance parameters seamlessly."""
         mock_stdin.read.return_value = json.dumps({
             "requestId": "test-req-446",
