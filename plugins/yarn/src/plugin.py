@@ -305,7 +305,7 @@ def main():
 
     command = request.get("command")
     args = request.get("args", {})
-    context = request.get("context", {})
+    
 
     try:
         if command == "check_installed":

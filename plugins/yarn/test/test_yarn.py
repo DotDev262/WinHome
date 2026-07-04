@@ -15,7 +15,6 @@ finally:
     pass
 
 
-
 def run_plugin(input_dict):
     input_str = json.dumps(input_dict)
 
@@ -126,4 +125,3 @@ def test_apply_classic_prefers_classic_if_present(mock_home, tmp_path):
 
     content = (tmp_path / ".yarnrc").read_text(encoding="utf-8")
     assert "npmRegistryServer https://registry.yarnpkg.com" in content
-
