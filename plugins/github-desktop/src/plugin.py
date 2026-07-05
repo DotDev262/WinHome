@@ -5,9 +5,7 @@ import tempfile
 
 
 def deep_merge(base, update):
-    """
-    Safely executes deep recursive associative data structure mapping loops.
-    """
+    """Safely executes deep recursive associative data structure mapping loops."""
     if not isinstance(base, dict) or not isinstance(update, dict):
         return update
     for key, val in update.items():
@@ -19,9 +17,7 @@ def deep_merge(base, update):
 
 
 def check_installed() -> bool:
-    """
-    Decoupled utility to determine installation state profiles cleanly.
-    """
+    """Decoupled utility to determine installation state profiles cleanly."""
     appdata = os.environ.get("APPDATA", "")
     config_path = (
         os.path.join(appdata, "GitHub Desktop", "config.json")
@@ -34,19 +30,23 @@ def check_installed() -> bool:
 def main():
     raw_input = sys.stdin.read().strip()
     if not raw_input:
-        print(json.dumps({
-            "requestId": "unknown",
-            "error": "Empty stdin context payload received"
-        }))
+        print(
+            json.dumps({
+                "requestId": "unknown",
+                "error": "Empty stdin context payload received",
+            })
+        )
         return
 
     try:
         request = json.loads(raw_input)
     except json.JSONDecodeError:
-        print(json.dumps({
-            "requestId": "unknown",
-            "error": "Invalid JSON format payload structure"
-        }))
+        print(
+            json.dumps({
+                "requestId": "unknown",
+                "error": "Invalid JSON format payload structure",
+            })
+        )
         return
 
     request_id = request.get("requestId", "unknown")
@@ -55,10 +55,7 @@ def main():
 
     if command == "check_installed":
         installed_status = check_installed()
-        print(json.dumps({
-            "requestId": request_id,
-            "installed": installed_status
-        }))
+        print(json.dumps({"requestId": request_id, "installed": installed_status}))
         return
 
     elif command == "apply":
@@ -67,10 +64,12 @@ def main():
 
         appdata = os.environ.get("APPDATA", "")
         if not appdata:
-            print(json.dumps({
-                "requestId": request_id,
-                "error": "APPDATA environment variable missing"
-            }))
+            print(
+                json.dumps({
+                    "requestId": request_id,
+                    "error": "APPDATA environment variable missing",
+                })
+            )
             return
 
         config_dir = os.path.join(appdata, "GitHub Desktop")
@@ -88,10 +87,7 @@ def main():
         changes_would_occur = current_config != updated_config
 
         if dry_run:
-            print(json.dumps({
-                "requestId": request_id,
-                "changed": changes_would_occur
-            }))
+            print(json.dumps({"requestId": request_id, "changed": changes_would_occur}))
             return
 
         if not os.path.exists(config_dir):
@@ -104,21 +100,24 @@ def main():
                 json.dump(updated_config, f, indent=2)
             os.replace(temp_path, config_path)
         except Exception as e:
-            print(json.dumps({
-                "requestId": request_id,
-                "error": f"Atomic write operation exception: {str(e)}"
-            }))
+            print(
+                json.dumps({
+                    "requestId": request_id,
+                    "error": f"Atomic write operation exception: {str(e)}",
+                })
+            )
             return
 
-        print(json.dumps({
-            "requestId": request_id,
-            "changed": changes_would_occur
-        }))
+        print(json.dumps({"requestId": request_id, "changed": changes_would_occur}))
     else:
-        print(json.dumps({
-            "requestId": request_id,
-            "error": f"Unknown execution command structural parameter: {command}"
-        }))
+        print(
+            json.dumps({
+                "requestId": request_id,
+                "error": (
+                    f"Unknown execution command structural parameter: {command}"
+                ),
+            })
+        )
 
 
 if __name__ == "__main__":
