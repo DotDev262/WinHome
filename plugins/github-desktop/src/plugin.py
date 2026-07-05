@@ -55,7 +55,9 @@ def main():
 
     if command == "check_installed":
         installed_status = check_installed()
-        print(json.dumps({"requestId": request_id, "installed": installed_status}))
+        print(
+            json.dumps({"requestId": request_id, "installed": installed_status})
+        )
         return
 
     elif command == "apply":
@@ -87,7 +89,9 @@ def main():
         changes_would_occur = current_config != updated_config
 
         if dry_run:
-            print(json.dumps({"requestId": request_id, "changed": changes_would_occur}))
+            print(
+                json.dumps({"requestId": request_id, "changed": changes_would_occur})
+            )
             return
 
         if not os.path.exists(config_dir):
@@ -108,7 +112,9 @@ def main():
             )
             return
 
-        print(json.dumps({"requestId": request_id, "changed": changes_would_occur}))
+        print(
+            json.dumps({"requestId": request_id, "changed": changes_would_occur})
+        )
     else:
         print(
             json.dumps({
