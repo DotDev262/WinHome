@@ -4,7 +4,9 @@ import sys
 import unittest
 from unittest.mock import mock_open, patch
 
-target_src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+target_src_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "src")
+)
 
 if target_src_path not in sys.path:
     sys.path.append(target_src_path)
