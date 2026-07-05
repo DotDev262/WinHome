@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 
+
 def deep_merge(base, update):
     """
     Safely executes deep recursive associative data structure mapping loops.
@@ -16,13 +17,19 @@ def deep_merge(base, update):
             base[key] = val
     return base
 
+
 def check_installed() -> bool:
     """
     Decoupled utility to determine installation state profiles cleanly.
     """
     appdata = os.environ.get("APPDATA", "")
-    config_path = os.path.join(appdata, "GitHub Desktop", "config.json") if appdata else ""
+    config_path = (
+        os.path.join(appdata, "GitHub Desktop", "config.json")
+        if appdata
+        else ""
+    )
     return bool(config_path and os.path.exists(config_path))
+
 
 def main():
     raw_input = sys.stdin.read().strip()
@@ -90,7 +97,9 @@ def main():
         if not os.path.exists(config_dir):
             os.makedirs(config_dir, exist_ok=True)
         try:
-            fd, temp_path = tempfile.mkstemp(dir=config_dir, prefix="config_", suffix=".json")
+            fd, temp_path = tempfile.mkstemp(
+                dir=config_dir, prefix="config_", suffix=".json"
+            )
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(updated_config, f, indent=2)
             os.replace(temp_path, config_path)
@@ -111,5 +120,7 @@ def main():
             "error": f"Unknown execution command structural parameter: {command}"
         }))
 
+
 if __name__ == "__main__":
     main()
+
