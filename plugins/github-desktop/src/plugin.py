@@ -31,10 +31,12 @@ def main():
     raw_input = sys.stdin.read().strip()
     if not raw_input:
         print(
-            json.dumps({
-                "requestId": "unknown",
-                "error": "Empty stdin context payload received",
-            })
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "error": "Empty stdin context payload received",
+                }
+            )
         )
         return
 
@@ -42,10 +44,12 @@ def main():
         request = json.loads(raw_input)
     except json.JSONDecodeError:
         print(
-            json.dumps({
-                "requestId": "unknown",
-                "error": "Invalid JSON format payload structure",
-            })
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "error": "Invalid JSON format payload structure",
+                }
+            )
         )
         return
 
@@ -67,10 +71,12 @@ def main():
         appdata = os.environ.get("APPDATA", "")
         if not appdata:
             print(
-                json.dumps({
-                    "requestId": request_id,
-                    "error": "APPDATA environment variable missing",
-                })
+                json.dumps(
+                    {
+                        "requestId": request_id,
+                        "error": "APPDATA environment variable missing",
+                    }
+                )
             )
             return
 
@@ -90,7 +96,9 @@ def main():
 
         if dry_run:
             print(
-                json.dumps({"requestId": request_id, "changed": changes_would_occur})
+                json.dumps(
+                    {"requestId": request_id, "changed": changes_would_occur}
+                )
             )
             return
 
@@ -105,10 +113,12 @@ def main():
             os.replace(temp_path, config_path)
         except Exception as e:
             print(
-                json.dumps({
-                    "requestId": request_id,
-                    "error": f"Atomic write operation exception: {str(e)}",
-                })
+                json.dumps(
+                    {
+                        "requestId": request_id,
+                        "error": f"Atomic write operation exception: {str(e)}",
+                    }
+                )
             )
             return
 
@@ -117,15 +127,16 @@ def main():
         )
     else:
         print(
-            json.dumps({
-                "requestId": request_id,
-                "error": (
-                    f"Unknown execution command structural parameter: {command}"
-                ),
-            })
+            json.dumps(
+                {
+                    "requestId": request_id,
+                    "error": (
+                        f"Unknown execution command structural parameter: {command}"
+                    ),
+                }
+            )
         )
 
 
 if __name__ == "__main__":
     main()
-
