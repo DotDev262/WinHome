@@ -5,7 +5,7 @@ import tempfile
 
 
 def deep_merge(base, update):
-    """Safely executes deep recursive associative data structure mapping loops."""
+    """Safely executes deep recursive associative data structure loops."""
     if not isinstance(base, dict) or not isinstance(update, dict):
         return update
     for key, val in update.items():
