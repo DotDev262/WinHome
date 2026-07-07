@@ -33,9 +33,11 @@ class TestGitHubDesktopPlugin(unittest.TestCase):
     @patch("os.path.exists")
     def test_check_installed_protocol_parity(self, mock_exists, mock_stdin):
         """Verifies installation checks return proper envelope layout."""
-        mock_stdin.read.return_value = json.dumps(
-            {"requestId": "req-123", "command": "check_installed", "args": {}}
-        )
+        mock_stdin.read.return_value = json.dumps({
+            "requestId": "req-123",
+            "command": "check_installed",
+            "args": {},
+        })
         mock_exists.return_value = True
         with patch("sys.stdout") as mock_stdout:
             plugin.main()
@@ -55,21 +57,22 @@ class TestGitHubDesktopPlugin(unittest.TestCase):
         self, mock_rep, mock_fd, mock_stemp, mock_f, mock_ex, mock_in
     ):
         """Verifies deep merges calculate variance parameters seamlessly."""
-        mock_in.read.return_value = json.dumps(
-            {
-                "requestId": "req-446",
-                "command": "apply",
-                "args": {
-                    "settings": {
-                        "defaultBranchName": "main",
-                        "confirmRemovedFiles": True,
-                    },
-                    "dryRun": False,
+        mock_in.read.return_value = json.dumps({
+            "requestId": "req-446",
+            "command": "apply",
+            "args": {
+                "settings": {
+                    "defaultBranchName": "main",
+                    "confirmRemovedFiles": True,
                 },
-            }
-        )
+                "dryRun": False,
+            },
+        })
         mock_ex.return_value = True
-        mock_stemp.return_value = (10, "C:\\MockAppData\\GitHub Desktop\\config.json")
+        mock_stemp.return_value = (
+            10,
+            "C:\\MockAppData\\GitHub Desktop\\config.json",
+        )
         with patch("sys.stdout") as mock_stdout:
             plugin.main()
             raw = "".join(call.args for call in mock_stdout.write.call_args_list)
