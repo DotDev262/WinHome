@@ -118,6 +118,8 @@ For a detailed breakdown of all configuration options, refer to the [Configurati
 
 For complete, real-world setup examples (Developer, Minimalist, Gamer), see the [Configuration Cookbook](./docs/cookbook.md).
 
+For common development environment setup examples, see the [Configuration Recipes](./docs/configuration-recipes.md).
+
 ### ⚠️ Secrets & Security Warning
 
 **Do not commit `config.yaml` to public repositories** if it contains sensitive information such as API tokens, passwords, or private environment variables. We recommend using a private repository or `.gitignore` for configurations containing secrets.
@@ -386,6 +388,7 @@ Contributions, discussions, and feature ideas are welcome! WinHome is an open-so
 | [GSSOC 2026 Instructions](./CONTRIBUTING.md#-gssoc-2026-participants) | Program-specific labels & tracking info |
 | [Configuration Wiki](./docs/config.md) | Understand WinHome's configuration schema |
 | [Configuration Cookbook](./docs/cookbook.md) | Real-world `config.yaml` examples |
+| [Configuration Recipes](./docs/configuration-recipes.md) | Ready-to-use development environment setup recipes |
 | [Testing Guide](./docs/testing.md) | How to write and run tests |
 | [Cross-Platform Dev](./docs/cross-platform-dev.md) | Developing on Linux/macOS |
 | [Security Guide](./docs/security.md) | Security practices and guidelines |
