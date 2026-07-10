@@ -4,20 +4,31 @@ import shutil
 import sys
 import uuid
 
+
 def log(msg):
     sys.stderr.write(f"[yarn-plugin] {msg}\n")
     sys.stderr.flush()
 
+
 def _safe_bool(value):
     return bool(value)
+
 
 def _yaml_quote_string(value: str) -> str:
     # Minimal YAML quoting: quote if it contains special chars or starts with certain tokens.
     s = value
-    if s == "" or any(ch in s for ch in [":", "#", "{", "}", "[", "]", "&", "*", "!", "|", ">", "?", "-", "@", ",", "\n", "\r", "\t"]) or s.startswith(("{", "[", "*", "&", "!", "|", ">", "-", "?", "@")):
+    if (
+        s == ""
+        or any(
+            ch in s
+            for ch in [":", "#", "{", "}", "[", "]", "&", "*", "!", "|", ">", "?", "-", "@", ",", "\n", "\r", "\t"]
+        )
+        or s.startswith(("{", "[", "*", "&", "!", "|", ">", "-", "?", "@"))
+    ):
         escaped = s.replace("\\", "\\\\").replace('"', '\\"')
         return f'"{escaped}"'
     return s
+
 
 def _to_yaml_value(value):
     if isinstance(value, bool):
@@ -32,6 +43,7 @@ def _to_yaml_value(value):
         return "{" + ", ".join(parts) + "}"
     return _yaml_quote_string(str(value))
 
+
 def _yarnrcyml_dump(settings: dict) -> str:
     # Deterministic ordering for stable writes.
     lines = []
@@ -45,6 +57,7 @@ def _yarnrcyml_dump(settings: dict) -> str:
         else:
             lines.append(f"{key}: {_to_yaml_value(val)}")
     return "\n".join(lines) + "\n"
+
 
 def _yarnrc_dump_classic(settings: dict) -> str:
     # Yarn classic .yarnrc uses `key value` per line.
@@ -62,6 +75,7 @@ def _yarnrc_dump_classic(settings: dict) -> str:
         lines.append(f"{key} {dump_value(settings[key])}")
     return "\n".join(lines) + "\n"
 
+
 def _parse_existing_kv_lines(lines: str) -> dict:
     result = {}
     for raw in lines.splitlines():
@@ -78,8 +92,10 @@ def _parse_existing_kv_lines(lines: str) -> dict:
             result[k.strip()] = v.strip()
     return result
 
+
 def _get_user_home():
     return os.path.expanduser("~")
+
 
 def get_yarnrc_paths():
     home = _get_user_home()
@@ -88,8 +104,10 @@ def get_yarnrc_paths():
         "classic": os.path.join(home, ".yarnrc"),
     }
 
+
 def log_error(error_msg):
     log(error_msg)
+
 
 def _atomic_write(path: str, content: str):
     dir_path = os.path.dirname(path) or "."
@@ -113,12 +131,11 @@ def _atomic_write(path: str, content: str):
             pass
         raise
 
+
 def check_installed(args: dict) -> bool:
     paths = get_yarnrc_paths()
     found_yarn = (
-        shutil.which("yarn.cmd") is not None
-        or shutil.which("yarn.exe") is not None
-        or shutil.which("yarn") is not None
+        shutil.which("yarn.cmd") is not None or shutil.which("yarn.exe") is not None or shutil.which("yarn") is not None
     )
 
     cfg_exists = os.path.exists(paths["berry"]) or os.path.exists(paths["classic"])
@@ -139,6 +156,7 @@ YARN_SETTING_KEYS = {
     "pnpFallbackMode",
     "compressionLevel",
 }
+
 
 def _response(request_id: str, changed: bool, error: str = None) -> dict:
     # JSON-RPC response format for this plugin:
@@ -175,6 +193,7 @@ def _validate_and_normalize_settings(settings_raw: object):
             settings[k] = str(v)
 
     return settings
+
 
 def _apply_berry(berry_path: str, settings: dict, dry_run: bool, request_id: str) -> dict:
     existing = {}
@@ -241,7 +260,6 @@ def _apply_classic(classic_path: str, settings: dict, dry_run: bool, request_id:
 def apply_config(args: dict, request_id: str) -> dict:
     dry_run = bool(args.get("dryRun", False))
 
-
     try:
         settings_raw = args.get("settings", {})
         if not isinstance(settings_raw, dict):
@@ -254,7 +272,6 @@ def apply_config(args: dict, request_id: str) -> dict:
                 "requestId": request_id,
                 "changed": False,
             }
-
 
         paths = get_yarnrc_paths()
         berry_exists = os.path.exists(paths["berry"])
@@ -305,7 +322,6 @@ def main():
 
     command = request.get("command")
     args = request.get("args", {})
-    
 
     try:
         if command == "check_installed":
@@ -332,10 +348,9 @@ def main():
             "error": f"Internal Script Error: {str(e)}",
         }
 
-
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()
 
+
 if __name__ == "__main__":
     main()
-
