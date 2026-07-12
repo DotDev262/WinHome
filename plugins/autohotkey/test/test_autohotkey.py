@@ -71,7 +71,7 @@ def test_apply_writes_new_script_with_ahk_v2_syntax(tmp_path):
     script_path = tmp_path / "Documents" / "AutoHotkey" / "main.ahk"
     response = plugin.apply_config(
         {
-            "dry_run": False,
+            "dryRun": False,
             "script_path": str(script_path),
             "hotkeys": {
                 "#z": 'Run "https://www.google.com"',
@@ -133,7 +133,7 @@ def test_apply_merges_hotkeys_without_losing_custom_sections(tmp_path):
 
     response = plugin.apply_config(
         {
-            "dry_run": False,
+            "dryRun": False,
             "script_path": str(script_path),
             "hotkeys": {
                 "#z": 'Run "https://www.google.com"',
@@ -168,7 +168,7 @@ def test_apply_dry_run_does_not_write_file(tmp_path, monkeypatch):
 
     response = plugin.apply_config(
         {
-            "dry_run": True,
+            "dryRun": True,
             "script_path": str(script_path),
             "hotkeys": {"#z": 'Run "https://www.google.com"'},
             "hotstrings": {},
@@ -192,7 +192,7 @@ def test_apply_creates_missing_directories(tmp_path):
     script_path = tmp_path / "nested" / "AutoHotkey" / "main.ahk"
     response = plugin.apply_config(
         {
-            "dry_run": False,
+            "dryRun": False,
             "script_path": str(script_path),
             "hotkeys": {"#z": 'Run "https://www.google.com"'},
             "hotstrings": {},
@@ -212,7 +212,7 @@ def test_apply_is_idempotent_for_unchanged_script(tmp_path):
 
     script_path = tmp_path / "AutoHotkey" / "main.ahk"
     args = {
-        "dry_run": False,
+        "dryRun": False,
         "script_path": str(script_path),
         "hotkeys": {"#z": 'Run "https://www.google.com"'},
         "hotstrings": {"::btw::": "by the way"},

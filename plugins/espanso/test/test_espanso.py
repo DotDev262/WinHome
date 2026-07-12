@@ -330,7 +330,7 @@ def test_protocol_dry_run_top_level_ignored(tmp_path, monkeypatch):
             "requestId": "r4",
             "command": "apply",
             "args": {"matches": [{"trigger": ":t", "replace": "x"}]},
-            "dry_run": True,  # old incorrect field — must be ignored
+            "dryRun": True,  # old incorrect field — must be ignored
             "context": {},
         }
     )

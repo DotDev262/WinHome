@@ -17,7 +17,7 @@ def log(msg: str) -> None:
 
 
 def get_appdata_dir() -> str:
-    appdata = os.environ.get("APPDATA")
+    appdata = (os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming"))
     if appdata:
         return appdata
 

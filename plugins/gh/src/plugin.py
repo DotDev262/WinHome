@@ -87,7 +87,7 @@ def check_installed(request_id: str) -> dict:
 
 def apply_config(request_id: str, args: dict, context: dict) -> dict:
     dry_run = bool(context.get("dryRun", False))
-    updates = {key: value for key, value in args.items() if key != "dry_run"}
+    updates = {key: value for key, value in args.items() if key != "dryRun"}
 
     config_path = get_config_path()
     if yaml is None:

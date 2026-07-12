@@ -39,7 +39,7 @@ def get_config_path() -> Path:
     system = platform.system()
 
     if system == "Windows":
-        appdata = os.environ.get("APPDATA")
+        appdata = (os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming"))
         if not appdata:
             # Keep behavior explicit; host will return structured error.
             raise RuntimeError("APPDATA environment variable not set")

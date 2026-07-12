@@ -19,7 +19,7 @@ def log(msg):
 
 
 def get_topgrade_config_path():
-    appdata = os.environ.get("APPDATA")
+    appdata = (os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming"))
     if not appdata:
         return None
 

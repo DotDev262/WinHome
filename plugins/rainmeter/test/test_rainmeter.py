@@ -19,7 +19,7 @@ class TestRainmeterPlugin(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.appdata = os.path.join(self.temp_dir, "AppData")
         os.makedirs(self.appdata)
-        self.old_appdata = os.environ.get("APPDATA")
+        self.old_appdata = (os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming"))
         os.environ["APPDATA"] = self.appdata
         self.config_dir = os.path.join(self.appdata, "Rainmeter")
         self.config_file = os.path.join(self.config_dir, "Rainmeter.ini")
