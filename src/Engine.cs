@@ -736,7 +736,7 @@ namespace WinHome
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { /* HttpClient timeout - will retry */ }
 
         _logger.LogInfo("[Engine] Waiting for network...");
-        await Task.Delay(2000, cancellationToken);
+          await Task.Delay(2000, cancellationToken);
       }
       return false;
     }
