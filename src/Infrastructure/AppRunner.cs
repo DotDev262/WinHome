@@ -1,4 +1,4 @@
-﻿using WinHome.Infrastructure.Helpers;
+using WinHome.Infrastructure.Helpers;
 using WinHome.Interfaces;
 using WinHome.Models;
 using WinHome.Services.Logging;

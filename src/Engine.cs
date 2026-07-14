@@ -722,10 +722,10 @@ namespace WinHome
         try
         {
           using var response = await _httpClient.GetAsync(
-              ConnectivityCheckUri, 
-              HttpCompletionOption.ResponseHeadersRead, 
-              cancellationToken);
-              
+            ConnectivityCheckUri,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+
           if (response.IsSuccessStatusCode)
           {
             _logger.LogSuccess("[Engine] Internet connection verified.");
