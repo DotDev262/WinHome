@@ -36,4 +36,8 @@ public static class AdminGuard
       return principal.IsInRole(WindowsBuiltInRole.Administrator);
     };
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 928a1cddf87a9cf690221542f1bcd77633ef6175
