@@ -53,4 +53,10 @@ if (Test-Path $starshipPath) {
     Assert-True ($starshipContent -match "add_newline = false"), "Starship configuration should have add_newline = false"
 }
 
+# 8. Verify Scoop applications were auto-installed by WinHome
+Assert-True (Test-Path "C:\scoop\apps\bat"), "bat app directory should exist under Scoop"
+Assert-True (Test-Path "C:\scoop\apps\fzf"), "fzf app directory should exist under Scoop"
+Assert-True (Test-Path "C:\scoop\apps\ripgrep"), "ripgrep app directory should exist under Scoop"
+Assert-True (Test-Path "C:\scoop\apps\zoxide"), "zoxide app directory should exist under Scoop"
+
 exit $global:exitCode
