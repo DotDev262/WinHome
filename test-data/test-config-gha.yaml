@@ -19,3 +19,8 @@ systemSettings:
 git:
   userName: "WinHome GHA"
   userEmail: "gha@winhome.local"
+extensions:
+  starship:
+    settings:
+      add_newline: false
+

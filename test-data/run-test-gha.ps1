@@ -1,7 +1,7 @@
 # run-test-gha.ps1
 
 # Run WinHome
-./WinHome.exe --config test-config-gha.yaml --debug
+./WinHome.exe --config test-config-gha.yaml --auto-install-apps --debug
 $winhomeExitCode = $LASTEXITCODE
 
 if ($winhomeExitCode -ne 0) {

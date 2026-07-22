@@ -45,4 +45,12 @@ Assert-True ($hideFileExt -eq 0), "Show file extensions should be enabled (HideF
 $gitName = git config --global user.name
 Assert-True ($gitName -eq "WinHome GHA"), "Git user name should be set"
 
+# 7. Check for starship config (plugin auto-download and configuration)
+$starshipPath = Join-Path $env:USERPROFILE ".config\starship.toml"
+Assert-True (Test-Path $starshipPath), "Starship configuration file should be created"
+if (Test-Path $starshipPath) {
+    $starshipContent = Get-Content -Path $starshipPath -Raw
+    Assert-True ($starshipContent -match "add_newline = false"), "Starship configuration should have add_newline = false"
+}
+
 exit $global:exitCode
