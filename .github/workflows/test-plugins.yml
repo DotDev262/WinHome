@@ -86,9 +86,8 @@ jobs:
           for test_file in $TEST_FILES; do
             if [ -f "$test_file" ]; then
               plugin_dir=$(echo "$test_file" | cut -d'/' -f2)
-              rel_test_file="test/$(basename "$test_file")"
-              echo "▶ Running tests for $plugin_dir ($rel_test_file)"
-              if ! uv run --directory "plugins/$plugin_dir" "$rel_test_file"; then
+              echo "▶ Running tests for $plugin_dir ($test_file)"
+              if ! uv run pytest "$test_file"; then
                 echo "❌ Plugin '$plugin_dir' test failed."
                 failed=1
               fi
