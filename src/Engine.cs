@@ -718,8 +718,8 @@ namespace WinHome
       _logger.LogInfo("[Engine] Checking for internet connectivity...");
       var start = DateTime.Now;
       while ((DateTime.Now - start).TotalSeconds < timeoutSeconds)
-      {
-        try
+        {
+          try
           {
             using var response = await _httpClient.GetAsync(
                 ConnectivityCheckUri,
@@ -737,7 +737,7 @@ namespace WinHome
 
           _logger.LogInfo("[Engine] Waiting for network...");
           await Task.Delay(2000, cancellationToken);
-      }
+        }
       return false;
     }
   }
