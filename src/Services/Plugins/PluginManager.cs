@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Net.Http;
 using WinHome.Interfaces;
 using WinHome.Models.Plugins;
 using WinHome.Services.Bootstrappers;
