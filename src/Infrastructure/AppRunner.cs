@@ -33,6 +33,7 @@ public class AppRunner
   /// <param name="json">If <c>true</c>, outputs results as JSON.</param>
   /// <param name="force">If <c>true</c>, reapplies steps even if previously succeeded.</param>
   /// <param name="continueOnError">If <c>true</c>, continues applying remaining steps on failure.</param>
+  /// <param name="autoInstallApps">If <c>true</c>, automatically installs missing plugin prerequisite applications.</param>
   /// <returns>Exit code (0 for success).</returns>
   public async Task<int> RunAsync(FileInfo configFile, bool dryRun, string? profile, bool debug, bool diff, bool json, bool force = false, bool continueOnError = false, bool autoInstallApps = false)
   {

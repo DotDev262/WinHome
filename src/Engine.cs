@@ -91,6 +91,7 @@ namespace WinHome
     /// <param name="diff">If <c>true</c>, shows a diff of changes and returns without applying.</param>
     /// <param name="forceReapply">If <c>true</c>, reapplies steps even if previously succeeded.</param>
     /// <param name="continueOnError">If <c>true</c>, continues with remaining steps when a step fails.</param>
+    /// <param name="autoInstallApps">If <c>true</c>, automatically installs missing plugin prerequisite applications.</param>
     public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false, bool forceReapply = false, bool continueOnError = false, bool autoInstallApps = false)
     {
       _logger.LogInfo($"--- WinHome v{config.Version} ---");
