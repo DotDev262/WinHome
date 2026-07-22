@@ -35,9 +35,10 @@ def test_check_installed_via_config(tmp_path):
     berry.write_text("nodeLinker: node-modules\n", encoding="utf-8")
 
     # Avoid environment-dependent behavior in shutil.which during tests.
-    with patch.object(plugin.shutil, "which", return_value="/usr/bin/yarn"), \
-         patch.object(plugin, "_get_user_home", return_value=str(tmp_path)):
-
+    with (
+        patch.object(plugin.shutil, "which", return_value="/usr/bin/yarn"),
+        patch.object(plugin, "_get_user_home", return_value=str(tmp_path)),
+    ):
         response = run_plugin({"requestId": "r1", "command": "check_installed"})
         assert response["installed"] is True
 
