@@ -6,6 +6,7 @@ import pytest
 # Mock winreg and shutil._winapi so that Windows-only modules don't crash the import on Linux.
 if sys.platform != "win32":
     import shutil
+
     sys.modules["winreg"] = MagicMock()
     mock_winapi = MagicMock()
     del mock_winapi.CopyFile2
