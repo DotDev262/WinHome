@@ -6,7 +6,7 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    scoop: "steam"
-    choco: "steam"
+    scoop: 'steam'
+    choco: 'steam'

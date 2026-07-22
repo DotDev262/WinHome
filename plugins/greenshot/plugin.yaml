@@ -11,8 +11,8 @@ settings_schema:
       type: object
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "Greenshot.Greenshot"
-    scoop: "greenshot"
-    choco: "greenshot"
+    winget: 'Greenshot.Greenshot'
+    scoop: 'greenshot'
+    choco: 'greenshot'

@@ -7,8 +7,8 @@ capabilities:
 author: VIDYANKSHINI
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "jdx.mise"
-    scoop: "mise"
-    choco: "mise"
+    winget: 'jdx.mise'
+    scoop: 'mise'
+    choco: 'mise'

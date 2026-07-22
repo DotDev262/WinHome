@@ -8,8 +8,8 @@ capabilities:
 author: 'DotDev262'
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "IrfanSoft.IrfanView"
-    scoop: "irfanview"
-    choco: "irfanview"
+    winget: 'IrfanSoft.IrfanView'
+    scoop: 'irfanview'
+    choco: 'irfanview'

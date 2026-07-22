@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    winget: "jesseduffield.lazydocker"
-    scoop: "lazydocker"
-    choco: "lazydocker"
+    winget: 'jesseduffield.lazydocker'
+    scoop: 'lazydocker'
+    choco: 'lazydocker'

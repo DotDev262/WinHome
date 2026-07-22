@@ -8,8 +8,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    winget: "Anantshri.curl"
-    scoop: "curl"
-    choco: "curl"
+    winget: 'Anantshri.curl'
+    scoop: 'curl'
+    choco: 'curl'

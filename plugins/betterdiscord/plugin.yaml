@@ -7,8 +7,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    winget: "BetterDiscord.BetterDiscord"
-    scoop: "betterdiscord"
-    choco: "betterdiscord"
+    winget: 'BetterDiscord.BetterDiscord'
+    scoop: 'betterdiscord'
+    choco: 'betterdiscord'

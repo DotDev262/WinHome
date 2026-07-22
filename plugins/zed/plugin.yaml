@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "ZedIndustries.Zed"
-    scoop: "zed"
-    choco: "zed"
+    winget: 'ZedIndustries.Zed'
+    scoop: 'zed'
+    choco: 'zed'

@@ -7,8 +7,8 @@ capabilities:
 author: VIDYANKSHINI
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    winget: "twpayne.chezmoi"
-    scoop: "chezmoi"
-    choco: "chezmoi"
+    winget: 'twpayne.chezmoi'
+    scoop: 'chezmoi'
+    choco: 'chezmoi'

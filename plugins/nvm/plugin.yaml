@@ -7,8 +7,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "CoreyButler.NVMforWindows"
-    scoop: "nvm"
-    choco: "nvm.portable"
+    winget: 'CoreyButler.NVMforWindows'
+    scoop: 'nvm'
+    choco: 'nvm.portable'

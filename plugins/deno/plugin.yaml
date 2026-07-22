@@ -7,8 +7,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "DenoLand.Deno"
-    scoop: "deno"
-    choco: "deno"
+    winget: 'DenoLand.Deno'
+    scoop: 'deno'
+    choco: 'deno'

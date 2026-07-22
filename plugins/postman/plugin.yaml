@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "Postman.Postman"
-    scoop: "postman"
-    choco: "postman"
+    winget: 'Postman.Postman'
+    scoop: 'postman'
+    choco: 'postman'

@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "Microsoft.WindowsTerminal"
-    scoop: "windows-terminal"
-    choco: "microsoft-windows-terminal"
+    winget: 'Microsoft.WindowsTerminal'
+    scoop: 'windows-terminal'
+    choco: 'microsoft-windows-terminal'

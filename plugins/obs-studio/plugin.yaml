@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "OBSProject.OBSStudio"
-    scoop: "obs-studio"
-    choco: "obs-studio"
+    winget: 'OBSProject.OBSStudio'
+    scoop: 'obs-studio'
+    choco: 'obs-studio'

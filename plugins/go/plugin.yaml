@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "GoLang.Go"
-    scoop: "go"
-    choco: "golang"
+    winget: 'GoLang.Go'
+    scoop: 'go'
+    choco: 'golang'

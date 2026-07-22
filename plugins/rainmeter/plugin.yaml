@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "Rainmeter.Rainmeter"
-    scoop: "rainmeter"
-    choco: "rainmeter"
+    winget: 'Rainmeter.Rainmeter'
+    scoop: 'rainmeter'
+    choco: 'rainmeter'

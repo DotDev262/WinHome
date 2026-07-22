@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    winget: "7zip.7zip"
-    scoop: "7zip"
-    choco: "7zip"
+    winget: '7zip.7zip'
+    scoop: '7zip'
+    choco: '7zip'

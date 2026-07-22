@@ -7,6 +7,6 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    scoop: "spicetify-cli"
+    scoop: 'spicetify-cli'

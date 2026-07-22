@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "Python.Python.3.11"
-    scoop: "python"
-    choco: "python"
+    winget: 'Python.Python.3.11'
+    scoop: 'python'
+    choco: 'python'

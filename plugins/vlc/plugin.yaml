@@ -7,8 +7,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "VideoLAN.VLC"
-    scoop: "vlc"
-    choco: "vlc"
+    winget: 'VideoLAN.VLC'
+    scoop: 'vlc'
+    choco: 'vlc'

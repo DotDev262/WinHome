@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "Voidtools.Everything"
-    scoop: "everything"
-    choco: "everything"
+    winget: 'Voidtools.Everything'
+    scoop: 'everything'
+    choco: 'everything'

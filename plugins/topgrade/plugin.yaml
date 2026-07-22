@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    winget: "r-darwish.topgrade"
-    scoop: "topgrade"
-    choco: "topgrade"
+    winget: 'r-darwish.topgrade'
+    scoop: 'topgrade'
+    choco: 'topgrade'

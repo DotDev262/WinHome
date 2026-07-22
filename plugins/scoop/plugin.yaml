@@ -6,6 +6,6 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "powershell"
+  default_manager: 'powershell'
   packages:
-    powershell: "irm get.scoop.sh | iex"
+    powershell: 'irm get.scoop.sh | iex'

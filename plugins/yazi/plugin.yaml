@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    winget: "sxyazi.yazi"
-    scoop: "yazi"
-    choco: "yazi"
+    winget: 'sxyazi.yazi'
+    scoop: 'yazi'
+    choco: 'yazi'

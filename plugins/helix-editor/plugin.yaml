@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "scoop"
+  default_manager: 'scoop'
   packages:
-    winget: "Helix.Helix"
-    scoop: "helix"
-    choco: "helix"
+    winget: 'Helix.Helix'
+    scoop: 'helix'
+    choco: 'helix'

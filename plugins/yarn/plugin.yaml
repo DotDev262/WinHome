@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "Yarn.Yarn"
-    scoop: "yarn"
-    choco: "yarn"
+    winget: 'Yarn.Yarn'
+    scoop: 'yarn'
+    choco: 'yarn'

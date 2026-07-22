@@ -6,8 +6,8 @@ capabilities:
   - config_provider
 
 install_info:
-  default_manager: "winget"
+  default_manager: 'winget'
   packages:
-    winget: "SublimeHQ.SublimeText.4"
-    scoop: "sublimetext"
-    choco: "sublimetext"
+    winget: 'SublimeHQ.SublimeText.4'
+    scoop: 'sublimetext'
+    choco: 'sublimetext'
