@@ -443,13 +443,30 @@ namespace WinHome
                   {
                     isInstalled = installedBool;
                   }
-                  else if (checkResult.Data is System.Text.Json.JsonElement element && element.ValueKind == System.Text.Json.JsonValueKind.True)
+                  else if (checkResult.Data is System.Text.Json.JsonElement element)
                   {
-                    isInstalled = true;
-                  }
-                  else if (checkResult.Data is System.Text.Json.JsonElement elementFalse && elementFalse.ValueKind == System.Text.Json.JsonValueKind.False)
-                  {
-                    isInstalled = false;
+                    if (element.ValueKind == System.Text.Json.JsonValueKind.True)
+                    {
+                      isInstalled = true;
+                    }
+                    else if (element.ValueKind == System.Text.Json.JsonValueKind.False)
+                    {
+                      isInstalled = false;
+                    }
+                    else if (element.ValueKind == System.Text.Json.JsonValueKind.Object)
+                    {
+                      if (element.TryGetProperty("installed", out var installedProp))
+                      {
+                        if (installedProp.ValueKind == System.Text.Json.JsonValueKind.True)
+                        {
+                          isInstalled = true;
+                        }
+                        else if (installedProp.ValueKind == System.Text.Json.JsonValueKind.False)
+                        {
+                          isInstalled = false;
+                        }
+                      }
+                    }
                   }
                 }
               }
