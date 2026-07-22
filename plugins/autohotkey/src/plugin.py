@@ -205,7 +205,11 @@ def strip_managed_content(existing_text: str) -> str:
             i += 1
             continue
 
-        if stripped.endswith("::") and i + 1 < len(lines) and lines[i + 1].strip() == "{":
+        if (
+            stripped.endswith("::")
+            and i + 1 < len(lines)
+            and lines[i + 1].strip() == "{"
+        ):
             i += 2
             depth = 1
             while i < len(lines) and depth > 0:
@@ -217,7 +221,11 @@ def strip_managed_content(existing_text: str) -> str:
                 i += 1
             continue
 
-        if stripped.endswith("::") and i + 1 < len(lines) and lines[i + 1].strip() == "(":
+        if (
+            stripped.endswith("::")
+            and i + 1 < len(lines)
+            and lines[i + 1].strip() == "("
+        ):
             i += 2
             while i < len(lines) and lines[i].strip() != ")":
                 i += 1

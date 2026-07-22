@@ -65,7 +65,9 @@ def parse_ini(text: str) -> tuple:
         if match_kv:
             key = match_kv.group(1).strip()
             val = match_kv.group(2).strip()
-            current_block["lines"].append({"type": "kv", "raw": line, "key": key, "val": val})
+            current_block["lines"].append(
+                {"type": "kv", "raw": line, "key": key, "val": val}
+            )
         else:
             current_block["lines"].append({"type": "unknown", "raw": line})
 
@@ -136,7 +138,11 @@ def merge_settings(blocks: list, args: dict) -> bool:
         if not block:
             block = {"name": remote_name, "lines": []}
 
-            if blocks and blocks[-1]["lines"] and blocks[-1]["lines"][-1]["type"] != "empty":
+            if (
+                blocks
+                and blocks[-1]["lines"]
+                and blocks[-1]["lines"][-1]["type"] != "empty"
+            ):
                 blocks[-1]["lines"].append({"type": "empty", "raw": ""})
 
             block["lines"].append({"type": "section", "raw": f"[{remote_name}]"})

@@ -159,7 +159,9 @@ def apply_config(args, context, request_id):
             if first_error is None:
                 first_error = error
         else:
-            success, general_changed, error = apply_general_config(general_config, current_general)
+            success, general_changed, error = apply_general_config(
+                general_config, current_general
+            )
             if not success:
                 log(error)
                 overall_success = False

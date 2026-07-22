@@ -115,7 +115,11 @@ class TestPipPlugin(unittest.TestCase):
         self.assertTrue(response["changed"])
 
         # Verify it backed up the file
-        backups = [f for f in os.listdir(os.path.dirname(self.pip_ini_path)) if f.endswith(".bak")]
+        backups = [
+            f
+            for f in os.listdir(os.path.dirname(self.pip_ini_path))
+            if f.endswith(".bak")
+        ]
         self.assertTrue(len(backups) > 0)
 
         # Verify new config

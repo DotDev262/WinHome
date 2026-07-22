@@ -34,8 +34,18 @@ class TestYasbPlugin(unittest.TestCase):
         return json.loads(stdout.getvalue().strip())
 
     def test_check_installed_true_via_path(self):
-        with patch("plugin.shutil.which", side_effect=lambda name: "C:/Tools/yasb.exe" if name == "yasb" else None):
-            response = self.run_main({"requestId": "req-1", "command": "check_installed", "args": {}, "context": {}})
+        with patch(
+            "plugin.shutil.which",
+            side_effect=lambda name: "C:/Tools/yasb.exe" if name == "yasb" else None,
+        ):
+            response = self.run_main(
+                {
+                    "requestId": "req-1",
+                    "command": "check_installed",
+                    "args": {},
+                    "context": {},
+                }
+            )
 
         self.assertTrue(response["success"])
         self.assertFalse(response["changed"])
@@ -46,9 +56,16 @@ class TestYasbPlugin(unittest.TestCase):
             config_dir = os.path.join(tmp_dir, ".config", "yasb")
             os.makedirs(config_dir, exist_ok=True)
 
-            with patch.dict(os.environ, {"USERPROFILE": tmp_dir}), patch("plugin.shutil.which", return_value=None):
+            with patch.dict(os.environ, {"USERPROFILE": tmp_dir}), patch(
+                "plugin.shutil.which", return_value=None
+            ):
                 response = self.run_main(
-                    {"requestId": "req-2", "command": "check_installed", "args": {}, "context": {}}
+                    {
+                        "requestId": "req-2",
+                        "command": "check_installed",
+                        "args": {},
+                        "context": {},
+                    }
                 )
 
         self.assertTrue(response["success"])
@@ -64,7 +81,10 @@ class TestYasbPlugin(unittest.TestCase):
                         "enabled": False,
                         "screens": ["*"],
                         "alignment": {"position": "bottom", "center": True},
-                        "window_flags": {"always_on_top": True, "windows_app_bar": False},
+                        "window_flags": {
+                            "always_on_top": True,
+                            "windows_app_bar": False,
+                        },
                         "dimensions": {"width": "100%", "height": 30},
                         "padding": {"top": 2, "left": 8, "bottom": 2, "right": 8},
                         "widgets": {
@@ -83,7 +103,9 @@ class TestYasbPlugin(unittest.TestCase):
             os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
             with open(config_path, "w", encoding="utf-8") as file_handle:
-                yaml.safe_dump(initial, file_handle, default_flow_style=False, sort_keys=False)
+                yaml.safe_dump(
+                    initial, file_handle, default_flow_style=False, sort_keys=False
+                )
 
             payload = {
                 "requestId": "req-3",
@@ -126,11 +148,21 @@ class TestYasbPlugin(unittest.TestCase):
             self.assertTrue(content["watch_config"])
             self.assertFalse(content["debug"])
             self.assertTrue(content["bars"]["status-bar"]["enabled"])
-            self.assertEqual(content["bars"]["status-bar"]["alignment"]["position"], "top")
+            self.assertEqual(
+                content["bars"]["status-bar"]["alignment"]["position"], "top"
+            )
             self.assertFalse(content["bars"]["status-bar"]["alignment"]["center"])
-            self.assertEqual(content["bars"]["status-bar"]["widgets"]["left"], ["workspaces", "active_window"])
-            self.assertEqual(content["bars"]["status-bar"]["widgets"]["center"], ["date"])
-            self.assertEqual(content["bars"]["status-bar"]["widgets"]["right"], ["cpu", "memory", "volume", "battery"])
+            self.assertEqual(
+                content["bars"]["status-bar"]["widgets"]["left"],
+                ["workspaces", "active_window"],
+            )
+            self.assertEqual(
+                content["bars"]["status-bar"]["widgets"]["center"], ["date"]
+            )
+            self.assertEqual(
+                content["bars"]["status-bar"]["widgets"]["right"],
+                ["cpu", "memory", "volume", "battery"],
+            )
             self.assertIn("secondary-bar", content["bars"])
             self.assertIn("music-bar", content["bars"])
 
@@ -139,7 +171,16 @@ class TestYasbPlugin(unittest.TestCase):
             payload = {
                 "requestId": "req-4",
                 "command": "apply",
-                "args": {"settings": {"bars": {"status-bar": {"enabled": True, "widgets": {"left": ["workspaces"]}}}}},
+                "args": {
+                    "settings": {
+                        "bars": {
+                            "status-bar": {
+                                "enabled": True,
+                                "widgets": {"left": ["workspaces"]},
+                            }
+                        }
+                    }
+                },
                 "context": {"dryRun": True},
             }
 
@@ -173,7 +214,16 @@ class TestYasbPlugin(unittest.TestCase):
             payload = {
                 "requestId": "req-5",
                 "command": "apply",
-                "args": {"settings": {"bars": {"status-bar": {"enabled": True, "widgets": {"left": ["workspaces"]}}}}},
+                "args": {
+                    "settings": {
+                        "bars": {
+                            "status-bar": {
+                                "enabled": True,
+                                "widgets": {"left": ["workspaces"]},
+                            }
+                        }
+                    }
+                },
                 "context": {"dryRun": False},
             }
 
@@ -208,7 +258,9 @@ class TestYasbPlugin(unittest.TestCase):
 
             backup_dir = os.path.dirname(config_path)
             backups = [
-                name for name in os.listdir(backup_dir) if name.startswith("config.yaml.") and name.endswith(".bak")
+                name
+                for name in os.listdir(backup_dir)
+                if name.startswith("config.yaml.") and name.endswith(".bak")
             ]
 
             self.assertTrue(response["success"])
@@ -242,7 +294,9 @@ class TestYasbPlugin(unittest.TestCase):
         self.assertIn("empty stdin", response["error"])
 
     def test_unknown_command(self):
-        response = self.run_main({"requestId": "req-6", "command": "explode", "args": {}, "context": {}})
+        response = self.run_main(
+            {"requestId": "req-6", "command": "explode", "args": {}, "context": {}}
+        )
 
         self.assertFalse(response["success"])
         self.assertIn("error", response)

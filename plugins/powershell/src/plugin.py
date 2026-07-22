@@ -53,7 +53,11 @@ def read_profile(file_path: str):
         if MARKER_START in content and MARKER_END in content:
             parts = content.split(MARKER_START)
             before = parts[0]
-            after = parts[1].split(MARKER_END)[1] if len(parts[1].split(MARKER_END)) > 1 else ""
+            after = (
+                parts[1].split(MARKER_END)[1]
+                if len(parts[1].split(MARKER_END)) > 1
+                else ""
+            )
             return before, after
         return content, ""
     except Exception as e:
@@ -82,9 +86,13 @@ def generate_script(settings: dict) -> str:
                 cmd = v["init"].get("cmd", "")
                 hook = v["init"].get("hook", "")
                 if cmd and hook:
-                    lines.append(f"Invoke-Expression (& {k} init powershell --cmd {cmd} --hook {hook} | Out-String)")
+                    lines.append(
+                        f"Invoke-Expression (& {k} init powershell --cmd {cmd} --hook {hook} | Out-String)"
+                    )
                 else:
-                    lines.append(f"Invoke-Expression (& {k} init powershell | Out-String)")
+                    lines.append(
+                        f"Invoke-Expression (& {k} init powershell | Out-String)"
+                    )
 
     prompt = settings.get("prompt", {})
     if prompt:
@@ -92,7 +100,9 @@ def generate_script(settings: dict) -> str:
         if p_type == "oh-my-posh":
             theme = prompt.get("theme", "")
             if theme:
-                lines.append(f"oh-my-posh init powershell --config '{theme}' | Invoke-Expression")
+                lines.append(
+                    f"oh-my-posh init powershell --config '{theme}' | Invoke-Expression"
+                )
             else:
                 lines.append("oh-my-posh init powershell | Invoke-Expression")
 

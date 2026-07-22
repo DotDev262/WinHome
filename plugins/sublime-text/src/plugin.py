@@ -76,7 +76,10 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 
 def check_installed() -> bool:
-    return shutil.which("subl.exe") is not None or shutil.which("sublime_text.exe") is not None
+    return (
+        shutil.which("subl.exe") is not None
+        or shutil.which("sublime_text.exe") is not None
+    )
 
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:

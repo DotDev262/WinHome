@@ -72,7 +72,9 @@ def main():
     try:
         input_data = sys.stdin.read().strip()
         if not input_data:
-            sys.stdout.write(json.dumps({"requestId": request_id, "error": "Empty stdin"}) + "\n")
+            sys.stdout.write(
+                json.dumps({"requestId": request_id, "error": "Empty stdin"}) + "\n"
+            )
             sys.stdout.flush()
             return
 

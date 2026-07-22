@@ -146,7 +146,9 @@ def test_merge_lists_preserves_untouched():
         {"trigger": ":email", "replace": "me@example.com"},
         {"trigger": ":hello", "replace": "Hello!"},
     ]
-    result = plugin.deep_merge_lists(existing, [{"trigger": ":email", "replace": "new@example.com"}])
+    result = plugin.deep_merge_lists(
+        existing, [{"trigger": ":email", "replace": "new@example.com"}]
+    )
     assert len(result) == 2
     assert result[1]["trigger"] == ":hello"
 
@@ -182,7 +184,9 @@ def test_merge_config_no_change(existing_config):
 
 def test_merge_config_does_not_mutate(existing_config):
     original = deepcopy(existing_config)
-    plugin.merge_config(existing_config, {"matches": [{"trigger": ":new", "replace": "x"}]})
+    plugin.merge_config(
+        existing_config, {"matches": [{"trigger": ":new", "replace": "x"}]}
+    )
     assert existing_config == original
 
 
@@ -238,7 +242,9 @@ def test_handle_apply_writes_file(tmp_path, monkeypatch):
 def test_handle_apply_dry_run_no_write(tmp_path, monkeypatch):
     base_yml = tmp_path / "espanso" / "match" / "base.yml"
     monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
-    result = plugin.handle_apply("req-4", {"matches": [{"trigger": ":t", "replace": "x"}]}, dry_run=True)
+    result = plugin.handle_apply(
+        "req-4", {"matches": [{"trigger": ":t", "replace": "x"}]}, dry_run=True
+    )
     assert result == {"requestId": "req-4", "success": True, "changed": True}
     assert not base_yml.exists()
 
@@ -271,7 +277,9 @@ def test_handle_apply_merges_not_overwrites(tmp_path, monkeypatch, existing_conf
 def test_handle_apply_creates_missing_dirs(tmp_path, monkeypatch):
     base_yml = tmp_path / "deep" / "nested" / "base.yml"
     monkeypatch.setattr(plugin, "get_base_yml_path", lambda: base_yml)
-    result = plugin.handle_apply("req-7", {"matches": [{"trigger": ":t", "replace": "test"}]})
+    result = plugin.handle_apply(
+        "req-7", {"matches": [{"trigger": ":t", "replace": "test"}]}
+    )
     assert result["success"] is True
     assert base_yml.exists()
 
@@ -334,7 +342,9 @@ def test_protocol_dry_run_top_level_ignored(tmp_path, monkeypatch):
             "context": {},
         }
     )
-    assert base_yml.exists(), "top-level dry_run must be ignored; file should have been written"
+    assert (
+        base_yml.exists()
+    ), "top-level dry_run must be ignored; file should have been written"
 
 
 def test_protocol_unknown_command():
@@ -344,7 +354,9 @@ def test_protocol_unknown_command():
 
 
 def test_protocol_request_id_propagated(installed_appdata):
-    resp = run_main({"requestId": "my-unique-id", "command": "check_installed", "args": {}})
+    resp = run_main(
+        {"requestId": "my-unique-id", "command": "check_installed", "args": {}}
+    )
     assert resp["requestId"] == "my-unique-id"
 
 

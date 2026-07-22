@@ -19,7 +19,9 @@ class TestRainmeterPlugin(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.appdata = os.path.join(self.temp_dir, "AppData")
         os.makedirs(self.appdata)
-        self.old_appdata = (os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming"))
+        self.old_appdata = os.environ.get("APPDATA") or os.path.join(
+            os.path.expanduser("~"), "AppData", "Roaming"
+        )
         os.environ["APPDATA"] = self.appdata
         self.config_dir = os.path.join(self.appdata, "Rainmeter")
         self.config_file = os.path.join(self.config_dir, "Rainmeter.ini")
@@ -74,11 +76,16 @@ class TestRainmeterPlugin(unittest.TestCase):
     def test_apply_config_merges_with_existing(self):
         os.makedirs(self.config_dir)
         with open(self.config_file, "w") as f:
-            f.write("[Rainmeter]\nConfigEditor=old.exe\nSkinPath=C:\\Skins\n\n[ExistingSkin]\nActive=1\n")
+            f.write(
+                "[Rainmeter]\nConfigEditor=old.exe\nSkinPath=C:\\Skins\n\n[ExistingSkin]\nActive=1\n"
+            )
 
         args = {
             "settings": {
-                "Rainmeter": {"ConfigEditor": "notepad.exe", "DesktopWorkArea": "0,0,1920,1080"},
+                "Rainmeter": {
+                    "ConfigEditor": "notepad.exe",
+                    "DesktopWorkArea": "0,0,1920,1080",
+                },
                 "NewSkin": {"Draggable": 1},
             }
         }
@@ -104,7 +111,10 @@ class TestRainmeterPlugin(unittest.TestCase):
         self.assertFalse(res["changed"])
 
     def test_apply_config_dry_run(self):
-        args = {"settings": {"Rainmeter": {"ConfigEditor": "notepad.exe"}}, "dryRun": True}
+        args = {
+            "settings": {"Rainmeter": {"ConfigEditor": "notepad.exe"}},
+            "dryRun": True,
+        }
         res = plugin.apply_config(args, {}, "req-7")
         self.assertTrue(res["changed"])
         self.assertFalse(os.path.exists(self.config_file))
@@ -127,7 +137,9 @@ class TestRainmeterPlugin(unittest.TestCase):
         backups = [f for f in os.listdir(self.config_dir) if f.endswith(".bak")]
         self.assertEqual(len(backups), 1)
         with open(os.path.join(self.config_dir, backups[0]), "r") as f:
-            self.assertEqual(f.read(), "invalid ini content without section header\nkey=value\n")
+            self.assertEqual(
+                f.read(), "invalid ini content without section header\nkey=value\n"
+            )
 
     def test_apply_config_invalid_settings_type(self):
         args = {"settings": ["not", "a", "dict"]}
@@ -178,7 +190,9 @@ class TestRainmeterPlugin(unittest.TestCase):
     @patch("sys.stdout")
     @patch("sys.stdin")
     def test_main_unknown_command(self, mock_stdin, mock_stdout):
-        mock_stdin.read.return_value = '{"command": "invalid_cmd", "requestId": "req-10"}'
+        mock_stdin.read.return_value = (
+            '{"command": "invalid_cmd", "requestId": "req-10"}'
+        )
 
         output = []
         mock_stdout.write.side_effect = output.append

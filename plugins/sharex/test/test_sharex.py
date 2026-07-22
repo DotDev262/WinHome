@@ -30,7 +30,11 @@ class TestShareXPlugin(unittest.TestCase):
         changed = plugin.deep_merge(target, source)
         self.assertTrue(changed)
         self.assertTrue(target["ApplicationSettings"]["ShowTray"])
-        self.assertFalse(target["ApplicationSettings"]["CaptureSettings"]["Screenshot"]["CaptureTransparency"])
+        self.assertFalse(
+            target["ApplicationSettings"]["CaptureSettings"]["Screenshot"][
+                "CaptureTransparency"
+            ]
+        )
         self.assertEqual(target["ImageSettings"]["ImageFormat"], "JPEG")
         self.assertEqual(target["UploadSettings"]["DestinationType"], "Imgur")
 
@@ -146,7 +150,11 @@ class TestShareXPlugin(unittest.TestCase):
             self.assertEqual(content["a"], 2)
 
             # Verify backup was created
-            backups = [f for f in os.listdir(temp_dir) if f.startswith("ShareX.json.corrupted.")]
+            backups = [
+                f
+                for f in os.listdir(temp_dir)
+                if f.startswith("ShareX.json.corrupted.")
+            ]
             self.assertEqual(len(backups), 1)
 
 

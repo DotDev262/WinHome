@@ -119,7 +119,9 @@ def merge_settings(
             parser.set(section, key, str_value)
             changed = True
         else:
-            existing = parser.get(section, key) if parser.has_option(section, key) else None
+            existing = (
+                parser.get(section, key) if parser.has_option(section, key) else None
+            )
 
             if existing != str_value:
                 parser.set(section, key, str_value)

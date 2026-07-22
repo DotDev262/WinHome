@@ -128,7 +128,10 @@ def main():
             response = {"requestId": request_id, "error": f"Unknown command: {command}"}
 
     except Exception as fatal_err:
-        response = {"requestId": request_id, "error": f"Internal Script Error: {str(fatal_err)}"}
+        response = {
+            "requestId": request_id,
+            "error": f"Internal Script Error: {str(fatal_err)}",
+        }
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()

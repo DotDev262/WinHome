@@ -65,9 +65,13 @@ def parse_ssh_config(text: str) -> tuple:
             if key.lower() == "host":
                 current_block = {"name": val, "lines": []}
                 blocks.append(current_block)
-                current_block["lines"].append({"type": "kv", "raw": line, "key": key, "val": val})
+                current_block["lines"].append(
+                    {"type": "kv", "raw": line, "key": key, "val": val}
+                )
             else:
-                current_block["lines"].append({"type": "kv", "raw": line, "key": key, "val": val})
+                current_block["lines"].append(
+                    {"type": "kv", "raw": line, "key": key, "val": val}
+                )
         else:
             current_block["lines"].append({"type": "unknown", "raw": line})
 
@@ -141,7 +145,10 @@ def merge_settings(blocks: list, args: dict) -> bool:
         # find host blocks (case-insensitive) while preserving original casing in output
         normalized_host_name = str(host_name).casefold()
         matching_blocks = [
-            b for b in blocks if b["name"] is not None and str(b["name"]).casefold() == normalized_host_name
+            b
+            for b in blocks
+            if b["name"] is not None
+            and str(b["name"]).casefold() == normalized_host_name
         ]
 
         if not matching_blocks:
@@ -149,7 +156,11 @@ def merge_settings(blocks: list, args: dict) -> bool:
             new_block = {"name": host_name, "lines": []}
 
             # ensure previous block ends with empty line for spacing
-            if blocks and blocks[-1]["lines"] and blocks[-1]["lines"][-1]["type"] != "empty":
+            if (
+                blocks
+                and blocks[-1]["lines"]
+                and blocks[-1]["lines"][-1]["type"] != "empty"
+            ):
                 blocks[-1]["lines"].append({"type": "empty", "raw": ""})
 
             new_block["lines"].append(
@@ -171,7 +182,10 @@ def merge_settings(blocks: list, args: dict) -> bool:
             # Update key in all blocks where it exists
             key_found = False
             for b in matching_blocks:
-                if any(line["type"] == "kv" and line["key"].lower() == k.lower() for line in b["lines"]):
+                if any(
+                    line["type"] == "kv" and line["key"].lower() == k.lower()
+                    for line in b["lines"]
+                ):
                     if merge_kv(b, k, v):
                         changed = True
                     key_found = True

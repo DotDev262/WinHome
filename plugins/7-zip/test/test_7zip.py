@@ -13,7 +13,9 @@ spec.loader.exec_module(plugin)
 
 class Test7ZipPlugin(unittest.TestCase):
     def test_check_installed_returns_true_when_7z_is_in_path(self):
-        with patch.object(plugin.shutil, "which", return_value="C:/Program Files/7-Zip/7z.exe"):
+        with patch.object(
+            plugin.shutil, "which", return_value="C:/Program Files/7-Zip/7z.exe"
+        ):
             result = plugin.check_installed({}, "req-1")
 
         self.assertEqual(result["requestId"], "req-1")
@@ -64,7 +66,13 @@ class Test7ZipPlugin(unittest.TestCase):
         plugin.winreg = mock_winreg
 
         result = plugin.apply_config(
-            {"settings": {"CompressionLevel": 5, "CompressionMethod": "LZMA2", "EncryptHeaders": True}},
+            {
+                "settings": {
+                    "CompressionLevel": 5,
+                    "CompressionMethod": "LZMA2",
+                    "EncryptHeaders": True,
+                }
+            },
             {"dryRun": False},
             "req-4",
         )
@@ -141,7 +149,9 @@ class Test7ZipPlugin(unittest.TestCase):
         plugin.winreg = MagicMock()
 
         # Invalid CompressionLevel type
-        res = plugin.apply_config({"settings": {"CompressionLevel": "high"}}, {}, "req-7")
+        res = plugin.apply_config(
+            {"settings": {"CompressionLevel": "high"}}, {}, "req-7"
+        )
         self.assertFalse(res["success"])
         self.assertIn("CompressionLevel", res["error"])
 
@@ -156,7 +166,9 @@ class Test7ZipPlugin(unittest.TestCase):
         self.assertIn("CompressionMethod", res["error"])
 
         # Invalid EncryptHeaders type
-        res = plugin.apply_config({"settings": {"EncryptHeaders": "True"}}, {}, "req-10")
+        res = plugin.apply_config(
+            {"settings": {"EncryptHeaders": "True"}}, {}, "req-10"
+        )
         self.assertFalse(res["success"])
         self.assertIn("EncryptHeaders", res["error"])
 
@@ -209,7 +221,10 @@ class Test7ZipPlugin(unittest.TestCase):
         import io
         import json
 
-        with patch("sys.stdin", io.StringIO("")), patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+        with (
+            patch("sys.stdin", io.StringIO("")),
+            patch("sys.stdout", new_callable=io.StringIO) as mock_stdout,
+        ):
             plugin.main()
             output = json.loads(mock_stdout.getvalue().strip())
             self.assertEqual(output["requestId"], "unknown")

@@ -5,7 +5,9 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
+PLUGIN = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
+)
 
 
 def run_plugin(payload: dict, env=None) -> dict:
@@ -219,8 +221,12 @@ def test_apply_creates_profile_directories():
 
         assert res["success"]
         assert res["changed"]
-        assert os.path.exists(os.path.join(obs_dir, "basic", "profiles", "Streaming", "basic.ini"))
-        assert os.path.exists(os.path.join(obs_dir, "basic", "profiles", "Recording", "basic.ini"))
+        assert os.path.exists(
+            os.path.join(obs_dir, "basic", "profiles", "Streaming", "basic.ini")
+        )
+        assert os.path.exists(
+            os.path.join(obs_dir, "basic", "profiles", "Recording", "basic.ini")
+        )
         print("PASS: apply_creates_profile_directories")
 
 
@@ -251,7 +257,9 @@ def test_apply_profile_explicit_name():
 
 
 def test_unknown_command():
-    res = run_plugin({"requestId": "10", "command": "explode", "args": {}, "context": {}})
+    res = run_plugin(
+        {"requestId": "10", "command": "explode", "args": {}, "context": {}}
+    )
     assert not res["success"]
     assert "error" in res
     print("PASS: unknown_command")

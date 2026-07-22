@@ -41,7 +41,11 @@ def read_json(file_path: str) -> dict:
 
 def deep_merge(original: dict, updates: dict) -> dict:
     for key, value in updates.items():
-        if key in original and isinstance(original[key], dict) and isinstance(value, dict):
+        if (
+            key in original
+            and isinstance(original[key], dict)
+            and isinstance(value, dict)
+        ):
             deep_merge(original[key], value)
         else:
             original[key] = value

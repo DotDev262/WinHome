@@ -52,9 +52,13 @@ def read_yaml(file_path: str) -> dict:
 
         try:
             shutil.copy2(file_path, backup_path)
-            log(f"Warning: could not parse {file_path}: {error}. Backed up to {backup_path} and starting fresh.")
+            log(
+                f"Warning: could not parse {file_path}: {error}. Backed up to {backup_path} and starting fresh."
+            )
         except Exception as backup_error:
-            log(f"Warning: could not parse {file_path}: {error}. Failed to back it up: {backup_error}. Starting fresh.")
+            log(
+                f"Warning: could not parse {file_path}: {error}. Failed to back it up: {backup_error}. Starting fresh."
+            )
 
         return {}
 
@@ -62,7 +66,9 @@ def read_yaml(file_path: str) -> dict:
 def write_yaml(file_path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    temp_fd, temp_path = tempfile.mkstemp(prefix="yasb-", dir=os.path.dirname(file_path))
+    temp_fd, temp_path = tempfile.mkstemp(
+        prefix="yasb-", dir=os.path.dirname(file_path)
+    )
     try:
         with os.fdopen(temp_fd, "w", encoding="utf-8") as file_handle:
             yaml.safe_dump(data, file_handle, default_flow_style=False, sort_keys=False)
@@ -109,7 +115,9 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 def check_installed(request_id: str) -> dict:
     installed = (
-        shutil.which("yasb") is not None or shutil.which("yasb.exe") is not None or os.path.isdir(get_config_dir())
+        shutil.which("yasb") is not None
+        or shutil.which("yasb.exe") is not None
+        or os.path.isdir(get_config_dir())
     )
 
     return {
@@ -139,7 +147,11 @@ def apply_config(request_id: str, args: dict, context: dict) -> dict:
     changed = merge_settings(updated_config, settings)
 
     if dry_run:
-        log(f"Would update {config_path}" if changed else f"No changes for {config_path}")
+        log(
+            f"Would update {config_path}"
+            if changed
+            else f"No changes for {config_path}"
+        )
         return {
             "requestId": request_id,
             "success": True,

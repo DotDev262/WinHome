@@ -138,7 +138,9 @@ def test_apply_preserves_inline_comment_suffix(tmp_path):
 
     assert response["success"] is True
     assert response["changed"] is True
-    assert settings_path.read_text(encoding="utf-8") == ("root=D:\\tools\\nvm  # install directory\n")
+    assert settings_path.read_text(encoding="utf-8") == (
+        "root=D:\\tools\\nvm  # install directory\n"
+    )
 
 
 def test_apply_dry_run_does_not_write(tmp_path):

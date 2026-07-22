@@ -10,7 +10,12 @@ INI_PATH = EVERYTHING_DIR / "Everything.ini"
 
 
 def handle_check_installed(request_id):
-    return {"requestId": request_id, "success": True, "changed": False, "data": EVERYTHING_DIR.exists()}
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": False,
+        "data": EVERYTHING_DIR.exists(),
+    }
 
 
 def load_config():
@@ -73,7 +78,13 @@ def main():
         if not raw:
             print(
                 json.dumps(
-                    {"requestId": None, "success": False, "changed": False, "data": None, "error": "empty input"}
+                    {
+                        "requestId": None,
+                        "success": False,
+                        "changed": False,
+                        "data": None,
+                        "error": "empty input",
+                    }
                 )
             )
             return
@@ -92,12 +103,19 @@ def main():
             result = handle_apply(args, context, request_id)
 
         else:
-            result = {"requestId": request_id, "success": False, "error": f"unknown command: {command}"}
+            result = {
+                "requestId": request_id,
+                "success": False,
+                "error": f"unknown command: {command}",
+            }
 
         print(json.dumps(result), flush=True)
 
     except Exception as error:
-        print(json.dumps({"requestId": None, "success": False, "error": str(error)}), flush=True)
+        print(
+            json.dumps({"requestId": None, "success": False, "error": str(error)}),
+            flush=True,
+        )
 
 
 if __name__ == "__main__":

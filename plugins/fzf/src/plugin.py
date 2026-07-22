@@ -136,7 +136,9 @@ def read_fzfrc(file_path: str) -> Tuple[Dict[str, str], bool]:
                 key, value = parse_export_line(line)
                 config[key] = value
     except (OSError, UnicodeError, ValueError) as exc:
-        log(f"Warning: failed to parse existing config ({exc}). Backing up and starting fresh.")
+        log(
+            f"Warning: failed to parse existing config ({exc}). Backing up and starting fresh."
+        )
         return {}, True
 
     return config, False
@@ -145,7 +147,12 @@ def read_fzfrc(file_path: str) -> Tuple[Dict[str, str], bool]:
 def shell_quote(value: str) -> str:
     if "\n" in value or "\r" in value:
         raise ValueError("fzf config values cannot contain newlines")
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$").replace("`", "\\`")
+    escaped = (
+        value.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("$", "\\$")
+        .replace("`", "\\`")
+    )
     return f'"{escaped}"'
 
 
@@ -154,7 +161,9 @@ def write_fzfrc(file_path: str, config: Dict[str, str]) -> None:
     if parent:
         os.makedirs(parent, exist_ok=True)
 
-    fd, temp_path = tempfile.mkstemp(prefix=".fzfrc.", suffix=".tmp", dir=parent or None, text=True)
+    fd, temp_path = tempfile.mkstemp(
+        prefix=".fzfrc.", suffix=".tmp", dir=parent or None, text=True
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             for key in sorted(config):
@@ -174,7 +183,9 @@ def backup_corrupted_config(file_path: str) -> str:
     return backup_path
 
 
-def build_default_opts(settings: Dict[str, Any], existing_value: str | None) -> str | None:
+def build_default_opts(
+    settings: Dict[str, Any], existing_value: str | None
+) -> str | None:
     explicit = settings.get("FZF_DEFAULT_OPTS")
     if explicit is not None:
         opts = stringify_value(explicit).strip()
@@ -214,7 +225,9 @@ def merge_config(target: Dict[str, str], settings: Dict[str, Any]) -> bool:
     return changed
 
 
-def apply_config(args: Dict[str, Any], context: Dict[str, Any], request_id: str) -> Dict[str, Any]:
+def apply_config(
+    args: Dict[str, Any], context: Dict[str, Any], request_id: str
+) -> Dict[str, Any]:
     dry_run = context.get("dryRun", False) is True
 
     try:
@@ -280,7 +293,9 @@ def dispatch(request: Dict[str, Any]) -> Dict[str, Any]:
 def main() -> None:
     input_data = sys.stdin.read()
     if not input_data:
-        sys.stdout.write(json.dumps(response("unknown", False, False, {}, "Empty stdin")) + "\n")
+        sys.stdout.write(
+            json.dumps(response("unknown", False, False, {}, "Empty stdin")) + "\n"
+        )
         sys.stdout.flush()
         return
 

@@ -21,7 +21,26 @@ def _yaml_quote_string(value: str) -> str:
         s == ""
         or any(
             ch in s
-            for ch in [":", "#", "{", "}", "[", "]", "&", "*", "!", "|", ">", "?", "-", "@", ",", "\n", "\r", "\t"]
+            for ch in [
+                ":",
+                "#",
+                "{",
+                "}",
+                "[",
+                "]",
+                "&",
+                "*",
+                "!",
+                "|",
+                ">",
+                "?",
+                "-",
+                "@",
+                ",",
+                "\n",
+                "\r",
+                "\t",
+            ]
         )
         or s.startswith(("{", "[", "*", "&", "!", "|", ">", "-", "?", "@"))
     ):
@@ -135,7 +154,9 @@ def _atomic_write(path: str, content: str):
 def check_installed(args: dict) -> bool:
     paths = get_yarnrc_paths()
     found_yarn = (
-        shutil.which("yarn.cmd") is not None or shutil.which("yarn.exe") is not None or shutil.which("yarn") is not None
+        shutil.which("yarn.cmd") is not None
+        or shutil.which("yarn.exe") is not None
+        or shutil.which("yarn") is not None
     )
 
     cfg_exists = os.path.exists(paths["berry"]) or os.path.exists(paths["classic"])
@@ -195,7 +216,9 @@ def _validate_and_normalize_settings(settings_raw: object):
     return settings
 
 
-def _apply_berry(berry_path: str, settings: dict, dry_run: bool, request_id: str) -> dict:
+def _apply_berry(
+    berry_path: str, settings: dict, dry_run: bool, request_id: str
+) -> dict:
     existing = {}
     if os.path.exists(berry_path):
         try:
@@ -229,7 +252,9 @@ def _apply_berry(berry_path: str, settings: dict, dry_run: bool, request_id: str
     }
 
 
-def _apply_classic(classic_path: str, settings: dict, dry_run: bool, request_id: str) -> dict:
+def _apply_classic(
+    classic_path: str, settings: dict, dry_run: bool, request_id: str
+) -> dict:
     existing = {}
     if os.path.exists(classic_path):
         try:
@@ -278,9 +303,13 @@ def apply_config(args: dict, request_id: str) -> dict:
         classic_exists = os.path.exists(paths["classic"])
 
         if berry_exists or (not classic_exists):
-            return _apply_berry(paths["berry"], settings, dry_run=dry_run, request_id=request_id)
+            return _apply_berry(
+                paths["berry"], settings, dry_run=dry_run, request_id=request_id
+            )
 
-        return _apply_classic(paths["classic"], settings, dry_run=dry_run, request_id=request_id)
+        return _apply_classic(
+            paths["classic"], settings, dry_run=dry_run, request_id=request_id
+        )
 
     except Exception as e:
         log_error(f"Failed to apply config: {e}")

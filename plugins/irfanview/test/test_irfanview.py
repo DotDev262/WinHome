@@ -36,7 +36,10 @@ class TestIrfanViewPlugin(unittest.TestCase):
 
     def test_apply_settings_new_file(self):
         with mock_env() as td:
-            settings = {"Others": {"ShowAllFiles": True, "ThumbnailSize": 200}, "Language": {"Language": "ENGLISH"}}
+            settings = {
+                "Others": {"ShowAllFiles": True, "ThumbnailSize": 200},
+                "Language": {"Language": "ENGLISH"},
+            }
             plugin.apply_settings(settings, dry_run=False)
 
             ini_path = os.path.join(td, "IrfanView", "i_view64.ini")
@@ -92,7 +95,9 @@ class TestIrfanViewPlugin(unittest.TestCase):
     def test_handle_request(self):
         with mock_env():
             # Test check_installed
-            res = plugin.handle_request({"command": "check_installed", "requestId": "1"})
+            res = plugin.handle_request(
+                {"command": "check_installed", "requestId": "1"}
+            )
             self.assertEqual(res["requestId"], "1")
             self.assertIn("data", res)
 

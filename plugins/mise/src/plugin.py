@@ -67,7 +67,9 @@ def write_toml(file_path: str, data: dict) -> None:
         if isinstance(contents, dict):
             write_section(section, contents)
 
-    fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(file_path), prefix="config.toml.")
+    fd, temp_path = tempfile.mkstemp(
+        dir=os.path.dirname(file_path), prefix="config.toml."
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write("\n".join(lines).strip() + "\n")

@@ -34,7 +34,9 @@ def test_check_installed_reports_true_when_executable_is_found(monkeypatch):
     plugin = load_plugin_module()
 
     monkeypatch.setattr(plugin.shutil, "which", lambda name: None)
-    monkeypatch.setattr(plugin.os.path, "exists", lambda path: path.endswith("AutoHotkey64.exe"))
+    monkeypatch.setattr(
+        plugin.os.path, "exists", lambda path: path.endswith("AutoHotkey64.exe")
+    )
     monkeypatch.setenv("PROGRAMFILES", r"C:\Program Files")
     monkeypatch.setenv("PROGRAMFILES(X86)", r"C:\Program Files (x86)")
     monkeypatch.setenv("LOCALAPPDATA", r"C:\Users\Test\AppData\Local")

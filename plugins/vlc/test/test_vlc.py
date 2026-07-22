@@ -14,9 +14,12 @@ import sys
 import tempfile
 import textwrap
 
-PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
+PLUGIN = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
+)
 
-SAMPLE_VLCRC = textwrap.dedent("""\
+SAMPLE_VLCRC = textwrap.dedent(
+    """\
     # VLC media player preferences
     [core]
     volume=256
@@ -29,7 +32,8 @@ SAMPLE_VLCRC = textwrap.dedent("""\
     qt-max-volume=125
     [sout]
     enable-lua-sd=
-""")
+"""
+)
 
 
 def run_plugin(payload: dict, env: dict | None = None) -> dict:
@@ -104,7 +108,12 @@ def test_check_installed_absent():
 def test_check_installed_no_success_field():
     with tempfile.TemporaryDirectory() as tmp:
         res = run_plugin(
-            {"requestId": "ci3", "command": "check_installed", "args": {}, "context": {}},
+            {
+                "requestId": "ci3",
+                "command": "check_installed",
+                "args": {},
+                "context": {},
+            },
             env={"APPDATA": tmp},
         )
         assert "success" not in res
@@ -326,19 +335,30 @@ def test_apply_settings_not_dict():
 
 
 def test_unknown_command():
-    res = run_plugin({"requestId": "12", "command": "explode", "args": {}, "context": {}})
+    res = run_plugin(
+        {"requestId": "12", "command": "explode", "args": {}, "context": {}}
+    )
     assert "error" in res
     print("âœ“ unknown_command")
 
 
 def test_request_id_echoed():
-    res = run_plugin({"requestId": "my-custom-id", "command": "check_installed", "args": {}, "context": {}})
+    res = run_plugin(
+        {
+            "requestId": "my-custom-id",
+            "command": "check_installed",
+            "args": {},
+            "context": {},
+        }
+    )
     assert res["requestId"] == "my-custom-id"
     print("âœ“ request_id_echoed")
 
 
 def test_request_id_null_defaults_to_unknown():
-    res = run_plugin({"requestId": None, "command": "check_installed", "args": {}, "context": {}})
+    res = run_plugin(
+        {"requestId": None, "command": "check_installed", "args": {}, "context": {}}
+    )
     assert res["requestId"] == "unknown"
     print("âœ“ request_id_null_defaults_to_unknown")
 

@@ -37,7 +37,11 @@ def test_apply_dry_run_no_write(tmp_path, monkeypatch):
     monkeypatch.setattr(plugin, "get_config_path", lambda: str(config_file))
     args = {
         "dryRun": True,
-        "settings": {"packageSources": [{"name": "nuget", "source": "https://api.nuget.org/v3/index.json"}]},
+        "settings": {
+            "packageSources": [
+                {"name": "nuget", "source": "https://api.nuget.org/v3/index.json"}
+            ]
+        },
     }
     result = plugin.apply_config(args, "test-001")
     assert result["changed"] is True
@@ -53,7 +57,11 @@ def test_apply_success(tmp_path, monkeypatch):
     monkeypatch.setattr(plugin, "get_config_path", lambda: str(config_file))
     args = {
         "dryRun": False,
-        "settings": {"packageSources": [{"name": "nuget", "source": "https://api.nuget.org/v3/index.json"}]},
+        "settings": {
+            "packageSources": [
+                {"name": "nuget", "source": "https://api.nuget.org/v3/index.json"}
+            ]
+        },
     }
     result = plugin.apply_config(args, "test-001")
     assert result["changed"] is True
@@ -64,13 +72,19 @@ def test_apply_noop(tmp_path, monkeypatch):
     config_file = tmp_path / "NuGet.Config"
     root = ET.Element("configuration")
     sources = ET.SubElement(root, "packageSources")
-    ET.SubElement(sources, "add", {"key": "nuget", "value": "https://api.nuget.org/v3/index.json"})
+    ET.SubElement(
+        sources, "add", {"key": "nuget", "value": "https://api.nuget.org/v3/index.json"}
+    )
     tree = ET.ElementTree(root)
     tree.write(config_file, encoding="utf-8")
     monkeypatch.setattr(plugin, "get_config_path", lambda: str(config_file))
     args = {
         "dryRun": False,
-        "settings": {"packageSources": [{"name": "nuget", "source": "https://api.nuget.org/v3/index.json"}]},
+        "settings": {
+            "packageSources": [
+                {"name": "nuget", "source": "https://api.nuget.org/v3/index.json"}
+            ]
+        },
     }
     result = plugin.apply_config(args, "test-001")
     assert result["changed"] is False
@@ -88,10 +102,16 @@ def test_invalid_settings_handled(tmp_path, monkeypatch):
 
 
 def test_config_missing(tmp_path, monkeypatch):
-    monkeypatch.setattr(plugin, "get_config_path", lambda: str(tmp_path / "missing.Config"))
+    monkeypatch.setattr(
+        plugin, "get_config_path", lambda: str(tmp_path / "missing.Config")
+    )
     args = {
         "dryRun": False,
-        "settings": {"packageSources": [{"name": "nuget", "source": "https://api.nuget.org/v3/index.json"}]},
+        "settings": {
+            "packageSources": [
+                {"name": "nuget", "source": "https://api.nuget.org/v3/index.json"}
+            ]
+        },
     }
     result = plugin.apply_config(args, "test-001")
     assert result["changed"] is True

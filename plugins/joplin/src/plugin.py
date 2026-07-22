@@ -109,7 +109,11 @@ def main():
 
             result = handle_apply(settings, dry_run)
 
-            response = {"requestId": request_id, "changed": result["changed"], "changes": result["changes"]}
+            response = {
+                "requestId": request_id,
+                "changed": result["changed"],
+                "changes": result["changes"],
+            }
 
         else:
             response = {"requestId": request_id, "error": f"Unknown command: {command}"}

@@ -8,7 +8,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 SETTING_FILE = "settings.txt"
-LINE_RE = re.compile(r"^(?P<leading>\s*)(?P<key>[^=\s#;]+)(?P<sep>\s*=\s*)(?P<value>.*)$")
+LINE_RE = re.compile(
+    r"^(?P<leading>\s*)(?P<key>[^=\s#;]+)(?P<sep>\s*=\s*)(?P<value>.*)$"
+)
 
 
 def log(msg: str) -> None:
@@ -17,7 +19,9 @@ def log(msg: str) -> None:
 
 
 def get_appdata_dir() -> str:
-    appdata = (os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming"))
+    appdata = os.environ.get("APPDATA") or os.path.join(
+        os.path.expanduser("~"), "AppData", "Roaming"
+    )
     if appdata:
         return appdata
 
@@ -124,7 +128,9 @@ def render_lines(lines: list[SettingLine]) -> str:
             continue
 
         value = "" if line.value is None else line.value
-        rendered.append(f"{line.leading}{line.key}{line.separator}{value}{line.suffix}\n")
+        rendered.append(
+            f"{line.leading}{line.key}{line.separator}{value}{line.suffix}\n"
+        )
 
     text = "".join(rendered)
 
@@ -202,7 +208,9 @@ def write_atomic(file_path: str, content: str) -> None:
 
 def check_installed(_args: dict, request_id: str) -> dict:
     installed = (
-        os.path.exists(get_settings_path()) or shutil.which("nvm.exe") is not None or shutil.which("nvm") is not None
+        os.path.exists(get_settings_path())
+        or shutil.which("nvm.exe") is not None
+        or shutil.which("nvm") is not None
     )
 
     return {

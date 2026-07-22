@@ -4,7 +4,9 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
+PLUGIN = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
+)
 TMP_DIR = tempfile.mkdtemp()
 
 

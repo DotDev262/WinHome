@@ -15,7 +15,9 @@ from unittest.mock import MagicMock, patch
 
 import yaml
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+)
 import plugin
 
 
@@ -32,7 +34,9 @@ class TestGhDashPlugin(unittest.TestCase):
     def test_check_installed_true_via_which(self):
         with patch(
             "plugin.shutil.which",
-            side_effect=lambda name: "/usr/local/bin/gh-dash" if name == "gh-dash" else None,
+            side_effect=lambda name: (
+                "/usr/local/bin/gh-dash" if name == "gh-dash" else None
+            ),
         ):
             response = self.run_main(
                 {
@@ -319,7 +323,9 @@ class TestGhDashPlugin(unittest.TestCase):
                         "args": {
                             "settings": {
                                 "defaultLimit": 40,
-                                "prSections": [{"title": "Wrapped", "filters": "is:open"}],
+                                "prSections": [
+                                    {"title": "Wrapped", "filters": "is:open"}
+                                ],
                             }
                         },
                         "context": {"dryRun": False},

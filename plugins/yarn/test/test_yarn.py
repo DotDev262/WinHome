@@ -107,7 +107,9 @@ def test_apply_classic_prefers_classic_if_present(mock_home, tmp_path):
     mock_home.return_value = str(tmp_path)
 
     # Create classic file
-    (tmp_path / ".yarnrc").write_text("npmRegistryServer https://example.com\n", encoding="utf-8")
+    (tmp_path / ".yarnrc").write_text(
+        "npmRegistryServer https://example.com\n", encoding="utf-8"
+    )
 
     request = {
         "requestId": "r4",

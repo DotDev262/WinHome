@@ -149,14 +149,19 @@ def main() -> None:
     input_data = sys.stdin.read()
 
     if not input_data:
-        sys.stdout.write(json.dumps({"requestId": "unknown", "error": "Empty stdin"}) + "\n")
+        sys.stdout.write(
+            json.dumps({"requestId": "unknown", "error": "Empty stdin"}) + "\n"
+        )
         sys.stdout.flush()
         return
 
     try:
         request = json.loads(input_data)
     except Exception as exc:
-        sys.stdout.write(json.dumps({"requestId": "unknown", "error": f"JSON parse error: {exc}"}) + "\n")
+        sys.stdout.write(
+            json.dumps({"requestId": "unknown", "error": f"JSON parse error: {exc}"})
+            + "\n"
+        )
         sys.stdout.flush()
         return
 

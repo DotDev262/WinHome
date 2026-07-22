@@ -78,7 +78,10 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
         for key, value in keys.items():
             str_val = str(value)
-            if not parser.has_option(section, key) or parser.get(section, key) != str_val:
+            if (
+                not parser.has_option(section, key)
+                or parser.get(section, key) != str_val
+            ):
                 parser.set(section, key, str_val)
                 changed = True
 
@@ -110,7 +113,9 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 def main():
     input_data = sys.stdin.read()
     if not input_data:
-        sys.stdout.write(json.dumps({"requestId": "unknown", "error": "Empty input"}) + "\n")
+        sys.stdout.write(
+            json.dumps({"requestId": "unknown", "error": "Empty input"}) + "\n"
+        )
         sys.stdout.flush()
         return
 

@@ -90,7 +90,10 @@ def check_installed(args: dict, request_id: str) -> dict:
     installed = (
         shutil.which("cargo.exe") is not None
         or shutil.which("cargo") is not None
-        or (cargo_home != "" and os.path.exists(os.path.join(cargo_home, "bin", "cargo.exe")))
+        or (
+            cargo_home != ""
+            and os.path.exists(os.path.join(cargo_home, "bin", "cargo.exe"))
+        )
     )
     return {
         "requestId": request_id,
@@ -176,9 +179,11 @@ def main() -> None:
         result = handle(request)
     except Exception as error:
         result = {
-            "requestId": request.get("requestId", "unknown")
-            if "request" in locals() and isinstance(request, dict)
-            else "unknown",
+            "requestId": (
+                request.get("requestId", "unknown")
+                if "request" in locals() and isinstance(request, dict)
+                else "unknown"
+            ),
             "success": False,
             "changed": False,
             "error": str(error),

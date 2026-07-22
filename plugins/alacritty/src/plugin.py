@@ -13,7 +13,9 @@ def log(msg):
 
 def get_config_path() -> str:
     if sys.platform == "win32":
-        appdata = (os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming"))
+        appdata = os.environ.get("APPDATA") or os.path.join(
+            os.path.expanduser("~"), "AppData", "Roaming"
+        )
         if appdata:
             return os.path.join(appdata, "alacritty", "alacritty.toml")
     return os.path.expanduser("~/.config/alacritty/alacritty.toml")
@@ -115,7 +117,10 @@ def merge_settings(target: dict, source: dict) -> bool:
 
 
 def check_installed(args: dict, request_id: str) -> dict:
-    installed = shutil.which("alacritty.exe") is not None or shutil.which("alacritty") is not None
+    installed = (
+        shutil.which("alacritty.exe") is not None
+        or shutil.which("alacritty") is not None
+    )
     return {
         "requestId": request_id,
         "success": True,

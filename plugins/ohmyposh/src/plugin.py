@@ -4,11 +4,17 @@ import sys
 
 # Dynamic Profile Discovery
 
-_MODERN_PATH = os.path.expandvars(r"%USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1")
-_LEGACY_PATH = os.path.expandvars(r"%USERPROFILE%\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1")
+_MODERN_PATH = os.path.expandvars(
+    r"%USERPROFILE%\Documents\PowerShell\Microsoft.PowerShell_profile.ps1"
+)
+_LEGACY_PATH = os.path.expandvars(
+    r"%USERPROFILE%\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
+)
 
 # Default modern path, fallback to legacy
-PROFILE_PATH = _MODERN_PATH if os.path.exists(os.path.dirname(_MODERN_PATH)) else _LEGACY_PATH
+PROFILE_PATH = (
+    _MODERN_PATH if os.path.exists(os.path.dirname(_MODERN_PATH)) else _LEGACY_PATH
+)
 
 OMP_BEGIN = "# OH-MY-POSH-PLUGIN BEGIN"
 OMP_END = "# OH-MY-POSH-PLUGIN END"
@@ -52,7 +58,9 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             "error": "No theme specified",
         }
 
-    profile_path = args.get("profile") or args.get("settings", {}).get("profile") or PROFILE_PATH
+    profile_path = (
+        args.get("profile") or args.get("settings", {}).get("profile") or PROFILE_PATH
+    )
     desired_line = build_omp_line(theme)
     current_content = read_profile(profile_path)
 
@@ -82,7 +90,12 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             log(f"Updated theme to {theme}")
         else:
             # first time setting
-            new_profile = current_content.rstrip("\n") + ("\n\n" if current_content else "") + omp_block + "\n"
+            new_profile = (
+                current_content.rstrip("\n")
+                + ("\n\n" if current_content else "")
+                + omp_block
+                + "\n"
+            )
             log(f"Created new omp block for {theme}")
 
         write_profile(profile_path, new_profile)
@@ -99,7 +112,9 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
 
 def check_installed(args: dict, request_id: str) -> dict:
     theme = args.get("theme") or args.get("settings", {}).get("theme")
-    profile_path = args.get("profile") or args.get("settings", {}).get("profile") or PROFILE_PATH
+    profile_path = (
+        args.get("profile") or args.get("settings", {}).get("profile") or PROFILE_PATH
+    )
     current_content = read_profile(profile_path)
 
     if theme:

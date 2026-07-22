@@ -13,7 +13,9 @@ def log(msg):
 def read_registry_values():
     values = {}
     try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_READ) as key:
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_READ
+        ) as key:
             try:
                 i = 0
                 while True:
@@ -82,7 +84,9 @@ def apply_config(args):
             log(f"Dry run: Would update registry key {k} to {v}")
     elif changed:
         try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_SET_VALUE) as key:
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_SET_VALUE
+            ) as key:
                 for k, v in updates.items():
                     winreg.SetValueEx(key, k, 0, winreg.REG_DWORD, v)
                     log(f"Updated registry key {k} to {v}")
@@ -103,7 +107,10 @@ def main():
     try:
         request = json.loads(input_data)
     except Exception as e:
-        response = {"requestId": "unknown", "error": f"Failed to parse JSON request: {e}"}
+        response = {
+            "requestId": "unknown",
+            "error": f"Failed to parse JSON request: {e}",
+        }
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
         return
