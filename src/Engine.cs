@@ -720,22 +720,22 @@ namespace WinHome
       while ((DateTime.Now - start).TotalSeconds < timeoutSeconds)
       {
         try
-        {
-          using var response = await _httpClient.GetAsync(
-              ConnectivityCheckUri,
-              HttpCompletionOption.ResponseHeadersRead,
-              cancellationToken);
-              
-          if (response.IsSuccessStatusCode)
           {
-            _logger.LogSuccess("[Engine] Internet connection verified.");
-            return true;
-          }
-        }
-        catch (HttpRequestException) { /* Request failed - will retry */ }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { /* HttpClient timeout - will retry */ }
+            using var response = await _httpClient.GetAsync(
+                ConnectivityCheckUri,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken);
 
-        _logger.LogInfo("[Engine] Waiting for network...");
+            if (response.IsSuccessStatusCode)
+            {
+              _logger.LogSuccess("[Engine] Internet connection verified.");
+              return true;
+            }
+          }
+          catch (HttpRequestException) { /* Request failed - will retry */ }
+          catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { /* HttpClient timeout - will retry */ }
+
+          _logger.LogInfo("[Engine] Waiting for network...");
           await Task.Delay(2000, cancellationToken);
       }
       return false;
