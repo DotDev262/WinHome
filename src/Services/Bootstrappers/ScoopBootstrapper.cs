@@ -48,9 +48,8 @@ namespace WinHome.Services.Bootstrappers
         return;
       }
 
-      // Set execution policy first, then install Scoop
-      // This fixes the "cannot be loaded because running scripts is disabled" error
-      string command = "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; irm get.scoop.sh -outfile install.ps1; .\\install.ps1 -RunAsAdmin; if (Test-Path .\\install.ps1) { Remove-Item .\\install.ps1 }";
+      // Use -ExecutionPolicy Bypass as a process argument instead of calling Set-ExecutionPolicy cmdlet inline
+      string command = "irm get.scoop.sh -outfile install.ps1; .\\install.ps1 -RunAsAdmin; if (Test-Path .\\install.ps1) { Remove-Item .\\install.ps1 }";
 
       for (int attempt = 0; attempt < MaxRetries; attempt++)
       {
@@ -59,7 +58,7 @@ namespace WinHome.Services.Bootstrappers
         var psi = new ProcessStartInfo
         {
           FileName = "powershell.exe",
-          Arguments = $"-NoProfile -Command \"{command}\"",
+          Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"",
           RedirectStandardOutput = true,
           RedirectStandardError = true,
           UseShellExecute = false,
