@@ -1,7 +1,7 @@
 using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
-using System.Net.Http;
+using global::System.IO;
+using global::System.IO.Compression;
+using global::System.Net.Http;
 using WinHome.Interfaces;
 using WinHome.Models.Plugins;
 using WinHome.Services.Bootstrappers;
@@ -145,7 +145,7 @@ namespace WinHome.Services.Plugins
 
       try
       {
-        using var client = new System.Net.Http.HttpClient();
+        using var client = new HttpClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd("WinHome-CLI");
 
         var zipUrl = "https://github.com/DotDev262/WinHome/archive/refs/heads/main.zip";
@@ -161,7 +161,7 @@ namespace WinHome.Services.Plugins
         }
 
         var tempExtractPath = Path.Combine(Path.GetTempPath(), $"winhome-extract-{Guid.NewGuid()}");
-        System.IO.Compression.ZipFile.ExtractToDirectory(tempZipPath, tempExtractPath);
+        ZipFile.ExtractToDirectory(tempZipPath, tempExtractPath);
 
         var extractedPluginsDir = Path.Combine(tempExtractPath, "WinHome-main", "plugins");
         if (Directory.Exists(extractedPluginsDir))
