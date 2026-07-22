@@ -1,6 +1,10 @@
 import json
 import sys
-import winreg
+
+try:
+    import winreg
+except ImportError:
+    winreg = None
 
 REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
 
