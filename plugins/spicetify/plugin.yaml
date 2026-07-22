@@ -5,3 +5,8 @@ main: src/plugin.py
 
 capabilities:
   - config_provider
+
+install_info:
+  default_manager: "scoop"
+  packages:
+    scoop: "spicetify-cli"

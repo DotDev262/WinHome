@@ -5,3 +5,10 @@ main: src/plugin.py
 
 capabilities:
   - config_provider
+
+install_info:
+  default_manager: "scoop"
+  packages:
+    winget: "BetterDiscord.BetterDiscord"
+    scoop: "betterdiscord"
+    choco: "betterdiscord"

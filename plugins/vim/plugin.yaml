@@ -5,3 +5,10 @@ main: src/main.py
 capabilities:
   - package_manager
   - config_provider
+
+install_info:
+  default_manager: "winget"
+  packages:
+    winget: "vim.vim"
+    scoop: "vim"
+    choco: "vim"

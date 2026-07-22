@@ -20,6 +20,9 @@ namespace WinHome.Models.Plugins
     [YamlMember(Alias = "capabilities")]
     public List<string> Capabilities { get; set; } = new();
 
+    [YamlMember(Alias = "install_info")]
+    public PluginInstallInfo? InstallInfo { get; set; }
+
     public string DirectoryPath { get; set; } = string.Empty;
   }
 }

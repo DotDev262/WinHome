@@ -19,7 +19,7 @@ public static class CliBuilder
   /// <param name="stateAction">Handler for the state subcommand (manages tracking state).</param>
   /// <returns>The configured root <see cref="RootCommand"/>.</returns>
   public static RootCommand BuildRootCommand(
-    Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
+    Func<FileInfo, bool, string?, bool, bool, bool, bool, bool, bool, bool, LogLevel, Task<int>> runAction,
     Func<FileInfo?, LogLevel, Task<int>> generateAction,
     Func<string, string?, LogLevel, Task<int>> stateAction,
     Func<string, string?, string?, LogLevel, Task<int>>? configAction = null)
@@ -75,6 +75,10 @@ public static class CliBuilder
     var continueOnErrorOption = new Option<bool>("--continue-on-error") { Description = "Continue applying remaining steps when a step fails" };
     continueOnErrorOption.DefaultValueFactory = _ => false;
 
+    var autoInstallAppsOption = new Option<bool>("--auto-install-apps") { Description = "Automatically install missing plugin applications" };
+    autoInstallAppsOption.DefaultValueFactory = _ => false;
+    autoInstallAppsOption.Aliases.Add("-i");
+
     // MOUNT LOG FILE TRACKER OPTION: Adds the global string flag mapping requested under issue tasks
     var logFileOption = new Option<string?>("--log-file");
     logFileOption.Description = "Explicit file path mapping destination to save human-readable persistent runtime log outputs";
@@ -92,6 +96,7 @@ public static class CliBuilder
     rootCommand.Options.Add(jsonOption);
     rootCommand.Options.Add(forceOption);
     rootCommand.Options.Add(continueOnErrorOption);
+    rootCommand.Options.Add(autoInstallAppsOption);
     rootCommand.Options.Add(logFileOption); // Register globally
 
     rootCommand.SetAction(async (ParseResult result) =>
@@ -107,12 +112,13 @@ public static class CliBuilder
       bool json = result.GetValue(jsonOption);
       bool force = result.GetValue(forceOption);
       bool continueOnError = result.GetValue(continueOnErrorOption);
+      bool autoInstallApps = result.GetValue(autoInstallAppsOption);
       string? logFile = result.GetValue(logFileOption); // Parse option out cleanly to fulfill validation protocols
 
       int conflict = RejectConflictingFlags(verbose, quiet);
       if (conflict != 0) return conflict;
 
-      return await runAction(file, dryRun, profile, debug, diff, json, update, force, continueOnError, ComputeLogLevel(quiet, verbose));
+      return await runAction(file, dryRun, profile, debug, diff, json, update, force, continueOnError, autoInstallApps, ComputeLogLevel(quiet, verbose));
     });
 
     // Generate Command

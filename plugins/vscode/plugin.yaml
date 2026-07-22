@@ -5,3 +5,10 @@ main: src/index.ts
 capabilities:
   - package_manager
   - config_provider
+
+install_info:
+  default_manager: "winget"
+  packages:
+    winget: "Microsoft.VisualStudioCode"
+    scoop: "vscode"
+    choco: "vscode"

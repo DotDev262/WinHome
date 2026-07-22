@@ -34,7 +34,7 @@ public class AppRunner
   /// <param name="force">If <c>true</c>, reapplies steps even if previously succeeded.</param>
   /// <param name="continueOnError">If <c>true</c>, continues applying remaining steps on failure.</param>
   /// <returns>Exit code (0 for success).</returns>
-  public async Task<int> RunAsync(FileInfo configFile, bool dryRun, string? profile, bool debug, bool diff, bool json, bool force = false, bool continueOnError = false)
+  public async Task<int> RunAsync(FileInfo configFile, bool dryRun, string? profile, bool debug, bool diff, bool json, bool force = false, bool continueOnError = false, bool autoInstallApps = false)
   {
     try
     {
@@ -66,7 +66,7 @@ public class AppRunner
       // Resolve Secrets
       _secretResolver.ResolveObject(config);
 
-      await _engine.RunAsync(config, dryRun, profile, debug, diff, force, continueOnError);
+      await _engine.RunAsync(config, dryRun, profile, debug, diff, force, continueOnError, autoInstallApps);
       return 0;
     }
     catch (Exception ex)

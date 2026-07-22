@@ -9,3 +9,10 @@ settings_schema:
   properties:
     settings:
       type: object
+
+install_info:
+  default_manager: "winget"
+  packages:
+    winget: "Greenshot.Greenshot"
+    scoop: "greenshot"
+    choco: "greenshot"

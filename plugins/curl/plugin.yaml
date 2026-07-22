@@ -6,3 +6,10 @@ type: python
 main: src/plugin.py
 capabilities:
   - config_provider
+
+install_info:
+  default_manager: "scoop"
+  packages:
+    winget: "Anantshri.curl"
+    scoop: "curl"
+    choco: "curl"

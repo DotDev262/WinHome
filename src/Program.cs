@@ -39,7 +39,7 @@ class Program
 
       var rootCommand = CliBuilder.BuildRootCommand(
           // Run Action
-          async (file, dryRun, profile, debug, diff, json, update, force, continueOnError, minLogLevel) =>
+          async (file, dryRun, profile, debug, diff, json, update, force, continueOnError, autoInstallApps, minLogLevel) =>
           {
             var logger = host.Services.GetRequiredService<ILogger>();
             logger.SetMinLevel(minLogLevel);
@@ -57,7 +57,7 @@ class Program
 
             var runner = host.Services.GetRequiredService<AppRunner>();
 
-            var exitCode = await runner.RunAsync(file, dryRun, profile, debug, diff, json, force, continueOnError);
+            var exitCode = await runner.RunAsync(file, dryRun, profile, debug, diff, json, force, continueOnError, autoInstallApps);
 
             if (logger is JsonLogger jsonLogger)
             {

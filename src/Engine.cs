@@ -91,7 +91,7 @@ namespace WinHome
     /// <param name="diff">If <c>true</c>, shows a diff of changes and returns without applying.</param>
     /// <param name="forceReapply">If <c>true</c>, reapplies steps even if previously succeeded.</param>
     /// <param name="continueOnError">If <c>true</c>, continues with remaining steps when a step fails.</param>
-    public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false, bool forceReapply = false, bool continueOnError = false)
+    public async Task RunAsync(Configuration config, bool dryRun, string? profileName = null, bool debug = false, bool diff = false, bool forceReapply = false, bool continueOnError = false, bool autoInstallApps = false)
     {
       _logger.LogInfo($"--- WinHome v{config.Version} ---");
 
@@ -415,6 +415,66 @@ namespace WinHome
             }
 
             await _pluginManager.EnsureRuntimeAsync(plugin);
+
+            bool isInstalled = true;
+            if (autoInstallApps)
+            {
+              try
+              {
+                var checkResult = await _pluginRunner.ExecuteAsync(plugin, "check_installed", new { packageId = pluginName }, new { dryRun = dryRun });
+                if (checkResult.Success)
+                {
+                  if (checkResult.Data is bool installedBool)
+                  {
+                    isInstalled = installedBool;
+                  }
+                  else if (checkResult.Data is System.Text.Json.JsonElement element && element.ValueKind == System.Text.Json.JsonValueKind.True)
+                  {
+                    isInstalled = true;
+                  }
+                  else if (checkResult.Data is System.Text.Json.JsonElement elementFalse && elementFalse.ValueKind == System.Text.Json.JsonValueKind.False)
+                  {
+                    isInstalled = false;
+                  }
+                }
+              }
+              catch (Exception checkEx)
+              {
+                _logger.LogWarning($"[Plugin] Failed to check installation status for '{pluginName}': {checkEx.Message}");
+              }
+
+              if (!isInstalled && plugin.InstallInfo != null && !string.IsNullOrEmpty(plugin.InstallInfo.DefaultManager))
+              {
+                var mgrName = plugin.InstallInfo.DefaultManager;
+                if (plugin.InstallInfo.Packages.TryGetValue(mgrName, out var packageId))
+                {
+                  _logger.LogInfo($"[Plugin] Prerequisite app for '{pluginName}' is not installed. Attempting auto-installation using manager '{mgrName}' (Package: '{packageId}')...");
+                  if (_managers.TryGetValue(mgrName, out var mgr))
+                  {
+                    if (!mgr.IsAvailable())
+                    {
+                      _logger.LogInfo($"[Engine] Manager '{mgrName}' not available. Bootstrapping...");
+                      mgr.Bootstrapper.Install(dryRun);
+                    }
+                    if (mgr.IsAvailable())
+                    {
+                      var appConfig = new AppConfig { Id = packageId, Manager = mgrName };
+                      mgr.Install(appConfig, dryRun);
+                      _logger.LogSuccess($"[Plugin] Prerequisite app '{packageId}' installed successfully.");
+                    }
+                    else
+                    {
+                      _logger.LogError($"[Error] Package manager '{mgrName}' could not be initialized to install '{packageId}'.");
+                    }
+                  }
+                  else
+                  {
+                    _logger.LogError($"[Error] Package manager '{mgrName}' is not supported by WinHome.");
+                  }
+                }
+              }
+            }
+
             _logger.LogInfo($"[Plugin] Applying configuration for '{pluginName}'...");
             var result = await _pluginRunner.ExecuteAsync(plugin, "apply", pluginConfig, new { dryRun = dryRun });
 

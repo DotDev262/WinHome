@@ -6,3 +6,10 @@ capabilities:
   - apply
   - check_installed
 author: 'DotDev262'
+
+install_info:
+  default_manager: "winget"
+  packages:
+    winget: "IrfanSoft.IrfanView"
+    scoop: "irfanview"
+    choco: "irfanview"

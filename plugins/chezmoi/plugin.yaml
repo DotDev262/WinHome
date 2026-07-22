@@ -5,3 +5,10 @@ main: src/plugin.py
 capabilities:
   - config_provider
 author: VIDYANKSHINI
+
+install_info:
+  default_manager: "scoop"
+  packages:
+    winget: "twpayne.chezmoi"
+    scoop: "chezmoi"
+    choco: "chezmoi"

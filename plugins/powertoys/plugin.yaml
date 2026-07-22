@@ -4,3 +4,10 @@ type: python
 main: src/main.py
 capabilities:
   - config_provider
+
+install_info:
+  default_manager: "winget"
+  packages:
+    winget: "Microsoft.PowerToys"
+    scoop: "powertoys"
+    choco: "powertoys"
