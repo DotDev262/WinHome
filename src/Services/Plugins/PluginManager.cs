@@ -133,7 +133,16 @@ namespace WinHome.Services.Plugins
       var missingPlugins = configuredPluginNames.Where(name =>
       {
         var manifestPath = Path.Combine(_pluginsDir, name, "plugin.yaml");
-        return !File.Exists(manifestPath);
+        if (!File.Exists(manifestPath)) return true;
+        try
+        {
+          var text = File.ReadAllText(manifestPath);
+          return !text.Contains("install_info:");
+        }
+        catch
+        {
+          return true;
+        }
       }).ToList();
 
       if (!missingPlugins.Any())

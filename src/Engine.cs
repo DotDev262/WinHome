@@ -458,34 +458,63 @@ namespace WinHome
                 _logger.LogWarning($"[Plugin] Failed to check installation status for '{pluginName}': {checkEx.Message}");
               }
 
-              if (!isInstalled && plugin.InstallInfo != null && !string.IsNullOrEmpty(plugin.InstallInfo.DefaultManager))
+              if (!isInstalled && plugin.InstallInfo != null)
               {
-                var mgrName = plugin.InstallInfo.DefaultManager;
-                if (plugin.InstallInfo.Packages.TryGetValue(mgrName, out var packageId))
+                string? selectedMgrName = null;
+                string? packageId = null;
+                IPackageManager? selectedMgr = null;
+
+                var managersToTry = new global::System.Collections.Generic.List<string>();
+                if (!string.IsNullOrEmpty(plugin.InstallInfo.DefaultManager))
                 {
-                  _logger.LogInfo($"[Plugin] Prerequisite app for '{pluginName}' is not installed. Attempting auto-installation using manager '{mgrName}' (Package: '{packageId}')...");
+                  managersToTry.Add(plugin.InstallInfo.DefaultManager);
+                }
+                foreach (var mgrKey in plugin.InstallInfo.Packages.Keys)
+                {
+                  if (!managersToTry.Contains(mgrKey))
+                  {
+                    managersToTry.Add(mgrKey);
+                  }
+                }
+
+                foreach (var mgrName in managersToTry)
+                {
                   if (_managers.TryGetValue(mgrName, out var mgr))
                   {
                     if (!mgr.IsAvailable())
                     {
-                      _logger.LogInfo($"[Engine] Manager '{mgrName}' not available. Bootstrapping...");
-                      mgr.Bootstrapper.Install(dryRun);
+                      _logger.LogInfo($"[Engine] Manager '{mgrName}' not available. Attempting to bootstrap...");
+                      try
+                      {
+                        mgr.Bootstrapper.Install(dryRun);
+                      }
+                      catch (Exception bootEx)
+                      {
+                        _logger.LogWarning($"[Engine] Failed to bootstrap '{mgrName}': {bootEx.Message}");
+                      }
                     }
+
                     if (mgr.IsAvailable())
                     {
-                      var appConfig = new AppConfig { Id = packageId, Manager = mgrName };
-                      mgr.Install(appConfig, dryRun);
-                      _logger.LogSuccess($"[Plugin] Prerequisite app '{packageId}' installed successfully.");
-                    }
-                    else
-                    {
-                      _logger.LogError($"[Error] Package manager '{mgrName}' could not be initialized to install '{packageId}'.");
+                      selectedMgrName = mgrName;
+                      selectedMgr = mgr;
+                      packageId = plugin.InstallInfo.Packages[mgrName];
+                      break;
                     }
                   }
-                  else
-                  {
-                    _logger.LogError($"[Error] Package manager '{mgrName}' is not supported by WinHome.");
-                  }
+                }
+
+                if (selectedMgr != null && !string.IsNullOrEmpty(selectedMgrName) && !string.IsNullOrEmpty(packageId))
+                {
+                  _logger.LogInfo($"[Plugin] Prerequisite app for '{pluginName}' is not installed. Attempting auto-installation using manager '{selectedMgrName}' (Package: '{packageId}')...");
+                  var appConfig = new AppConfig { Id = packageId, Manager = selectedMgrName };
+                  selectedMgr.Install(appConfig, dryRun);
+                  _logger.LogSuccess($"[Plugin] Prerequisite app '{packageId}' installed successfully.");
+                  _env.RefreshPath();
+                }
+                else
+                {
+                  _logger.LogError($"[Error] Could not install prerequisite app for '{pluginName}': No supported and available package manager found.");
                 }
               }
             }
