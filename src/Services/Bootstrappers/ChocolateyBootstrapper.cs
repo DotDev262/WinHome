@@ -37,7 +37,10 @@ namespace WinHome.Services.Bootstrappers
       }
 
       string command = "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
-                       "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
+                       "irm https://community.chocolatey.org/install.ps1 -outfile choco_install.ps1; " +
+                       "(Get-Content choco_install.ps1).Replace('Get-ExecutionPolicy', '\"$([char]39)RemoteSigned$([char]39)\"') | Set-Content choco_install.ps1; " +
+                       ".\\choco_install.ps1; " +
+                       "if (Test-Path .\\choco_install.ps1) { Remove-Item .\\choco_install.ps1 }";
 
       for (int attempt = 0; attempt < MaxRetries; attempt++)
       {

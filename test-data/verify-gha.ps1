@@ -59,4 +59,7 @@ Assert-True (Test-Path "C:\scoop\apps\fzf"), "fzf app directory should exist und
 Assert-True (Test-Path "C:\scoop\apps\ripgrep"), "ripgrep app directory should exist under Scoop"
 Assert-True (Test-Path "C:\scoop\apps\zoxide"), "zoxide app directory should exist under Scoop"
 
+# 9. Verify Chocolatey applications were auto-installed by WinHome
+Assert-True (Test-Path "C:\ProgramData\chocolatey\lib\neovim"), "Neovim app directory should exist under Chocolatey"
+
 exit $global:exitCode
