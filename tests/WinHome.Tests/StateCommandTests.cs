@@ -25,7 +25,7 @@ public class StateCommandTests
   private RootCommand BuildRealCommand(Func<string, string?, LogLevel, Task<int>> stateAction)
   {
     return CliBuilder.BuildRootCommand(
-        runAction: (file, dryRun, profile, debug, diff, json, update, forceReapply, continueOnError, logLevel) => Task.FromResult(0),
+        runAction: (_, _, _, _, _, _, _, _, _, _, _) => Task.FromResult(0),
         generateAction: (output, logLevel) => Task.FromResult(0),
         stateAction: stateAction
     );
