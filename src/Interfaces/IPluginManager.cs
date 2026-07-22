@@ -9,5 +9,7 @@ namespace WinHome.Interfaces
     IEnumerable<PluginManifest> DiscoverPlugins();
     /// <summary>Ensures the required runtime is installed for the given plugin.</summary>
     Task EnsureRuntimeAsync(PluginManifest plugin);
+    /// <summary>Downloads and installs missing plugins from the remote pack.</summary>
+    Task EnsurePluginsInstalledAsync(IEnumerable<string> configuredPluginNames);
   }
 }

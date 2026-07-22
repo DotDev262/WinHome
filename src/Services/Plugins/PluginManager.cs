@@ -118,5 +118,92 @@ namespace WinHome.Services.Plugins
           break;
       }
     }
+
+    /// <summary>Downloads and installs missing plugins from the remote repository archive.</summary>
+    public async Task EnsurePluginsInstalledAsync(IEnumerable<string> configuredPluginNames)
+    {
+      if (!Directory.Exists(_pluginsDir))
+      {
+        Directory.CreateDirectory(_pluginsDir);
+      }
+
+      var missingPlugins = configuredPluginNames.Where(name =>
+      {
+        var manifestPath = Path.Combine(_pluginsDir, name, "plugin.yaml");
+        return !File.Exists(manifestPath);
+      }).ToList();
+
+      if (!missingPlugins.Any())
+      {
+        return;
+      }
+
+      _logger.LogInfo($"[PluginManager] Missing local plugins: {string.Join(", ", missingPlugins)}. Downloading fresh plugin pack from GitHub...");
+
+      try
+      {
+        using var client = new System.Net.Http.HttpClient();
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WinHome-CLI");
+
+        var zipUrl = "https://github.com/DotDev262/WinHome/archive/refs/heads/main.zip";
+        var tempZipPath = Path.Combine(Path.GetTempPath(), $"winhome-plugins-{Guid.NewGuid()}.zip");
+
+        using (var response = await client.GetAsync(zipUrl))
+        {
+          response.EnsureSuccessStatusCode();
+          using (var fs = new FileStream(tempZipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+          {
+            await response.Content.CopyToAsync(fs);
+          }
+        }
+
+        var tempExtractPath = Path.Combine(Path.GetTempPath(), $"winhome-extract-{Guid.NewGuid()}");
+        System.IO.Compression.ZipFile.ExtractToDirectory(tempZipPath, tempExtractPath);
+
+        var extractedPluginsDir = Path.Combine(tempExtractPath, "WinHome-main", "plugins");
+        if (Directory.Exists(extractedPluginsDir))
+        {
+          foreach (var dir in Directory.GetDirectories(extractedPluginsDir))
+          {
+            var pluginName = Path.GetFileName(dir);
+            var targetDir = Path.Combine(_pluginsDir, pluginName);
+            if (Directory.Exists(targetDir))
+            {
+              Directory.Delete(targetDir, true);
+            }
+            CopyDirectory(dir, targetDir);
+          }
+          _logger.LogSuccess("[PluginManager] Plugin pack downloaded and extracted successfully.");
+        }
+        else
+        {
+          _logger.LogError("[PluginManager] Failed to locate plugins folder in downloaded archive.");
+        }
+
+        try
+        {
+          File.Delete(tempZipPath);
+          Directory.Delete(tempExtractPath, true);
+        }
+        catch { /* ignored */ }
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError($"[PluginManager] Failed to download plugin pack: {ex.Message}");
+      }
+    }
+
+    private static void CopyDirectory(string sourceDir, string destinationDir)
+    {
+      Directory.CreateDirectory(destinationDir);
+      foreach (var file in Directory.GetFiles(sourceDir))
+      {
+        File.Copy(file, Path.Combine(destinationDir, Path.GetFileName(file)), true);
+      }
+      foreach (var subDir in Directory.GetDirectories(sourceDir))
+      {
+        CopyDirectory(subDir, Path.Combine(destinationDir, Path.GetFileName(subDir)));
+      }
+    }
   }
 }

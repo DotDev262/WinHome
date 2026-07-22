@@ -95,6 +95,16 @@ namespace WinHome
     {
       _logger.LogInfo($"--- WinHome v{config.Version} ---");
 
+      // Ensure all configured plugins are downloaded/available locally
+      var configuredPluginNames = config.Apps.Select(a => a.Manager)
+          .Concat(new[] { "vim", "vscode", "obsidian", "ohmyposh" }.Where(_ => config.Vim != null || config.Vscode != null || config.Obsidian != null || config.Ohmyposh != null))
+          .Concat(config.Extensions.Keys)
+          .Where(name => !string.IsNullOrEmpty(name))
+          .Distinct(StringComparer.OrdinalIgnoreCase)
+          .ToList();
+
+      await _pluginManager.EnsurePluginsInstalledAsync(configuredPluginNames);
+
       // Load Plugins
       var plugins = _pluginManager.DiscoverPlugins().ToList();
       var loggedPlugins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

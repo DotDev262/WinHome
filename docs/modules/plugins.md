@@ -178,3 +178,12 @@ extensions:
   test-echo:
     message: 'Hello from Python Plugin!'
 ```
+
+---
+
+## Plugin Auto-Discovery & Download
+
+WinHome makes it seamless to use plugins without having to manually copy files:
+- **On-Demand Auto-Download**: If you define an extension or top-level plugin in your `config.yaml` that is not present in `%LOCALAPPDATA%\WinHome\plugins`, WinHome will automatically download the missing plugin from GitHub and extract it into your local directory at runtime.
+- **Auto-Installation of Target Apps**: By using the `-i` or `--auto-install-apps` CLI flag, WinHome will check if the target applications (e.g. VLC, chezmoi, or Git) for your active plugins are installed. If they are missing, it will automatically install them using their default package manager (such as `winget`, `scoop`, or `choco`) before applying your configuration.
+
