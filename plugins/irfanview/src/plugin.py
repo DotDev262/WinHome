@@ -84,15 +84,8 @@ def apply_settings(settings: dict, dry_run: bool) -> bool:
             changed = True
         for k, v in keys.items():
             str_k = str(k)
-            str_v = (
-                "1"
-                if isinstance(v, bool) and v
-                else ("0" if isinstance(v, bool) else str(v))
-            )
-            if (
-                not parser.has_option(section, str_k)
-                or parser.get(section, str_k) != str_v
-            ):
+            str_v = "1" if isinstance(v, bool) and v else ("0" if isinstance(v, bool) else str(v))
+            if not parser.has_option(section, str_k) or parser.get(section, str_k) != str_v:
                 parser.set(section, str_k, str_v)
                 changed = True
 
@@ -104,9 +97,7 @@ def apply_settings(settings: dict, dry_run: bool) -> bool:
         return True
 
     os.makedirs(os.path.dirname(ini_path), exist_ok=True)
-    fd, temp_path = tempfile.mkstemp(
-        dir=os.path.dirname(ini_path), prefix="i_view.ini."
-    )
+    fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(ini_path), prefix="i_view.ini.")
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             parser.write(f, space_around_delimiters=False)

@@ -95,9 +95,7 @@ class TestIrfanViewPlugin(unittest.TestCase):
     def test_handle_request(self):
         with mock_env():
             # Test check_installed
-            res = plugin.handle_request(
-                {"command": "check_installed", "requestId": "1"}
-            )
+            res = plugin.handle_request({"command": "check_installed", "requestId": "1"})
             self.assertEqual(res["requestId"], "1")
             self.assertIn("data", res)
 

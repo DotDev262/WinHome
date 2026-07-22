@@ -33,12 +33,8 @@ def _backup_corrupt_registry(reason):
     timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
     suffix = uuid.uuid4().hex[:8]
     user_profile = os.getenv("USERPROFILE") or os.path.expanduser("~")
-    backup_path = os.path.join(
-        user_profile, f"7zip_registry.corrupted.{timestamp}.{suffix}.reg"
-    )
-    log(
-        f"Registry read failed ({reason}). Backing up HKCU\\{REG_PATH} to {backup_path}"
-    )
+    backup_path = os.path.join(user_profile, f"7zip_registry.corrupted.{timestamp}.{suffix}.reg")
+    log(f"Registry read failed ({reason}). Backing up HKCU\\{REG_PATH} to {backup_path}")
     try:
         subprocess.run(
             ["reg.exe", "export", f"HKCU\\{REG_PATH}", backup_path, "/y"],
@@ -56,9 +52,7 @@ def read_settings():
         return settings
 
     try:
-        with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_READ
-        ) as key:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_READ) as key:
             i = 0
             while True:
                 try:
@@ -194,9 +188,7 @@ def apply_config(args, context, request_id):
         }
 
     try:
-        with winreg.CreateKeyEx(
-            winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_SET_VALUE
-        ) as key:
+        with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_SET_VALUE) as key:
             for k, v in to_update.items():
                 reg_type = KEY_TYPES.get(k)
                 if reg_type is None:

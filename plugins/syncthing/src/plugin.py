@@ -70,9 +70,7 @@ def process_command(request):
 
         if "gui" in settings and update_element(root, "gui", settings["gui"]):
             changed = True
-        if "options" in settings and update_element(
-            root, "options", settings["options"]
-        ):
+        if "options" in settings and update_element(root, "options", settings["options"]):
             changed = True
 
         if changed and not dry_run:

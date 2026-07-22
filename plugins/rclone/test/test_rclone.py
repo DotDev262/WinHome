@@ -88,9 +88,7 @@ class TestRclonePlugin(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertTrue(res["changed"])
         self.assertEqual(res["requestId"], "req-3")
-        mock_write.assert_called_once_with(
-            "dummy.conf", "tpslimit = 10\n[drive]\ntype = drive\n"
-        )
+        mock_write.assert_called_once_with("dummy.conf", "tpslimit = 10\n[drive]\ntype = drive\n")
 
     @patch("plugin.get_config_path")
     @patch("plugin.read_text")

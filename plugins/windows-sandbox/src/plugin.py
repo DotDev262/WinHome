@@ -120,9 +120,7 @@ def merge_settings(root: ET.Element, settings: dict) -> bool:
                     {
                         "hostFolder": host.text if host is not None else "",
                         "readOnly": (
-                            readonly.text.lower() == "true"
-                            if readonly is not None and readonly.text
-                            else False
+                            readonly.text.lower() == "true" if readonly is not None and readonly.text else False
                         ),
                     }
                 )

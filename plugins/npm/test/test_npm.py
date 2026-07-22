@@ -28,7 +28,9 @@ def run_plugin(input_dict):
 
 
 def test_read_npmrc(tmp_path):
-    npmrc_content = "registry=https://registry.npmjs.org/\n@scope:registry=https://custom.com/\n; comment\nsave-exact=true\n"
+    npmrc_content = (
+        "registry=https://registry.npmjs.org/\n@scope:registry=https://custom.com/\n; comment\nsave-exact=true\n"
+    )
     npmrc_file = tmp_path / ".npmrc"
     npmrc_file.write_text(npmrc_content)
 

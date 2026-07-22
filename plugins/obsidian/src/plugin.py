@@ -53,24 +53,18 @@ def make_request(url: str):
     """Make an HTTP request to the given URL with a user agent"""
     if os.environ.get("WINHOME_TEST_MOCK_URLOPEN") == "1":
         if "community-plugins.json" in url:
-            data = json.dumps(
-                [{"id": "obsidian-git", "repo": "mgmeyers/obsidian-git"}]
-            ).encode("utf-8")
+            data = json.dumps([{"id": "obsidian-git", "repo": "mgmeyers/obsidian-git"}]).encode("utf-8")
             return MockResponse(data)
         elif "releases/latest" in url:
             data = json.dumps({"tag_name": "v1.2.3"}).encode("utf-8")
             return MockResponse(data)
         elif "manifest.json" in url:
-            data = json.dumps({"id": "obsidian-git", "version": "1.2.3"}).encode(
-                "utf-8"
-            )
+            data = json.dumps({"id": "obsidian-git", "version": "1.2.3"}).encode("utf-8")
             return MockResponse(data)
         else:
             return MockResponse(b"mock content")
 
-    req = urllib.request.Request(
-        url, headers={"User-Agent": "WinHome-Environment-Manager/1.0"}
-    )
+    req = urllib.request.Request(url, headers={"User-Agent": "WinHome-Environment-Manager/1.0"})
     return urllib.request.urlopen(req)
 
 
@@ -224,9 +218,7 @@ def download_plugin(vault_path: str, plugin_id: str, repo: str, version: str) ->
                 continue
 
         if not success and file != "styles.css":
-            raise Exception(
-                f"Failed to download required asset '{file}' for {plugin_id}: {last_error}"
-            )
+            raise Exception(f"Failed to download required asset '{file}' for {plugin_id}: {last_error}")
 
 
 # Apply Changes
@@ -348,9 +340,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             continue
 
         if vault.get("settings"):
-            res = apply_vault_settings(
-                vault_path, vault["settings"], context.get("dryRun", False)
-            )
+            res = apply_vault_settings(vault_path, vault["settings"], context.get("dryRun", False))
             if not res["success"]:
                 overall_success = False
             if res["changed"]:

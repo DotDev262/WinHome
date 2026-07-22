@@ -77,10 +77,7 @@ def merge_settings(config: configparser.ConfigParser, settings: dict) -> bool:
         for key, value in values.items():
             normalized = normalize_value(value)
 
-            if (
-                not config.has_option(section, key)
-                or config.get(section, key) != normalized
-            ):
+            if not config.has_option(section, key) or config.get(section, key) != normalized:
                 config.set(section, key, normalized)
                 changed = True
 

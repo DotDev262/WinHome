@@ -88,9 +88,7 @@ def main():
                     changed = True
 
         if dry_run:
-            send_response(
-                request_id, data={"status": "dry-run complete"}, changed=changed
-            )
+            send_response(request_id, data={"status": "dry-run complete"}, changed=changed)
             return
 
         if changed:

@@ -62,9 +62,7 @@ def apply(request_id, args):
             target_path = path
             break
     if not target_path:
-        program_files_x86 = os.environ.get(
-            "ProgramFiles(x86)", r"C:\Program Files (x86)"
-        )
+        program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
         target_path = os.path.join(
             program_files_x86,
             "Steam",
@@ -137,11 +135,7 @@ def main():
         result = apply(request_id, args)
         print(json.dumps(result))
     else:
-        print(
-            json.dumps(
-                {"requestId": request_id, "error": f"Unknown command: {command}"}
-            )
-        )
+        print(json.dumps({"requestId": request_id, "error": f"Unknown command: {command}"}))
 
 
 if __name__ == "__main__":

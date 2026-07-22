@@ -4,9 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -65,9 +63,7 @@ def test_merge_existing_preferences():
         prefs_path = os.path.join(spotify_dir, "prefs")
 
         with open(prefs_path, "w", encoding="utf-8") as f:
-            f.write(
-                "audio.play_bitrate_enumeration=4\nui.track_notifications_enabled=false\n"
-            )
+            f.write("audio.play_bitrate_enumeration=4\nui.track_notifications_enabled=false\n")
 
         res = run_plugin(
             {

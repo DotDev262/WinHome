@@ -113,9 +113,7 @@ def test_apply_writes_changes():
 
         # Verify write was called
         written_data = "".join(
-            call.args[0]
-            for call in mock_write().write.call_args_list
-            if isinstance(call.args[0], str)
+            call.args[0] for call in mock_write().write.call_args_list if isinstance(call.args[0], str)
         )
         written_json = json.loads(written_data)
         assert written_json["Hotkey"] == "Alt+Space"

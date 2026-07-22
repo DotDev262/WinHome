@@ -4,9 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -24,9 +22,7 @@ def test_check_installed_absent():
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["USERPROFILE"] = tmp
 
-        res = run_plugin(
-            {"requestId": "1", "command": "check_installed", "args": {}, "context": {}}
-        )
+        res = run_plugin({"requestId": "1", "command": "check_installed", "args": {}, "context": {}})
 
         assert res["requestId"] == "1"
         assert res["success"]

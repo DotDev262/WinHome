@@ -14,9 +14,7 @@ import sys
 import tempfile
 import textwrap
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 SAMPLE_VLCRC = textwrap.dedent(
     """\
@@ -335,9 +333,7 @@ def test_apply_settings_not_dict():
 
 
 def test_unknown_command():
-    res = run_plugin(
-        {"requestId": "12", "command": "explode", "args": {}, "context": {}}
-    )
+    res = run_plugin({"requestId": "12", "command": "explode", "args": {}, "context": {}})
     assert "error" in res
     print("âœ“ unknown_command")
 
@@ -356,9 +352,7 @@ def test_request_id_echoed():
 
 
 def test_request_id_null_defaults_to_unknown():
-    res = run_plugin(
-        {"requestId": None, "command": "check_installed", "args": {}, "context": {}}
-    )
+    res = run_plugin({"requestId": None, "command": "check_installed", "args": {}, "context": {}})
     assert res["requestId"] == "unknown"
     print("âœ“ request_id_null_defaults_to_unknown")
 

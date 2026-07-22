@@ -131,9 +131,7 @@ def write_npmrc(file_path: str, config: dict) -> None:
 
 def check_installed(args: dict, request_id: str) -> dict:
     installed = (
-        shutil.which("pnpm.cmd") is not None
-        or shutil.which("pnpm.exe") is not None
-        or shutil.which("pnpm") is not None
+        shutil.which("pnpm.cmd") is not None or shutil.which("pnpm.exe") is not None or shutil.which("pnpm") is not None
     )
 
     return {

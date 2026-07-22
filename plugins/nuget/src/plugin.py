@@ -32,9 +32,7 @@ def read_xml(file_path):
         backup_path = f"{file_path}.corrupted.{uuid.uuid4().hex}.bak"
         try:
             shutil.copy2(file_path, backup_path)
-            log(
-                f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}."
-            )
+            log(f"Warning: could not parse {file_path}: {e}. Backed up to {backup_path}.")
         except Exception:
             log(f"Warning: could not parse {file_path}: {e}. Starting with default.")
         root = ET.Element("configuration")
@@ -173,11 +171,7 @@ def merge_settings(tree, settings):
 
 def check_installed():
     config_path = get_config_path()
-    return (
-        shutil.which("nuget") is not None
-        or shutil.which("dotnet") is not None
-        or os.path.exists(config_path)
-    )
+    return shutil.which("nuget") is not None or shutil.which("dotnet") is not None or os.path.exists(config_path)
 
 
 def apply_config(args, request_id):
@@ -213,21 +207,14 @@ def main():
     input_data = sys.stdin.read()
 
     if not input_data:
-        sys.stdout.write(
-            json.dumps({"requestId": "unknown", "error": "No input received"}) + "\n"
-        )
+        sys.stdout.write(json.dumps({"requestId": "unknown", "error": "No input received"}) + "\n")
         sys.stdout.flush()
         return
 
     try:
         request = json.loads(input_data)
     except Exception as e:
-        sys.stdout.write(
-            json.dumps(
-                {"requestId": "unknown", "error": f"Failed to parse request: {e}"}
-            )
-            + "\n"
-        )
+        sys.stdout.write(json.dumps({"requestId": "unknown", "error": f"Failed to parse request: {e}"}) + "\n")
         sys.stdout.flush()
         return
 

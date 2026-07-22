@@ -30,9 +30,7 @@ def log(message: str) -> None:
     sys.stderr.flush()
 
 
-def response(
-    request_id: str, success: bool, changed: bool, error=None, data=None
-) -> dict:
+def response(request_id: str, success: bool, changed: bool, error=None, data=None) -> dict:
     result = {
         "requestId": request_id,
         "success": success,
@@ -83,11 +81,7 @@ def strip_jsonc_comments(text: str) -> str:
         if char == "/" and next_char == "*":
             index += 2
             while index < len(text):
-                if (
-                    text[index] == "*"
-                    and index + 1 < len(text)
-                    and text[index + 1] == "/"
-                ):
+                if text[index] == "*" and index + 1 < len(text) and text[index + 1] == "/":
                     index += 2
                     break
                 index += 1
@@ -117,10 +111,7 @@ def expand_path(path: str) -> str:
 
 def get_config_path(args: dict, context: dict) -> str:
     explicit_path = (
-        args.get("configPath")
-        or args.get("config_path")
-        or context.get("configPath")
-        or context.get("config_path")
+        args.get("configPath") or args.get("config_path") or context.get("configPath") or context.get("config_path")
     )
 
     if explicit_path:
@@ -188,11 +179,7 @@ def desired_config_from_args(args: dict) -> dict:
     if "settings" in args and isinstance(args["settings"], dict):
         return normalize_config(copy.deepcopy(args["settings"]))
 
-    desired = {
-        key: copy.deepcopy(value)
-        for key, value in args.items()
-        if key not in NON_SETTING_ARG_KEYS
-    }
+    desired = {key: copy.deepcopy(value) for key, value in args.items() if key not in NON_SETTING_ARG_KEYS}
     return normalize_config(desired)
 
 
@@ -225,10 +212,7 @@ def normalize_config(config: dict) -> dict:
         if isinstance(value, dict):
             normalized[key] = normalize_config(value)
         elif isinstance(value, list):
-            normalized[key] = [
-                normalize_config(item) if isinstance(item, dict) else item
-                for item in value
-            ]
+            normalized[key] = [normalize_config(item) if isinstance(item, dict) else item for item in value]
         else:
             normalized[key] = normalize_scalar(key, value)
 
@@ -274,9 +258,7 @@ def apply_config(args: dict, context: dict, request_id: str) -> dict:
             return response(request_id, success=True, changed=False)
 
         if dry_run:
-            log(
-                f"Would update {config_path} with keys: {', '.join(sorted(desired.keys()))}"
-            )
+            log(f"Would update {config_path} with keys: {', '.join(sorted(desired.keys()))}")
             return response(request_id, success=True, changed=True)
 
         write_json(config_path, next_config)

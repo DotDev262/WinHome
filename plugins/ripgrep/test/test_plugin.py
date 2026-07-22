@@ -4,9 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -21,9 +19,7 @@ def run_plugin(payload: dict) -> dict:
 
 
 def test_check_installed():
-    res = run_plugin(
-        {"requestId": "1", "command": "check_installed", "args": {}, "context": {}}
-    )
+    res = run_plugin({"requestId": "1", "command": "check_installed", "args": {}, "context": {}})
 
     assert res["requestId"] == "1"
     assert res["success"]
@@ -40,9 +36,7 @@ def test_apply_config_dry_run():
             {
                 "requestId": "2",
                 "command": "apply",
-                "args": {
-                    "settings": {"smart-case": True, "hidden": True, "max-columns": 150}
-                },
+                "args": {"settings": {"smart-case": True, "hidden": True, "max-columns": 150}},
                 "context": {"dryRun": True},
             }
         )
@@ -63,9 +57,7 @@ def test_apply_config_write():
             {
                 "requestId": "3",
                 "command": "apply",
-                "args": {
-                    "settings": {"smart-case": True, "hidden": True, "max-columns": 150}
-                },
+                "args": {"settings": {"smart-case": True, "hidden": True, "max-columns": 150}},
                 "context": {"dryRun": False},
             }
         )
@@ -110,9 +102,7 @@ def test_preserves_existing_unknown_flags():
 
 
 def test_empty_stdin_returns_json_error():
-    result = subprocess.run(
-        [sys.executable, PLUGIN], input="", capture_output=True, text=True
-    )
+    result = subprocess.run([sys.executable, PLUGIN], input="", capture_output=True, text=True)
 
     res = json.loads(result.stdout.strip())
 

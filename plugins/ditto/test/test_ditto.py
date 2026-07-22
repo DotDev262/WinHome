@@ -4,9 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict, env: dict = None) -> dict:
@@ -125,9 +123,7 @@ def test_dry_run():
 
 
 def test_unknown_command():
-    res = run_plugin(
-        {"requestId": "6", "command": "explode", "args": {}, "context": {}}
-    )
+    res = run_plugin({"requestId": "6", "command": "explode", "args": {}, "context": {}})
     assert "error" in res
     assert "success" not in res
     print("✓ unknown_command")

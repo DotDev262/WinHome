@@ -26,14 +26,10 @@ def read_ini(path):
         try:
             config.read(path, encoding="utf-8")
         except configparser.Error as e:
-            timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
-                "%Y%m%d%H%M%S"
-            )
+            timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
             suffix = uuid.uuid4().hex[:8]
             backup_path = f"{path}.corrupted.{timestamp}.{suffix}"
-            log(
-                f"Config corrupted. Backing up to {backup_path} and starting fresh. Error: {e}"
-            )
+            log(f"Config corrupted. Backing up to {backup_path} and starting fresh. Error: {e}")
             try:
                 shutil.move(path, backup_path)
             except Exception as backup_e:
@@ -97,9 +93,7 @@ def apply_global_ini(obs_dir, general, dry_run):
     changed = False
 
     if general:
-        mapped = {
-            GENERAL_KEY_MAP[k]: v for k, v in general.items() if k in GENERAL_KEY_MAP
-        }
+        mapped = {GENERAL_KEY_MAP[k]: v for k, v in general.items() if k in GENERAL_KEY_MAP}
         if mapped:
             if dry_run:
                 log(f"Would update {global_ini_path} [General] with: {mapped}")
@@ -188,16 +182,12 @@ def apply_profile_ini(obs_dir, profile_name, args, dry_run):
             if output_section:
                 changed = merge_ini_section(config, "Output", output_section) or changed
             if simple_output:
-                changed = (
-                    merge_ini_section(config, "SimpleOutput", simple_output) or changed
-                )
+                changed = merge_ini_section(config, "SimpleOutput", simple_output) or changed
         else:
             if output_section:
                 changed = merge_ini_section(config, "Output", output_section) or changed
             if simple_output:
-                changed = (
-                    merge_ini_section(config, "SimpleOutput", simple_output) or changed
-                )
+                changed = merge_ini_section(config, "SimpleOutput", simple_output) or changed
 
     hotkeys = args.get("hotkeys")
     if hotkeys:
@@ -262,19 +252,13 @@ def apply_config(args, context, request_id):
             changed = apply_global_ini(obs_dir, general, dry_run) or changed
 
         profile_name = args.get("profile") or get_active_profile(obs_dir)
-        has_profile_settings = any(
-            args.get(k) for k in ("video", "audio", "output", "hotkeys")
-        )
+        has_profile_settings = any(args.get(k) for k in ("video", "audio", "output", "hotkeys"))
 
         if has_profile_settings:
             if not profile_name:
-                log(
-                    "No profile specified and no active profile found — skipping video/audio/output/hotkeys"
-                )
+                log("No profile specified and no active profile found — skipping video/audio/output/hotkeys")
             else:
-                changed = (
-                    apply_profile_ini(obs_dir, profile_name, args, dry_run) or changed
-                )
+                changed = apply_profile_ini(obs_dir, profile_name, args, dry_run) or changed
 
         profiles = args.get("profiles", [])
         if profiles:

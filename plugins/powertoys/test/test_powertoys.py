@@ -5,9 +5,7 @@ import sys
 import tempfile
 
 # Resolve the main plugin path relative to the test file location
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "main.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "main.py"))
 
 
 def run_plugin(payload: dict, env: dict) -> dict:

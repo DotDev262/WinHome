@@ -11,13 +11,9 @@ import unittest
 class TestWallpaperEnginePluginContract(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
-        self.config_dir = os.path.join(
-            self.test_dir, "Steam", "steamapps", "common", "wallpaper_engine", "config"
-        )
+        self.config_dir = os.path.join(self.test_dir, "Steam", "steamapps", "common", "wallpaper_engine", "config")
         self.config_file = os.path.join(self.config_dir, "config.json")
-        self.plugin_script = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../src/plugin.py")
-        )
+        self.plugin_script = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/plugin.py"))
 
         self.orig_p86 = os.environ.get("ProgramFiles(x86)")
         os.environ["ProgramFiles(x86)"] = self.test_dir

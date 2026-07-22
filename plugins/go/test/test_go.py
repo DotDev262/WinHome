@@ -45,9 +45,7 @@ class TestGoPluginInstalled(unittest.TestCase):
 
 class TestGoEnvParsing(unittest.TestCase):
     def test_read_go_env_strips_trailing_newlines_only(self):
-        with patch.object(
-            plugin.subprocess, "run", return_value=completed(stdout="/tmp/go\n")
-        ) as run:
+        with patch.object(plugin.subprocess, "run", return_value=completed(stdout="/tmp/go\n")) as run:
             value = plugin.read_go_env("/usr/bin/go", "GOPATH")
 
         self.assertEqual(value, "/tmp/go")
@@ -139,9 +137,7 @@ class TestGoApply(unittest.TestCase):
 
     def test_missing_go_is_graceful(self):
         with patch.object(plugin, "go_executable", return_value=None):
-            result = plugin.apply_config(
-                {"settings": {"GOPATH": "/tmp/go"}}, {}, "req-no-go"
-            )
+            result = plugin.apply_config({"settings": {"GOPATH": "/tmp/go"}}, {}, "req-no-go")
 
         self.assertFalse(result["success"])
         self.assertFalse(result["changed"])
@@ -149,9 +145,7 @@ class TestGoApply(unittest.TestCase):
 
     def test_rejects_unsupported_setting(self):
         with patch.object(plugin, "go_executable", return_value="/usr/bin/go"):
-            result = plugin.apply_config(
-                {"settings": {"NOT_GO_ENV": "x"}}, {}, "req-bad"
-            )
+            result = plugin.apply_config({"settings": {"NOT_GO_ENV": "x"}}, {}, "req-bad")
 
         self.assertFalse(result["success"])
         self.assertIn("Unsupported Go environment setting", result["error"])
@@ -177,9 +171,7 @@ class TestGoProtocol(unittest.TestCase):
             )
 
         self.assertTrue(result["success"])
-        apply.assert_called_once_with(
-            {"settings": {"GOPATH": "/workspace/go"}}, {}, "req"
-        )
+        apply.assert_called_once_with({"settings": {"GOPATH": "/workspace/go"}}, {}, "req")
 
     def test_main_returns_json_error_for_invalid_json(self):
         result = self.run_main("{not json")
@@ -196,9 +188,7 @@ class TestGoProtocol(unittest.TestCase):
         self.assertEqual(result["error"], "No input provided")
 
     def test_unknown_command(self):
-        result = plugin.handle(
-            {"requestId": "req-unknown", "command": "wat", "args": {}, "context": {}}
-        )
+        result = plugin.handle({"requestId": "req-unknown", "command": "wat", "args": {}, "context": {}})
 
         self.assertFalse(result["success"])
         self.assertEqual(result["error"], "Unknown command: wat")

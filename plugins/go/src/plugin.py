@@ -42,10 +42,7 @@ def read_go_env(go_bin, key):
         text=True,
     )
     if result.returncode != 0:
-        error = (
-            result.stderr.strip()
-            or f"go env {key} failed with exit code {result.returncode}"
-        )
+        error = result.stderr.strip() or f"go env {key} failed with exit code {result.returncode}"
         raise RuntimeError(error)
     return result.stdout.rstrip("\r\n")
 
@@ -58,10 +55,7 @@ def write_go_env(go_bin, key, value):
         text=True,
     )
     if result.returncode != 0:
-        error = (
-            result.stderr.strip()
-            or f"go env -w {key}=... failed with exit code {result.returncode}"
-        )
+        error = result.stderr.strip() or f"go env -w {key}=... failed with exit code {result.returncode}"
         raise RuntimeError(error)
 
 
@@ -122,9 +116,7 @@ def apply_config(args, context, request_id):
             }
 
         if dry_run:
-            log(
-                f"dry_run: would update Go environment settings: {json.dumps(changes, sort_keys=True)}"
-            )
+            log(f"dry_run: would update Go environment settings: {json.dumps(changes, sort_keys=True)}")
             return {
                 "requestId": request_id,
                 "success": True,
@@ -192,9 +184,7 @@ def error_response(request_id, error):
 def main():
     input_data = sys.stdin.read()
     if not input_data:
-        sys.stdout.write(
-            json.dumps(error_response("unknown", "No input provided")) + "\n"
-        )
+        sys.stdout.write(json.dumps(error_response("unknown", "No input provided")) + "\n")
         sys.stdout.flush()
         return
 
@@ -205,11 +195,7 @@ def main():
             raise ValueError("request must be an object")
         response = handle(request)
     except Exception as error:
-        request_id = (
-            request.get("requestId", "unknown")
-            if isinstance(request, dict)
-            else "unknown"
-        )
+        request_id = request.get("requestId", "unknown") if isinstance(request, dict) else "unknown"
         response = error_response(request_id, error)
 
     sys.stdout.write(json.dumps(response) + "\n")

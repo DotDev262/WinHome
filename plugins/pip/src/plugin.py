@@ -43,9 +43,7 @@ def apply_config(args, context, request_id):
             try:
                 config.read(pip_ini_path, encoding="utf-8")
             except configparser.Error as e:
-                log(
-                    f"Warning: Failed to parse existing config ({e}). Backing up and starting fresh."
-                )
+                log(f"Warning: Failed to parse existing config ({e}). Backing up and starting fresh.")
                 backup_path = f"{pip_ini_path}.{int(time.time())}.bak"
                 shutil.copy2(pip_ini_path, backup_path)
                 # Start fresh with empty config
@@ -67,10 +65,7 @@ def apply_config(args, context, request_id):
             else:
                 str_value = str(value)
 
-            if (
-                not config.has_option("global", key)
-                or config.get("global", key) != str_value
-            ):
+            if not config.has_option("global", key) or config.get("global", key) != str_value:
                 config.set("global", key, str_value)
                 changed = True
 

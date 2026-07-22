@@ -35,9 +35,7 @@ def _parse_scalar(val: str):
         return True
     if val.lower() == "false":
         return False
-    if (val.startswith('"') and val.endswith('"')) or (
-        val.startswith("'") and val.endswith("'")
-    ):
+    if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
         return val[1:-1]
     try:
         return int(val)
@@ -112,17 +110,11 @@ def _parse_sequence(lines: list, i: int, base_indent: int) -> tuple:
                 if not craw.strip() or craw.strip().startswith("#"):
                     j += 1
                     continue
-                if (
-                    len(craw) - len(craw.lstrip())
-                ) < cont_indent or craw.lstrip().startswith("- "):
+                if (len(craw) - len(craw.lstrip())) < cont_indent or craw.lstrip().startswith("- "):
                     break
                 cm = _KEY_RE.match(craw.lstrip())
                 if cm:
-                    item_dict[cm.group(1).strip()] = (
-                        _parse_scalar(cm.group(2).strip())
-                        if cm.group(2).strip()
-                        else None
-                    )
+                    item_dict[cm.group(1).strip()] = _parse_scalar(cm.group(2).strip()) if cm.group(2).strip() else None
                 j += 1
             i = j
             items.append(item_dict)
@@ -225,11 +217,7 @@ def write_yaml(file_path: str, data: dict) -> None:
     parent = os.path.dirname(file_path)
     if parent:
         os.makedirs(parent, exist_ok=True)
-    text = (
-        _yaml.dump(data, default_flow_style=False, sort_keys=False)
-        if _HAS_PYYAML
-        else _dumps_fallback(data)
-    )
+    text = _yaml.dump(data, default_flow_style=False, sort_keys=False) if _HAS_PYYAML else _dumps_fallback(data)
     tmp = file_path + ".tmp"
     try:
         with open(tmp, "w", encoding="utf-8") as fh:

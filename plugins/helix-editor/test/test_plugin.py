@@ -38,21 +38,15 @@ class TestHelixPlugin(unittest.TestCase):
         self.assertTrue(result["changed"])
 
         # Verify files were written
-        self.assertTrue(
-            os.path.exists(os.path.join(self.mock_helix_dir, "config.toml"))
-        )
-        self.assertTrue(
-            os.path.exists(os.path.join(self.mock_helix_dir, "languages.toml"))
-        )
+        self.assertTrue(os.path.exists(os.path.join(self.mock_helix_dir, "config.toml")))
+        self.assertTrue(os.path.exists(os.path.join(self.mock_helix_dir, "languages.toml")))
 
         config_toml = open(os.path.join(self.mock_helix_dir, "config.toml")).read()
         self.assertIn('theme = "dark"', config_toml)
         self.assertIn("[editor]", config_toml)
         self.assertIn('line-number = "relative"', config_toml)
 
-        languages_toml = open(
-            os.path.join(self.mock_helix_dir, "languages.toml")
-        ).read()
+        languages_toml = open(os.path.join(self.mock_helix_dir, "languages.toml")).read()
         self.assertIn("[[language]]", languages_toml)
         self.assertIn('name = "python"', languages_toml)
         self.assertIn("auto-format = true", languages_toml)
@@ -69,9 +63,7 @@ class TestHelixPlugin(unittest.TestCase):
         self.assertTrue(result["changed"])
 
         # Verify file NOT written
-        self.assertFalse(
-            os.path.exists(os.path.join(self.mock_helix_dir, "config.toml"))
-        )
+        self.assertFalse(os.path.exists(os.path.join(self.mock_helix_dir, "config.toml")))
 
     @patch("plugin.get_helix_dir")
     def test_apply_config_idempotent(self, mock_get_helix_dir):
@@ -113,9 +105,7 @@ class TestHelixPlugin(unittest.TestCase):
         self.assertIn("[editor.cursor-shape]", config_toml)
         self.assertIn('insert = "bar"', config_toml)
 
-        languages_toml = open(
-            os.path.join(self.mock_helix_dir, "languages.toml")
-        ).read()
+        languages_toml = open(os.path.join(self.mock_helix_dir, "languages.toml")).read()
         self.assertIn("[[language]]", languages_toml)
         self.assertIn('name = "rust"', languages_toml)
 

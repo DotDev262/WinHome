@@ -45,9 +45,7 @@ class TestWindowsExplorerPlugin(unittest.TestCase):
     @patch("plugin.winreg")
     def test_apply_config_changes_needed(self, mock_winreg, mock_read):
         mock_read.return_value = {"HideFileExt": 0, "Hidden": 1, "ShowSuperHidden": 1}
-        args = {
-            "settings": {"HideFileExt": True, "Hidden": 2, "ShowSuperHidden": False}
-        }
+        args = {"settings": {"HideFileExt": True, "Hidden": 2, "ShowSuperHidden": False}}
         mock_key = MagicMock()
         mock_winreg.OpenKey.return_value.__enter__.return_value = mock_key
 
@@ -55,15 +53,9 @@ class TestWindowsExplorerPlugin(unittest.TestCase):
 
         self.assertEqual(result, {"changed": True})
         self.assertEqual(mock_winreg.SetValueEx.call_count, 3)
-        mock_winreg.SetValueEx.assert_any_call(
-            mock_key, "HideFileExt", 0, mock_winreg.REG_DWORD, 1
-        )
-        mock_winreg.SetValueEx.assert_any_call(
-            mock_key, "Hidden", 0, mock_winreg.REG_DWORD, 2
-        )
-        mock_winreg.SetValueEx.assert_any_call(
-            mock_key, "ShowSuperHidden", 0, mock_winreg.REG_DWORD, 0
-        )
+        mock_winreg.SetValueEx.assert_any_call(mock_key, "HideFileExt", 0, mock_winreg.REG_DWORD, 1)
+        mock_winreg.SetValueEx.assert_any_call(mock_key, "Hidden", 0, mock_winreg.REG_DWORD, 2)
+        mock_winreg.SetValueEx.assert_any_call(mock_key, "ShowSuperHidden", 0, mock_winreg.REG_DWORD, 0)
 
     @patch("plugin.read_registry_values")
     @patch("plugin.winreg")
@@ -86,9 +78,7 @@ class TestWindowsExplorerPlugin(unittest.TestCase):
 
         result = plugin.apply_config(args)
 
-        self.assertEqual(
-            result, {"error": "Invalid value for Hidden: 3. Must be 1 or 2."}
-        )
+        self.assertEqual(result, {"error": "Invalid value for Hidden: 3. Must be 1 or 2."})
 
     @patch("plugin.read_registry_values")
     @patch("plugin.winreg")

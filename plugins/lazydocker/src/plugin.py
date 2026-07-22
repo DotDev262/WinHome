@@ -96,9 +96,7 @@ def apply_config(args, context, request_id):
             try:
                 shutil.copy2(config_path, backup_path)
             except Exception as backup_e:
-                sys.stderr.write(
-                    f"[lazydocker-plugin] Warning: Failed to create backup: {str(backup_e)}\n"
-                )
+                sys.stderr.write(f"[lazydocker-plugin] Warning: Failed to create backup: {str(backup_e)}\n")
 
     # Deep merge
     merged_config, changed = deep_merge(existing_config, settings)
@@ -117,14 +115,10 @@ def apply_config(args, context, request_id):
             if not os.path.exists(config_dir):
                 os.makedirs(config_dir, mode=0o700, exist_ok=True)
 
-            fd, temp_path = tempfile.mkstemp(
-                prefix="lazydocker-", suffix=".tmp", dir=os.path.dirname(config_path)
-            )
+            fd, temp_path = tempfile.mkstemp(prefix="lazydocker-", suffix=".tmp", dir=os.path.dirname(config_path))
             try:
                 with os.fdopen(fd, "w", encoding="utf-8") as f:
-                    yaml.dump(
-                        merged_config, f, default_flow_style=False, sort_keys=False
-                    )
+                    yaml.dump(merged_config, f, default_flow_style=False, sort_keys=False)
                 os.replace(temp_path, config_path)
             except BaseException:
                 os.unlink(temp_path)
@@ -139,9 +133,7 @@ def apply_config(args, context, request_id):
                 "error": f"Failed to write config: {str(e)}",
             }
     else:
-        sys.stderr.write(
-            f"[lazydocker-plugin] Would update {config_path} with new merged config\n"
-        )
+        sys.stderr.write(f"[lazydocker-plugin] Would update {config_path} with new merged config\n")
 
     return {"requestId": request_id, "success": True, "changed": True, "data": None}
 

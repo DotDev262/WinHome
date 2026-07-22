@@ -243,9 +243,7 @@ def test_apply_supports_legacy_config_and_top_level_dry_run():
 
 def test_strip_jsonc_comments_keeps_comment_like_text_in_strings():
     plugin = load_plugin()
-    cleaned = plugin.strip_jsonc_comments(
-        '{"url": "https://example.com//ok", // remove me\n "value": 1}'
-    )
+    cleaned = plugin.strip_jsonc_comments('{"url": "https://example.com//ok", // remove me\n "value": 1}')
 
     assert json.loads(cleaned) == {
         "url": "https://example.com//ok",
@@ -255,9 +253,7 @@ def test_strip_jsonc_comments_keeps_comment_like_text_in_strings():
 
 def test_strip_jsonc_comments_handles_block_comments():
     plugin = load_plugin()
-    cleaned = plugin.strip_jsonc_comments(
-        '{"url": "https://example.com//ok", /* remove\n me */ "value": 1}'
-    )
+    cleaned = plugin.strip_jsonc_comments('{"url": "https://example.com//ok", /* remove\n me */ "value": 1}')
 
     assert json.loads(cleaned) == {
         "url": "https://example.com//ok",

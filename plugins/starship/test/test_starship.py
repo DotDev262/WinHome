@@ -4,9 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-PLUGIN = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py")
-)
+PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
 
 
 def run_plugin(payload: dict) -> dict:
@@ -116,9 +114,7 @@ def test_idempotent_apply():
 
 
 def test_unknown_command():
-    res = run_plugin(
-        {"requestId": "5", "command": "explode", "args": {}, "context": {}}
-    )
+    res = run_plugin({"requestId": "5", "command": "explode", "args": {}, "context": {}})
 
     assert not res["success"]
     assert "error" in res

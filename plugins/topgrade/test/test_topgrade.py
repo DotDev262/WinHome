@@ -12,9 +12,7 @@ def run_plugin(request_dict):
     input_str = json.dumps(request_dict)
     # Use standard python to run since uv might not be perfectly nested here,
     # but the script uses inline dependencies so we must use 'uv run'
-    result = subprocess.run(
-        ["uv", "run", PLUGIN_SCRIPT], input=input_str, text=True, capture_output=True
-    )
+    result = subprocess.run(["uv", "run", PLUGIN_SCRIPT], input=input_str, text=True, capture_output=True)
     return json.loads(result.stdout) if result.stdout else None, result.stderr
 
 

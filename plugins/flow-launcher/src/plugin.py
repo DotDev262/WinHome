@@ -93,18 +93,14 @@ def check_installed(args):
 def main():
     input_data = sys.stdin.read()
     if not input_data:
-        sys.stdout.write(
-            json.dumps({"requestId": "unknown", "error": "No input received"}) + "\n"
-        )
+        sys.stdout.write(json.dumps({"requestId": "unknown", "error": "No input received"}) + "\n")
         return
 
     try:
         request = json.loads(input_data)
     except Exception as e:
         log(f"Failed to parse request: {e}")
-        sys.stdout.write(
-            json.dumps({"requestId": "unknown", "error": "Invalid JSON"}) + "\n"
-        )
+        sys.stdout.write(json.dumps({"requestId": "unknown", "error": "Invalid JSON"}) + "\n")
         return
 
     command = request.get("command")

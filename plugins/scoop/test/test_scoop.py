@@ -160,9 +160,7 @@ class TestScoopPlugin(unittest.TestCase):
     @patch("plugin.os.replace")
     @patch("plugin.os.makedirs")
     @patch("plugin.os.fdopen")
-    def test_write_json_uses_mkstemp(
-        self, mock_fdopen, mock_makedirs, mock_replace, mock_mkstemp
-    ):
+    def test_write_json_uses_mkstemp(self, mock_fdopen, mock_makedirs, mock_replace, mock_mkstemp):
         mock_mkstemp.return_value = (5, "/tmp/scoop-abc123")
         mock_fdopen.return_value.__enter__ = lambda s: s
         mock_fdopen.return_value.__exit__ = lambda s, *a: False
@@ -176,9 +174,7 @@ class TestScoopPlugin(unittest.TestCase):
             call_kwargs.kwargs.get("prefix") or call_kwargs[1].get("prefix"),
             "scoop-",
         )
-        mock_replace.assert_called_once_with(
-            "/tmp/scoop-abc123", "/fake/path/config.json"
-        )
+        mock_replace.assert_called_once_with("/tmp/scoop-abc123", "/fake/path/config.json")
 
     def test_write_json_atomic_real(self):
         import json as js

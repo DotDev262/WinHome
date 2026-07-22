@@ -42,7 +42,9 @@ class TestKeePassXCPlugin(unittest.TestCase):
 
         output = plugin.serialize_ini(blocks, has_newline, is_crlf)
 
-        expected = "[General]\nAutoSaveOnExit=true\nAutoSaveAfterEveryChange=true\n\n[Security]\nLockDatabaseIdle=true\n"
+        expected = (
+            "[General]\nAutoSaveOnExit=true\nAutoSaveAfterEveryChange=true\n\n[Security]\nLockDatabaseIdle=true\n"
+        )
         self.assertEqual(output, expected)
 
     def test_merge_no_change(self):
@@ -85,9 +87,7 @@ class TestKeePassXCPlugin(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertTrue(res["changed"])
         self.assertEqual(res["requestId"], "req-3")
-        mock_write.assert_called_once_with(
-            "dummy.ini", "[General]\nAutoSaveOnExit=true\n"
-        )
+        mock_write.assert_called_once_with("dummy.ini", "[General]\nAutoSaveOnExit=true\n")
 
     @patch("plugin.get_config_path")
     @patch("plugin.read_text")

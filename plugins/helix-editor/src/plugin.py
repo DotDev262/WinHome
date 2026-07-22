@@ -44,9 +44,7 @@ def read_toml(file_path: str) -> dict:
             log(f"Warning: could not parse {file_path} using tomllib: {e}")
             return {}
     else:
-        log(
-            "Warning: tomllib not available (requires Python 3.11+). Starting with empty config."
-        )
+        log("Warning: tomllib not available (requires Python 3.11+). Starting with empty config.")
         return {}
 
 
@@ -67,9 +65,7 @@ def dump_value(v):
 def _dump_dict_recursive(d: dict, prefix: str, lines: list):
     # Primitives first
     for k, v in d.items():
-        if not isinstance(v, dict) and not (
-            isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict)
-        ):
+        if not isinstance(v, dict) and not (isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict)):
             lines.append(f"{k} = {dump_value(v)}")
 
     # Array of Tables
@@ -123,11 +119,7 @@ def merge_settings(target: dict, source: dict) -> bool:
             for item in value:
                 if "name" in item:
                     existing_item = next(
-                        (
-                            i
-                            for i in target[key]
-                            if isinstance(i, dict) and i.get("name") == item["name"]
-                        ),
+                        (i for i in target[key] if isinstance(i, dict) and i.get("name") == item["name"]),
                         None,
                     )
                     if existing_item:

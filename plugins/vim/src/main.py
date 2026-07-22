@@ -104,9 +104,7 @@ def apply_config(config, context):
     for key, value in settings.items():
         if key == "theme":
             lines.append(f"vim.cmd('colorscheme {value}')")
-        elif isinstance(value, bool) or (
-            isinstance(value, str) and value.lower() in ("true", "false")
-        ):
+        elif isinstance(value, bool) or (isinstance(value, str) and value.lower() in ("true", "false")):
             if isinstance(value, bool):
                 val_str = "true" if value else "false"
             else:

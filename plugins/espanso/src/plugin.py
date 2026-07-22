@@ -165,11 +165,7 @@ def _parse_yaml(text: str) -> dict:
             continue
 
         # Continuation key under a list item: "    key: value"
-        if (
-            current_item is not None
-            and ":" in stripped
-            and not stripped.startswith("-")
-        ):
+        if current_item is not None and ":" in stripped and not stripped.startswith("-"):
             k, _, v = stripped.partition(":")
             k = k.strip()
             v = v.strip()
@@ -257,9 +253,7 @@ def deep_merge_lists(existing: list, incoming: list, key: str = "trigger") -> li
     New items in incoming are appended.
     """
     merged = deepcopy(existing)
-    index = {
-        item.get(key): i for i, item in enumerate(merged) if isinstance(item, dict)
-    }
+    index = {item.get(key): i for i, item in enumerate(merged) if isinstance(item, dict)}
     for item in incoming:
         if not isinstance(item, dict):
             continue

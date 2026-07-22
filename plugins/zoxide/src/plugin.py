@@ -67,21 +67,10 @@ def build_init_line(shell: str, init_args: dict) -> str:
 
 def update_profile_content(existing_text: str, desired_line: str) -> tuple[str, bool]:
     current_lines = existing_text.splitlines()
-    matching_lines = [
-        line
-        for line in current_lines
-        if "zoxide init" in line and not line.lstrip().startswith("#")
-    ]
-    updated_lines = [
-        line
-        for line in current_lines
-        if "zoxide init" not in line or line.lstrip().startswith("#")
-    ]
+    matching_lines = [line for line in current_lines if "zoxide init" in line and not line.lstrip().startswith("#")]
+    updated_lines = [line for line in current_lines if "zoxide init" not in line or line.lstrip().startswith("#")]
 
-    if (
-        matching_lines == [desired_line]
-        and len(updated_lines) == len(current_lines) - 1
-    ):
+    if matching_lines == [desired_line] and len(updated_lines) == len(current_lines) - 1:
         return existing_text, False
 
     updated_lines.append(desired_line)
@@ -132,9 +121,7 @@ def run_setx(var_name: str, value: str) -> None:
 
 
 def check_installed(_args: dict, request_id: str) -> dict:
-    installed = (
-        shutil.which("zoxide.exe") is not None or shutil.which("zoxide") is not None
-    )
+    installed = shutil.which("zoxide.exe") is not None or shutil.which("zoxide") is not None
     return {
         "requestId": request_id,
         "success": True,

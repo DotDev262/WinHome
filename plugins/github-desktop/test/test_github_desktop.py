@@ -54,9 +54,7 @@ class TestGitHubDesktopPlugin(unittest.TestCase):
     @patch("tempfile.mkstemp")
     @patch("os.fdopen", new_callable=mock_open)
     @patch("os.replace")
-    def test_settings_deep_merge_atomic_write(
-        self, mock_rep, mock_fd, mock_stemp, mock_f, mock_ex, mock_in
-    ):
+    def test_settings_deep_merge_atomic_write(self, mock_rep, mock_fd, mock_stemp, mock_f, mock_ex, mock_in):
         """Verifies deep merges calculate variance parameters seamlessly."""
         mock_in.read.return_value = json.dumps(
             {
