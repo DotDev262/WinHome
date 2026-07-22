@@ -3,9 +3,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# Mock winreg so that Windows-only modules don't crash the import on Linux.
+# Mock winreg and shutil._winapi so that Windows-only modules don't crash the import on Linux.
 if sys.platform != "win32":
+    import shutil
     sys.modules["winreg"] = MagicMock()
+    mock_winapi = MagicMock()
+    del mock_winapi.CopyFile2
+    shutil._winapi = mock_winapi
 
 
 # Remove any dynamically inserted plugin source/test directories from sys.path
