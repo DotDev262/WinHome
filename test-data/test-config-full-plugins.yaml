@@ -32,167 +32,67 @@ git:
   settings:
     init.defaultBranch: main
 extensions:
-  alacritty:
+  # --- Core / CLI Tools & Package Managers ---
+  chocolatey:
     settings:
-      window:
-        opacity: 0.9
-        padding:
-          x: 5
-          y: 5
-      font:
-        size: 12.0
-  autohotkey:
-    script_path: "%USERPROFILE%\\Documents\\AutoHotkey\\main.ahk"
+      useFinishedEvent: true
+  scoop:
     settings:
-      persistent: true
-    hotkeys:
-      "#n": 'Run "notepad.exe"'
-  bat:
+      aria2-enabled: true
+  winget:
     settings:
-      "--theme": "gruvbox-dark"
-      "--style": "numbers,changes,header"
-  betterdiscord:
-    settings:
-      theme: "DarkerDiscord"
-      plugins:
-        BetterFormatting: true
+      visual:
+        progressBar: rainbow
+      installBehavior:
+        preferences:
+          scope: user
   cargo:
     settings:
       build:
         jobs: 4
       net:
         retry: 2
-  chezmoi:
-    settings:
-      data:
-        email: "test@example.com"
-  chocolatey:
-    settings:
-      useFinishedEvent: true
-  curl:
-    settings:
-      "--connect-timeout": "10"
-      "--user-agent": "Mozilla/5.0"
-  docker:
-    settings:
-      skipTermOfServiceCheck: true
-      displayDeviceSharingNotifications: false
-  espanso:
-    matches:
-      - trigger: ":br"
-        replace: "Best regards,"
-  fzf:
-    settings:
-      FZF_DEFAULT_OPTS: "--reverse --height 40%"
-      border: "rounded"
-  gh-dash:
-    settings:
-      prs:
-        filters: "is:open author:@me"
-  gh:
-    settings:
-      aliases:
-        co: "pr checkout"
-      editor: "nvim"
-  helix-editor:
-    settings:
-      editor:
-        cursor-shape:
-          insert: "bar"
-  keepassxc:
-    settings:
-      GUI:
-        ShowTrayIcon: true
-  lazydocker:
-    settings:
-      gui:
-        showBottomLine: false
-  lazygit:
-    settings:
-      gui:
-        theme:
-          lightTheme: false
-  mise:
-    settings:
-      experimental: true
-  notepadplusplus:
-    settings:
-      AppPath: "C:\\Program Files\\Notepad++"
-  npm:
-    settings:
-      "save-exact": true
-  obs-studio:
-    general:
-      theme: "Acri"
-  obsidian:
-    vaults:
-      - path: "C:\\Users\\test\\Documents\\Vault"
-        settings:
-          vimMode: true
-          spellcheck: true
-        plugins:
-          - "obsidian-git"
-  ohmyposh:
-    profile: "C:\\Users\\test\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1"
-    settings:
-      theme: "bubbles"
-  opencode:
-    settings:
-      terminal:
-        integrated:
-          fontSize: 14
-    projectRoot: "C:\\projects"
-  openssh:
-    settings:
-      ForwardAgent: "yes"
-    hosts:
-      lab:
-        HostName: "192.168.1.10"
-        User: "admin"
   pip:
     settings:
       global:
         index-url: "https://pypi.org/simple"
-  powershell:
-    aliases:
-      g: "git"
-    modules:
-      Terminal-Icons: {}
-  powertoys:
+  npm:
     settings:
-      FancyZones:
-        enabled: true
-      PowerRename:
-        enabled: true
-  rclone:
+      "save-exact": true
+  pnpm:
     settings:
-      stats: "10s"
-    remotes:
-      mydrive:
-        type: "drive"
-        scope: "drive.readonly"
-  ripgrep:
+      "store-dir": "C:\\pnpm-store"
+  yarn:
     settings:
-      "max-columns": 150
-      "smart-case": true
-  scoop:
+      nodeLinker: "node-modules"
+  nuget:
     settings:
-      aria2-enabled: true
-  sharex:
+      config:
+        dependencyVersion: "Highest"
+  go:
     settings:
-      HotkeySettings:
-        CaptureRegion: "Ctrl+PrintScreen"
-  spicetify:
+      GO111MODULE: "on"
+  deno:
     settings:
-      Setting:
-        current_theme: "Dribbblish"
-  starship:
+      v8-flags: ["--max-old-space-size=4096"]
+  nvm:
     settings:
-      character:
-        success_symbol: "[âžœ](bold green)"
-      add_newline: false
-  test-powershell:
-    message: "Testing PowerShell Plugin"
+      root: "C:\\nvm"
+  sdkman:
+    settings:
+      sdkman_auto_selfupdate: "false"
+  mise:
+    settings:
+      experimental: true
+  rustup:
+    settings:
+      default_toolchain: "stable"
+  topgrade:
+    settings:
+      misc:
+        assume_yes: true
+
+  # --- Editors & IDEs ---
   vim:
     settings:
       number: true
@@ -207,32 +107,229 @@ extensions:
     extensions:
       - "esbenp.prettier-vscode"
       - "dbaeumer.vscode-eslint"
+  helix-editor:
+    settings:
+      editor:
+        cursor-shape:
+          insert: "bar"
+  sublime-text:
+    settings:
+      font_size: 12
+  zed:
+    settings:
+      theme: "One Dark"
+      font_size: 16
+      vim_mode: true
+  notepadplusplus:
+    settings:
+      AppPath: "C:\\Program Files\\Notepad++"
+  opencode:
+    settings:
+      terminal:
+        integrated:
+          fontSize: 14
+    projectRoot: "C:\\projects"
+
+  # --- Shells & Terminals ---
+  powershell:
+    aliases:
+      g: "git"
+    modules:
+      Terminal-Icons: {}
   windows-terminal:
     settings:
       profiles:
         defaults:
           font:
             face: "Fira Code"
-  winget:
+  starship:
     settings:
-      visual:
-        progressBar: rainbow
-      installBehavior:
-        preferences:
-          scope: user
-  yasb:
+      character:
+        success_symbol: "[➜](bold green)"
+      add_newline: false
+  ohmyposh:
+    profile: "C:\\Users\\test\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1"
     settings:
-      bar:
-        blur: true
+      theme: "bubbles"
+  zoxide:
+    init:
+      cmd: "j"
+  fzf:
+    settings:
+      FZF_DEFAULT_OPTS: "--reverse --height 40%"
+      border: "rounded"
   yazi:
     manager:
       sort_by: "mtime"
       sort_reverse: true
-  zed:
+  ripgrep:
     settings:
-      theme: "One Dark"
-      font_size: 16
-      vim_mode: true
-  zoxide:
-    init:
-      cmd: "j"
+      "max-columns": 150
+      "smart-case": true
+  openssh:
+    settings:
+      ForwardAgent: "yes"
+    hosts:
+      lab:
+        HostName: "192.168.1.10"
+        User: "admin"
+
+  # --- System & Windows Settings ---
+  windows-explorer:
+    settings:
+      HideFileExt: true
+  windows-sandbox:
+    settings:
+      VGpu: "Disable"
+  autohotkey:
+    script_path: "%USERPROFILE%\\Documents\\AutoHotkey\\main.ahk"
+    settings:
+      persistent: true
+    hotkeys:
+      "#n": 'Run "notepad.exe"'
+  powertoys:
+    settings:
+      FancyZones:
+        enabled: true
+      PowerRename:
+        enabled: true
+  7-zip:
+    settings:
+      CompressionLevel: 9
+      CompressionMethod: "LZMA2"
+  greenshot:
+    settings:
+      Core:
+        Language: "en-US"
+
+  # --- Development Tools & Utilities ---
+  git:
+    userName: "WinHome Test"
+    userEmail: "test@winhome.local"
+    settings:
+      init.defaultBranch: main
+  github-desktop:
+    settings:
+      theme: "dark"
+  gh:
+    settings:
+      aliases:
+        co: "pr checkout"
+      editor: "nvim"
+  gh-dash:
+    settings:
+      prs:
+        filters: "is:open author:@me"
+  docker:
+    settings:
+      skipTermOfServiceCheck: true
+      displayDeviceSharingNotifications: false
+  lazygit:
+    settings:
+      gui:
+        theme:
+          lightTheme: false
+  lazydocker:
+    settings:
+      gui:
+        showBottomLine: false
+  chezmoi:
+    settings:
+      data:
+        email: "test@example.com"
+  rclone:
+    settings:
+      stats: "10s"
+    remotes:
+      mydrive:
+        type: "drive"
+        scope: "drive.readonly"
+  curl:
+    settings:
+      "--connect-timeout": "10"
+      "--user-agent": "Mozilla/5.0"
+  wget:
+    settings:
+      "--timeout": "30"
+  postman:
+    settings:
+      telemetry: false
+
+  # --- Productivity & General Apps ---
+  obsidian:
+    vaults:
+      - path: "C:\\Users\\test\\Documents\\Vault"
+        settings:
+          vimMode: true
+          spellcheck: true
+        plugins:
+          - "obsidian-git"
+  joplin:
+    settings:
+      theme: 2
+  keepassxc:
+    settings:
+      GUI:
+        ShowTrayIcon: true
+  syncthing:
+    settings:
+      gui:
+        theme: "black"
+  everything:
+    settings:
+      run_as_admin: true
+  flow-launcher:
+    settings:
+      Theme: "Dark"
+  discord:
+    settings:
+      openOnStartup: false
+  betterdiscord:
+    settings:
+      theme: "DarkerDiscord"
+      plugins:
+        BetterFormatting: true
+  ditto:
+    settings:
+      MaxSavedCopies: 500
+  espanso:
+    matches:
+      - trigger: ":br"
+        replace: "Best regards,"
+  rainmeter:
+    settings:
+      Rainmeter:
+        ConfigEditor: "notepad.exe"
+  wallpaper-engine:
+    settings:
+      General:
+        uiTheme: "dark"
+  yasb:
+    settings:
+      bar:
+        blur: true
+
+  # --- Multimedia ---
+  vlc:
+    settings:
+      qt:
+        qt-max-volume: 125
+  spotify:
+    settings:
+      app:
+        audio:
+          quality: "high"
+  obs-studio:
+    general:
+      theme: "Acri"
+  audacity:
+    settings:
+      Interface:
+        Language: "en"
+  irfanview:
+    settings:
+      Language: "English"
+
+  # --- Testing & Custom Plugins ---
+  test-powershell:
+    message: "Testing PowerShell Plugin"
