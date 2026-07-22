@@ -1,18 +1,15 @@
+import importlib.util
 import json
 import os
 import sys
 from io import StringIO
 from unittest.mock import patch
 
-test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-# Keep sys.path entry while importing so that `plugin` resolves correctly
-# and patch paths like `plugin._get_user_home` work reliably.
-sys.path.append(test_dir)
-try:
-    from plugin import main
-finally:
-    # Do not remove test_dir; the tests patch symbols on the imported module.
-    pass
+PLUGIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "plugin.py"))
+spec = importlib.util.spec_from_file_location("yarn_plugin", PLUGIN_PATH)
+plugin = importlib.util.module_from_spec(spec)
+assert spec and spec.loader
+spec.loader.exec_module(plugin)
 
 
 def run_plugin(input_dict):
@@ -24,7 +21,7 @@ def run_plugin(input_dict):
     sys.stdout = StringIO()
 
     try:
-        main()
+        plugin.main()
         output_str = sys.stdout.getvalue()
         return json.loads(output_str)
     finally:
@@ -32,96 +29,85 @@ def run_plugin(input_dict):
         sys.stdout = old_stdout
 
 
-@patch("plugin.shutil.which")
-@patch("plugin._get_user_home")
-def test_check_installed_via_config(mock_home, mock_which, tmp_path):
+def test_check_installed_via_config(tmp_path):
     # Create berry config file
     berry = tmp_path / ".yarnrc.yml"
     berry.write_text("nodeLinker: node-modules\n", encoding="utf-8")
-    mock_home.return_value = str(tmp_path)
 
     # Avoid environment-dependent behavior in shutil.which during tests.
-    mock_which.return_value = "/usr/bin/yarn"
+    with patch.object(plugin.shutil, "which", return_value="/usr/bin/yarn"), \
+         patch.object(plugin, "_get_user_home", return_value=str(tmp_path)):
 
-    response = run_plugin({"requestId": "r1", "command": "check_installed"})
-    print("\nACTUAL RESPONSE IS:", response)
-    assert response["installed"] is True
+        response = run_plugin({"requestId": "r1", "command": "check_installed"})
+        assert response["installed"] is True
 
 
-@patch("plugin._get_user_home")
-def test_apply_dry_run_berry(mock_home, tmp_path):
-    mock_home.return_value = str(tmp_path)
-    # No config exists; should attempt to create .yarnrc.yml on apply
-
-    request = {
-        "requestId": "r2",
-        "command": "apply",
-        "args": {
-            "dryRun": True,
-            "settings": {
-                "nodeLinker": "node-modules",
-                "enableTelemetry": False,
-                "compressionLevel": 0,
-                "supportedArchitectures": {"os": "linux"},
+def test_apply_dry_run_berry(tmp_path):
+    with patch.object(plugin, "_get_user_home", return_value=str(tmp_path)):
+        request = {
+            "requestId": "r2",
+            "command": "apply",
+            "args": {
+                "dryRun": True,
+                "settings": {
+                    "nodeLinker": "node-modules",
+                    "enableTelemetry": False,
+                    "compressionLevel": 0,
+                    "supportedArchitectures": {"os": "linux"},
+                },
             },
-        },
-    }
+        }
 
-    response = run_plugin(request)
-    assert response["changed"] is True
-
-    assert not (tmp_path / ".yarnrc.yml").exists()
+        response = run_plugin(request)
+        assert response["changed"] is True
+        assert not (tmp_path / ".yarnrc.yml").exists()
 
 
-@patch("plugin._get_user_home")
-def test_apply_writes_berry_file_with_newline(mock_home, tmp_path):
-    mock_home.return_value = str(tmp_path)
-
-    request = {
-        "requestId": "r3",
-        "command": "apply",
-        "args": {
-            "dryRun": False,
-            "settings": {
-                "nodeLinker": "node-modules",
-                "enableTelemetry": False,
-                "compressionLevel": 7,
-                "supportedArchitectures": {"cpu": "x64"},
+def test_apply_writes_berry_file_with_newline(tmp_path):
+    with patch.object(plugin, "_get_user_home", return_value=str(tmp_path)):
+        request = {
+            "requestId": "r3",
+            "command": "apply",
+            "args": {
+                "dryRun": False,
+                "settings": {
+                    "nodeLinker": "node-modules",
+                    "enableTelemetry": False,
+                    "compressionLevel": 7,
+                    "supportedArchitectures": {"cpu": "x64"},
+                },
             },
-        },
-    }
+        }
 
-    response = run_plugin(request)
-    assert response["changed"] is True
+        response = run_plugin(request)
+        assert response["changed"] is True
 
-    p = tmp_path / ".yarnrc.yml"
-    assert p.exists()
-    content = p.read_text(encoding="utf-8")
-    assert content.endswith("\n")
-    assert "nodeLinker:" in content
-    assert "enableTelemetry:" in content
+        p = tmp_path / ".yarnrc.yml"
+        assert p.exists()
+        content = p.read_text(encoding="utf-8")
+        assert content.endswith("\n")
+        assert "nodeLinker:" in content
+        assert "enableTelemetry:" in content
 
 
-@patch("plugin._get_user_home")
-def test_apply_classic_prefers_classic_if_present(mock_home, tmp_path):
-    mock_home.return_value = str(tmp_path)
+def test_apply_classic_prefers_classic_if_present(tmp_path):
+    with patch.object(plugin, "_get_user_home", return_value=str(tmp_path)):
+        # Create classic file
+        (tmp_path / ".yarnrc").write_text("npmRegistryServer https://example.com\n", encoding="utf-8")
 
-    # Create classic file
-    (tmp_path / ".yarnrc").write_text("npmRegistryServer https://example.com\n", encoding="utf-8")
-
-    request = {
-        "requestId": "r4",
-        "command": "apply",
-        "args": {
-            "dryRun": False,
-            "settings": {
-                "npmRegistryServer": "https://registry.yarnpkg.com",
+        request = {
+            "requestId": "r4",
+            "command": "apply",
+            "args": {
+                "dryRun": False,
+                "settings": {
+                    "npmRegistryServer": "https://registry.yarnpkg.com",
+                },
             },
-        },
-    }
+        }
 
-    response = run_plugin(request)
-    assert response["changed"] is True
+        response = run_plugin(request)
+        assert response["changed"] is True
 
-    content = (tmp_path / ".yarnrc").read_text(encoding="utf-8")
-    assert "npmRegistryServer https://registry.yarnpkg.com" in content
+        content = (tmp_path / ".yarnrc").read_text(encoding="utf-8")
+        assert "npmRegistryServer https://registry.yarnpkg.com" in content

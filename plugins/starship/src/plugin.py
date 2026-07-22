@@ -115,7 +115,9 @@ def check_installed(args: dict, request_id: str) -> dict:
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
-    settings = args.get("settings", {}) or {}
+    settings = args.get("settings") if isinstance(args, dict) and "settings" in args else args
+    if settings is None:
+        settings = {}
 
     try:
         config_path = get_config_path()
