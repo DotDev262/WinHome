@@ -51,7 +51,11 @@ def test_check_installed_response_format():
 
 
 def test_apply_config_dry_run():
-    request = {"requestId": "789", "command": "apply", "args": {"dryRun": True, "settings": {"gui": {"enabled": True}}}}
+    request = {
+        "requestId": "789",
+        "command": "apply",
+        "args": {"dryRun": True, "settings": {"gui": {"enabled": True}}},
+    }
     stdout = run_plugin(json.dumps(request))
     response = json.loads(stdout)
     assert response["requestId"] == "789"
@@ -67,7 +71,10 @@ def test_apply_config():
         request = {
             "requestId": "101",
             "command": "apply",
-            "args": {"dryRun": False, "settings": {"gui": {"enabled": True, "user": "admin"}}},
+            "args": {
+                "dryRun": False,
+                "settings": {"gui": {"enabled": True, "user": "admin"}},
+            },
         }
 
         stdout = run_plugin(json.dumps(request), env=env)
@@ -93,7 +100,10 @@ def test_idempotent_apply():
         request = {
             "requestId": "202",
             "command": "apply",
-            "args": {"dryRun": False, "settings": {"options": {"listenAddress": "default"}}},
+            "args": {
+                "dryRun": False,
+                "settings": {"options": {"listenAddress": "default"}},
+            },
         }
 
         run_plugin(json.dumps(request), env=env)

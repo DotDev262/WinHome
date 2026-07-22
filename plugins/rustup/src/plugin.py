@@ -34,13 +34,27 @@ def deep_merge(source, destination):
 def process_request():
     raw_input = sys.stdin.read().strip()
     if not raw_input:
-        print(json.dumps({"requestId": "unknown", "error": "Empty stdin configuration request received"}))
+        print(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "error": "Empty stdin configuration request received",
+                }
+            )
+        )
         return
 
     try:
         request_payload = json.loads(raw_input)
     except json.JSONDecodeError:
-        print(json.dumps({"requestId": "unknown", "error": "Invalid JSON formatting in configuration payload"}))
+        print(
+            json.dumps(
+                {
+                    "requestId": "unknown",
+                    "error": "Invalid JSON formatting in configuration payload",
+                }
+            )
+        )
         return
 
     request_id = request_payload.get("requestId")
@@ -105,7 +119,12 @@ def process_request():
             os.replace(temp_path, config_path)
         except Exception as err:
             print(
-                json.dumps({"requestId": request_id, "error": f"Failed executing atomic write operations: {str(err)}"})
+                json.dumps(
+                    {
+                        "requestId": request_id,
+                        "error": f"Failed executing atomic write operations: {str(err)}",
+                    }
+                )
             )
             return
 

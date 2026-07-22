@@ -36,7 +36,11 @@ def _backup_corrupt_registry(reason):
     backup_path = os.path.join(user_profile, f"7zip_registry.corrupted.{timestamp}.{suffix}.reg")
     log(f"Registry read failed ({reason}). Backing up HKCU\\{REG_PATH} to {backup_path}")
     try:
-        subprocess.run(["reg.exe", "export", f"HKCU\\{REG_PATH}", backup_path, "/y"], capture_output=True, check=True)
+        subprocess.run(
+            ["reg.exe", "export", f"HKCU\\{REG_PATH}", backup_path, "/y"],
+            capture_output=True,
+            check=True,
+        )
     except Exception as backup_e:
         log(f"Failed to backup registry key: {backup_e}")
 
@@ -97,14 +101,24 @@ def check_installed(args, request_id):
         except Exception as e:
             log(f"Error checking registry: {e}")
 
-    return {"requestId": request_id, "success": True, "changed": False, "data": is_installed}
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": False,
+        "data": is_installed,
+    }
 
 
 def apply_config(args, context, request_id):
     dry_run = context.get("dryRun", False)
     desired = args.get("settings", {})
     if not isinstance(desired, dict):
-        return {"requestId": request_id, "success": False, "changed": False, "error": "settings must be a dictionary"}
+        return {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": "settings must be a dictionary",
+        }
 
     current = read_settings()
     changed = False
@@ -248,7 +262,12 @@ def main():
     elif command == "check_installed":
         response = check_installed(args, request_id)
     else:
-        response = {"requestId": request_id, "success": False, "changed": False, "error": f"Unknown command: {command}"}
+        response = {
+            "requestId": request_id,
+            "success": False,
+            "changed": False,
+            "error": f"Unknown command: {command}",
+        }
 
     sys.stdout.write(json.dumps(response) + "\n")
     sys.stdout.flush()

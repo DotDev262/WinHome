@@ -11,7 +11,10 @@ def main():
             "requestId": request.get("requestId"),
             "success": True,
             "changed": True,
-            "data": {"echo": request.get("args", {}).get("message", "no message"), "python_version": sys.version},
+            "data": {
+                "echo": request.get("args", {}).get("message", "no message"),
+                "python_version": sys.version,
+            },
         }
 
         print(json.dumps(response))

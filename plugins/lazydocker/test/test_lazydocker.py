@@ -29,8 +29,16 @@ class TestLazyDockerPlugin(unittest.TestCase):
 
     @unittest.skipIf(yaml is None, "PyYAML not installed")
     def test_deep_merge(self):
-        dict1 = {"gui": {"theme": {"activeBorderColor": ["blue"]}}, "logs": {"timestamps": False}}
-        dict2 = {"gui": {"theme": {"activeBorderColor": ["green", "bold"]}, "scrollHeight": 3}}
+        dict1 = {
+            "gui": {"theme": {"activeBorderColor": ["blue"]}},
+            "logs": {"timestamps": False},
+        }
+        dict2 = {
+            "gui": {
+                "theme": {"activeBorderColor": ["green", "bold"]},
+                "scrollHeight": 3,
+            }
+        }
 
         merged, changed = plugin.deep_merge(dict1, dict2)
 

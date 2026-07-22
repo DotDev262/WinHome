@@ -13,7 +13,7 @@ def log(msg):
 
 def get_config_path() -> str:
     if sys.platform == "win32":
-        appdata = os.environ.get("APPDATA")
+        appdata = os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
         if appdata:
             return os.path.join(appdata, "alacritty", "alacritty.toml")
     return os.path.expanduser("~/.config/alacritty/alacritty.toml")
@@ -104,7 +104,11 @@ def merge_settings(target: dict, source: dict) -> bool:
             if merge_settings(target[key], value):
                 changed = True
         else:
-            if key not in target or target[key] != value:
+            if value == "":
+                if key in target:
+                    del target[key]
+                    changed = True
+            elif key not in target or target[key] != value:
                 target[key] = value
                 changed = True
     return changed

@@ -8,7 +8,12 @@ PLUGIN = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "p
 
 
 def run_plugin(payload: dict) -> dict:
-    result = subprocess.run([sys.executable, PLUGIN], input=json.dumps(payload), capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, PLUGIN],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+    )
 
     return json.loads(result.stdout.strip())
 

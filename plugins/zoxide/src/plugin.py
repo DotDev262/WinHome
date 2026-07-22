@@ -175,7 +175,7 @@ def process_request(request: dict) -> dict:
     command = request.get("command")
     args = request.get("args", {})
     context = request.get("context", {})
-    dry_run = bool(request.get("dry_run", context.get("dryRun", False)))
+    dry_run = bool(request.get("dryRun", context.get("dryRun", False)))
 
     try:
         if command == "check_installed":

@@ -56,13 +56,23 @@ def check_installed(args, request_id):
     if not installed:
         installed = shutil.which("lazydocker") is not None
 
-    return {"requestId": request_id, "success": True, "changed": False, "data": installed}
+    return {
+        "requestId": request_id,
+        "success": True,
+        "changed": False,
+        "data": installed,
+    }
 
 
 def apply_config(args, context, request_id):
     settings = args.get("settings", {})
     if not settings:
-        return {"requestId": request_id, "success": True, "changed": False, "data": None}
+        return {
+            "requestId": request_id,
+            "success": True,
+            "changed": False,
+            "data": None,
+        }
 
     config_path = get_config_path()
     dry_run = context.get("dryRun", False)
@@ -92,7 +102,12 @@ def apply_config(args, context, request_id):
     merged_config, changed = deep_merge(existing_config, settings)
 
     if not changed:
-        return {"requestId": request_id, "success": True, "changed": False, "data": None}
+        return {
+            "requestId": request_id,
+            "success": True,
+            "changed": False,
+            "data": None,
+        }
 
     if not dry_run:
         try:

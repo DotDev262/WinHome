@@ -80,7 +80,11 @@ class TestMinicondaPlugin(unittest.TestCase):
 
             # Test actual apply (creates file)
             input_data1 = json.dumps(
-                {"requestId": "3", "command": "apply", "args": {"settings": {"channels": ["conda-forge"]}}}
+                {
+                    "requestId": "3",
+                    "command": "apply",
+                    "args": {"settings": {"channels": ["conda-forge"]}},
+                }
             )
             with patch("sys.stdin", StringIO(input_data1)):
                 with patch("plugin.Path.home", return_value=Path(tmpdir)):
@@ -94,7 +98,11 @@ class TestMinicondaPlugin(unittest.TestCase):
 
             # Test idempotent apply (runs again, but no changes)
             input_data2 = json.dumps(
-                {"requestId": "4", "command": "apply", "args": {"settings": {"channels": ["conda-forge"]}}}
+                {
+                    "requestId": "4",
+                    "command": "apply",
+                    "args": {"settings": {"channels": ["conda-forge"]}},
+                }
             )
             with patch("sys.stdin", StringIO(input_data2)):
                 with patch("plugin.Path.home", return_value=Path(tmpdir)):

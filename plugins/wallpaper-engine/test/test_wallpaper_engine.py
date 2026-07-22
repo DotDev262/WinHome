@@ -58,7 +58,11 @@ class TestWallpaperEnginePluginContract(unittest.TestCase):
         self.assertNotIn("status", response)
 
     def test_apply_config_dry_run(self):
-        payload = {"requestId": "req-002", "command": "apply", "args": {"settings": {"volume": 0.8}, "dryRun": True}}
+        payload = {
+            "requestId": "req-002",
+            "command": "apply",
+            "args": {"settings": {"volume": 0.8}, "dryRun": True},
+        }
         response = self.run_plugin_subprocess(json.dumps(payload))
         self.assertEqual(response["requestId"], "req-002")
         self.assertTrue(response["dryRun"])
@@ -88,7 +92,11 @@ class TestWallpaperEnginePluginContract(unittest.TestCase):
 
     def test_idempotent_apply(self):
         os.makedirs(self.config_dir, exist_ok=True)
-        payload = {"requestId": "req-004", "command": "apply", "args": {"settings": {"fps": 60}}}
+        payload = {
+            "requestId": "req-004",
+            "command": "apply",
+            "args": {"settings": {"fps": 60}},
+        }
 
         res1 = self.run_plugin_subprocess(json.dumps(payload))
         self.assertTrue(res1["changed"])

@@ -147,7 +147,7 @@ class TestGhPlugin(unittest.TestCase):
                     {
                         "requestId": "req-5",
                         "command": "apply",
-                        "args": {"git_protocol": "https", "dry_run": True},
+                        "args": {"git_protocol": "https", "dryRun": True},
                         "context": {"dryRun": True},
                     }
                 )

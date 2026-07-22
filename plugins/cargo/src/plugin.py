@@ -75,7 +75,11 @@ def merge_settings(target: dict, source: dict) -> bool:
             if merge_settings(target[key], value):
                 changed = True
         else:
-            if key not in target or target[key] != value:
+            if value == "":
+                if key in target:
+                    del target[key]
+                    changed = True
+            elif key not in target or target[key] != value:
                 target[key] = value
                 changed = True
     return changed
@@ -172,9 +176,11 @@ def main() -> None:
         result = handle(request)
     except Exception as error:
         result = {
-            "requestId": request.get("requestId", "unknown")
-            if "request" in locals() and isinstance(request, dict)
-            else "unknown",
+            "requestId": (
+                request.get("requestId", "unknown")
+                if "request" in locals() and isinstance(request, dict)
+                else "unknown"
+            ),
             "success": False,
             "changed": False,
             "error": str(error),

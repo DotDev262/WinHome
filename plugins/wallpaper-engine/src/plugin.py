@@ -9,8 +9,24 @@ def get_config_paths():
     program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
     program_files_x64 = os.environ.get("ProgramFiles", r"C:\Program Files")
     return [
-        os.path.join(program_files_x86, "Steam", "steamapps", "common", "wallpaper_engine", "config", "config.json"),
-        os.path.join(program_files_x64, "Steam", "steamapps", "common", "wallpaper_engine", "config", "config.json"),
+        os.path.join(
+            program_files_x86,
+            "Steam",
+            "steamapps",
+            "common",
+            "wallpaper_engine",
+            "config",
+            "config.json",
+        ),
+        os.path.join(
+            program_files_x64,
+            "Steam",
+            "steamapps",
+            "common",
+            "wallpaper_engine",
+            "config",
+            "config.json",
+        ),
     ]
 
 
@@ -48,7 +64,13 @@ def apply(request_id, args):
     if not target_path:
         program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
         target_path = os.path.join(
-            program_files_x86, "Steam", "steamapps", "common", "wallpaper_engine", "config", "config.json"
+            program_files_x86,
+            "Steam",
+            "steamapps",
+            "common",
+            "wallpaper_engine",
+            "config",
+            "config.json",
         )
 
     config_dir = os.path.dirname(target_path)
@@ -63,7 +85,12 @@ def apply(request_id, args):
     has_changes = deep_merge(existing_config, settings)
 
     if dry_run:
-        return {"requestId": request_id, "dryRun": True, "changed": has_changes, "path": target_path}
+        return {
+            "requestId": request_id,
+            "dryRun": True,
+            "changed": has_changes,
+            "path": target_path,
+        }
 
     if not has_changes:
         return {"requestId": request_id, "changed": False, "path": target_path}

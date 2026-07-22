@@ -180,7 +180,7 @@ def check_installed(args: dict, request_id: str) -> dict:
 
         paths_to_check = [
             os.path.join(program_files, "KeePassXC", "KeePassXC.exe"),
-            os.path.join(local_appdata, "KeePassXC", "KeePassXC.exe") if local_appdata else "",
+            (os.path.join(local_appdata, "KeePassXC", "KeePassXC.exe") if local_appdata else ""),
         ]
 
         for p in paths_to_check:

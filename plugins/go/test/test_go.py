@@ -23,7 +23,11 @@ def completed(stdout="", stderr="", returncode=0):
 
 class TestGoPluginInstalled(unittest.TestCase):
     def test_check_installed_true(self):
-        with patch.object(plugin.shutil, "which", side_effect=lambda name: "/usr/bin/go" if name == "go" else None):
+        with patch.object(
+            plugin.shutil,
+            "which",
+            side_effect=lambda name: "/usr/bin/go" if name == "go" else None,
+        ):
             result = plugin.check_installed({}, "req-installed")
 
         self.assertTrue(result["success"])
@@ -53,7 +57,11 @@ class TestGoEnvParsing(unittest.TestCase):
         )
 
     def test_read_go_env_raises_clean_stderr(self):
-        with patch.object(plugin.subprocess, "run", return_value=completed(stderr="bad key\n", returncode=1)):
+        with patch.object(
+            plugin.subprocess,
+            "run",
+            return_value=completed(stderr="bad key\n", returncode=1),
+        ):
             with self.assertRaisesRegex(RuntimeError, "bad key"):
                 plugin.read_go_env("/usr/bin/go", "GOPATH")
 
@@ -113,7 +121,9 @@ class TestGoApply(unittest.TestCase):
     def test_noop_when_values_already_match(self):
         with patch.object(plugin, "go_executable", return_value="/usr/bin/go"):
             with patch.object(
-                plugin.subprocess, "run", return_value=completed(stdout="https://proxy.golang.org,direct\n")
+                plugin.subprocess,
+                "run",
+                return_value=completed(stdout="https://proxy.golang.org,direct\n"),
             ):
                 result = plugin.apply_config(
                     {"settings": {"GOPROXY": "https://proxy.golang.org,direct"}},

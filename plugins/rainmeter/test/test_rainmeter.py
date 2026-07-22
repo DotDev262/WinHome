@@ -19,7 +19,7 @@ class TestRainmeterPlugin(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.appdata = os.path.join(self.temp_dir, "AppData")
         os.makedirs(self.appdata)
-        self.old_appdata = os.environ.get("APPDATA")
+        self.old_appdata = os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
         os.environ["APPDATA"] = self.appdata
         self.config_dir = os.path.join(self.appdata, "Rainmeter")
         self.config_file = os.path.join(self.config_dir, "Rainmeter.ini")
@@ -78,7 +78,10 @@ class TestRainmeterPlugin(unittest.TestCase):
 
         args = {
             "settings": {
-                "Rainmeter": {"ConfigEditor": "notepad.exe", "DesktopWorkArea": "0,0,1920,1080"},
+                "Rainmeter": {
+                    "ConfigEditor": "notepad.exe",
+                    "DesktopWorkArea": "0,0,1920,1080",
+                },
                 "NewSkin": {"Draggable": 1},
             }
         }
@@ -104,7 +107,10 @@ class TestRainmeterPlugin(unittest.TestCase):
         self.assertFalse(res["changed"])
 
     def test_apply_config_dry_run(self):
-        args = {"settings": {"Rainmeter": {"ConfigEditor": "notepad.exe"}}, "dryRun": True}
+        args = {
+            "settings": {"Rainmeter": {"ConfigEditor": "notepad.exe"}},
+            "dryRun": True,
+        }
         res = plugin.apply_config(args, {}, "req-7")
         self.assertTrue(res["changed"])
         self.assertFalse(os.path.exists(self.config_file))

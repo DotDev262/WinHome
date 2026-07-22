@@ -39,7 +39,7 @@ def get_config_path() -> Path:
     system = platform.system()
 
     if system == "Windows":
-        appdata = os.environ.get("APPDATA")
+        appdata = os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
         if not appdata:
             # Keep behavior explicit; host will return structured error.
             raise RuntimeError("APPDATA environment variable not set")
@@ -195,7 +195,14 @@ def merge_settings(lines: List[ConfigLine], settings: Dict[str, Any]) -> Tuple[L
             # Ensure we add a newline if file doesn't end with one.
             insertion = new_line
             if not lines:
-                lines = [ConfigLine(raw=insertion + "\n", key=key, value=stringify_value(value), managed=True)]
+                lines = [
+                    ConfigLine(
+                        raw=insertion + "\n",
+                        key=key,
+                        value=stringify_value(value),
+                        managed=True,
+                    )
+                ]
                 changed = True
                 continue
             last_raw = lines[-1].raw
@@ -324,7 +331,12 @@ def handle_set(request: dict) -> Dict[str, Any]:
             data["backupPath"] = str(backup_path)
 
         write_atomic(config_path, proposed)
-        return make_response(request_id, True, True, data | ({"backupPath": str(backup_path)} if backup_path else {}))
+        return make_response(
+            request_id,
+            True,
+            True,
+            data | ({"backupPath": str(backup_path)} if backup_path else {}),
+        )
 
     except Exception as exc:
         return make_response(request_id, False, False, {}, str(exc))
@@ -379,7 +391,7 @@ def main() -> None:
         result = dispatch(request)
     except Exception as exc:
         result = make_response(
-            request.get("requestId", "unknown") if isinstance(request, dict) else "unknown",
+            (request.get("requestId", "unknown") if isinstance(request, dict) else "unknown"),
             False,
             False,
             {},

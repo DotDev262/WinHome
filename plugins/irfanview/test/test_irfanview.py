@@ -36,7 +36,10 @@ class TestIrfanViewPlugin(unittest.TestCase):
 
     def test_apply_settings_new_file(self):
         with mock_env() as td:
-            settings = {"Others": {"ShowAllFiles": True, "ThumbnailSize": 200}, "Language": {"Language": "ENGLISH"}}
+            settings = {
+                "Others": {"ShowAllFiles": True, "ThumbnailSize": 200},
+                "Language": {"Language": "ENGLISH"},
+            }
             plugin.apply_settings(settings, dry_run=False)
 
             ini_path = os.path.join(td, "IrfanView", "i_view64.ini")

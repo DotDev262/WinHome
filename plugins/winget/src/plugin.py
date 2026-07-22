@@ -58,7 +58,11 @@ def deep_merge(target: dict, source: dict) -> bool:
             if deep_merge(target[key], value):
                 changed = True
         else:
-            if key not in target or target[key] != value:
+            if value == "":
+                if key in target:
+                    del target[key]
+                    changed = True
+            elif key not in target or target[key] != value:
                 target[key] = value
                 changed = True
 

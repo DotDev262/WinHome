@@ -28,7 +28,11 @@ def test_apply_new_file(monkeypatch, tmp_path):
     # Set APPDATA to a temporary directory
     monkeypatch.setenv("APPDATA", str(tmp_path))
 
-    settings = {"disable": ["pip", "npm"], "set_title": True, "git_repos": {"~/Projects/dotfiles": "main"}}
+    settings = {
+        "disable": ["pip", "npm"],
+        "set_title": True,
+        "git_repos": {"~/Projects/dotfiles": "main"},
+    }
 
     req = {"requestId": "456", "command": "apply", "args": {"settings": settings}}
 

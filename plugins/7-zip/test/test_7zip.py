@@ -64,7 +64,13 @@ class Test7ZipPlugin(unittest.TestCase):
         plugin.winreg = mock_winreg
 
         result = plugin.apply_config(
-            {"settings": {"CompressionLevel": 5, "CompressionMethod": "LZMA2", "EncryptHeaders": True}},
+            {
+                "settings": {
+                    "CompressionLevel": 5,
+                    "CompressionMethod": "LZMA2",
+                    "EncryptHeaders": True,
+                }
+            },
             {"dryRun": False},
             "req-4",
         )
@@ -209,7 +215,10 @@ class Test7ZipPlugin(unittest.TestCase):
         import io
         import json
 
-        with patch("sys.stdin", io.StringIO("")), patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+        with (
+            patch("sys.stdin", io.StringIO("")),
+            patch("sys.stdout", new_callable=io.StringIO) as mock_stdout,
+        ):
             plugin.main()
             output = json.loads(mock_stdout.getvalue().strip())
             self.assertEqual(output["requestId"], "unknown")

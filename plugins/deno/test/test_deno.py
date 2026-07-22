@@ -36,9 +36,17 @@ class TestDenoPlugin(unittest.TestCase):
     @patch("plugin.write_deno_config")
     def test_apply_config_no_changes_needed(self, mock_write, mock_read, mock_path):
         mock_path.return_value = "/fake/deno.json"
-        mock_read.return_value = {"lint": {"rules": {"tags": ["recommended"]}}, "fmt": {"useTabs": True}}
+        mock_read.return_value = {
+            "lint": {"rules": {"tags": ["recommended"]}},
+            "fmt": {"useTabs": True},
+        }
 
-        args = {"settings": {"lint": {"rules": {"tags": ["recommended"]}}, "fmt": {"useTabs": True}}}
+        args = {
+            "settings": {
+                "lint": {"rules": {"tags": ["recommended"]}},
+                "fmt": {"useTabs": True},
+            }
+        }
 
         result = plugin.apply_config(args, "req-789")
 
@@ -53,7 +61,11 @@ class TestDenoPlugin(unittest.TestCase):
         mock_read.return_value = {"lint": {"rules": {"tags": ["recommended"]}}}
 
         args = {
-            "settings": {"lint": {"rules": {"tags": ["recommended"]}}, "fmt": {"useTabs": True}, "typeCheckOnRun": True}
+            "settings": {
+                "lint": {"rules": {"tags": ["recommended"]}},
+                "fmt": {"useTabs": True},
+                "typeCheckOnRun": True,
+            }
         }
 
         result = plugin.apply_config(args, "req-abc")

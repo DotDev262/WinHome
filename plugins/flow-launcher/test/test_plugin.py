@@ -42,7 +42,11 @@ def test_check_installed_false():
 
 
 def test_apply_dry_run_changed():
-    request = {"command": "apply", "requestId": "125", "args": {"settings": {"Hotkey": "Alt+Space"}, "dryRun": True}}
+    request = {
+        "command": "apply",
+        "requestId": "125",
+        "args": {"settings": {"Hotkey": "Alt+Space"}, "dryRun": True},
+    }
     existing_settings = '{"Hotkey": "Ctrl+Space"}'
     with (
         patch("sys.stdin", StringIO(json.dumps(request))),
@@ -58,7 +62,11 @@ def test_apply_dry_run_changed():
 
 
 def test_apply_no_changes():
-    request = {"command": "apply", "requestId": "126", "args": {"settings": {"Hotkey": "Alt+Space"}, "dryRun": False}}
+    request = {
+        "command": "apply",
+        "requestId": "126",
+        "args": {"settings": {"Hotkey": "Alt+Space"}, "dryRun": False},
+    }
     existing_settings = '{"Hotkey": "Alt+Space"}'
     with (
         patch("sys.stdin", StringIO(json.dumps(request))),
@@ -77,7 +85,10 @@ def test_apply_writes_changes():
     request = {
         "command": "apply",
         "requestId": "127",
-        "args": {"settings": {"Hotkey": "Alt+Space", "Plugins": {"Search": True}}, "dryRun": False},
+        "args": {
+            "settings": {"Hotkey": "Alt+Space", "Plugins": {"Search": True}},
+            "dryRun": False,
+        },
     }
     existing_settings = '{"Hotkey": "Ctrl+Space", "Plugins": {"Search": false}}'
 
