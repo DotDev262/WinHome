@@ -10,7 +10,7 @@ if sys.platform != "win32":
     sys.modules["winreg"] = MagicMock()
     mock_winapi = MagicMock()
     del mock_winapi.CopyFile2
-    shutil._winapi = mock_winapi
+    setattr(shutil, "_winapi", mock_winapi)
 
 
 # Remove any dynamically inserted plugin source/test directories from sys.path
