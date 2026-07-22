@@ -48,8 +48,8 @@ namespace WinHome.Services.Bootstrappers
         return;
       }
 
-      // Use -ExecutionPolicy Bypass as a process argument instead of calling Set-ExecutionPolicy cmdlet inline
-      string command = "irm get.scoop.sh -outfile install.ps1; .\\install.ps1 -RunAsAdmin; if (Test-Path .\\install.ps1) { Remove-Item .\\install.ps1 }";
+      // Use -ExecutionPolicy Bypass as a process argument and dynamically patch Get-ExecutionPolicy calls in the script to avoid runner module-loading crashes
+      string command = "irm get.scoop.sh -outfile install.ps1; (Get-Content install.ps1) -replace 'Get-ExecutionPolicy', '\"RemoteSigned\"' | Set-Content install.ps1; .\\install.ps1 -RunAsAdmin; if (Test-Path .\\install.ps1) { Remove-Item .\\install.ps1 }";
 
       for (int attempt = 0; attempt < MaxRetries; attempt++)
       {
