@@ -435,7 +435,11 @@ namespace WinHome
                 var checkResult = await _pluginRunner.ExecuteAsync(plugin, "check_installed", new { packageId = pluginName }, new { dryRun = dryRun });
                 if (checkResult.Success)
                 {
-                  if (checkResult.Data is bool installedBool)
+                  if (checkResult.Installed.HasValue)
+                  {
+                    isInstalled = checkResult.Installed.Value;
+                  }
+                  else if (checkResult.Data is bool installedBool)
                   {
                     isInstalled = installedBool;
                   }

@@ -31,7 +31,14 @@ def load_config():
 def merge_config(config, settings):
     changed = False
 
+    # Detect if settings are flat (no sub-dictionaries) to keep configuration format uniform
+    has_sections = any(isinstance(v, dict) for v in settings.values())
+    if not has_sections:
+        settings = {"Everything": settings}
+
     for section, values in settings.items():
+        if not isinstance(values, dict):
+            continue
         if not config.has_section(section):
             config.add_section(section)
 

@@ -115,7 +115,7 @@ def check_installed(args: dict, request_id: str) -> dict:
 
 def apply_config(args: dict, context: dict, request_id: str) -> dict:
     dry_run = context.get("dryRun", False)
-    settings = args
+    settings = args.get("settings", {}) or {}
 
     try:
         config_path = get_config_path()

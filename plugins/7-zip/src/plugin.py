@@ -124,6 +124,25 @@ def apply_config(args, context, request_id):
     changed = False
     to_update = {}
 
+    # Coerce values parsed as string from YAML representation
+    if "CompressionLevel" in desired:
+        try:
+            desired["CompressionLevel"] = int(desired["CompressionLevel"])
+        except (ValueError, TypeError):
+            pass
+    if "ContextMenu" in desired:
+        try:
+            desired["ContextMenu"] = int(desired["ContextMenu"])
+        except (ValueError, TypeError):
+            pass
+    if "EncryptHeaders" in desired:
+        val = desired["EncryptHeaders"]
+        if isinstance(val, str):
+            if val.lower() == "true":
+                desired["EncryptHeaders"] = True
+            elif val.lower() == "false":
+                desired["EncryptHeaders"] = False
+
     for key, val in desired.items():
         # Validate values
         if key == "CompressionLevel":

@@ -9,6 +9,12 @@ Commands:
   - apply:           Deep-merge matches/global_vars into base.yml
 """
 
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
+
 import json
 import os
 import sys
