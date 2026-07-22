@@ -26,8 +26,7 @@ jobs:
           for test_file in plugins/*/test/test_*.py; do
             [ -f "$test_file" ] || continue
             if grep -q 'if __name__ == "__main__"' "$test_file"; then
-              plugin=$(echo "$test_file" | cut -d'/' -f2)
-              PY_PLUGINS+=("$plugin")
+              PY_PLUGINS+=("$test_file")
             fi
           done
 
@@ -82,14 +81,15 @@ jobs:
       - name: Run Python plugin tests
         shell: bash
         run: |
-          PLUGINS=$(echo '${{ needs.discover.outputs.python_plugins }}' | jq -r '.[]')
+          TEST_FILES=$(echo '${{ needs.discover.outputs.python_plugins }}' | jq -r '.[]')
           failed=0
-          for plugin in $PLUGINS; do
-            TEST_FILE="plugins/$plugin/test/test_$plugin.py"
-            if [ -f "$TEST_FILE" ]; then
-              echo "▶ Running tests for $plugin"
-              if ! uv run --directory "plugins/$plugin" "$TEST_FILE"; then
-                echo "❌ Plugin '$plugin' test failed."
+          for test_file in $TEST_FILES; do
+            if [ -f "$test_file" ]; then
+              plugin_dir=$(echo "$test_file" | cut -d'/' -f2)
+              rel_test_file="test/$(basename "$test_file")"
+              echo "▶ Running tests for $plugin_dir ($rel_test_file)"
+              if ! uv run --directory "plugins/$plugin_dir" "$rel_test_file"; then
+                echo "❌ Plugin '$plugin_dir' test failed."
                 failed=1
               fi
             fi
