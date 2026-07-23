@@ -1,15 +1,25 @@
 # run-test-gha.ps1
 
-# Run WinHome
+# 1. Run live integration test on a subset of applications
 ./WinHome.exe --config test-config-gha.yaml --auto-install-apps --debug
 $winhomeExitCode = $LASTEXITCODE
 
 if ($winhomeExitCode -ne 0) {
-    Write-Error "WinHome.exe failed with exit code $winhomeExitCode"
+    Write-Error "WinHome.exe subset live test failed with exit code $winhomeExitCode"
     exit $winhomeExitCode
 }
 
-# Run verification script
+# 2. Run dry-run validation on the full 72-plugins configuration
+Write-Host "Running dry-run validation on all 72 plugins..."
+./WinHome.exe --config ../test-data/test-config-full-plugins.yaml --dry-run --auto-install-apps --debug
+$dryRunExitCode = $LASTEXITCODE
+
+if ($dryRunExitCode -ne 0) {
+    Write-Error "WinHome.exe dry-run validation on all 72 plugins failed with exit code $dryRunExitCode"
+    exit $dryRunExitCode
+}
+
+# 3. Run verification script for the live test assertions
 ./verify-gha.ps1
 $verifyExitCode = $LASTEXITCODE
 
