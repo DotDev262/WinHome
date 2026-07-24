@@ -83,3 +83,66 @@ jobs:
         cp ../test-data/verify-gha.ps1 .
         cp ../README.md .
         ./run-test-gha.ps1
+
+    - name: Test plugin action downloads
+      shell: bash
+      run: |
+        echo "Testing action downloads for all 72 plugins..."
+        cd plugins
+        TOTAL=0
+        FAILED=0
+        
+        for plugin_dir in */; do
+          plugin_name=$(basename "${plugin_dir}")
+          if [[ "$plugin_name" == "__pycache__" || "$plugin_name" == "." ]]; then
+            continue
+          fi
+          
+          cd "$plugin_dir"
+          TOTAL=$((TOTAL + 1))
+          
+          if [[ -f "plugin.yaml" ]]; then
+            # For Python plugins
+            if grep -q '"type: python"' plugin.yaml; then
+              if [[ -f "src/plugin.py" ]]; then
+                echo "✓ $plugin_name: Python plugin exists"
+              else
+                echo "❌ $plugin_name: Python plugin exists but missing src/plugin.py"
+                FAILED=$((FAILED + 1))
+              fi
+            # For JavaScript/TypeScript plugins  
+            elif grep -q '"type: javascript"' plugin.yaml || grep -q '"type: typescript"' plugin.yaml; then
+              if [[ -f "src/plugin.ts" ]] || [[ -f "src/plugin.js" ]] || [[ -f "package.json" ]]; then
+                echo "✓ $plugin_name: JavaScript plugin exists"
+              else
+                echo "❌ $plugin_name: JavaScript plugin exists but missing src/plugin and package.json"
+                FAILED=$((FAILED + 1))
+              fi
+            # For PowerShell plugins
+            elif grep -q '"type: powershell"' plugin.yaml; then
+              if [[ -f "src/plugin.ps1" ]]; then
+                echo "✓ $plugin_name: PowerShell plugin exists"
+              else
+                echo "❌ $plugin_name: PowerShell plugin exists but missing src/plugin.ps1"
+                FAILED=$((FAILED + 1))
+              fi
+            else
+              echo "⚠️  $plugin_name: Unknown plugin type"
+            fi
+          else
+            echo "⚠️  $plugin_name: No plugin.yaml found (test plugin)"
+          fi
+          
+          cd ..
+        done
+        
+        echo "Plugin action download test completed."
+        echo "Total plugins tested: $TOTAL"
+        echo "Failed plugins: $FAILED"
+        
+        if [[ $FAILED -gt 0 ]]; then
+          echo "❌ $FAILED plugin(s) failed action download tests"
+          exit 1
+        else
+          echo "✅ All $TOTAL plugin action download tests passed"
+        fi
