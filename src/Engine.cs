@@ -152,15 +152,19 @@ namespace WinHome
       {
         _logger.LogInfo("\n--- Cleaning Up ---");
         var removedItems = new ConcurrentBag<string>();
+        var cleanupLock = new object();
         await Task.Run(() => Parallel.ForEach(itemsToRemove, uniqueId =>
         {
           if (uniqueId.StartsWith("reg:"))
           {
             var parts = uniqueId.Substring(4).Split('|', 2);
-            if (parts.Length == 2 && _registry.Revert(parts[0], parts[1], dryRun) && !dryRun)
+            if (parts.Length == 2 && !dryRun && _registry.Revert(parts[0], parts[1], false))
             {
-              removedItems.Add(uniqueId);
-              confirmedApplied.Remove(uniqueId);
+              lock (cleanupLock)
+              {
+                removedItems.Add(uniqueId);
+                confirmedApplied.Remove(uniqueId);
+              }
             }
           }
           else
@@ -168,11 +172,14 @@ namespace WinHome
             var parts = uniqueId.Split(':', 2);
             if (parts.Length == 2 && _managers.TryGetValue(parts[0], out var mgr))
             {
-              mgr.Uninstall(parts[1], dryRun);
               if (!dryRun)
               {
-                removedItems.Add(uniqueId);
-                confirmedApplied.Remove(uniqueId);
+                mgr.Uninstall(parts[1], false);
+                lock (cleanupLock)
+                {
+                  removedItems.Add(uniqueId);
+                  confirmedApplied.Remove(uniqueId);
+                }
               }
             }
           }
